@@ -918,6 +918,7 @@ dependencies = [
  "leptos_meta",
  "leptos_router",
  "lucide-leptos",
+ "tw_merge",
  "ui",
 ]
 
@@ -1843,7 +1844,10 @@ dependencies = [
  "leptos",
  "leptos-node-ref",
  "send_wrapper",
+ "serde",
+ "serde_json",
  "tw_merge",
+ "web-sys",
 ]
 
 [[package]]

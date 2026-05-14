@@ -1,0 +1,109 @@
+use crate::{
+    cn,
+    components::button::{Button, ButtonSize, ButtonVariant},
+    primitives::dropdown_menu::{
+        use_dropdown, DropdownMenuContentRoot, DropdownMenuItemRoot, DropdownMenuRoot,
+    },
+    utils::types::{Align, Side, SideOffset},
+};
+use leptos::{either::Either, ev, prelude::*};
+use leptos_node_ref::AnyNodeRef;
+
+#[component]
+pub fn DropdownMenu(children: Children) -> impl IntoView {
+    view! { <DropdownMenuRoot class="relative inline-block text-left">{children()}</DropdownMenuRoot> }
+}
+
+#[component]
+pub fn DropdownMenuTrigger(
+    #[prop(optional)] size: ButtonSize,
+    #[prop(optional)] variant: ButtonVariant,
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional, into)] as_child: Option<
+        Callback<(AnyNodeRef, Callback<ev::MouseEvent>), AnyView>,
+    >,
+    #[prop(optional)] children: Option<Children>,
+) -> impl IntoView {
+    let ctx = use_dropdown();
+    let on_click = Callback::new(move |_: ev::MouseEvent| ctx.toggle());
+
+    match as_child {
+        Some(render_fn) => Either::Left(render_fn.run((ctx.trigger_ref, on_click))),
+        None => Either::Right(view! {
+            <Button
+                size=size
+                variant=variant
+                class=class
+                disabled=disabled
+                on_click=on_click
+                node_ref=ctx.trigger_ref
+            >
+                {match children {
+                    Some(child) => Either::Left(child()),
+                    None => Either::Right(""),
+                }}
+            </Button>
+        }),
+    }
+}
+
+#[component]
+pub fn DropdownMenuContent(
+    #[prop(optional)] side: Side,
+    #[prop(optional)] align: Align,
+    #[prop(optional)] side_offset: SideOffset,
+    #[prop(optional, into)] class: Signal<String>,
+    children: ChildrenFn,
+) -> impl IntoView {
+    view! {
+        <DropdownMenuContentRoot
+            side=side
+            align=align
+            side_offset=side_offset
+            class=move || {
+                cn!(
+                    "z-50 min-w-32 w-18 overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md duration-100",
+                    "origin-(--dropdown-menu-content-transform-origin)",
+                    "data-[state=open]:animate-in data-[state=closed]:animate-out",
+                    "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+                    "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+                    class.get()
+                )
+            }
+        >
+            {children()}
+        </DropdownMenuContentRoot>
+    }
+}
+
+#[component]
+pub fn DropdownMenuItem(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] on_click: Option<Callback<ev::MouseEvent>>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <DropdownMenuItemRoot
+            on_click=on_click
+            class=move || {
+                cn!(
+                    "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50",
+                    class.get()
+                )
+            }
+        >
+            {children()}
+        </DropdownMenuItemRoot>
+    }
+}
+
+#[component]
+pub fn DropdownMenuLabel(children: Children) -> impl IntoView {
+    view! { <div class="px-2 py-1.5 text-sm font-semibold">{children()}</div> }
+}
+
+#[component]
+pub fn DropdownMenuSeparator() -> impl IntoView {
+    view! { <div class="-mx-1 my-1 h-px bg-muted"></div> }
+}

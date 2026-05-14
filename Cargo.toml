@@ -12,3 +12,4 @@ leptos = { version = "0.8.19", features = ["csr"] }
 leptos_meta = "0.8.6"
 leptos_router = "0.8.13"
 lucide-leptos = { version = "3.11.0", features = ["all-icons"] }
+tw_merge = { version = "0.1.21", features = ["variant"] }
