@@ -1,5 +1,4 @@
 pub mod components;
-pub mod middleware;
 pub mod primitives;
 pub mod utils;
 

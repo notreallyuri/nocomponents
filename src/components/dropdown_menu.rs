@@ -3,11 +3,12 @@ use crate::{
     components::button::{Button, ButtonSize, ButtonVariant},
     primitives::dropdown_menu::{
         use_dropdown, DropdownMenuContentRoot, DropdownMenuItemRoot, DropdownMenuPortalRoot,
-        DropdownMenuRoot,
+        DropdownMenuRoot, DropdownMenuSubContentRoot, DropdownMenuSubRoot,
+        DropdownMenuSubTriggerRoot,
     },
     utils::types::{Align, Side, SideOffset},
 };
-use leptos::{either::Either, ev, prelude::*};
+use leptos::{either::Either, ev, portal::Portal, prelude::*};
 use leptos_node_ref::AnyNodeRef;
 
 #[component]
@@ -21,7 +22,7 @@ pub fn DropdownMenuTrigger(
     #[prop(optional)] variant: ButtonVariant,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
-    #[prop(optional, into)] as_child: Option<
+    #[prop(optional, into)] render: Option<
         Callback<(AnyNodeRef, Callback<ev::MouseEvent>), AnyView>,
     >,
     #[prop(optional)] children: Option<Children>,
@@ -29,7 +30,7 @@ pub fn DropdownMenuTrigger(
     let ctx = use_dropdown();
     let on_click = Callback::new(move |_: ev::MouseEvent| ctx.toggle());
 
-    match as_child {
+    match render {
         Some(render_fn) => Either::Left(render_fn.run((ctx.trigger_ref, on_click))),
         None => Either::Right(view! {
             <Button
@@ -112,4 +113,69 @@ pub fn DropdownMenuLabel(children: Children) -> impl IntoView {
 #[component]
 pub fn DropdownMenuSeparator() -> impl IntoView {
     view! { <div class="-mx-1 my-1 h-px bg-muted"></div> }
+}
+
+#[component]
+pub fn DropdownMenuSub(children: ChildrenFn) -> impl IntoView {
+    view! { <DropdownMenuSubRoot>{children()}</DropdownMenuSubRoot> }
+}
+
+#[component]
+pub fn DropdownMenuSubTrigger(
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <DropdownMenuSubTriggerRoot class=move || {
+            cn!(
+                "flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent data-[state=open]:bg-accent",
+                    class.get()
+            )
+        }>
+            {children()}
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="ml-auto h-4 w-4"
+            >
+                <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+        </DropdownMenuSubTriggerRoot>
+    }
+}
+
+#[component]
+pub fn DropdownMenuSubContent(
+    #[prop(optional)] side_offset: SideOffset,
+    #[prop(optional, into)] class: Signal<String>,
+    children: ChildrenFn,
+) -> impl IntoView {
+    let ctx = crate::primitives::dropdown_menu::use_dropdown();
+
+    let children = StoredValue::new(children);
+
+    view! {
+        <Portal>
+            <Show when=move || ctx.is_mounted.get()>
+                <DropdownMenuSubContentRoot
+                    side_offset=side_offset
+                    class=move || {
+                        cn!(
+                            "z-50 min-w-32 overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+                            class.get()
+                        )
+                    }
+                >
+                    {children.with_value(|c| c())}
+                </DropdownMenuSubContentRoot>
+            </Show>
+        </Portal>
+    }
 }

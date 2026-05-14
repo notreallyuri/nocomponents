@@ -99,9 +99,11 @@ pub fn FloatingProvider(context: FloatingContext, children: Children) -> impl In
 pub fn FloatingRoot(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(default = 150, into)] unmount_delay: u64,
+    #[prop(optional)] context: Option<FloatingContext>,
     children: ChildrenFn,
 ) -> impl IntoView {
-    let context = FloatingContext::default();
+    let context = context.unwrap_or_default();
+
     Effect::new(move |_| {
         if context.is_open.get() {
             context.is_mounted.set(true);

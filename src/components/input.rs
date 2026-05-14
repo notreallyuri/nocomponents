@@ -1,7 +1,5 @@
-use crate::{
-    cn,
-    primitives::input::{InputRoot, InputType},
-};
+pub use crate::primitives::input::InputType;
+use crate::{cn, primitives::input::InputRoot};
 use leptos::prelude::*;
 
 #[component]

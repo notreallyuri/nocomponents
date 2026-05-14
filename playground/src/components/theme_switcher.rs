@@ -1,6 +1,5 @@
 use leptos::prelude::*;
-use ui::utils::theme::{use_theme, Theme};
-use ui::{
+use nocomponents::{
     cn,
     components::{
         button::ButtonVariant,
@@ -9,7 +8,10 @@ use ui::{
             DropdownMenuPortal, DropdownMenuSeparator, DropdownMenuTrigger,
         },
     },
-    utils::types::{Align, Side},
+    utils::{
+        theme::{use_theme, Theme},
+        types::{Align, Side},
+    },
 };
 
 #[component]

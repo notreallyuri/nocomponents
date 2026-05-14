@@ -16,13 +16,13 @@ pub fn DialogTrigger(
     #[prop(optional)] variant: ButtonVariant,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
-    #[prop(optional, into)] as_child: Option<Callback<Callback<ev::MouseEvent>, AnyView>>,
+    #[prop(optional, into)] render: Option<Callback<Callback<ev::MouseEvent>, AnyView>>,
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     let ctx = use_dialog();
     let on_click = Callback::new(move |_: ev::MouseEvent| ctx.toggle());
 
-    match as_child {
+    match render {
         Some(render_fn) => Either::Left(render_fn.run(on_click)),
         None => Either::Right(view! {
             <Button size=size variant=variant class=class disabled=disabled on_click=on_click>

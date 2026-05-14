@@ -1,0 +1,13 @@
+[package]
+name = "playground"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+nocomponents = { path = ".." }
+leptos = { version = "0.8.19", features = ["csr"] }
+leptos_meta = "0.8.6"
+leptos_router = "0.8.13"
+leptos-node-ref = "0.2.0"
+lucide-leptos = { version = "3.11.0", features = ["all-icons"] }
+tw_merge = { version = "0.1.21", features = ["variant"] }

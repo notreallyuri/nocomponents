@@ -1,6 +1,9 @@
 use crate::{
     cn,
-    primitives::select::{use_select, SelectContentRoot, SelectItemRoot, SelectRoot},
+    primitives::select::{
+        use_select, SelectContentRoot, SelectItemRoot, SelectPortalRoot, SelectRoot,
+        SelectTriggerRoot,
+    },
 };
 use leptos::prelude::*;
 
@@ -8,7 +11,7 @@ use leptos::prelude::*;
 pub fn Select(
     #[prop(optional, into)] value: RwSignal<Option<String>>,
     #[prop(optional, into)] class: Signal<String>,
-    children: Children,
+    children: ChildrenFn,
 ) -> impl IntoView {
     view! {
         <SelectRoot value=value class=move || cn!("relative w-full", class.get())>
@@ -22,21 +25,13 @@ pub fn SelectTrigger(
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
-    // Funnel directly to our styled HTML element
-    let ctx = use_select();
-
     view! {
-        <button
-            node_ref=ctx.trigger_ref
-            type="button"
-            on:click=move |_| ctx.toggle()
-            class=move || {
-                cn!(
-                    "flex h-8 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-                class.get()
-                )
-            }
-        >
+        <SelectTriggerRoot class=move || {
+            cn!(
+                "flex h-8 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                    class.get()
+            )
+        }>
             {children()}
             <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -52,7 +47,7 @@ pub fn SelectTrigger(
             >
                 <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
-        </button>
+        </SelectTriggerRoot>
     }
 }
 
@@ -68,16 +63,21 @@ pub fn SelectValue(#[prop(into)] placeholder: String) -> impl IntoView {
 }
 
 #[component]
+pub fn SelectPortal(children: ChildrenFn) -> impl IntoView {
+    view! { <SelectPortalRoot children=children /> }
+}
+
+#[component]
 pub fn SelectContent(
     #[prop(optional, into)] class: Signal<String>,
-    children: ChildrenFn,
+    children: Children,
 ) -> impl IntoView {
     view! {
         <SelectContentRoot class=move || {
             cn!(
-                "z-50 overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95 duration-200",
-                    "data-[side=top]:origin-bottom data-[side=bottom]:origin-top",
-                    class.get()
+                "z-50 overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md",
+                "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2",
+                class.get()
             )
         }>
             <div class="p-1 w-full max-h-96 overflow-y-auto">{children()}</div>

@@ -44,6 +44,7 @@ pub struct TriggerRect {
     pub y: f64,
 }
 
+#[derive(Copy, Clone)]
 pub struct SideOffset(pub f64);
 
 impl Default for SideOffset {

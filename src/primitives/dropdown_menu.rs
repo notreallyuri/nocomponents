@@ -159,3 +159,93 @@ pub fn DropdownMenuItemRoot(
         </div>
     }
 }
+
+#[component]
+pub fn DropdownMenuSubRoot(
+    #[prop(optional, into)] class: Signal<String>,
+    children: ChildrenFn,
+) -> impl IntoView {
+    view! { <FloatingRoot class=class>{children()}</FloatingRoot> }
+}
+
+#[component]
+pub fn DropdownMenuSubTriggerRoot(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    children: Children,
+) -> impl IntoView {
+    let ctx = use_dropdown();
+
+    view! {
+        <button
+            type="button"
+            disabled=disabled
+            node_ref=ctx.trigger_ref
+            class=class
+            on:click=move |e| {
+                e.stop_propagation();
+                ctx.toggle();
+            }
+        >
+            {children()}
+        </button>
+    }
+}
+
+#[component]
+pub fn DropdownMenuSubContentRoot(
+    #[prop(optional)] side_offset: SideOffset,
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    let ctx = use_dropdown();
+    let floating_ref = AnyNodeRef::new();
+
+    let middleware: MiddlewareVec = vec![
+        Box::new(Offset::new(OffsetOptions::Value(side_offset.0))),
+        Box::new(Flip::new(FlipOptions::default())),
+        Box::new(Shift::new(ShiftOptions::default())),
+    ];
+
+    let UseFloatingReturn {
+        floating_styles,
+        is_positioned,
+        placement,
+        ..
+    } = use_floating(
+        ctx.trigger_ref,
+        floating_ref,
+        UseFloatingOptions::default()
+            .placement(Placement::RightStart)
+            .strategy(Strategy::Fixed)
+            .while_elements_mounted_auto_update()
+            .middleware(SendWrapper::new(middleware)),
+    );
+
+    view! {
+        <div
+            node_ref=floating_ref
+            style=move || {
+                if !is_positioned.get() {
+                    format!("{} visibility: hidden;", floating_styles.get())
+                } else {
+                    floating_styles.get().to_string()
+                }
+            }
+            class="fixed z-50 w-max"
+        >
+            <div
+                data-state=move || if ctx.is_open.get() { "open" } else { "closed" }
+                data-side=move || match placement.get() {
+                    Placement::Top | Placement::TopStart | Placement::TopEnd => "top",
+                    Placement::Bottom | Placement::BottomStart | Placement::BottomEnd => "bottom",
+                    Placement::Left | Placement::LeftStart | Placement::LeftEnd => "left",
+                    Placement::Right | Placement::RightStart | Placement::RightEnd => "right",
+                }
+                class=class
+            >
+                {children()}
+            </div>
+        </div>
+    }
+}
