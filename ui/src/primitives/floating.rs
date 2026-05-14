@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use crate::utils::types::TriggerRect;
-use leptos::{either::Either, ev::MouseEvent, prelude::*};
+use leptos::{context::Provider, either::Either, ev::MouseEvent, prelude::*};
 use leptos_node_ref::AnyNodeRef;
 
 #[derive(Copy, Clone)]
@@ -99,10 +99,9 @@ pub fn FloatingProvider(context: FloatingContext, children: Children) -> impl In
 pub fn FloatingRoot(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(default = 150, into)] unmount_delay: u64,
-    children: Children,
+    children: ChildrenFn,
 ) -> impl IntoView {
     let context = FloatingContext::default();
-    provide_context(context);
     Effect::new(move |_| {
         if context.is_open.get() {
             context.is_mounted.set(true);
@@ -113,5 +112,9 @@ pub fn FloatingRoot(
             );
         }
     });
-    view! { <div class=class>{children()}</div> }
+    view! {
+        <Provider value=context>
+            <div class=class>{children()}</div>
+        </Provider>
+    }
 }

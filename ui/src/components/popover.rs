@@ -1,18 +1,15 @@
 use crate::{
     cn,
     components::button::{Button, ButtonSize, ButtonVariant},
-    primitives::popover::{use_popover, PopoverPortalRoot, PopoverRoot},
+    primitives::popover::{use_popover, PopoverContentRoot, PopoverPortalRoot, PopoverRoot},
     utils::types::{Align, Side, SideOffset},
 };
 use leptos::{either::Either, ev, prelude::*};
 use leptos_node_ref::AnyNodeRef;
 
 #[component]
-pub fn Popover(
-    #[prop(optional)] open: Option<RwSignal<bool>>,
-    children: Children,
-) -> impl IntoView {
-    view! { <PopoverRoot open=open>{children()}</PopoverRoot> }
+pub fn Popover(children: ChildrenFn) -> impl IntoView {
+    view! { <PopoverRoot>{children()}</PopoverRoot> }
 }
 
 #[component]
@@ -50,45 +47,40 @@ pub fn PopoverTrigger(
 }
 
 #[component]
-pub fn PopoverPortal(
-    #[prop(optional)] side: Side,
-    #[prop(optional)] align: Align,
-    #[prop(optional)] side_offset: SideOffset,
-    #[prop(optional, into)] class: Signal<String>,
-    children: ChildrenFn,
-) -> impl IntoView {
-    view! {
-        <PopoverPortalRoot
-            side=side
-            align=align
-            side_offset=side_offset
-            class=move || {
-                let base_one = "flex flex-col gap-2 py-4 rounded-lg bg-popover text-sm text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-none duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95";
-                let base_two = "has-data-[slot=popover-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl";
-                let base_class = format!("{base_one} {base_two}");
-                let extra = class.get();
-                cn!(base_class.as_str(), &extra)
-            }
-        >
-            {children()}
-        </PopoverPortalRoot>
-    }
+pub fn PopoverPortal(children: ChildrenFn) -> impl IntoView {
+    view! { <PopoverPortalRoot children=children /> }
 }
 
 #[component]
 pub fn PopoverContent(
+    #[prop(optional)] side: Side,
+    #[prop(optional)] align: Align,
+    #[prop(optional)] side_offset: SideOffset,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
     view! {
-        <div
-            data-slot="popover-content"
-            class=move || cn!("px-4 flex flex-col gap-2", &class.get())
+        <PopoverContentRoot
+            side=side
+            align=align
+            side_offset=side_offset
+            class=move || {
+                let base_one = "flex flex-col gap-2 py-4 rounded-lg bg-popover text-sm text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-none duration-100";
+                let animations = "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2";
+                let base_two = "has-data-[slot=popover-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl";
+                let base_class = format!("{base_one} {animations} {base_two}");
+                cn!(base_class.as_str(), class.get())
+            }
         >
-            {children()}
-        </div>
+            <div data-slot="popover-content" class="px-4 flex flex-col gap-2">
+                {children()}
+            </div>
+        </PopoverContentRoot>
     }
 }
+
+// Note: Because I moved the `px-4 flex flex-col` inner div directly into the
+// `PopoverContent` above, you can safely DELETE the old `PopoverContent` component block!
 
 #[component]
 pub fn PopoverHeader(

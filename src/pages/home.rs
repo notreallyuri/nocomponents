@@ -11,7 +11,7 @@ use ui::{
         },
         dropdown_menu::{
             DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
-            DropdownMenuSeparator, DropdownMenuTrigger,
+            DropdownMenuPortal, DropdownMenuSeparator, DropdownMenuTrigger,
         },
         input::Input,
         label::Label,
@@ -175,56 +175,62 @@ pub fn Home() -> impl IntoView {
                                 <PopoverTrigger class="w-full">"Basic Popover"</PopoverTrigger>
 
                                 <PopoverPortal>
-                                    <PopoverHeader>
-                                        <PopoverTitle class="text-lg font-bold">
-                                            "Hello World"
-                                        </PopoverTitle>
-                                        <PopoverDescription>
-                                            "This is a basic popover with default button styles."
-                                        </PopoverDescription>
-                                    </PopoverHeader>
+                                    <PopoverContent side=Side::Top>
+                                        <PopoverHeader>
+                                            <PopoverTitle class="text-lg font-bold">
+                                                "Hello World"
+                                            </PopoverTitle>
+                                            <PopoverDescription>
+                                                "This is a basic popover with default button styles."
+                                            </PopoverDescription>
+                                        </PopoverHeader>
+                                    </PopoverContent>
                                 </PopoverPortal>
                             </Popover>
 
                             <Popover>
                                 <PopoverTrigger class="w-full">"Popover Form"</PopoverTrigger>
-                                <PopoverPortal class="w-64" align=Align::End>
-                                    <PopoverHeader>
-                                        <PopoverTitle class="font-bold">"Preferences"</PopoverTitle>
-                                        <p class="text-xs text-muted-foreground">
-                                            "Manage your account settings."
-                                        </p>
-                                    </PopoverHeader>
-                                    <PopoverContent>
-                                        <div class="flex justify-between gap-4">
-                                            <Label
-                                                html_for="popover-w"
-                                                class="text-sm text-muted-foreground"
-                                            >
-                                                Width
-                                            </Label>
-                                            <Input id="popover-w" class="w-40" placeholder="0.0" />
+
+                                <PopoverPortal>
+                                    <PopoverContent class="w-64" align=Align::Start side=Side::Top>
+                                        <PopoverHeader>
+                                            <PopoverTitle class="font-bold">"Preferences"</PopoverTitle>
+                                            <p class="text-xs text-muted-foreground">
+                                                "Manage your account settings."
+                                            </p>
+                                        </PopoverHeader>
+
+                                        <div class="flex flex-col gap-2">
+                                            <div class="flex justify-between gap-4">
+                                                <Label
+                                                    html_for="popover-w"
+                                                    class="text-sm text-muted-foreground"
+                                                >
+                                                    Width
+                                                </Label>
+                                                <Input id="popover-w" class="w-40" placeholder="0.0" />
+                                            </div>
+                                            <div class="flex justify-between gap-4">
+                                                <Label
+                                                    html_for="popover-h"
+                                                    class="text-sm text-muted-foreground"
+                                                >
+                                                    Height
+                                                </Label>
+                                                <Input id="popover-h" class="w-40" placeholder="0.0" />
+                                            </div>
                                         </div>
-                                        <div class="flex justify-between gap-4">
-                                            <Label
-                                                html_for="popover-h"
-                                                class="text-sm text-muted-foreground"
-                                            >
-                                                Height
-                                            </Label>
-                                            <Input id="popover-h" class="w-40" placeholder="0.0" />
-                                        </div>
+
+                                        <PopoverFooter>
+                                            <Button variant=ButtonVariant::Outline class="w-full">
+                                                "Save Changes"
+                                            </Button>
+                                        </PopoverFooter>
                                     </PopoverContent>
-                                    <PopoverFooter>
-                                        <Button variant=ButtonVariant::Outline class="w-full">
-                                            "Save Changes"
-                                        </Button>
-                                    </PopoverFooter>
                                 </PopoverPortal>
                             </Popover>
                         </CardContent>
                     </Card>
-
                     <Card class="w-80">
                         <CardHeader>
                             <CardTitle>"Dialog"</CardTitle>
@@ -293,75 +299,81 @@ pub fn Home() -> impl IntoView {
                         <CardHeader>
                             <CardTitle>"Dropdown Menu"</CardTitle>
                         </CardHeader>
-                        <CardContent class="flex flex-col gap-2 items-start">
+                        <CardContent class="flex gap-2 items-start">
                             <DropdownMenu>
-                                <DropdownMenuTrigger class="w-18">"Options"</DropdownMenuTrigger>
+                                <DropdownMenuTrigger class="w-18">"Start"</DropdownMenuTrigger>
 
-                                <DropdownMenuContent align=Align::Start side=Side::Bottom>
-                                    <DropdownMenuLabel>"Start"</DropdownMenuLabel>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem on_click=move |_| {
-                                        leptos::logging::log!("Profile clicked!")
-                                    }>"Profile"</DropdownMenuItem>
-                                    <DropdownMenuItem on_click=move |_| {
-                                        leptos::logging::log!("Settings clicked!")
-                                    }>"Settings"</DropdownMenuItem>
+                                <DropdownMenuPortal>
+                                    <DropdownMenuContent align=Align::Start side=Side::Bottom>
+                                        <DropdownMenuLabel>"Start"</DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem on_click=move |_| {
+                                            leptos::logging::log!("Profile clicked!")
+                                        }>"Profile"</DropdownMenuItem>
+                                        <DropdownMenuItem on_click=move |_| {
+                                            leptos::logging::log!("Settings clicked!")
+                                        }>"Settings"</DropdownMenuItem>
 
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem
-                                        class="text-destructive focus:text-destructive hover:bg-destructive/10 hover:text-destructive"
-                                        on_click=move |_| leptos::logging::log!("Logout clicked!")
-                                    >
-                                        "Log out"
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                            class="text-destructive focus:text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                            on_click=move |_| leptos::logging::log!("Logout clicked!")
+                                        >
+                                            "Log out"
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenuPortal>
                             </DropdownMenu>
                             <DropdownMenu>
                                 <DropdownMenuTrigger class="w-18">"Center"</DropdownMenuTrigger>
-                                <DropdownMenuContent align=Align::Center side=Side::Bottom>
-                                    <DropdownMenuLabel>"My Account"</DropdownMenuLabel>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem on_click=move |_| {
-                                        leptos::logging::log!("Profile clicked!")
-                                    }>"Profile"</DropdownMenuItem>
+                                <DropdownMenuPortal>
+                                    <DropdownMenuContent align=Align::Center side=Side::Bottom>
+                                        <DropdownMenuLabel>"My Account"</DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem on_click=move |_| {
+                                            leptos::logging::log!("Profile clicked!")
+                                        }>"Profile"</DropdownMenuItem>
 
-                                    <DropdownMenuItem on_click=move |_| {
-                                        leptos::logging::log!("Settings clicked!")
-                                    }>"Settings"</DropdownMenuItem>
+                                        <DropdownMenuItem on_click=move |_| {
+                                            leptos::logging::log!("Settings clicked!")
+                                        }>"Settings"</DropdownMenuItem>
 
-                                    <DropdownMenuSeparator />
+                                        <DropdownMenuSeparator />
 
-                                    <DropdownMenuItem
-                                        class="text-destructive focus:text-destructive hover:bg-destructive/10 hover:text-destructive"
-                                        on_click=move |_| leptos::logging::log!("Logout clicked!")
-                                    >
-                                        "Log out"
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
+                                        <DropdownMenuItem
+                                            class="text-destructive focus:text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                            on_click=move |_| leptos::logging::log!("Logout clicked!")
+                                        >
+                                            "Log out"
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenuPortal>
                             </DropdownMenu>
                             <DropdownMenu>
                                 <DropdownMenuTrigger class="w-18">"End"</DropdownMenuTrigger>
-                                <DropdownMenuContent align=Align::End side=Side::Bottom>
-                                    <DropdownMenuLabel>"My Account"</DropdownMenuLabel>
-                                    <DropdownMenuSeparator />
+                                <DropdownMenuPortal>
+                                    <DropdownMenuContent align=Align::End side=Side::Bottom>
+                                        <DropdownMenuLabel>"My Account"</DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
 
-                                    <DropdownMenuItem on_click=move |_| {
-                                        leptos::logging::log!("Profile clicked!")
-                                    }>"Profile"</DropdownMenuItem>
+                                        <DropdownMenuItem on_click=move |_| {
+                                            leptos::logging::log!("Profile clicked!")
+                                        }>"Profile"</DropdownMenuItem>
 
-                                    <DropdownMenuItem on_click=move |_| {
-                                        leptos::logging::log!("Settings clicked!")
-                                    }>"Settings"</DropdownMenuItem>
+                                        <DropdownMenuItem on_click=move |_| {
+                                            leptos::logging::log!("Settings clicked!")
+                                        }>"Settings"</DropdownMenuItem>
 
-                                    <DropdownMenuSeparator />
+                                        <DropdownMenuSeparator />
 
-                                    <DropdownMenuItem
-                                        class="text-destructive focus:text-destructive hover:bg-destructive/10 hover:text-destructive"
-                                        on_click=move |_| leptos::logging::log!("Logout clicked!")
-                                    >
-                                        "Log out"
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
+                                        <DropdownMenuItem
+                                            class="text-destructive focus:text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                            on_click=move |_| leptos::logging::log!("Logout clicked!")
+                                        >
+                                            "Log out"
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenuPortal>
                             </DropdownMenu>
                         </CardContent>
                     </Card>

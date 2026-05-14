@@ -1,16 +1,13 @@
 use crate::{
-    primitives::{
-        floating::FloatingContext,
-        middleware::{TransformOrigin, TransformOriginData},
-    },
+    primitives::floating::{FloatingContext, FloatingRoot, FloatingTrigger},
     utils::{
         get_placement,
         types::{Align, Side, SideOffset},
     },
 };
 use floating_ui_leptos::{
-    use_floating, Flip, FlipOptions, LimitShift, LimitShiftOptions, MiddlewareVec, Offset,
-    OffsetOptions, Placement, Shift, ShiftOptions, Strategy, UseFloatingOptions, UseFloatingReturn,
+    use_floating, Flip, FlipOptions, MiddlewareVec, Offset, OffsetOptions, Placement, Shift,
+    ShiftOptions, Strategy, UseFloatingOptions, UseFloatingReturn,
 };
 use leptos::{either::Either, ev, portal::Portal, prelude::*};
 use leptos_node_ref::AnyNodeRef;
@@ -25,40 +22,48 @@ pub fn use_dropdown() -> DropdownMenuContext {
 #[component]
 pub fn DropdownMenuRoot(
     #[prop(optional, into)] class: Signal<String>,
-    children: Children,
+    children: ChildrenFn,
 ) -> impl IntoView {
-    provide_context(DropdownMenuContext::default());
-    view! { <div class=class>{children()}</div> }
+    view! { <FloatingRoot class=class>{children()}</FloatingRoot> }
 }
 
 #[component]
 pub fn DropdownMenuTriggerRoot(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
-    #[prop(default = None, into)] as_child: Option<
+    #[prop(default = None, into)] render: Option<
         Callback<(AnyNodeRef, Callback<ev::MouseEvent>), AnyView>,
     >,
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     let ctx = use_dropdown();
-    let on_click = Callback::new(move |_: ev::MouseEvent| ctx.toggle());
 
-    match as_child {
-        Some(render_fn) => Either::Left(render_fn.run((ctx.trigger_ref, on_click))),
-        None => Either::Right(view! {
-            <button
-                type="button"
-                disabled=disabled
-                class=class
-                on:click=move |_| ctx.toggle()
-                node_ref=ctx.trigger_ref
-            >
-                {match children {
-                    Some(child) => Either::Left(child()),
-                    None => Either::Right(""),
-                }}
-            </button>
-        }),
+    view! {
+        <FloatingTrigger context=ctx class=class disabled=disabled render=render>
+            {match children {
+                Some(child) => Either::Left(child()),
+                None => Either::Right(""),
+            }}
+        </FloatingTrigger>
+    }
+}
+
+#[component]
+pub fn DropdownMenuPortalRoot(children: ChildrenFn) -> impl IntoView {
+    let ctx = use_dropdown();
+    let stored_children = StoredValue::new(children);
+
+    view! {
+        <Portal>
+            <Show when=move || ctx.is_mounted.get()>
+                <div
+                    class=move || if ctx.is_open.get() { "fixed inset-0 z-40" } else { "hidden" }
+                    on:click=move |_| ctx.close()
+                ></div>
+
+                {stored_children.with_value(|c| c())}
+            </Show>
+        </Portal>
     }
 }
 
@@ -68,30 +73,21 @@ pub fn DropdownMenuContentRoot(
     #[prop(optional)] align: Align,
     #[prop(optional)] side_offset: SideOffset,
     #[prop(optional, into)] class: Signal<String>,
-    children: ChildrenFn,
+    children: Children,
 ) -> impl IntoView {
     let ctx = use_dropdown();
     let floating_ref = AnyNodeRef::new();
 
     let middleware: MiddlewareVec = vec![
         Box::new(Offset::new(OffsetOptions::Value(side_offset.0))),
-        Box::new(Shift::new(
-            ShiftOptions::default()
-                .main_axis(true)
-                .cross_axis(false)
-                .limiter(Box::new(LimitShift::new(LimitShiftOptions::default()))),
-        )),
         Box::new(Flip::new(FlipOptions::default())),
-        Box::new(TransformOrigin),
+        Box::new(Shift::new(ShiftOptions::default())),
     ];
 
     let UseFloatingReturn {
-        x,
-        y,
-        strategy,
-        placement,
+        floating_styles,
         is_positioned,
-        middleware_data,
+        placement,
         ..
     } = use_floating(
         ctx.trigger_ref,
@@ -104,17 +100,19 @@ pub fn DropdownMenuContentRoot(
     );
 
     view! {
-        <Portal>
-            <div
-                class=move || if ctx.is_open.get() { "fixed inset-0 z-40" } else { "hidden" }
-                on:click=move |_| ctx.close()
-            ></div>
-
-            <div
-                node_ref=floating_ref
-                data-state=move || {
-                    if ctx.is_open.get() && is_positioned.get() { "open" } else { "closed" }
+        <div
+            node_ref=floating_ref
+            style=move || {
+                if !is_positioned.get() {
+                    format!("{} visibility: hidden;", floating_styles.get())
+                } else {
+                    floating_styles.get().to_string()
                 }
+            }
+            class="fixed z-50 w-max"
+        >
+            <div
+                data-state=move || if ctx.is_open.get() { "open" } else { "closed" }
                 data-align=move || match placement.get() {
                     Placement::TopStart
                     | Placement::BottomStart
@@ -132,36 +130,11 @@ pub fn DropdownMenuContentRoot(
                     Placement::Left | Placement::LeftStart | Placement::LeftEnd => "left",
                     Placement::Right | Placement::RightStart | Placement::RightEnd => "right",
                 }
-
-                style=move || {
-                    if !ctx.is_open.get() {
-                        return "display: none;".to_string();
-                    }
-                    let data = middleware_data.get();
-                    let origin = data
-                        .get_as::<TransformOriginData>("transformOrigin")
-                        .map(|o| format!("{} {}", o.x, o.y))
-                        .unwrap_or_else(|| "center center".to_string());
-                    let mut base_style = format!(
-                        "position: {}; left: {}px; top: {}px; --dropdown-menu-content-transform-origin: {};",
-                        match strategy.get() {
-                            Strategy::Absolute => "absolute",
-                            Strategy::Fixed => "fixed",
-                        },
-                        x.get(),
-                        y.get(),
-                        origin,
-                    );
-                    if !is_positioned.get() {
-                        base_style.push_str(" visibility: hidden;");
-                    }
-                    base_style
-                }
                 class=class
             >
                 {children()}
             </div>
-        </Portal>
+        </div>
     }
 }
 

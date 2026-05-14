@@ -1,31 +1,19 @@
-use crate::utils::{
-    get_placement,
-    types::{Align, Side, SideOffset},
+use crate::{
+    primitives::floating::{FloatingContext, FloatingRoot, FloatingTrigger},
+    utils::{
+        get_placement,
+        types::{Align, Side, SideOffset},
+    },
 };
 use floating_ui_leptos::{
-    use_floating, Flip, FlipOptions, MiddlewareVec, Offset, OffsetOptions, Shift, ShiftOptions,
-    Strategy, UseFloatingOptions, UseFloatingReturn,
+    use_floating, Flip, FlipOptions, MiddlewareVec, Offset, OffsetOptions, Placement, Shift,
+    ShiftOptions, Strategy, UseFloatingOptions, UseFloatingReturn,
 };
-use leptos::{either::Either, ev, prelude::*};
+use leptos::{either::Either, ev, portal::Portal, prelude::*};
 use leptos_node_ref::AnyNodeRef;
 use send_wrapper::SendWrapper;
-use std::time::Duration;
 
-#[derive(Copy, Clone)]
-pub struct PopoverContext {
-    pub is_open: RwSignal<bool>,
-    pub is_mounted: RwSignal<bool>,
-    pub trigger_ref: AnyNodeRef,
-}
-
-impl PopoverContext {
-    pub fn close(&self) {
-        self.is_open.set(false);
-    }
-    pub fn toggle(&self) {
-        self.is_open.update(|open| *open = !*open);
-    }
-}
+pub type PopoverContext = FloatingContext;
 
 pub fn use_popover() -> PopoverContext {
     expect_context::<PopoverContext>()
@@ -33,28 +21,10 @@ pub fn use_popover() -> PopoverContext {
 
 #[component]
 pub fn PopoverRoot(
-    #[prop(default = None, into)] open: Option<RwSignal<bool>>,
-    children: Children,
+    #[prop(optional, into)] class: Signal<String>,
+    children: ChildrenFn,
 ) -> impl IntoView {
-    let is_open = open.unwrap_or_else(|| RwSignal::new(false));
-    let is_mounted = RwSignal::new(is_open.get_untracked());
-    let trigger_ref = AnyNodeRef::new();
-
-    Effect::new(move |_| {
-        if is_open.get() {
-            is_mounted.set(true);
-        } else {
-            set_timeout(move || is_mounted.set(false), Duration::from_millis(150));
-        }
-    });
-
-    provide_context(PopoverContext {
-        is_open,
-        is_mounted,
-        trigger_ref,
-    });
-
-    view! { {children()} }
+    view! { <FloatingRoot class=class>{children()}</FloatingRoot> }
 }
 
 #[component]
@@ -67,36 +37,44 @@ pub fn PopoverTriggerRoot(
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     let ctx = use_popover();
-    let on_click = Callback::new(move |_: ev::MouseEvent| ctx.toggle());
-
-    match as_child {
-        Some(render_fn) => Either::Left(render_fn.run((ctx.trigger_ref, on_click))),
-        None => Either::Right(view! {
-            <button
-                type="button"
-                disabled=disabled
-                class=class
-                on:click=move |_| ctx.toggle()
-                node_ref=ctx.trigger_ref
-            >
-                {match children {
-                    Some(child) => Either::Left(child()),
-                    None => Either::Right(""),
-                }}
-            </button>
-        }),
+    view! {
+        <FloatingTrigger context=ctx class=class disabled=disabled render=as_child>
+            {match children {
+                Some(child) => Either::Left(child()),
+                None => Either::Right(""),
+            }}
+        </FloatingTrigger>
     }
 }
 
 #[component]
-pub fn PopoverPortalRoot(
+pub fn PopoverPortalRoot(children: ChildrenFn) -> impl IntoView {
+    let ctx = use_popover();
+    let stored_children = StoredValue::new(children);
+
+    view! {
+        <Portal>
+            <Show when=move || ctx.is_mounted.get()>
+                <div
+                    class=move || if ctx.is_open.get() { "fixed inset-0 z-40" } else { "hidden" }
+                    on:click=move |_| ctx.close()
+                ></div>
+
+                {stored_children.with_value(|c| c())}
+            </Show>
+        </Portal>
+    }
+}
+
+#[component]
+pub fn PopoverContentRoot(
     #[prop(optional)] side: Side,
     #[prop(optional)] align: Align,
     #[prop(optional)] side_offset: SideOffset,
     #[prop(optional, into)] class: Signal<String>,
-    children: ChildrenFn,
+    children: Children,
 ) -> impl IntoView {
-    let context = use_popover();
+    let ctx = use_popover();
     let floating_ref = AnyNodeRef::new();
 
     let middleware: MiddlewareVec = vec![
@@ -106,36 +84,59 @@ pub fn PopoverPortalRoot(
     ];
 
     let UseFloatingReturn {
-        floating_styles, ..
+        floating_styles,
+        is_positioned,
+        placement,
+        ..
     } = use_floating(
-        context.trigger_ref,
+        ctx.trigger_ref,
         floating_ref,
         UseFloatingOptions::default()
             .placement(get_placement(side, align))
             .strategy(Strategy::Fixed)
-            .middleware(SendWrapper::new(middleware))
-            .while_elements_mounted_auto_update(),
+            .while_elements_mounted_auto_update()
+            .middleware(SendWrapper::new(middleware)),
     );
 
     view! {
-        <Show when=move || context.is_mounted.get()>
-            <div class="fixed inset-0 z-40" on:click=move |_| context.close() />
-
-            <div node_ref=floating_ref style=move || floating_styles.get() class="z-50 w-max">
-                <div
-                    data-state=move || if context.is_open.get() { "open" } else { "closed" }
-                    data-slot="popover-portal"
-                    data-side=match side {
-                        Side::Top => "top",
-                        Side::Bottom => "bottom",
-                        Side::Left => "left",
-                        Side::Right => "right",
-                    }
-                    class=class
-                >
-                    {children()}
-                </div>
+        // OUTER DIV: The Structural Anchor (Hidden on frame 1)
+        <div
+            node_ref=floating_ref
+            style=move || {
+                if !is_positioned.get() {
+                    format!("{} visibility: hidden;", floating_styles.get())
+                } else {
+                    floating_styles.get().to_string()
+                }
+            }
+            class="fixed z-50 w-max"
+        >
+            <div
+                data-state=move || {
+                    if ctx.is_open.get() && is_positioned.get() { "open" } else { "closed" }
+                }
+                data-slot="popover-portal"
+                data-align=move || match placement.get() {
+                    Placement::TopStart
+                    | Placement::BottomStart
+                    | Placement::LeftStart
+                    | Placement::RightStart => "start",
+                    Placement::TopEnd
+                    | Placement::BottomEnd
+                    | Placement::LeftEnd
+                    | Placement::RightEnd => "end",
+                    _ => "center",
+                }
+                data-side=move || match placement.get() {
+                    Placement::Top | Placement::TopStart | Placement::TopEnd => "top",
+                    Placement::Bottom | Placement::BottomStart | Placement::BottomEnd => "bottom",
+                    Placement::Left | Placement::LeftStart | Placement::LeftEnd => "left",
+                    Placement::Right | Placement::RightStart | Placement::RightEnd => "right",
+                }
+                class=class
+            >
+                {children()}
             </div>
-        </Show>
+        </div>
     }
 }

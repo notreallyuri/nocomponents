@@ -2,7 +2,8 @@ use crate::{
     cn,
     components::button::{Button, ButtonSize, ButtonVariant},
     primitives::dropdown_menu::{
-        use_dropdown, DropdownMenuContentRoot, DropdownMenuItemRoot, DropdownMenuRoot,
+        use_dropdown, DropdownMenuContentRoot, DropdownMenuItemRoot, DropdownMenuPortalRoot,
+        DropdownMenuRoot,
     },
     utils::types::{Align, Side, SideOffset},
 };
@@ -10,7 +11,7 @@ use leptos::{either::Either, ev, prelude::*};
 use leptos_node_ref::AnyNodeRef;
 
 #[component]
-pub fn DropdownMenu(children: Children) -> impl IntoView {
+pub fn DropdownMenu(children: ChildrenFn) -> impl IntoView {
     view! { <DropdownMenuRoot class="relative inline-block text-left">{children()}</DropdownMenuRoot> }
 }
 
@@ -49,12 +50,17 @@ pub fn DropdownMenuTrigger(
 }
 
 #[component]
+pub fn DropdownMenuPortal(children: ChildrenFn) -> impl IntoView {
+    view! { <DropdownMenuPortalRoot children=children /> }
+}
+
+#[component]
 pub fn DropdownMenuContent(
     #[prop(optional)] side: Side,
     #[prop(optional)] align: Align,
     #[prop(optional)] side_offset: SideOffset,
     #[prop(optional, into)] class: Signal<String>,
-    children: ChildrenFn,
+    children: Children,
 ) -> impl IntoView {
     view! {
         <DropdownMenuContentRoot
@@ -63,11 +69,11 @@ pub fn DropdownMenuContent(
             side_offset=side_offset
             class=move || {
                 cn!(
-                    "z-50 min-w-32 w-18 overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md duration-100",
-                    "origin-(--dropdown-menu-content-transform-origin)",
+                    "z-50 min-w-32 w-18 overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
                     "data-[state=open]:animate-in data-[state=closed]:animate-out",
                     "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
                     "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+                    "data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
                     class.get()
                 )
             }

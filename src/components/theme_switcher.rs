@@ -6,7 +6,7 @@ use ui::{
         button::ButtonVariant,
         dropdown_menu::{
             DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
-            DropdownMenuSeparator, DropdownMenuTrigger,
+            DropdownMenuPortal, DropdownMenuSeparator, DropdownMenuTrigger,
         },
     },
     utils::types::{Align, Side},
@@ -26,22 +26,24 @@ pub fn ThemeSwitcher(#[prop(optional, into)] class: Signal<String>) -> impl Into
                 }}
             </DropdownMenuTrigger>
 
-            <DropdownMenuContent align=Align::Start side=Side::Bottom>
-                <DropdownMenuLabel>"Theme"</DropdownMenuLabel>
-                <DropdownMenuSeparator />
+            <DropdownMenuPortal>
+                <DropdownMenuContent align=Align::Start side=Side::Bottom>
+                    <DropdownMenuLabel>"Theme"</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
 
-                <DropdownMenuItem on_click=move |_| {
-                    theme_ctx.set_theme(Theme::Light)
-                }>"Light"</DropdownMenuItem>
+                    <DropdownMenuItem on_click=move |_| {
+                        theme_ctx.set_theme(Theme::Light)
+                    }>"Light"</DropdownMenuItem>
 
-                <DropdownMenuItem on_click=move |_| {
-                    theme_ctx.set_theme(Theme::Dark)
-                }>"Dark"</DropdownMenuItem>
+                    <DropdownMenuItem on_click=move |_| {
+                        theme_ctx.set_theme(Theme::Dark)
+                    }>"Dark"</DropdownMenuItem>
 
-                <DropdownMenuItem on_click=move |_| {
-                    theme_ctx.set_theme(Theme::System)
-                }>"System"</DropdownMenuItem>
-            </DropdownMenuContent>
+                    <DropdownMenuItem on_click=move |_| {
+                        theme_ctx.set_theme(Theme::System)
+                    }>"System"</DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenuPortal>
         </DropdownMenu>
     }
 }
