@@ -80,11 +80,8 @@ pub fn Home() -> impl IntoView {
                         }) />
                         <DropdownMenuPortal>
                             <DropdownMenuContent align=Align::End side=Side::Bottom>
-                                <DropdownMenuLabel>"Yuri Ribeiro"</DropdownMenuLabel>
-                                <DropdownMenuSeparator />
+                                <DropdownMenuLabel>"My Account"</DropdownMenuLabel>
                                 <DropdownMenuItem>"Profile"</DropdownMenuItem>
-
-                                // Submenu Test!
                                 <DropdownMenuSub>
                                     <DropdownMenuSubTrigger>"More Options"</DropdownMenuSubTrigger>
                                     <DropdownMenuSubContent>

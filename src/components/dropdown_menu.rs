@@ -70,7 +70,7 @@ pub fn DropdownMenuContent(
             side_offset=side_offset
             class=move || {
                 cn!(
-                    "z-50 min-w-32 w-18 overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
+                    "z-50 min-w-32 overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
                     "data-[state=open]:animate-in data-[state=closed]:animate-out",
                     "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
                     "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
@@ -95,7 +95,7 @@ pub fn DropdownMenuItem(
             on_click=on_click
             class=move || {
                 cn!(
-                    "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50",
+                    "relative flex font-medium cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground hover:bg-accent hover:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50",
                     class.get()
                 )
             }
@@ -107,7 +107,7 @@ pub fn DropdownMenuItem(
 
 #[component]
 pub fn DropdownMenuLabel(children: Children) -> impl IntoView {
-    view! { <div class="px-2 py-1.5 text-sm font-semibold">{children()}</div> }
+    view! { <div class="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{children()}</div> }
 }
 
 #[component]
@@ -128,8 +128,8 @@ pub fn DropdownMenuSubTrigger(
     view! {
         <DropdownMenuSubTriggerRoot class=move || {
             cn!(
-                "flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent data-[state=open]:bg-accent",
-                    class.get()
+                "group flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground",
+                class.get()
             )
         }>
             {children()}
@@ -143,7 +143,7 @@ pub fn DropdownMenuSubTrigger(
                 stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
-                class="ml-auto h-4 w-4"
+                class="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-90"
             >
                 <polyline points="9 18 15 12 9 6"></polyline>
             </svg>
@@ -158,7 +158,6 @@ pub fn DropdownMenuSubContent(
     children: ChildrenFn,
 ) -> impl IntoView {
     let ctx = crate::primitives::dropdown_menu::use_dropdown();
-
     let children = StoredValue::new(children);
 
     view! {

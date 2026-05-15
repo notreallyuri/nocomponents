@@ -182,6 +182,7 @@ pub fn DropdownMenuSubTriggerRoot(
             disabled=disabled
             node_ref=ctx.trigger_ref
             class=class
+            data-state=move || if ctx.is_open.get() { "open" } else { "closed" }
             on:click=move |e| {
                 e.stop_propagation();
                 ctx.toggle();

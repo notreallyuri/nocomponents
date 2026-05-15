@@ -1,4 +1,9 @@
 [tools]
 tailwindcss = "4.3.0"
-shadcn = "4.7.0"
 tailwindcss-animate = "1.0.7"
+
+[watch]
+watch = ["src", "../src"]
+
+[serve]
+port = 3000
