@@ -1,6 +1,5 @@
 [tools]
 tailwindcss = "4.3.0"
-tailwindcss-animate = "1.0.7"
 
 [watch]
 watch = ["src", "../src"]

@@ -30,6 +30,7 @@ use nocomponents::{
         tabs::{Tabs, TabsContent, TabsList, TabsTrigger},
         toast::{use_toast, ToastPosition},
     },
+    prelude::ButtonSize,
     utils::types::{Align, Side},
 };
 
@@ -267,7 +268,7 @@ pub fn Home() -> impl IntoView {
                                             </p>
                                         </PopoverHeader>
 
-                                        <div class="flex flex-col gap-2">
+                                        <div class="px-4 flex flex-col gap-2">
                                             <div class="flex justify-between gap-4">
                                                 <Label
                                                     html_for="popover-w"
@@ -288,8 +289,12 @@ pub fn Home() -> impl IntoView {
                                             </div>
                                         </div>
 
-                                        <PopoverFooter>
-                                            <Button variant=ButtonVariant::Outline class="w-full">
+                                        <PopoverFooter class="p-2">
+                                            <Button
+                                                variant=ButtonVariant::Outline
+                                                size=ButtonSize::Sm
+                                                class="w-full"
+                                            >
                                                 "Save Changes"
                                             </Button>
                                         </PopoverFooter>

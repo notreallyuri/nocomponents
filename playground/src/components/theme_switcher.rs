@@ -29,7 +29,7 @@ pub fn ThemeSwitcher(#[prop(optional, into)] class: Signal<String>) -> impl Into
             </DropdownMenuTrigger>
 
             <DropdownMenuPortal>
-                <DropdownMenuContent align=Align::Start side=Side::Bottom>
+                <DropdownMenuContent align=Align::End side=Side::Bottom>
                     <DropdownMenuLabel>"Theme"</DropdownMenuLabel>
                     <DropdownMenuSeparator />
 
