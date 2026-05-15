@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use crate::{
     primitives::floating::{FloatingContext, FloatingRoot, FloatingTrigger},
     utils::{
@@ -160,11 +162,15 @@ pub fn DropdownMenuItemRoot(
     }
 }
 
+#[derive(Copy, Clone)]
+struct SubHoverState(RwSignal<bool>);
+
 #[component]
 pub fn DropdownMenuSubRoot(
     #[prop(optional, into)] class: Signal<String>,
     children: ChildrenFn,
 ) -> impl IntoView {
+    provide_context(SubHoverState(RwSignal::new(false)));
     view! { <FloatingRoot class=class>{children()}</FloatingRoot> }
 }
 
@@ -175,6 +181,7 @@ pub fn DropdownMenuSubTriggerRoot(
     children: Children,
 ) -> impl IntoView {
     let ctx = use_dropdown();
+    let hover = expect_context::<SubHoverState>();
 
     view! {
         <button
@@ -186,6 +193,21 @@ pub fn DropdownMenuSubTriggerRoot(
             on:click=move |e| {
                 e.stop_propagation();
                 ctx.toggle();
+            }
+            on:pointerenter=move |_| {
+                hover.0.set(true);
+                ctx.open();
+            }
+            on:pointerleave=move |_| {
+                hover.0.set(false);
+                set_timeout(
+                    move || {
+                        if !hover.0.get() {
+                            ctx.close();
+                        }
+                    },
+                    Duration::from_millis(50),
+                );
             }
         >
             {children()}
@@ -201,6 +223,7 @@ pub fn DropdownMenuSubContentRoot(
 ) -> impl IntoView {
     let ctx = use_dropdown();
     let floating_ref = AnyNodeRef::new();
+    let hover = expect_context::<SubHoverState>();
 
     let middleware: MiddlewareVec = vec![
         Box::new(Offset::new(OffsetOptions::Value(side_offset.0))),
@@ -234,6 +257,20 @@ pub fn DropdownMenuSubContentRoot(
                 }
             }
             class="fixed z-50 w-max"
+            on:pointerenter=move |_| {
+                hover.0.set(true);
+            }
+            on:pointerleave=move |_| {
+                hover.0.set(false);
+                set_timeout(
+                    move || {
+                        if !hover.0.get() {
+                            ctx.close();
+                        }
+                    },
+                    Duration::from_millis(50),
+                );
+            }
         >
             <div
                 data-state=move || if ctx.is_open.get() { "open" } else { "closed" }
