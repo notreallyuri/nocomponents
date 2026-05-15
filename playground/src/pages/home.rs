@@ -7,7 +7,7 @@ use leptos_node_ref::AnyNodeRef;
 use nocomponents::{
     components::{
         avatar::{Avatar, AvatarFallback, AvatarImage},
-        button::{Button, ButtonVariant},
+        button::{Button, ButtonSize, ButtonVariant},
         card::{Card, CardContent, CardFooter, CardHeader, CardTitle},
         checkbox::Checkbox,
         dialog::{
@@ -30,7 +30,6 @@ use nocomponents::{
         tabs::{Tabs, TabsContent, TabsList, TabsTrigger},
         toast::{use_toast, ToastPosition},
     },
-    prelude::ButtonSize,
     utils::types::{Align, Side},
 };
 
@@ -80,8 +79,9 @@ pub fn Home() -> impl IntoView {
                                 .into_any()
                         }) />
                         <DropdownMenuPortal>
-                            <DropdownMenuContent align=Align::End side=Side::Bottom>
+                            <DropdownMenuContent class="w-40" align=Align::End side=Side::Bottom>
                                 <DropdownMenuLabel>"My Account"</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
                                 <DropdownMenuItem>"Profile"</DropdownMenuItem>
                                 <DropdownMenuSub>
                                     <DropdownMenuSubTrigger>"More Options"</DropdownMenuSubTrigger>
@@ -377,20 +377,12 @@ pub fn Home() -> impl IntoView {
 
                                 <DropdownMenuPortal>
                                     <DropdownMenuContent align=Align::Start side=Side::Bottom>
-                                        <DropdownMenuLabel>"Start"</DropdownMenuLabel>
+                                        <DropdownMenuLabel>"My Account"</DropdownMenuLabel>
                                         <DropdownMenuSeparator />
-                                        <DropdownMenuItem on_click=move |_| {
-                                            leptos::logging::log!("Profile clicked!")
-                                        }>"Profile"</DropdownMenuItem>
-                                        <DropdownMenuItem on_click=move |_| {
-                                            leptos::logging::log!("Settings clicked!")
-                                        }>"Settings"</DropdownMenuItem>
-
+                                        <DropdownMenuItem>"Profile"</DropdownMenuItem>
+                                        <DropdownMenuItem>"Settings"</DropdownMenuItem>
                                         <DropdownMenuSeparator />
-                                        <DropdownMenuItem
-                                            class="text-destructive focus:text-destructive hover:bg-destructive/10 hover:text-destructive"
-                                            on_click=move |_| leptos::logging::log!("Logout clicked!")
-                                        >
+                                        <DropdownMenuItem class="text-destructive focus:text-destructive hover:bg-destructive/10 hover:text-destructive">
                                             "Log out"
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
@@ -402,20 +394,10 @@ pub fn Home() -> impl IntoView {
                                     <DropdownMenuContent align=Align::Center side=Side::Bottom>
                                         <DropdownMenuLabel>"My Account"</DropdownMenuLabel>
                                         <DropdownMenuSeparator />
-                                        <DropdownMenuItem on_click=move |_| {
-                                            leptos::logging::log!("Profile clicked!")
-                                        }>"Profile"</DropdownMenuItem>
-
-                                        <DropdownMenuItem on_click=move |_| {
-                                            leptos::logging::log!("Settings clicked!")
-                                        }>"Settings"</DropdownMenuItem>
-
+                                        <DropdownMenuItem>"Profile"</DropdownMenuItem>
+                                        <DropdownMenuItem>"Settings"</DropdownMenuItem>
                                         <DropdownMenuSeparator />
-
-                                        <DropdownMenuItem
-                                            class="text-destructive focus:text-destructive hover:bg-destructive/10 hover:text-destructive"
-                                            on_click=move |_| leptos::logging::log!("Logout clicked!")
-                                        >
+                                        <DropdownMenuItem class="text-destructive focus:text-destructive hover:bg-destructive/10 hover:text-destructive">
                                             "Log out"
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
@@ -427,21 +409,10 @@ pub fn Home() -> impl IntoView {
                                     <DropdownMenuContent align=Align::End side=Side::Bottom>
                                         <DropdownMenuLabel>"My Account"</DropdownMenuLabel>
                                         <DropdownMenuSeparator />
-
-                                        <DropdownMenuItem on_click=move |_| {
-                                            leptos::logging::log!("Profile clicked!")
-                                        }>"Profile"</DropdownMenuItem>
-
-                                        <DropdownMenuItem on_click=move |_| {
-                                            leptos::logging::log!("Settings clicked!")
-                                        }>"Settings"</DropdownMenuItem>
-
+                                        <DropdownMenuItem>"Profile"</DropdownMenuItem>
+                                        <DropdownMenuItem>"Settings"</DropdownMenuItem>
                                         <DropdownMenuSeparator />
-
-                                        <DropdownMenuItem
-                                            class="text-destructive focus:text-destructive hover:bg-destructive/10 hover:text-destructive"
-                                            on_click=move |_| leptos::logging::log!("Logout clicked!")
-                                        >
+                                        <DropdownMenuItem class="text-destructive focus:text-destructive hover:bg-destructive/10 hover:text-destructive">
                                             "Log out"
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>

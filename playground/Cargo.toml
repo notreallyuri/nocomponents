@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-nocomponents = { path = ".." }
+nocomponents = { path = "..", features = ["full"] }
 leptos = { version = "0.8.19", features = ["csr"] }
 leptos_meta = "0.8.6"
 leptos_router = "0.8.13"

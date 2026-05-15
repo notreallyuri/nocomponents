@@ -143,7 +143,7 @@ pub fn DropdownMenuSubTrigger(
                 stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
-                class="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-90"
+                class="ml-auto h-4 w-4 transition-transform duration-200"
             >
                 <polyline points="9 18 15 12 9 6"></polyline>
             </svg>

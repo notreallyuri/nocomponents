@@ -11,3 +11,19 @@ pub mod select;
 pub mod switch;
 pub mod tabs;
 pub mod toast;
+
+pub mod prelude {
+    pub use super::avatar::*;
+    pub use super::button::*;
+    pub use super::card::*;
+    pub use super::checkbox::*;
+    pub use super::dialog::*;
+    pub use super::dropdown_menu::*;
+    pub use super::input::*;
+    pub use super::label::*;
+    pub use super::popover::*;
+    pub use super::select::*;
+    pub use super::switch::*;
+    pub use super::tabs::*;
+    pub use super::toast::*;
+}

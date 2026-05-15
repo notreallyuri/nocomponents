@@ -1,6 +1,8 @@
 pub mod cn;
-pub mod theme;
 pub mod types;
+
+#[cfg(feature = "theme")]
+pub mod theme;
 
 use floating_ui_leptos::Placement;
 use types::{Align, Side};
