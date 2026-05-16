@@ -1,18 +1,13 @@
 use crate::cn;
-use crate::primitives::label::LabelRoot;
 use leptos::prelude::*;
 
 #[component]
-pub fn Label(
-    #[prop(optional, into)] class: Signal<String>,
-    #[prop(optional, into)] html_for: Signal<String>,
-    children: Children,
-) -> impl IntoView {
-    let base_class = "flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50";
-
+pub fn Label(#[prop(optional, into)] class: Signal<String>, children: Children) -> impl IntoView {
     view! {
-        <LabelRoot html_for=html_for class=cn!(base_class, &class.get())>
-            {children()}
-        </LabelRoot>
+        <label class=move || {
+            cn!(
+                "flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50", &class.get()
+            )
+        }>{children()}</label>
     }
 }

@@ -18,7 +18,7 @@ pub fn Tabs(
         <TabsRoot
             default_value=default_value
             orientation=orientation
-            class=cn!("group/tabs flex gap-2 data-horizontal:flex-col", class.get())
+            class=move || cn!("group/tabs flex gap-2 data-horizontal:flex-col", class.get())
         >
             {children()}
         </TabsRoot>

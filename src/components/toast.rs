@@ -1,11 +1,17 @@
 pub use crate::{
     cn,
     primitives::toast::{
-        use_toast, ToastContext, ToastData, ToastPosition, ToastProviderRoot, ToastSize,
-        ToastVariant,
+        ToastContext, ToastData, ToastPosition, ToastProviderRoot, ToastRoot, ToastSize,
+        ToastVariant, use_toast,
     },
 };
-use leptos::{ev, prelude::*};
+use leptos::prelude::*;
+use leptos_node_ref::AnyNodeRef;
+
+const STACK_GAP: f64 = 8.0;
+const STACK_SCALE_STEP: f64 = 0.05;
+const STACK_VISIBLE_COUNT: usize = 3;
+const EXPAND_GAP: f64 = 8.0;
 
 #[component]
 pub fn ToastProvider(
@@ -30,55 +36,94 @@ pub fn ToastProvider(
 fn Toaster() -> impl IntoView {
     let ctx = use_toast();
 
-    let regions = vec![
-        (ToastPosition::TopLeft, "top-0 left-0 flex-col"),
-        (
-            ToastPosition::TopCenter,
-            "top-0 left-1/2 -translate-x-1/2 flex-col",
-        ),
-        (ToastPosition::TopRight, "top-0 right-0 flex-col"),
-        (
-            ToastPosition::BottomLeft,
-            "bottom-0 left-0 flex-col-reverse",
-        ),
+    let regions: &'static [(ToastPosition, &'static str)] = &[
+        (ToastPosition::TopLeft, "top-4 left-4"),
+        (ToastPosition::TopCenter, "top-4 left-1/2 -translate-x-1/2"),
+        (ToastPosition::TopRight, "top-4 right-4"),
+        (ToastPosition::BottomLeft, "bottom-4 left-4"),
         (
             ToastPosition::BottomCenter,
-            "bottom-0 left-1/2 -translate-x-1/2 flex-col-reverse",
+            "bottom-4 left-1/2 -translate-x-1/2",
         ),
-        (
-            ToastPosition::BottomRight,
-            "bottom-0 right-0 flex-col-reverse",
-        ),
+        (ToastPosition::BottomRight, "bottom-4 right-4"),
     ];
 
     view! {
         {regions
-            .into_iter()
+            .iter()
             .map(|(pos, placement)| {
+                let pos = *pos;
+                let is_hovered = RwSignal::new(false);
+                let is_interacting = RwSignal::new(false);
+                let is_focused = RwSignal::new(false);
+                let expanded = Memo::new(move |_| {
+                    is_hovered.get() || is_interacting.get() || is_focused.get()
+                });
+
                 view! {
-                    <div class=move || {
-                        let has_toasts = ctx.toasts.get().iter().any(|t| t.position == pos);
-                        if has_toasts {
-                            cn!(
-                                "fixed z-100 flex max-h-screen w-full p-4 sm:w-89 gap-4 pointer-events-none", placement
-                            )
-                        } else {
-                            "hidden".to_string()
+                    <div
+                        class=move || {
+                            let has_toasts = ctx.toasts.get().iter().any(|t| t.position == pos);
+                            if has_toasts {
+                                format!(
+                                    "fixed z-[100] w-full sm:w-[356px] pointer-events-none {placement}",
+                                )
+                            } else {
+                                "hidden".to_string()
+                            }
                         }
-                    }>
-                        <For
-                            each=move || {
-                                ctx.toasts
+                        on:pointerenter=move |_| is_hovered.set(true)
+                        on:pointerleave=move |_| is_hovered.set(false)
+                        on:focusin=move |_| is_focused.set(true)
+                        on:focusout=move |_| is_focused.set(false)
+                    >
+                        <div
+                            class="w-full pointer-events-auto"
+                            style=move || {
+                                let toasts: Vec<ToastData> = ctx
+                                    .toasts
                                     .get()
                                     .into_iter()
                                     .filter(|t| t.position == pos)
-                                    .collect::<Vec<_>>()
+                                    .collect();
+                                if toasts.is_empty() {
+                                    return "position: relative;".to_string();
+                                }
+                                if expanded.get() {
+                                    let mut v = toasts.clone();
+                                    v.reverse();
+                                    let total_height: f64 = v
+                                        .iter()
+                                        .enumerate()
+                                        .map(|(i, t)| {
+                                            let h = t.height.get();
+                                            let h = if h > 0.0 { h } else { 64.0 };
+                                            if i == 0 { h } else { h + EXPAND_GAP }
+                                        })
+                                        .sum();
+                                    format!(
+                                        "position: relative; height: {total_height:.1}px; \
+                                         transition: height 400ms ease;",
+                                    )
+                                } else {
+                                    let front_height = front_toast_height(&toasts, pos);
+                                    let visible = toasts.len().min(STACK_VISIBLE_COUNT);
+                                    let extra = (visible.saturating_sub(1)) as f64 * STACK_GAP;
+                                    format!(
+                                        "position: relative; height: {:.1}px; \
+                                         transition: height 400ms ease;",
+                                        front_height + extra,
+                                    )
+                                }
                             }
-                            key=|t| t.id
-                            children=move |toast| {
-                                view! { <ToastItem toast=toast /> }
-                            }
-                        />
+                        >
+                            <ToastRegion
+                                pos=pos
+                                ctx=ctx
+                                expanded=expanded
+                                is_interacting=is_interacting
+                            />
+                        </div>
                     </div>
                 }
             })
@@ -87,129 +132,252 @@ fn Toaster() -> impl IntoView {
 }
 
 #[component]
-fn ToastItem(toast: ToastData) -> impl IntoView {
-    let ctx = expect_context::<ToastContext>();
-    let id = toast.id;
-
-    let is_dragging = RwSignal::new(false);
-    let drag_offset_x = RwSignal::new(0);
-    let drag_offset_y = RwSignal::new(0);
-    let start_x = RwSignal::new(0);
-    let start_y = RwSignal::new(0);
-
-    let on_pointer_down = move |e: ev::PointerEvent| {
-        is_dragging.set(true);
-        start_x.set(e.client_x());
-        start_y.set(e.client_y());
-    };
-
-    let on_pointer_move = move |e: ev::PointerEvent| {
-        if is_dragging.get() {
-            let diff_x = e.client_x() - start_x.get();
-            let diff_y = e.client_y() - start_y.get();
-
-            match toast.position {
-                ToastPosition::TopLeft | ToastPosition::BottomLeft => {
-                    if diff_x < 0 {
-                        drag_offset_x.set(diff_x);
-                    }
-                }
-                ToastPosition::TopRight | ToastPosition::BottomRight => {
-                    if diff_x > 0 {
-                        drag_offset_x.set(diff_x);
-                    }
-                }
-                ToastPosition::TopCenter => {
-                    if diff_y < 0 {
-                        drag_offset_y.set(diff_y);
-                    }
-                }
-                ToastPosition::BottomCenter => {
-                    if diff_y > 0 {
-                        drag_offset_y.set(diff_y);
-                    }
+fn ToastRegion(
+    pos: ToastPosition,
+    ctx: ToastContext,
+    expanded: Memo<bool>,
+    is_interacting: RwSignal<bool>,
+) -> impl IntoView {
+    view! {
+        <For
+            each=move || {
+                let mut toasts: Vec<ToastData> = ctx
+                    .toasts
+                    .get()
+                    .into_iter()
+                    .filter(|t| t.position == pos)
+                    .collect();
+                toasts.reverse();
+                toasts
+            }
+            key=|t| t.id
+            children=move |toast| {
+                view! {
+                    <ToastItem
+                        toast=toast
+                        expanded=expanded
+                        is_interacting=is_interacting
+                        pos=pos
+                        ctx=ctx
+                    />
                 }
             }
-        }
-    };
+        />
+    }
+}
 
-    let on_pointer_up = move |_: ev::PointerEvent| {
-        if is_dragging.get() {
-            is_dragging.set(false);
-            if drag_offset_x.get().abs() > 60 || drag_offset_y.get().abs() > 60 {
-                ctx.dismiss(id);
+#[component]
+fn ToastItem(
+    toast: ToastData,
+    expanded: Memo<bool>,
+    is_interacting: RwSignal<bool>,
+    pos: ToastPosition,
+    ctx: ToastContext,
+) -> impl IntoView {
+    let node_ref = AnyNodeRef::new();
+
+    let index = Memo::new(move |_| {
+        let mut toasts: Vec<ToastData> = ctx
+            .toasts
+            .get()
+            .into_iter()
+            .filter(|t| t.position == pos)
+            .collect();
+        toasts.reverse();
+        toasts.iter().position(|t| t.id == toast.id).unwrap_or(0)
+    });
+
+    let total = Memo::new(move |_| {
+        ctx.toasts
+            .get()
+            .iter()
+            .filter(|t| t.position == pos)
+            .count()
+    });
+
+    let remaining = RwSignal::new(toast.duration);
+    let last_start = RwSignal::new(js_sys::Date::now());
+    let timeout_handle: StoredValue<Option<TimeoutHandle>> = StoredValue::new(None);
+
+    Effect::new(move |_| {
+        if expanded.get() {
+            if let Some(handle) = timeout_handle.get_value() {
+                handle.clear();
+                timeout_handle.set_value(None);
+            }
+            let elapsed = js_sys::Date::now() - last_start.get();
+            remaining.update(|r| *r = (*r - elapsed).max(0.0));
+        } else {
+            last_start.set(js_sys::Date::now());
+            let r = remaining.get();
+
+            if r > 0.0 {
+                let id = toast.id;
+                if let Ok(handle) = set_timeout_with_handle(
+                    move || ctx.dismiss(id),
+                    std::time::Duration::from_millis(r as u64),
+                ) {
+                    timeout_handle.set_value(Some(handle));
+                }
             } else {
-                drag_offset_x.set(0);
-                drag_offset_y.set(0);
+                ctx.dismiss(toast.id);
             }
         }
+    });
+
+    on_cleanup(move || {
+        if let Some(handle) = timeout_handle.get_value() {
+            handle.clear();
+        }
+    });
+
+    Effect::new(move |_| {
+        if let Some(el) = node_ref.get()
+            && let Some(parent) = el.parent_element()
+        {
+            let h = parent.get_bounding_client_rect().height();
+            if h > 0.0 {
+                toast.height.set(h);
+            }
+        }
+    });
+
+    let is_top = matches!(
+        pos,
+        ToastPosition::TopLeft | ToastPosition::TopCenter | ToastPosition::TopRight
+    );
+
+    let exit_classes = match pos {
+        ToastPosition::TopRight | ToastPosition::BottomRight => {
+            "data-[state=closed]:translate-x-[120%]"
+        }
+        ToastPosition::TopLeft | ToastPosition::BottomLeft => {
+            "data-[state=closed]:-translate-x-[120%]"
+        }
+        ToastPosition::TopCenter => "data-[state=closed]:-translate-y-[150%]",
+        ToastPosition::BottomCenter => "data-[state=closed]:translate-y-[150%]",
     };
 
     view! {
-        <div
-            data-state=move || { if toast.is_open.get() { "open" } else { "closed" } }
-            style=move || {
-                let x = drag_offset_x.get();
-                let y = drag_offset_y.get();
-                if x != 0 || y != 0 {
-                    format!("transform: translate({}px, {}px)", x, y)
-                } else {
-                    String::new()
-                }
-            }
-            on:pointerdown=on_pointer_down
-            on:pointermove=on_pointer_move
-            on:pointerup=on_pointer_up
-            on:pointerleave=on_pointer_up
-            on:pointercancel=on_pointer_up
+        <ToastRoot
+            toast=toast.clone()
+            is_interacting=is_interacting
             class=move || {
-                let drag_classes = if is_dragging.get() {
-                    "transition-none cursor-grabbing"
-                } else {
-                    "duration-300 cursor-grab"
-                };
-                let animation_classes = match toast.position {
-                    ToastPosition::TopRight => {
-                        "data-[state=open]:slide-in-from-top-full data-[state=open]:sm:slide-in-from-right-full data-[state=closed]:slide-out-to-right-full"
-                    }
-                    ToastPosition::BottomRight => {
-                        "data-[state=open]:slide-in-from-bottom-full data-[state=open]:sm:slide-in-from-right-full data-[state=closed]:slide-out-to-right-full"
-                    }
-                    ToastPosition::TopLeft => {
-                        "data-[state=open]:slide-in-from-top-full data-[state=open]:sm:slide-in-from-left-full data-[state=closed]:slide-out-to-left-full"
-                    }
-                    ToastPosition::BottomLeft => {
-                        "data-[state=open]:slide-in-from-bottom-full data-[state=open]:sm:slide-in-from-left-full data-[state=closed]:slide-out-to-left-full"
-                    }
-                    ToastPosition::TopCenter => {
-                        "data-[state=open]:slide-in-from-top-full data-[state=closed]:slide-out-to-top-full"
-                    }
-                    ToastPosition::BottomCenter => {
-                        "data-[state=open]:slide-in-from-bottom-full data-[state=closed]:slide-out-to-bottom-full"
-                    }
-                };
                 cn!(
-                    "group pointer-events-auto relative flex w-full items-center justify-between space-x-2 text-popover-foreground overflow-hidden rounded-md border shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 [animation-duration:300ms] fill-mode-forwards touch-none select-none",
-                    drag_classes,
-                    animation_classes,
+                    "before:absolute before:-inset-y-4 before:inset-x-0 before:z-[-1] before:content-['']",
+                    "absolute left-0 w-full flex items-center justify-between space-x-2 overflow-hidden rounded-md border shadow-lg",
+                    if is_top { "top-0 origin-top" } else { "bottom-0 origin-bottom" },
+                    "translate-x-[var(--drag-x,0px)] translate-y-[calc(var(--toast-y,0px)+var(--drag-y,0px))] scale-[var(--toast-scale,1)]",
+                    "z-[var(--toast-z,100)] opacity-[var(--toast-opacity,1)]",
+                    "transition-all duration-[400ms] ease-[cubic-bezier(0.32,0.72,0,1)]",
+                    "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+                    "data-[state=closed]:opacity-0",
+                    exit_classes,
+                    "data-[dragging=false]:cursor-grab data-[dragging=true]:cursor-grabbing data-[dragging=true]:transition-none",
+                    "text-popover-foreground touch-none select-none",
+
                     match toast.variant {
                         ToastVariant::Default => "bg-popover text-foreground",
-                        ToastVariant::Destructive => "destructive group border-destructive bg-destructive text-destructive-foreground",
+                        ToastVariant::Destructive => "border-destructive bg-destructive text-destructive-foreground",
                     },
                     match toast.size {
-                        ToastSize::Default => "py-2 px-4 text-sm",
+                        ToastSize::Default => "py-3 px-4 text-sm",
                         ToastSize::Lg => "py-6 px-8 text-base",
                     }
                 )
             }
+            style=move || {
+                if expanded.get() {
+                    expanded_style(toast.id, pos, ctx)
+                } else {
+                    collapsed_style(index.get(), total.get(), pos)
+                }
+            }
         >
-            <div class="grid gap-1">
-                <div class="text-sm font-medium">{toast.title.clone()}</div>
-                {toast
-                    .description
-                    .clone()
-                    .map(|desc| view! { <div class="text-xs text-muted-foreground">{desc}</div> })}
+            <div node_ref=node_ref>
+                <div class="grid gap-1">
+                    <div class="text-sm font-medium">{toast.title.clone()}</div>
+                    {toast
+                        .description
+                        .clone()
+                        .map(|desc| {
+                            view! { <div class="text-xs text-muted-foreground">{desc}</div> }
+                        })}
+                </div>
             </div>
-        </div>
+        </ToastRoot>
     }
+}
+
+fn collapsed_style(index: usize, _total: usize, pos: ToastPosition) -> String {
+    let is_top = matches!(
+        pos,
+        ToastPosition::TopLeft | ToastPosition::TopCenter | ToastPosition::TopRight
+    );
+    let sign = if is_top { 1.0 } else { -1.0 };
+
+    let offset = index as f64 * STACK_GAP;
+    let scale = 1.0 - (index as f64 * STACK_SCALE_STEP).min(1.0);
+
+    let opacity = if index >= STACK_VISIBLE_COUNT {
+        0.0
+    } else if index == 0 {
+        1.0
+    } else {
+        (1.0 - index as f64 * 0.15).max(0.0)
+    };
+    let pointer_events = if index >= STACK_VISIBLE_COUNT {
+        "none"
+    } else {
+        "auto"
+    };
+
+    format!(
+        "--toast-y: {:.1}px; --toast-scale: {:.3}; --toast-z: {}; --toast-opacity: {:.3}; pointer-events: {};",
+        offset * sign,
+        scale,
+        100usize.saturating_sub(index),
+        opacity,
+        pointer_events
+    )
+}
+
+fn expanded_style(toast_id: usize, pos: ToastPosition, ctx: ToastContext) -> String {
+    let is_top = matches!(
+        pos,
+        ToastPosition::TopLeft | ToastPosition::TopCenter | ToastPosition::TopRight
+    );
+    let sign = if is_top { 1.0 } else { -1.0 };
+
+    let mut toasts: Vec<ToastData> = ctx
+        .toasts
+        .get()
+        .into_iter()
+        .filter(|t| t.position == pos)
+        .collect();
+    toasts.reverse();
+
+    let Some(my_index) = toasts.iter().position(|t| t.id == toast_id) else {
+        return String::new();
+    };
+    let offset_from_edge: f64 = toasts[..my_index]
+        .iter()
+        .map(|t| t.height.get() + EXPAND_GAP)
+        .sum();
+
+    format!(
+        "--toast-y: {:.1}px; --toast-scale: 1; --toast-z: {}; --toast-opacity: 1; pointer-events: auto;",
+        offset_from_edge * sign,
+        100usize.saturating_sub(my_index)
+    )
+}
+
+fn front_toast_height(toasts: &[ToastData], _pos: ToastPosition) -> f64 {
+    toasts
+        .last()
+        .map(|t| {
+            let h = t.height.get();
+            if h > 0.0 { h } else { 64.0 }
+        })
+        .unwrap_or(64.0)
 }

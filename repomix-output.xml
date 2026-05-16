@@ -1,0 +1,5320 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+playground/
+  src/
+    components/
+      mod.rs
+      profile_settings.rs
+      theme_switcher.rs
+    pages/
+      home.rs
+      mod.rs
+    app.rs
+    main.rs
+  styles/
+    animate.css
+    globals.css
+  Cargo.toml
+  index.html
+  Trunk.toml
+src/
+  components/
+    alert_dialog.rs
+    avatar.rs
+    badge.rs
+    button.rs
+    card.rs
+    checkbox.rs
+    dialog.rs
+    dropdown_menu.rs
+    input.rs
+    label.rs
+    mod.rs
+    popover.rs
+    select.rs
+    switch.rs
+    tabs.rs
+    toast.rs
+  icons/
+    check.rs
+    chevron.rs
+    mod.rs
+    x.rs
+  middleware/
+    mod.rs
+  primitives/
+    avatar.rs
+    button.rs
+    checkbox.rs
+    dialog.rs
+    dropdown_menu.rs
+    floating.rs
+    mod.rs
+    popover.rs
+    select.rs
+    switch.rs
+    tabs.rs
+    toast.rs
+  utils/
+    cn.rs
+    mod.rs
+    theme.rs
+    types.rs
+  lib.rs
+.gitignore
+Cargo.toml
+README.md
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="src/components/alert_dialog.rs">
+
+</file>
+
+<file path="src/components/badge.rs">
+use crate::cn;
+use leptos::prelude::*;
+
+#[derive(Default, Copy, Clone)]
+pub enum BadgeVariant {
+    #[default]
+    Default,
+    Secondary,
+    Destructive,
+    Outline,
+    Ghost,
+    Link,
+}
+
+#[component]
+pub fn Badge(
+    #[prop(optional)] variant: BadgeVariant,
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    let variant_classes = match variant {
+        BadgeVariant::Default => "bg-primary text-primary-foreground [a&]:hover:bg-primary/90",
+        BadgeVariant::Secondary => {
+            "bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90"
+        }
+        BadgeVariant::Destructive => {
+            "bg-destructive text-white focus-visible:ring-destructive/20 dark:bg-destructive/60 dark:focus-visible:ring-destructive/40 [a&]:hover:bg-destructive/90"
+        }
+        BadgeVariant::Outline => {
+            "border-border text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground"
+        }
+        BadgeVariant::Ghost => "[a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
+        BadgeVariant::Link => "text-primary underline-offset-4 [a&]:hover:underline",
+    };
+
+    view! {
+        <div class=move || cn!(
+            "inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3",
+                variant_classes,
+                class.get()
+        )>{children()}</div>
+    }
+}
+</file>
+
+<file path="src/icons/check.rs">
+use crate::{cn, icons::IconRoot};
+use leptos::prelude::*;
+
+#[component]
+pub fn Check(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
+    view! {
+        <IconRoot class=move || cn!("size-4", class.get())>
+            <path d="M20 6 9 17l-5-5" />
+        </IconRoot>
+    }
+}
+</file>
+
+<file path="src/icons/chevron.rs">
+use crate::{cn, icons::IconRoot};
+use leptos::prelude::*;
+
+#[component]
+pub fn ChevronUp(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
+    view! {
+        <IconRoot class=move || cn!("size-4", class.get())>
+            <path d="m18 15-6-6-6 6" />
+        </IconRoot>
+    }
+}
+
+#[component]
+pub fn ChevronDown(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
+    view! {
+        <IconRoot class=move || cn!("size-4", class.get())>
+            <path d="m6 9 6 6 6-6" />
+        </IconRoot>
+    }
+}
+#[component]
+pub fn ChevronRight(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
+    view! {
+        <IconRoot class=move || cn!("size-4", class.get())>
+            <path d="m9 18 6-6-6-6" />
+        </IconRoot>
+    }
+}
+
+#[component]
+pub fn ChevronLeft(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
+    view! {
+        <IconRoot class=move || cn!("size-4", class.get())>
+            <path d="m15 18-6-6 6-6" />
+        </IconRoot>
+    }
+}
+</file>
+
+<file path="src/icons/mod.rs">
+use leptos::prelude::*;
+
+pub mod check;
+pub mod chevron;
+pub mod x;
+
+#[component]
+pub fn IconRoot(
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="square"
+            stroke-linejoin="miter"
+            class=class
+        >
+            {children()}
+        </svg>
+    }
+}
+</file>
+
+<file path="src/icons/x.rs">
+
+</file>
+
+<file path="playground/src/components/mod.rs">
+pub mod profile_settings;
+pub mod theme_switcher;
+</file>
+
+<file path="playground/src/components/profile_settings.rs">
+use leptos::{ev, prelude::*};
+use nocomponents::components::{
+    avatar::{Avatar, AvatarFallback, AvatarImage, AvatarSize},
+    button::{Button, ButtonSize, ButtonVariant},
+    dialog::{Dialog, DialogHeader, DialogPortal, DialogTitle, DialogTrigger},
+    input::{Input, InputType},
+    label::Label,
+    tabs::{Tabs, TabsContent, TabsList, TabsTrigger},
+};
+
+#[derive(Clone, PartialEq)]
+pub struct User {
+    pub name: String,
+    pub email: Option<String>,
+    pub profile_picture: String,
+}
+
+#[component]
+pub fn SettingsDialog(
+    user: User,
+    #[prop(default = RwSignal::new(false))] open: RwSignal<bool>,
+    #[prop(optional)] render: Option<Callback<Callback<ev::MouseEvent>, AnyView>>,
+) -> impl IntoView {
+    let user = StoredValue::new(user);
+
+    view! {
+        <Dialog open=open>
+            <Show when=move || render.is_some()>
+                <DialogTrigger render=render.unwrap() />
+            </Show>
+
+            <DialogPortal class="flex flex-col min-h-102 sm:max-w-106">
+                <DialogHeader>
+                    <DialogTitle>"Settings"</DialogTitle>
+                </DialogHeader>
+
+                <Tabs default_value="profile" class="h-full mt-4">
+                    <TabsList class="w-full justify-start">
+                        <TabsTrigger value="profile">"Profile"</TabsTrigger>
+                        <TabsTrigger value="account">"Account"</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="account" class="flex h-full flex-col gap-4 mt-4">
+                        <div class="flex flex-col gap-3">
+                            <div class="space-y-1">
+                                <h3 class="text-sm font-bold font-montserrat text-foreground">
+                                    "Access"
+                                </h3>
+                                <p class="text-xs text-muted-foreground font-manrope">
+                                    "This is the email linked to your account"
+                                </p>
+                            </div>
+                            <div class="space-y-1.5">
+                                <Label>"Main email"</Label>
+                                <Input
+                                    input_type=InputType::Email
+                                    value=user.with_value(|u| u.email.clone().unwrap_or_default())
+                                    class="bg-muted/30 font-medium"
+                                />
+                            </div>
+                        </div>
+
+                        <div class="my-2 h-px w-full bg-border" />
+
+                        <div class="flex flex-col gap-3">
+                            <div class="space-y-1">
+                                <h3 class="text-sm font-bold font-montserrat text-foreground">
+                                    "Security"
+                                </h3>
+                                <p class="text-xs text-muted-foreground font-manrope">
+                                    "Change your password"
+                                </p>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="space-y-1.5">
+                                    <Label>"New password"</Label>
+                                    <Input
+                                        input_type=InputType::Password
+                                        attr:placeholder="••••••••"
+                                    />
+                                </div>
+                                <div class="space-y-1.5">
+                                    <Label>"Confirm password"</Label>
+                                    <Input
+                                        input_type=InputType::Password
+                                        attr:placeholder="••••••••"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <Button class="mt-4 w-full sm:w-auto sm:ml-auto cursor-pointer shadow-sm">
+                            "Save changes"
+                        </Button>
+                    </TabsContent>
+
+                    <TabsContent value="profile" class="flex h-full flex-col gap-4 mt-4">
+                        <div class="flex items-center gap-4 py-2">
+                            <Avatar size=AvatarSize::Lg class="size-20 border-2 border-muted">
+                                <AvatarImage
+                                    src=user.with_value(|u| u.profile_picture.clone())
+                                    alt=user.with_value(|u| u.name.clone())
+                                    class="object-cover"
+                                />
+                                <AvatarFallback
+                                    delay_ms=150
+                                    class="text-xl font-bold font-montserrat"
+                                >
+                                    {move || {
+                                        user.with_value(|u| {
+                                            u.name
+                                                .chars()
+                                                .next()
+                                                .unwrap_or('?')
+                                                .to_string()
+                                                .to_uppercase()
+                                        })
+                                    }}
+                                </AvatarFallback>
+                            </Avatar>
+                            <div class="flex flex-col gap-1.5">
+                                <Button
+                                    variant=ButtonVariant::Outline
+                                    size=ButtonSize::Sm
+                                    class="w-fit cursor-pointer"
+                                >
+                                    "Change picture"
+                                </Button>
+                                <span class="text-[10px] text-muted-foreground uppercase tracking-widest">
+                                    "JPG or PNG. Max 2MB."
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <Label>"Public Name"</Label>
+                            <Input attr:placeholder="Your name or nickname" />
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <Label>"Bio"</Label>
+                            <Input attr:placeholder="Write about you..." />
+                        </div>
+
+                        <Button class="mt-4 w-full sm:w-auto sm:ml-auto cursor-pointer shadow-sm">
+                            "Save changes"
+                        </Button>
+                    </TabsContent>
+                </Tabs>
+            </DialogPortal>
+        </Dialog>
+    }
+}
+</file>
+
+<file path="playground/src/pages/mod.rs">
+pub mod home;
+</file>
+
+<file path="playground/src/app.rs">
+use crate::pages::home::Home;
+use leptos::prelude::*;
+use leptos_router::{components::*, path};
+use nocomponents::{components::toast::ToastProvider, utils::theme::ThemeProvider};
+
+#[component]
+pub fn App() -> impl IntoView {
+    view! {
+        <ThemeProvider>
+            <ToastProvider>
+                <Router>
+                    <Routes fallback=|| "Not Found.">
+                        <Route path=path!("/") view=Home />
+                    </Routes>
+                </Router>
+            </ToastProvider>
+        </ThemeProvider>
+    }
+}
+</file>
+
+<file path="playground/src/main.rs">
+mod app;
+mod components;
+mod pages;
+
+fn main() {
+    leptos::mount::mount_to_body(app::App)
+}
+</file>
+
+<file path="playground/styles/animate.css">
+/**
+ * TailwindCSS v4.0 compatible replacement for `tailwindcss-animate`.
+ *
+ * @author Luca Bosin <https://github.com/Wombosvideo>
+ * @license MIT
+ */
+
+/* @property declarations for animation variables, to prevent inheritance */
+@property --tw-animation-delay {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0s;
+}
+
+@property --tw-animation-direction {
+  syntax: "*";
+  inherits: false;
+  initial-value: normal;
+}
+
+@property --tw-animation-duration {
+  syntax: "*";
+  inherits: false;
+  /* does not have an initial value in order for the `--tw-duration` variable to work */
+}
+
+@property --tw-animation-fill-mode {
+  syntax: "*";
+  inherits: false;
+  initial-value: none;
+}
+
+@property --tw-animation-iteration-count {
+  syntax: "*";
+  inherits: false;
+  initial-value: 1;
+}
+
+@property --tw-enter-blur {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --tw-enter-opacity {
+  syntax: "*";
+  inherits: false;
+  initial-value: 1;
+}
+
+@property --tw-enter-rotate {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --tw-enter-scale {
+  syntax: "*";
+  inherits: false;
+  initial-value: 1;
+}
+
+@property --tw-enter-translate-x {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --tw-enter-translate-y {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --tw-exit-blur {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --tw-exit-opacity {
+  syntax: "*";
+  inherits: false;
+  initial-value: 1;
+}
+
+@property --tw-exit-rotate {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --tw-exit-scale {
+  syntax: "*";
+  inherits: false;
+  initial-value: 1;
+}
+
+@property --tw-exit-translate-x {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --tw-exit-translate-y {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0;
+}
+
+@theme inline {
+  /* Predefined values */
+
+  --animation-delay-0: 0s;
+  --animation-delay-75: 75ms;
+  --animation-delay-100: 0.1s;
+  --animation-delay-150: 0.15s;
+  --animation-delay-200: 0.2s;
+  --animation-delay-300: 0.3s;
+  --animation-delay-500: 0.5s;
+  --animation-delay-700: 0.7s;
+  --animation-delay-1000: 1s;
+
+  --animation-repeat-0: 0;
+  --animation-repeat-1: 1;
+  --animation-repeat-infinite: infinite;
+
+  --animation-direction-normal: normal;
+  --animation-direction-reverse: reverse;
+  --animation-direction-alternate: alternate;
+  --animation-direction-alternate-reverse: alternate-reverse;
+
+  --animation-fill-mode-none: none;
+  --animation-fill-mode-forwards: forwards;
+  --animation-fill-mode-backwards: backwards;
+  --animation-fill-mode-both: both;
+
+  --percentage-0: 0;
+  --percentage-5: 0.05;
+  --percentage-10: 0.1;
+  --percentage-15: 0.15;
+  --percentage-20: 0.2;
+  --percentage-25: 0.25;
+  --percentage-30: 0.3;
+  --percentage-35: 0.35;
+  --percentage-40: 0.4;
+  --percentage-45: 0.45;
+  --percentage-50: 0.5;
+  --percentage-55: 0.55;
+  --percentage-60: 0.6;
+  --percentage-65: 0.65;
+  --percentage-70: 0.7;
+  --percentage-75: 0.75;
+  --percentage-80: 0.8;
+  --percentage-85: 0.85;
+  --percentage-90: 0.9;
+  --percentage-95: 0.95;
+  --percentage-100: 1;
+  --percentage-translate-full: 1;
+
+  /* Animations and keyframes */
+
+  --animate-in: enter var(--tw-animation-duration, var(--tw-duration, 150ms))
+    var(--tw-ease, ease) var(--tw-animation-delay, 0s)
+    var(--tw-animation-iteration-count, 1) var(--tw-animation-direction, normal)
+    var(--tw-animation-fill-mode, forwards);
+  --animate-out: exit var(--tw-animation-duration, var(--tw-duration, 150ms))
+    var(--tw-ease, ease) var(--tw-animation-delay, 0s)
+    var(--tw-animation-iteration-count, 1) var(--tw-animation-direction, normal)
+    var(--tw-animation-fill-mode, forwards);
+
+  @keyframes enter {
+    from {
+      opacity: var(--tw-enter-opacity, 1);
+      transform: translate3d(
+          var(--tw-enter-translate-x, 0),
+          var(--tw-enter-translate-y, 0),
+          0
+        )
+        scale3d(
+          var(--tw-enter-scale, 1),
+          var(--tw-enter-scale, 1),
+          var(--tw-enter-scale, 1)
+        )
+        rotate(var(--tw-enter-rotate, 0));
+      filter: blur(var(--tw-enter-blur, 0));
+    }
+  }
+
+  @keyframes exit {
+    to {
+      opacity: var(--tw-exit-opacity, 1);
+      transform: translate3d(
+          var(--tw-exit-translate-x, 0),
+          var(--tw-exit-translate-y, 0),
+          0
+        )
+        scale3d(
+          var(--tw-exit-scale, 1),
+          var(--tw-exit-scale, 1),
+          var(--tw-exit-scale, 1)
+        )
+        rotate(var(--tw-exit-rotate, 0));
+      filter: blur(var(--tw-exit-blur, 0));
+    }
+  }
+
+  --animate-accordion-down: accordion-down
+    var(--tw-animation-duration, var(--tw-duration, 200ms))
+    var(--tw-ease, ease-out) var(--tw-animation-delay, 0s)
+    var(--tw-animation-iteration-count, 1) var(--tw-animation-direction, normal)
+    var(--tw-animation-fill-mode, none);
+  --animate-accordion-up: accordion-up
+    var(--tw-animation-duration, var(--tw-duration, 200ms))
+    var(--tw-ease, ease-out) var(--tw-animation-delay, 0s)
+    var(--tw-animation-iteration-count, 1) var(--tw-animation-direction, normal)
+    var(--tw-animation-fill-mode, none);
+  --animate-collapsible-down: collapsible-down
+    var(--tw-animation-duration, var(--tw-duration, 200ms))
+    var(--tw-ease, ease-out) var(--tw-animation-delay, 0s)
+    var(--tw-animation-iteration-count, 1) var(--tw-animation-direction, normal)
+    var(--tw-animation-fill-mode, none);
+  --animate-collapsible-up: collapsible-up
+    var(--tw-animation-duration, var(--tw-duration, 200ms))
+    var(--tw-ease, ease-out) var(--tw-animation-delay, 0s)
+    var(--tw-animation-iteration-count, 1) var(--tw-animation-direction, normal)
+    var(--tw-animation-fill-mode, none);
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(
+        --radix-accordion-content-height,
+        var(
+          --bits-accordion-content-height,
+          var(
+            --reka-accordion-content-height,
+            var(
+              --kb-accordion-content-height,
+              var(--ngp-accordion-content-height, auto)
+            )
+          )
+        )
+      );
+    }
+  }
+
+  @keyframes accordion-up {
+    from {
+      height: var(
+        --radix-accordion-content-height,
+        var(
+          --bits-accordion-content-height,
+          var(
+            --reka-accordion-content-height,
+            var(
+              --kb-accordion-content-height,
+              var(--ngp-accordion-content-height, auto)
+            )
+          )
+        )
+      );
+    }
+    to {
+      height: 0;
+    }
+  }
+
+  @keyframes collapsible-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(
+        --radix-collapsible-content-height,
+        var(
+          --bits-collapsible-content-height,
+          var(
+            --reka-collapsible-content-height,
+            var(--kb-collapsible-content-height, auto)
+          )
+        )
+      );
+    }
+  }
+
+  @keyframes collapsible-up {
+    from {
+      height: var(
+        --radix-collapsible-content-height,
+        var(
+          --bits-collapsible-content-height,
+          var(
+            --reka-collapsible-content-height,
+            var(--kb-collapsible-content-height, auto)
+          )
+        )
+      );
+    }
+    to {
+      height: 0;
+    }
+  }
+
+  --animate-caret-blink: caret-blink 1.25s ease-out infinite;
+
+  @keyframes caret-blink {
+    0%,
+    70%,
+    100% {
+      opacity: 1;
+    }
+    20%,
+    50% {
+      opacity: 0;
+    }
+  }
+}
+
+/* Utility classes */
+
+@utility animation-duration-* {
+  --tw-animation-duration: calc(--value(number) * 1ms);
+  --tw-animation-duration: --value(
+    --animation-duration-*,
+    [duration],
+    "initial",
+    [*]
+  );
+  animation-duration: calc(--value(number) * 1ms);
+  animation-duration: --value(
+    --animation-duration-*,
+    [duration],
+    "initial",
+    [*]
+  );
+}
+
+@utility delay-* {
+  animation-delay: calc(--value(number) * 1ms);
+  animation-delay: --value(--animation-delay-*, [duration], "initial", [*]);
+  --tw-animation-delay: calc(--value(number) * 1ms);
+  --tw-animation-delay: --value(
+    --animation-delay-*,
+    [duration],
+    "initial",
+    [*]
+  );
+}
+
+@utility repeat-* {
+  animation-iteration-count: --value(
+    --animation-repeat-*,
+    number,
+    "initial",
+    [*]
+  );
+  --tw-animation-iteration-count: --value(
+    --animation-repeat-*,
+    number,
+    "initial",
+    [*]
+  );
+}
+
+@utility direction-* {
+  animation-direction: --value(--animation-direction-*, "initial", [*]);
+  --tw-animation-direction: --value(--animation-direction-*, "initial", [*]);
+}
+
+@utility fill-mode-* {
+  animation-fill-mode: --value(--animation-fill-mode-*, "initial", [*]);
+  --tw-animation-fill-mode: --value(--animation-fill-mode-*, "initial", [*]);
+}
+
+@utility running {
+  animation-play-state: running;
+}
+@utility paused {
+  animation-play-state: paused;
+}
+@utility play-state-* {
+  animation-play-state: --value("initial", [*]);
+}
+
+@utility blur-in {
+  --tw-enter-blur: 20px;
+}
+@utility blur-in-* {
+  --tw-enter-blur: calc(--value(number) * 1px);
+  --tw-enter-blur: --value(--blur-*, [*]);
+}
+
+@utility blur-out {
+  --tw-exit-blur: 20px;
+}
+@utility blur-out-* {
+  --tw-exit-blur: calc(--value(number) * 1px);
+  --tw-exit-blur: --value(--blur-*, [*]);
+}
+
+@utility fade-in {
+  --tw-enter-opacity: 0;
+}
+@utility fade-in-* {
+  --tw-enter-opacity: calc(--value(number) / 100);
+  --tw-enter-opacity: --value(--percentage-*, [*]);
+}
+
+@utility fade-out {
+  --tw-exit-opacity: 0;
+}
+@utility fade-out-* {
+  --tw-exit-opacity: calc(--value(number) / 100);
+  --tw-exit-opacity: --value(--percentage-*, [*]);
+}
+
+@utility zoom-in {
+  --tw-enter-scale: 0;
+}
+@utility zoom-in-* {
+  --tw-enter-scale: calc(--value(number) * 1%);
+  --tw-enter-scale: calc(--value(ratio));
+  --tw-enter-scale: --value(--percentage-*, [*]);
+}
+@utility -zoom-in-* {
+  --tw-enter-scale: calc(--value(number) * -1%);
+  --tw-enter-scale: calc(--value(ratio) * -1);
+  --tw-enter-scale: --value(--percentage-*, [*]);
+}
+
+@utility zoom-out {
+  --tw-exit-scale: 0;
+}
+@utility zoom-out-* {
+  --tw-exit-scale: calc(--value(number) * 1%);
+  --tw-exit-scale: calc(--value(ratio));
+  --tw-exit-scale: --value(--percentage-*, [*]);
+}
+@utility -zoom-out-* {
+  --tw-exit-scale: calc(--value(number) * -1%);
+  --tw-exit-scale: calc(--value(ratio) * -1);
+  --tw-exit-scale: --value(--percentage-*, [*]);
+}
+
+@utility spin-in {
+  --tw-enter-rotate: 30deg;
+}
+@utility spin-in-* {
+  --tw-enter-rotate: calc(--value(number) * 1deg);
+  --tw-enter-rotate: calc(--value(ratio) * 360deg);
+  --tw-enter-rotate: --value(--rotate-*, [*]);
+}
+@utility -spin-in {
+  --tw-enter-rotate: -30deg;
+}
+@utility -spin-in-* {
+  --tw-enter-rotate: calc(--value(number) * -1deg);
+  --tw-enter-rotate: calc(--value(ratio) * -360deg);
+  --tw-enter-rotate: --value(--rotate-*, [*]);
+}
+
+@utility spin-out {
+  --tw-exit-rotate: 30deg;
+}
+@utility spin-out-* {
+  --tw-exit-rotate: calc(--value(number) * 1deg);
+  --tw-exit-rotate: calc(--value(ratio) * 360deg);
+  --tw-exit-rotate: --value(--rotate-*, [*]);
+}
+@utility -spin-out {
+  --tw-exit-rotate: -30deg;
+}
+@utility -spin-out-* {
+  --tw-exit-rotate: calc(--value(number) * -1deg);
+  --tw-exit-rotate: calc(--value(ratio) * -360deg);
+  --tw-exit-rotate: --value(--rotate-*, [*]);
+}
+
+@utility slide-in-from-top {
+  --tw-enter-translate-y: -100%;
+}
+@utility slide-in-from-top-* {
+  --tw-enter-translate-y: calc(--value(integer) * var(--spacing) * -1);
+  --tw-enter-translate-y: calc(
+    --value(--percentage-*, --percentage-translate-*) * -100%
+  );
+  --tw-enter-translate-y: calc(--value(ratio) * -100%);
+  --tw-enter-translate-y: calc(
+    --value(--translate-*, [percentage], [length]) * -1
+  );
+}
+@utility slide-in-from-bottom {
+  --tw-enter-translate-y: 100%;
+}
+@utility slide-in-from-bottom-* {
+  --tw-enter-translate-y: calc(--value(integer) * var(--spacing));
+  --tw-enter-translate-y: calc(
+    --value(--percentage-*, --percentage-translate-*) * 100%
+  );
+  --tw-enter-translate-y: calc(--value(ratio) * 100%);
+  --tw-enter-translate-y: --value(--translate-*, [percentage], [length]);
+}
+@utility slide-in-from-left {
+  --tw-enter-translate-x: -100%;
+}
+@utility slide-in-from-left-* {
+  --tw-enter-translate-x: calc(--value(integer) * var(--spacing) * -1);
+  --tw-enter-translate-x: calc(
+    --value(--percentage-*, --percentage-translate-*) * -100%
+  );
+  --tw-enter-translate-x: calc(--value(ratio) * -100%);
+  --tw-enter-translate-x: calc(
+    --value(--translate-*, [percentage], [length]) * -1
+  );
+}
+@utility slide-in-from-right {
+  --tw-enter-translate-x: 100%;
+}
+@utility slide-in-from-right-* {
+  --tw-enter-translate-x: calc(--value(integer) * var(--spacing));
+  --tw-enter-translate-x: calc(
+    --value(--percentage-*, --percentage-translate-*) * 100%
+  );
+  --tw-enter-translate-x: calc(--value(ratio) * 100%);
+  --tw-enter-translate-x: --value(--translate-*, [percentage], [length]);
+}
+@utility slide-in-from-start {
+  &:dir(ltr) {
+    --tw-enter-translate-x: -100%;
+  }
+  &:dir(rtl) {
+    --tw-enter-translate-x: 100%;
+  }
+}
+@utility slide-in-from-start-* {
+  &:where(:dir(ltr), [dir="ltr"], [dir="ltr"] *) {
+    --tw-enter-translate-x: calc(--value(integer) * var(--spacing) * -1);
+    --tw-enter-translate-x: calc(
+      --value(--percentage-*, --percentage-translate-*) * -100%
+    );
+    --tw-enter-translate-x: calc(--value(ratio) * -100%);
+    --tw-enter-translate-x: calc(
+      --value(--translate-*, [percentage], [length]) * -1
+    );
+  }
+  &:where(:dir(rtl), [dir="rtl"], [dir="rtl"] *) {
+    --tw-enter-translate-x: calc(--value(integer) * var(--spacing));
+    --tw-enter-translate-x: calc(
+      --value(--percentage-*, --percentage-translate-*) * 100%
+    );
+    --tw-enter-translate-x: calc(--value(ratio) * 100%);
+    --tw-enter-translate-x: --value(--translate-*, [percentage], [length]);
+  }
+}
+@utility slide-in-from-end {
+  &:dir(ltr) {
+    --tw-enter-translate-x: 100%;
+  }
+  &:dir(rtl) {
+    --tw-enter-translate-x: -100%;
+  }
+}
+@utility slide-in-from-end-* {
+  &:where(:dir(ltr), [dir="ltr"], [dir="ltr"] *) {
+    --tw-enter-translate-x: calc(--value(integer) * var(--spacing));
+    --tw-enter-translate-x: calc(
+      --value(--percentage-*, --percentage-translate-*) * 100%
+    );
+    --tw-enter-translate-x: calc(--value(ratio) * 100%);
+    --tw-enter-translate-x: --value(--translate-*, [percentage], [length]);
+  }
+  &:where(:dir(rtl), [dir="rtl"], [dir="rtl"] *) {
+    --tw-enter-translate-x: calc(--value(integer) * var(--spacing) * -1);
+    --tw-enter-translate-x: calc(
+      --value(--percentage-*, --percentage-translate-*) * -100%
+    );
+    --tw-enter-translate-x: calc(--value(ratio) * -100%);
+    --tw-enter-translate-x: calc(
+      --value(--translate-*, [percentage], [length]) * -1
+    );
+  }
+}
+
+@utility slide-out-to-top {
+  --tw-exit-translate-y: -100%;
+}
+@utility slide-out-to-top-* {
+  --tw-exit-translate-y: calc(--value(integer) * var(--spacing) * -1);
+  --tw-exit-translate-y: calc(
+    --value(--percentage-*, --percentage-translate-*) * -100%
+  );
+  --tw-exit-translate-y: calc(--value(ratio) * -100%);
+  --tw-exit-translate-y: calc(
+    --value(--translate-*, [percentage], [length]) * -1
+  );
+}
+@utility slide-out-to-bottom {
+  --tw-exit-translate-y: 100%;
+}
+@utility slide-out-to-bottom-* {
+  --tw-exit-translate-y: calc(--value(integer) * var(--spacing));
+  --tw-exit-translate-y: calc(
+    --value(--percentage-*, --percentage-translate-*) * 100%
+  );
+  --tw-exit-translate-y: calc(--value(ratio) * 100%);
+  --tw-exit-translate-y: --value(--translate-*, [percentage], [length]);
+}
+@utility slide-out-to-left {
+  --tw-exit-translate-x: -100%;
+}
+@utility slide-out-to-left-* {
+  --tw-exit-translate-x: calc(--value(integer) * var(--spacing) * -1);
+  --tw-exit-translate-x: calc(
+    --value(--percentage-*, --percentage-translate-*) * -100%
+  );
+  --tw-exit-translate-x: calc(--value(ratio) * -100%);
+  --tw-exit-translate-x: calc(
+    --value(--translate-*, [percentage], [length]) * -1
+  );
+}
+@utility slide-out-to-right {
+  --tw-exit-translate-x: 100%;
+}
+@utility slide-out-to-right-* {
+  --tw-exit-translate-x: calc(--value(integer) * var(--spacing));
+  --tw-exit-translate-x: calc(
+    --value(--percentage-*, --percentage-translate-*) * 100%
+  );
+  --tw-exit-translate-x: calc(--value(ratio) * 100%);
+  --tw-exit-translate-x: --value(--translate-*, [percentage], [length]);
+}
+@utility slide-out-to-start {
+  &:dir(ltr) {
+    --tw-exit-translate-x: -100%;
+  }
+  &:dir(rtl) {
+    --tw-exit-translate-x: 100%;
+  }
+}
+@utility slide-out-to-start-* {
+  &:where(:dir(ltr), [dir="ltr"], [dir="ltr"] *) {
+    --tw-exit-translate-x: calc(--value(integer) * var(--spacing) * -1);
+    --tw-exit-translate-x: calc(
+      --value(--percentage-*, --percentage-translate-*) * -100%
+    );
+    --tw-exit-translate-x: calc(--value(ratio) * -100%);
+    --tw-exit-translate-x: calc(
+      --value(--translate-*, [percentage], [length]) * -1
+    );
+  }
+  &:where(:dir(rtl), [dir="rtl"], [dir="rtl"] *) {
+    --tw-exit-translate-x: calc(--value(integer) * var(--spacing));
+    --tw-exit-translate-x: calc(
+      --value(--percentage-*, --percentage-translate-*) * 100%
+    );
+    --tw-exit-translate-x: calc(--value(ratio) * 100%);
+    --tw-exit-translate-x: --value(--translate-*, [percentage], [length]);
+  }
+}
+@utility slide-out-to-end {
+  &:dir(ltr) {
+    --tw-exit-translate-x: 100%;
+  }
+  &:dir(rtl) {
+    --tw-exit-translate-x: -100%;
+  }
+}
+@utility slide-out-to-end-* {
+  &:where(:dir(ltr), [dir="ltr"], [dir="ltr"] *) {
+    --tw-exit-translate-x: calc(--value(integer) * var(--spacing));
+    --tw-exit-translate-x: calc(
+      --value(--percentage-*, --percentage-translate-*) * 100%
+    );
+    --tw-exit-translate-x: calc(--value(ratio) * 100%);
+    --tw-exit-translate-x: --value(--translate-*, [percentage], [length]);
+  }
+  &:where(:dir(rtl), [dir="rtl"], [dir="rtl"] *) {
+    --tw-exit-translate-x: calc(--value(integer) * var(--spacing) * -1);
+    --tw-exit-translate-x: calc(
+      --value(--percentage-*, --percentage-translate-*) * -100%
+    );
+    --tw-exit-translate-x: calc(--value(ratio) * -100%);
+    --tw-exit-translate-x: calc(
+      --value(--translate-*, [percentage], [length]) * -1
+    );
+  }
+}
+</file>
+
+<file path="src/components/avatar.rs">
+use crate::{
+    cn,
+    primitives::avatar::{AvatarFallbackRoot, AvatarImageRoot, AvatarRoot},
+};
+use leptos::prelude::*;
+
+#[derive(Default, Clone, Copy, PartialEq)]
+pub enum AvatarSize {
+    #[default]
+    Default,
+    Sm,
+    Lg,
+}
+
+impl AvatarSize {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            AvatarSize::Default => "default",
+            AvatarSize::Sm => "sm",
+            AvatarSize::Lg => "lg",
+        }
+    }
+}
+
+#[component]
+pub fn Avatar(
+    #[prop(optional)] size: AvatarSize,
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <AvatarRoot>
+            <span
+                data-slot="avatar"
+                data-size=size.as_str()
+                class=move || {
+                    cn!(
+                        "group/avatar relative flex size-8 shrink-0 overflow-hidden rounded-full select-none data-[size=lg]:size-10 data-[size=sm]:size-6",
+                    class.get()
+                    )
+                }
+            >
+                {children()}
+            </span>
+        </AvatarRoot>
+    }
+}
+
+#[component]
+pub fn AvatarImage(
+    #[prop(into)] src: String,
+    #[prop(optional, into)] alt: String,
+    #[prop(optional, into)] class: Signal<String>,
+) -> impl IntoView {
+    view! {
+        <AvatarImageRoot
+            src=src
+            alt=alt
+            data_slot="avatar-image"
+            class=move || cn!("aspect-square size-full", class.get())
+        />
+    }
+}
+
+#[component]
+pub fn AvatarFallback(
+    #[prop(default = None, into)] delay_ms: Option<u64>,
+    #[prop(optional, into)] class: Signal<String>,
+    children: ChildrenFn,
+) -> impl IntoView {
+    view! {
+        <AvatarFallbackRoot delay_ms=delay_ms>
+            <span
+                data-slot="avatar-fallback"
+                class=move || {
+                    cn!(
+                        "flex size-full items-center justify-center rounded-full bg-muted text-sm text-muted-foreground group-data-[size=sm]/avatar:text-xs",
+                    class.get()
+                    )
+                }
+            >
+                {children()}
+            </span>
+        </AvatarFallbackRoot>
+    }
+}
+
+#[component]
+pub fn AvatarBadge(
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <span
+            data-slot="avatar-badge"
+            class=move || {
+                cn!(
+                    "absolute right-0 bottom-0 z-10 inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground ring-2 ring-background select-none",
+                "group-data-[size=sm]/avatar:size-2 group-data-[size=sm]/avatar:[&>svg]:hidden",
+                "group-data-[size=default]/avatar:size-2.5 group-data-[size=default]/avatar:[&>svg]:size-2",
+                "group-data-[size=lg]/avatar:size-3 group-data-[size=lg]/avatar:[&>svg]:size-2",
+                class.get()
+                )
+            }
+        >
+            {children()}
+        </span>
+    }
+}
+
+#[component]
+pub fn AvatarGroup(
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <div
+            data-slot="avatar-group"
+            class=move || {
+                cn!(
+                    "group/avatar-group flex -space-x-2 *:data-[slot=avatar]:ring-2 *:data-[slot=avatar]:ring-background",
+                class.get()
+                )
+            }
+        >
+            {children()}
+        </div>
+    }
+}
+
+#[component]
+pub fn AvatarGroupCount(
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <div
+            data-slot="avatar-group-count"
+            class=move || {
+                cn!(
+                    "relative flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-sm text-muted-foreground ring-2 ring-background group-has-data-[size=lg]/avatar-group:size-10 group-has-data-[size=sm]/avatar-group:size-6 [&>svg]:size-4 group-has-data-[size=lg]/avatar-group:[&>svg]:size-5 group-has-data-[size=sm]/avatar-group:[&>svg]:size-3",
+                class.get()
+                )
+            }
+        >
+            {children()}
+        </div>
+    }
+}
+</file>
+
+<file path="src/components/button.rs">
+use crate::cn;
+use leptos::{either::Either, ev, prelude::*};
+use leptos_node_ref::AnyNodeRef;
+
+#[derive(Default, Clone, Copy, PartialEq)]
+pub enum ButtonSize {
+    Xs,
+    Sm,
+    #[default]
+    Default,
+    Lg,
+
+    Icon,
+    IconSm,
+    IconXs,
+    IconLg,
+}
+
+#[derive(Default, Clone, Copy, PartialEq)]
+pub enum ButtonVariant {
+    #[default]
+    Default,
+    Outline,
+    Ghost,
+    Secondary,
+    Link,
+    Destructive,
+}
+
+#[component]
+pub fn Button(
+    #[prop(optional)] node_ref: Option<AnyNodeRef>,
+    #[prop(optional, into)] on_click: Option<Callback<ev::MouseEvent>>,
+    #[prop(optional)] variant: ButtonVariant,
+    #[prop(optional)] size: ButtonSize,
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(default = None, into)] render: Option<Callback<(Signal<String>, AnyNodeRef), AnyView>>,
+    children: ChildrenFn,
+) -> impl IntoView {
+    let variant_classes = match variant {
+        ButtonVariant::Default => "bg-primary text-primary-foreground [a]:hover:bg-primary/80",
+        ButtonVariant::Outline => {
+            "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50"
+        }
+        ButtonVariant::Ghost => {
+            "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50"
+        }
+        ButtonVariant::Secondary => {
+            "bg-secondary text-secondary-foreground hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground"
+        }
+        ButtonVariant::Link => "text-primary underline-offset-4 hover:underline",
+        ButtonVariant::Destructive => {
+            "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40"
+        }
+    };
+
+    let size_classes = match size {
+        ButtonSize::Default => {
+            "h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2"
+        }
+        ButtonSize::Xs => {
+            "h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3"
+        }
+        ButtonSize::Sm => {
+            "h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5"
+        }
+        ButtonSize::Lg => {
+            "h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2"
+        }
+
+        ButtonSize::Icon => "size-8",
+        ButtonSize::IconLg => "size-9",
+        ButtonSize::IconSm => {
+            "size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg"
+        }
+        ButtonSize::IconXs => {
+            "size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3"
+        }
+    };
+
+    let node_ref = node_ref.unwrap_or_default();
+
+    let merged_classes = Signal::derive(move || {
+        cn!(
+            "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+            variant_classes,
+            size_classes,
+            class.get()
+        )
+    });
+
+    match render {
+        Some(render_fn) => Either::Left(render_fn.run((merged_classes, node_ref))),
+        None => Either::Right(view! {
+            <button node_ref=node_ref on:click=move |e| {
+            if let Some(cb) = on_click {
+                cb.run(e);
+            }
+            }
+            class=merged_classes>
+            {children()}
+            </button>
+        }),
+    }
+}
+</file>
+
+<file path="src/components/card.rs">
+use crate::cn;
+use leptos::prelude::*;
+
+#[derive(Default, Clone, Copy, PartialEq)]
+pub enum CardSize {
+    #[default]
+    Default,
+    Sm,
+}
+
+impl CardSize {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            CardSize::Default => "default",
+            CardSize::Sm => "sm",
+        }
+    }
+}
+
+#[component]
+pub fn Card(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] size: CardSize,
+    children: Children,
+) -> impl IntoView {
+    let size_str = size.as_str();
+
+    view! {
+        <div
+            data-slot="card"
+            data-size=size_str
+            class=move || {
+                cn!(
+                    "group/card flex flex-col gap-4 overflow-hidden rounded-xl bg-card py-4 text-sm text-card-foreground ring-1 ring-foreground/10 has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
+                &class.get(),
+                )
+            }
+        >
+            {children()}
+        </div>
+    }
+}
+
+#[component]
+pub fn CardHeader(
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <div
+            data-slot="card-header"
+            class=move || {
+                cn!(
+                    "group/card-header @container/card-header grid auto-rows-min items-start gap-1 rounded-t-xl px-4 group-data-[size=sm]/card:px-3 has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto] [.border-b]:pb-4 group-data-[size=sm]/card:[.border-b]:pb-3",
+                &class.get(),
+                )
+            }
+        >
+            {children()}
+        </div>
+    }
+}
+
+#[component]
+pub fn CardTitle(
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <div
+            data-slot="card-title"
+            class=move || {
+                cn!(
+                    "cn-font-heading text-base leading-snug font-medium group-data-[size=sm]/card:text-sm",
+                &class.get(),
+                )
+            }
+        >
+            {children()}
+        </div>
+    }
+}
+
+#[component]
+pub fn CardDescription(
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <div
+            data-slot="card-description"
+            class=move || cn!("text-sm text-muted-foreground", &class.get())
+        >
+            {children()}
+        </div>
+    }
+}
+
+#[component]
+pub fn CardAction(
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <div
+            data-slot="card-action"
+            class=move || {
+                cn!(
+                    "col-start-2 row-span-2 row-start-1 self-start justify-self-end",
+                &class.get(),
+                )
+            }
+        >
+            {children()}
+        </div>
+    }
+}
+
+#[component]
+pub fn CardContent(
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <div
+            data-slot="card-content"
+            class=move || cn!("px-4 group-data-[size=sm]/card:px-3", &class.get())
+        >
+            {children()}
+        </div>
+    }
+}
+
+#[component]
+pub fn CardFooter(
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <div
+            data-slot="card-footer"
+            class=move || {
+                cn!(
+                    "flex mt-auto items-center rounded-b-xl border-t bg-muted/50 p-4 group-data-[size=sm]/card:p-3",
+                &class.get(),
+                )
+            }
+        >
+            {children()}
+        </div>
+    }
+}
+</file>
+
+<file path="src/components/checkbox.rs">
+use crate::{cn, primitives::checkbox::CheckboxRoot};
+use leptos::prelude::*;
+
+#[component]
+pub fn Checkbox(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(into)] checked: RwSignal<bool>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional, into)] id: Signal<String>,
+) -> impl IntoView {
+    view! {
+        <CheckboxRoot
+            id=id
+            disabled=disabled
+            checked=checked
+            class=move || {
+                cn!(
+                    "peer size-4 shrink-0 rounded-sm border border-primary ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground",
+                    class.get()
+                )
+            }
+        >
+            <div class=move || {
+                cn!(
+                    "flex items-center justify-center text-primary-foreground",
+                    if checked.get() { "visible" } else { "hidden" }
+                )
+            }>
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="h-4 w-4"
+                >
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            </div>
+        </CheckboxRoot>
+    }
+}
+</file>
+
+<file path="src/components/dialog.rs">
+use crate::{
+    cn,
+    components::button::{Button, ButtonSize, ButtonVariant},
+    primitives::dialog::{DialogPortalRoot, DialogRoot, use_dialog},
+};
+use leptos::{either::Either, ev, prelude::*};
+
+#[component]
+pub fn Dialog(#[prop(optional)] open: Option<RwSignal<bool>>, children: Children) -> impl IntoView {
+    view! { <DialogRoot open=open>{children()}</DialogRoot> }
+}
+
+#[component]
+pub fn DialogTrigger(
+    #[prop(optional)] size: ButtonSize,
+    #[prop(optional)] variant: ButtonVariant,
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional, into)] render: Option<Callback<Callback<ev::MouseEvent>, AnyView>>,
+    #[prop(optional)] children: Option<ChildrenFn>,
+) -> impl IntoView {
+    let ctx = use_dialog();
+    let on_click = Callback::new(move |_: ev::MouseEvent| ctx.toggle());
+
+    match render {
+        Some(render_fn) => Either::Left(render_fn.run(on_click)),
+        None => Either::Right(view! {
+            <Button
+                size=size
+                variant=variant
+                class=class
+                attr:disabled=disabled
+                on:click=move |e| on_click.run(e)
+            >
+                {
+                    let children = children.clone();
+                    move || match &children {
+                        Some(child) => Either::Left(child()),
+                        None => Either::Right(view! { "" }.into_any()),
+                    }
+                }
+            </Button>
+        }),
+    }
+}
+
+#[component]
+pub fn DialogPortal(
+    #[prop(optional, into)] class: Signal<String>,
+    children: ChildrenFn,
+) -> impl IntoView {
+    let context = use_dialog();
+    let stored_children = StoredValue::new(children);
+
+    view! {
+        <DialogPortalRoot>
+            <div data-slot="dialog-portal">
+                <div
+                    data-state=move || if context.is_open.get() { "open" } else { "closed" }
+                    class="fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0"
+                    on:click=move |_| context.close()
+                />
+
+                <div
+                    data-state=move || if context.is_open.get() { "open" } else { "closed" }
+                    class=move || {
+                        cn!(
+                            "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+                            class.get()
+                        )
+                    }
+                >
+                    {stored_children.with_value(|c| c())}
+
+                    <button
+                        on:click=move |_| context.close()
+                        class="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            class="h-4 w-4"
+                        >
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                        <span class="sr-only">"Close"</span>
+                    </button>
+                </div>
+            </div>
+        </DialogPortalRoot>
+    }
+}
+
+#[component]
+pub fn DialogHeader(
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <div class=move || {
+            cn!("flex flex-col space-y-1.5 text-center sm:text-left", class.get())
+        }>{children()}</div>
+    }
+}
+
+#[component]
+pub fn DialogFooter(
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <div class=move || {
+            cn!("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2", class.get())
+        }>{children()}</div>
+    }
+}
+
+#[component]
+pub fn DialogTitle(
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <div class=move || {
+            cn!("text-lg font-semibold leading-none tracking-tight", class.get())
+        }>{children()}</div>
+    }
+}
+
+#[component]
+pub fn DialogDescription(
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    view! { <div class=move || cn!("text-sm text-muted-foreground", class.get())>{children()}</div> }
+}
+</file>
+
+<file path="src/components/input.rs">
+use crate::cn;
+use leptos::prelude::*;
+
+#[derive(Default, Clone, Copy, PartialEq)]
+pub enum InputType {
+    #[default]
+    Text,
+    Email,
+    Password,
+    Number,
+    File,
+}
+
+impl InputType {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            InputType::Text => "text",
+            InputType::Email => "email",
+            InputType::Password => "password",
+            InputType::Number => "number",
+            InputType::File => "file",
+        }
+    }
+}
+
+#[component]
+pub fn Input(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional)] input_type: InputType,
+    #[prop(default = None, into)] model: Option<RwSignal<String>>,
+    #[prop(optional, into)] value: Signal<String>,
+) -> impl IntoView {
+    view! {
+        <input
+            type=input_type.as_str()
+            prop:value=move || { if let Some(m) = model { m.get() } else { value.get() } }
+            on:input=move |ev| {
+                if let Some(m) = model {
+                    m.set(event_target_value(&ev));
+                }
+            }
+            class=move || {
+                cn!(
+                    "h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40", &class.get()
+                )
+            }
+        />
+    }
+}
+</file>
+
+<file path="src/components/label.rs">
+use crate::cn;
+use leptos::prelude::*;
+
+#[component]
+pub fn Label(#[prop(optional, into)] class: Signal<String>, children: Children) -> impl IntoView {
+    view! {
+        <label class=move || {
+            cn!(
+                "flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50", &class.get()
+            )
+        }>{children()}</label>
+    }
+}
+</file>
+
+<file path="src/components/select.rs">
+use crate::{
+    cn,
+    primitives::select::{
+        use_select, SelectContentRoot, SelectItemRoot, SelectPortalRoot, SelectRoot,
+        SelectTriggerRoot,
+    },
+};
+use leptos::prelude::*;
+
+#[component]
+pub fn Select(
+    #[prop(optional, into)] value: RwSignal<Option<String>>,
+    #[prop(optional, into)] class: Signal<String>,
+    children: ChildrenFn,
+) -> impl IntoView {
+    view! {
+        <SelectRoot value=value class=move || cn!("relative w-full", class.get())>
+            {children()}
+        </SelectRoot>
+    }
+}
+
+#[component]
+pub fn SelectTrigger(
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <SelectTriggerRoot class=move || {
+            cn!(
+                "flex h-8 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                    class.get()
+            )
+        }>
+            {children()}
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="h-4 w-4 opacity-50"
+            >
+                <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+        </SelectTriggerRoot>
+    }
+}
+
+#[component]
+pub fn SelectValue(#[prop(into)] placeholder: String) -> impl IntoView {
+    let ctx = use_select();
+
+    view! {
+        <span class="truncate">
+            {move || ctx.value.get().unwrap_or_else(|| placeholder.clone())}
+        </span>
+    }
+}
+
+#[component]
+pub fn SelectPortal(children: ChildrenFn) -> impl IntoView {
+    view! { <SelectPortalRoot children=children /> }
+}
+
+#[component]
+pub fn SelectContent(
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <SelectContentRoot class=move || {
+            cn!(
+                "z-50 overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md",
+                "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2",
+                class.get()
+            )
+        }>
+            <div class="p-1 w-full max-h-96 overflow-y-auto">{children()}</div>
+        </SelectContentRoot>
+    }
+}
+
+#[component]
+pub fn SelectItem(
+    #[prop(into)] value: String,
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <SelectItemRoot
+            value=value
+            class=move || {
+                cn!(
+                    "group relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50",
+                    class.get()
+                )
+            }
+        >
+            <span class="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="h-4 w-4 hidden group-data-[state=checked]:block"
+                >
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            </span>
+            {children()}
+        </SelectItemRoot>
+    }
+}
+</file>
+
+<file path="src/components/switch.rs">
+use crate::{cn, primitives::switch::SwitchRoot};
+use leptos::prelude::*;
+
+#[component]
+pub fn Switch(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(into)] checked: RwSignal<bool>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional, into)] id: Signal<String>,
+) -> impl IntoView {
+    view! {
+        <SwitchRoot
+            checked=checked
+            disabled=disabled
+            id=id
+            class=move || {
+                cn!(
+                    "peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=unchecked]:bg-input",
+                    class.get()
+                )
+            }
+        >
+            <span
+                data-state=move || if checked.get() { "checked" } else { "unchecked" }
+                class="pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0"
+            />
+        </SwitchRoot>
+    }
+}
+</file>
+
+<file path="src/components/tabs.rs">
+use crate::{
+    cn,
+    primitives::tabs::{
+        TabsContentRoot, TabsListRoot, TabsListVariants, TabsRoot, TabsTriggerRoot,
+    },
+    utils::types::Orientation,
+};
+use leptos::prelude::*;
+
+#[component]
+pub fn Tabs(
+    #[prop(into)] default_value: String,
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] orientation: Orientation,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <TabsRoot
+            default_value=default_value
+            orientation=orientation
+            class=move || cn!("group/tabs flex gap-2 data-horizontal:flex-col", class.get())
+        >
+            {children()}
+        </TabsRoot>
+    }
+}
+
+#[component]
+pub fn TabsList(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] variant: TabsListVariants,
+    children: Children,
+) -> impl IntoView {
+    let variant_classes = match variant {
+        TabsListVariants::Default => "bg-muted",
+        TabsListVariants::Line => "gap-1 bg-transparent",
+    };
+
+    view! {
+        <TabsListRoot
+            variant=variant
+            class=move || {
+                cn!(
+                    "group/tabs-list inline-flex w-fit items-center justify-center rounded-lg p-0.75 text-muted-foreground group-data-horizontal/tabs:h-8 group-data-vertical/tabs:h-fit group-data-vertical/tabs:flex-col data-[variant=line]:rounded-none",
+                variant_classes,
+                class.get()
+                )
+            }
+        >
+            {children()}
+        </TabsListRoot>
+    }
+}
+
+#[component]
+pub fn TabsTrigger(
+    #[prop(into)] value: String,
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <TabsTriggerRoot
+            value=value
+            disabled=disabled
+            class=move || {
+                cn!(
+                    "relative inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-1.5 py-0.5 text-sm font-medium whitespace-nowrap text-foreground/60 transition-all group-data-vertical/tabs:w-full group-data-vertical/tabs:justify-start hover:text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 has-data-[icon=inline-end]:pr-1 has-data-[icon=inline-start]:pl-1 dark:text-muted-foreground dark:hover:text-foreground group-data-[variant=default]/tabs-list:data-active:shadow-sm group-data-[variant=line]/tabs-list:data-active:shadow-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+                "group-data-[variant=line]/tabs-list:bg-transparent group-data-[variant=line]/tabs-list:data-active:bg-transparent dark:group-data-[variant=line]/tabs-list:data-active:border-transparent dark:group-data-[variant=line]/tabs-list:data-active:bg-transparent",
+                "data-active:bg-background data-active:text-foreground dark:data-active:border-input dark:data-active:bg-input/30 dark:data-active:text-foreground",
+                "after:absolute after:bg-foreground after:opacity-0 after:transition-opacity group-data-horizontal/tabs:after:inset-x-0 group-data-horizontal/tabs:after:bottom-[-5px] group-data-horizontal/tabs:after:h-0.5 group-data-vertical/tabs:after:inset-y-0 group-data-vertical/tabs:after:-right-1 group-data-vertical/tabs:after:w-0.5 group-data-[variant=line]/tabs-list:data-active:after:opacity-100",
+                class.get()
+                )
+            }
+        >
+            {children()}
+        </TabsTriggerRoot>
+    }
+}
+
+#[component]
+pub fn TabsContent(
+    #[prop(into)] value: String,
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <TabsContentRoot
+            value=value
+            class=move || { cn!("flex-1 text-sm outline-none",
+                class.get()) }
+        >
+            {children()}
+        </TabsContentRoot>
+    }
+}
+</file>
+
+<file path="src/components/toast.rs">
+pub use crate::{
+    cn,
+    primitives::toast::{
+        use_toast, ToastContext, ToastData, ToastPosition, ToastProviderRoot, ToastSize,
+        ToastVariant,
+    },
+};
+use leptos::{ev, prelude::*};
+
+#[component]
+pub fn ToastProvider(
+    #[prop(optional)] default_variant: Option<ToastVariant>,
+    #[prop(optional)] default_size: Option<ToastSize>,
+    #[prop(optional)] default_position: Option<ToastPosition>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <ToastProviderRoot
+            default_variant=default_variant
+            default_size=default_size
+            default_position=default_position
+        >
+            {children()}
+            <Toaster />
+        </ToastProviderRoot>
+    }
+}
+
+#[component]
+fn Toaster() -> impl IntoView {
+    let ctx = use_toast();
+
+    let regions = vec![
+        (ToastPosition::TopLeft, "top-0 left-0 flex-col"),
+        (
+            ToastPosition::TopCenter,
+            "top-0 left-1/2 -translate-x-1/2 flex-col",
+        ),
+        (ToastPosition::TopRight, "top-0 right-0 flex-col"),
+        (
+            ToastPosition::BottomLeft,
+            "bottom-0 left-0 flex-col-reverse",
+        ),
+        (
+            ToastPosition::BottomCenter,
+            "bottom-0 left-1/2 -translate-x-1/2 flex-col-reverse",
+        ),
+        (
+            ToastPosition::BottomRight,
+            "bottom-0 right-0 flex-col-reverse",
+        ),
+    ];
+
+    view! {
+        {regions
+            .into_iter()
+            .map(|(pos, placement)| {
+                view! {
+                    <div class=move || {
+                        let has_toasts = ctx.toasts.get().iter().any(|t| t.position == pos);
+                        if has_toasts {
+                            cn!(
+                                "fixed z-100 flex max-h-screen w-full p-4 sm:w-89 gap-4 pointer-events-none", placement
+                            )
+                        } else {
+                            "hidden".to_string()
+                        }
+                    }>
+                        <For
+                            each=move || {
+                                ctx.toasts
+                                    .get()
+                                    .into_iter()
+                                    .filter(|t| t.position == pos)
+                                    .collect::<Vec<_>>()
+                            }
+                            key=|t| t.id
+                            children=move |toast| {
+                                view! { <ToastItem toast=toast /> }
+                            }
+                        />
+                    </div>
+                }
+            })
+            .collect_view()}
+    }
+}
+
+#[component]
+fn ToastItem(toast: ToastData) -> impl IntoView {
+    let ctx = expect_context::<ToastContext>();
+    let id = toast.id;
+
+    let is_dragging = RwSignal::new(false);
+    let drag_offset_x = RwSignal::new(0);
+    let drag_offset_y = RwSignal::new(0);
+    let start_x = RwSignal::new(0);
+    let start_y = RwSignal::new(0);
+
+    let on_pointer_down = move |e: ev::PointerEvent| {
+        is_dragging.set(true);
+        start_x.set(e.client_x());
+        start_y.set(e.client_y());
+    };
+
+    let on_pointer_move = move |e: ev::PointerEvent| {
+        if is_dragging.get() {
+            let diff_x = e.client_x() - start_x.get();
+            let diff_y = e.client_y() - start_y.get();
+
+            match toast.position {
+                ToastPosition::TopLeft | ToastPosition::BottomLeft => {
+                    if diff_x < 0 {
+                        drag_offset_x.set(diff_x);
+                    }
+                }
+                ToastPosition::TopRight | ToastPosition::BottomRight => {
+                    if diff_x > 0 {
+                        drag_offset_x.set(diff_x);
+                    }
+                }
+                ToastPosition::TopCenter => {
+                    if diff_y < 0 {
+                        drag_offset_y.set(diff_y);
+                    }
+                }
+                ToastPosition::BottomCenter => {
+                    if diff_y > 0 {
+                        drag_offset_y.set(diff_y);
+                    }
+                }
+            }
+        }
+    };
+
+    let on_pointer_up = move |_: ev::PointerEvent| {
+        if is_dragging.get() {
+            is_dragging.set(false);
+            if drag_offset_x.get().abs() > 60 || drag_offset_y.get().abs() > 60 {
+                ctx.dismiss(id);
+            } else {
+                drag_offset_x.set(0);
+                drag_offset_y.set(0);
+            }
+        }
+    };
+
+    view! {
+        <div
+            data-state=move || { if toast.is_open.get() { "open" } else { "closed" } }
+            style=move || {
+                let x = drag_offset_x.get();
+                let y = drag_offset_y.get();
+                if x != 0 || y != 0 {
+                    format!("transform: translate({}px, {}px)", x, y)
+                } else {
+                    String::new()
+                }
+            }
+            on:pointerdown=on_pointer_down
+            on:pointermove=on_pointer_move
+            on:pointerup=on_pointer_up
+            on:pointerleave=on_pointer_up
+            on:pointercancel=on_pointer_up
+            class=move || {
+                let drag_classes = if is_dragging.get() {
+                    "transition-none cursor-grabbing"
+                } else {
+                    "duration-300 cursor-grab"
+                };
+                let animation_classes = match toast.position {
+                    ToastPosition::TopRight => {
+                        "data-[state=open]:slide-in-from-top-full data-[state=open]:sm:slide-in-from-right-full data-[state=closed]:slide-out-to-right-full"
+                    }
+                    ToastPosition::BottomRight => {
+                        "data-[state=open]:slide-in-from-bottom-full data-[state=open]:sm:slide-in-from-right-full data-[state=closed]:slide-out-to-right-full"
+                    }
+                    ToastPosition::TopLeft => {
+                        "data-[state=open]:slide-in-from-top-full data-[state=open]:sm:slide-in-from-left-full data-[state=closed]:slide-out-to-left-full"
+                    }
+                    ToastPosition::BottomLeft => {
+                        "data-[state=open]:slide-in-from-bottom-full data-[state=open]:sm:slide-in-from-left-full data-[state=closed]:slide-out-to-left-full"
+                    }
+                    ToastPosition::TopCenter => {
+                        "data-[state=open]:slide-in-from-top-full data-[state=closed]:slide-out-to-top-full"
+                    }
+                    ToastPosition::BottomCenter => {
+                        "data-[state=open]:slide-in-from-bottom-full data-[state=closed]:slide-out-to-bottom-full"
+                    }
+                };
+                cn!(
+                    "group pointer-events-auto relative flex w-full items-center justify-between space-x-2 text-popover-foreground overflow-hidden rounded-md border shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 [animation-duration:300ms] fill-mode-forwards touch-none select-none",
+                    drag_classes,
+                    animation_classes,
+                    match toast.variant {
+                        ToastVariant::Default => "bg-popover text-foreground",
+                        ToastVariant::Destructive => "destructive group border-destructive bg-destructive text-destructive-foreground",
+                    },
+                    match toast.size {
+                        ToastSize::Default => "py-2 px-4 text-sm",
+                        ToastSize::Lg => "py-6 px-8 text-base",
+                    }
+                )
+            }
+        >
+            <div class="grid gap-1">
+                <div class="text-sm font-medium">{toast.title.clone()}</div>
+                {toast
+                    .description
+                    .clone()
+                    .map(|desc| view! { <div class="text-xs text-muted-foreground">{desc}</div> })}
+            </div>
+        </div>
+    }
+}
+</file>
+
+<file path="src/middleware/mod.rs">
+use floating_ui_leptos::{Middleware, MiddlewareReturn, MiddlewareState, Placement};
+use serde::{Deserialize, Serialize};
+use web_sys::{Element, Window};
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct TransformOriginData {
+    pub x: String,
+    pub y: String,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct TransformOrigin;
+
+impl Middleware<Element, Window> for TransformOrigin {
+    fn name(&self) -> &'static str {
+        "transformOrigin"
+    }
+
+    fn compute(&self, state: MiddlewareState<'_, Element, Window>) -> MiddlewareReturn {
+        let placement = state.placement;
+
+        let (placed_side, placed_align) = match placement {
+            Placement::Top => ("top", "center"),
+            Placement::TopStart => ("top", "start"),
+            Placement::TopEnd => ("top", "end"),
+            Placement::Bottom => ("bottom", "center"),
+            Placement::BottomStart => ("bottom", "start"),
+            Placement::BottomEnd => ("bottom", "end"),
+            Placement::Left => ("left", "center"),
+            Placement::LeftStart => ("left", "start"),
+            Placement::LeftEnd => ("left", "end"),
+            Placement::Right => ("right", "center"),
+            Placement::RightStart => ("right", "start"),
+            Placement::RightEnd => ("right", "end"),
+        };
+
+        let no_arrow_align = match placed_align {
+            "start" => "0%",
+            "end" => "100%",
+            _ => "50%",
+        };
+
+        let float_h = state.rects.floating.height;
+        let float_w = state.rects.floating.width;
+
+        let (x, y) = match placed_side {
+            "bottom" => (no_arrow_align.to_string(), "0px".to_string()),
+            "top" => (no_arrow_align.to_string(), format!("{}px", float_h)),
+            "right" => ("0px".to_string(), no_arrow_align.to_string()),
+            "left" => (format!("{}px", float_w), no_arrow_align.to_string()),
+            _ => ("50%".to_string(), "50%".to_string()),
+        };
+
+        MiddlewareReturn {
+            x: None,
+            y: None,
+            reset: None,
+            data: Some(serde_json::to_value(TransformOriginData { x, y }).unwrap()),
+        }
+    }
+}
+</file>
+
+<file path="src/primitives/avatar.rs">
+use leptos::prelude::*;
+use std::time::Duration;
+
+#[derive(Copy, Clone, PartialEq)]
+pub enum ImageStatus {
+    Idle,
+    Loading,
+    Loaded,
+    Error,
+}
+
+#[derive(Copy, Clone)]
+pub struct AvatarContext {
+    pub status: RwSignal<ImageStatus>,
+}
+
+pub fn use_avatar() -> AvatarContext {
+    expect_context::<AvatarContext>()
+}
+
+#[component]
+pub fn AvatarRoot(children: Children) -> impl IntoView {
+    provide_context(AvatarContext {
+        status: RwSignal::new(ImageStatus::Idle),
+    });
+    view! { {children()} }
+}
+
+#[component]
+pub fn AvatarImageRoot(
+    #[prop(into)] src: String,
+    #[prop(optional, into)] alt: String,
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] data_slot: &'static str,
+) -> impl IntoView {
+    let ctx = use_avatar();
+
+    ctx.status.set(ImageStatus::Loading);
+
+    view! {
+        <img
+            src=src
+            alt=alt
+            class=class
+            data-slot=data_slot
+            on:load=move |_| ctx.status.set(ImageStatus::Loaded)
+            on:error=move |_| ctx.status.set(ImageStatus::Error)
+            style=move || {
+                if ctx.status.get() == ImageStatus::Loaded { "" } else { "display: none;" }
+            }
+        />
+    }
+}
+
+#[component]
+pub fn AvatarFallbackRoot(
+    #[prop(default = None, into)] delay_ms: Option<u64>,
+    children: ChildrenFn,
+) -> impl IntoView {
+    let ctx = use_avatar();
+    let show = RwSignal::new(delay_ms.is_none());
+
+    if let Some(delay) = delay_ms {
+        Effect::new(move |_| {
+            set_timeout(move || show.set(true), Duration::from_millis(delay));
+        });
+    }
+
+    view! {
+        <Show when=move || show.get() && ctx.status.get() != ImageStatus::Loaded>{children()}</Show>
+    }
+}
+</file>
+
+<file path="src/primitives/button.rs">
+use leptos::{ev, prelude::*};
+use leptos_node_ref::AnyNodeRef;
+
+#[component]
+pub fn ButtonRoot(
+    #[prop(default = None, into)] node_ref: Option<AnyNodeRef>,
+    #[prop(default = None, into)] on_click: Option<Callback<ev::MouseEvent>>,
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    children: Children,
+) -> impl IntoView {
+    let node_ref = node_ref.unwrap_or_default();
+
+    view! {
+        <button
+            disabled=move || disabled.get()
+            class=class
+            on:click=move |ev| {
+                if let Some(cb) = on_click {
+                    cb.run(ev);
+                }
+            }
+            node_ref=node_ref
+        >
+            {children()}
+        </button>
+    }
+}
+</file>
+
+<file path="src/primitives/checkbox.rs">
+use leptos::{ev, prelude::*};
+
+#[component]
+pub fn CheckboxRoot(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(into)] checked: RwSignal<bool>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional, into)] id: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    let toggle = move |_: ev::MouseEvent| {
+        if !disabled.get() {
+            checked.update(|c| *c = !*c);
+        }
+    };
+
+    view! {
+        <button
+            type="button"
+            id=id
+            role="checkbox"
+            aria-checked=move || if checked.get() { "true" } else { "false" }
+            data-state=move || if checked.get() { "checked" } else { "unchecked" }
+            disabled=disabled
+            on:click=toggle
+            class=class
+        >
+            {children()}
+        </button>
+    }
+}
+</file>
+
+<file path="src/primitives/dialog.rs">
+use leptos::{either::Either, ev, portal::Portal, prelude::*, wasm_bindgen::JsCast};
+use leptos_node_ref::AnyNodeRef;
+use std::time::Duration;
+use web_sys::HtmlElement;
+
+#[derive(Copy, Clone)]
+pub struct DialogContext {
+    pub is_open: RwSignal<bool>,
+    pub is_mounted: RwSignal<bool>,
+}
+
+impl DialogContext {
+    pub fn close(&self) {
+        self.is_open.set(false);
+    }
+    pub fn toggle(&self) {
+        self.is_open.update(|open| *open = !*open);
+    }
+}
+
+pub fn use_dialog() -> DialogContext {
+    expect_context::<DialogContext>()
+}
+
+#[component]
+pub fn DialogRoot(
+    #[prop(default = None, into)] open: Option<RwSignal<bool>>,
+    children: Children,
+) -> impl IntoView {
+    let is_open = open.unwrap_or_else(|| RwSignal::new(false));
+    let is_mounted = RwSignal::new(false);
+
+    Effect::new(move |_| {
+        if is_open.get() {
+            is_mounted.set(true);
+        } else {
+            set_timeout(move || is_mounted.set(false), Duration::from_millis(100));
+        }
+    });
+
+    let _ = window_event_listener(ev::keydown, move |e| {
+        if e.key() == "Escape" && is_open.get() {
+            is_open.set(false);
+        }
+    });
+
+    provide_context(DialogContext {
+        is_mounted,
+        is_open,
+    });
+
+    view! { {children()} }
+}
+
+#[component]
+pub fn DialogTriggerRoot(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional, into)] as_child: Option<Callback<Callback<ev::MouseEvent>, AnyView>>,
+    #[prop(optional)] children: Option<Children>,
+) -> impl IntoView {
+    let ctx = use_dialog();
+    let on_click = Callback::new(move |_: ev::MouseEvent| ctx.toggle());
+
+    match as_child {
+        Some(render_fn) => Either::Left(render_fn.run(on_click)),
+        None => Either::Right(view! {
+            <button type="button" class=class disabled=disabled on:click=move |_| ctx.toggle()>
+                {match children {
+                    Some(child) => Either::Left(child()),
+                    None => Either::Right(""),
+                }}
+            </button>
+        }),
+    }
+}
+
+#[component]
+pub fn DialogPortalRoot(children: ChildrenFn) -> impl IntoView {
+    let context = use_dialog();
+    let stored_children = StoredValue::new(children);
+
+    Effect::new(move |_| {
+        let is_open = context.is_open.get();
+        if let Some(body) = document().body() {
+            if is_open {
+                let _ = body.style().set_property("overflow", "hidden");
+            } else {
+                let _ = body.style().remove_property("overflow");
+            }
+        }
+    });
+
+    on_cleanup(move || {
+        if let Some(body) = document().body() {
+            let _ = body.style().remove_property("overflow");
+        }
+    });
+
+    view! {
+        <Portal>
+            <Show when=move || context.is_mounted.get()>{stored_children.with_value(|c| c())}</Show>
+        </Portal>
+    }
+}
+
+#[component]
+pub fn DialogContentRoot(
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    let ctx = use_dialog();
+    let content_ref = AnyNodeRef::new();
+
+    let focus_trap = move |e: ev::KeyboardEvent| {
+        if !ctx.is_open.get() {
+            return;
+        }
+
+        if e.key() == "Tab" {
+            if let Some(container) = content_ref.get() {
+                let selector = "a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex='-1'])";
+
+                if let Ok(node_list) = container.query_selector_all(selector) {
+                    let mut focusable = Vec::new();
+                    for i in 0..node_list.length() {
+                        if let Some(node) = node_list.item(i) {
+                            if let Ok(el) = node.dyn_into::<HtmlElement>() {
+                                focusable.push(el);
+                            }
+                        }
+                    }
+
+                    if focusable.is_empty() {
+                        e.prevent_default();
+                        return;
+                    }
+
+                    let first = focusable.first().unwrap();
+                    let last = focusable.last().unwrap();
+                    let active = document().active_element();
+
+                    if e.shift_key() {
+                        if active.as_ref() == Some(first.as_ref()) {
+                            e.prevent_default();
+                            let _ = last.focus();
+                        }
+                    } else {
+                        if active.as_ref() == Some(last.as_ref()) {
+                            e.prevent_default();
+                            let _ = first.focus();
+                        }
+                    }
+                }
+            }
+        }
+    };
+
+    let _ = window_event_listener(ev::keydown, focus_trap);
+
+    Effect::new(move |_| {
+        if ctx.is_open.get() {
+            set_timeout(
+                move || {
+                    if let Some(container) = content_ref.get() {
+                        let selector = "a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex='-1'])";
+
+                        if let Ok(Some(first_node)) = container.query_selector(selector) {
+                            if let Ok(el) = first_node.dyn_into::<HtmlElement>() {
+                                let _ = el.focus();
+                            }
+                        } else {
+                            let _ = container.set_attribute("tabindex", "-1");
+                            if let Ok(el) = container.dyn_into::<HtmlElement>() {
+                                let _ = el.focus();
+                            }
+                        }
+                    }
+                },
+                Duration::from_millis(10),
+            );
+        }
+    });
+
+    view! {
+        <div
+            node_ref=content_ref
+            class=class
+            role="dialog"
+            aria-modal="true"
+            data-state=move || if ctx.is_open.get() { "open" } else { "closed" }
+        >
+            {children()}
+        </div>
+    }
+}
+</file>
+
+<file path="src/primitives/floating.rs">
+use std::time::Duration;
+
+use crate::utils::types::TriggerRect;
+use leptos::{context::Provider, either::Either, ev::MouseEvent, prelude::*};
+use leptos_node_ref::AnyNodeRef;
+
+#[derive(Copy, Clone)]
+pub struct FloatingContext {
+    pub is_open: RwSignal<bool>,
+    pub is_mounted: RwSignal<bool>,
+
+    // Trigger
+    pub trigger_ref: AnyNodeRef,
+    pub trigger_rect: RwSignal<TriggerRect>,
+
+    // For controlled usage (select, combobox)
+    pub value: RwSignal<Option<String>>,
+    pub display_value: RwSignal<Option<String>>,
+
+    // Accessibility
+    pub trigger_id: RwSignal<String>,
+    pub content_id: RwSignal<String>,
+
+    // Behavior flags
+    pub modal: RwSignal<bool>,
+    pub disabled: RwSignal<bool>,
+}
+
+impl Default for FloatingContext {
+    fn default() -> Self {
+        Self {
+            is_open: RwSignal::new(false),
+            is_mounted: RwSignal::new(false),
+            trigger_ref: AnyNodeRef::new(),
+            trigger_rect: RwSignal::new(TriggerRect::default()),
+            value: RwSignal::new(None),
+            display_value: RwSignal::new(None),
+            trigger_id: RwSignal::new(String::new()),
+            content_id: RwSignal::new(String::new()),
+            modal: RwSignal::new(false),
+            disabled: RwSignal::new(false),
+        }
+    }
+}
+
+impl FloatingContext {
+    pub fn open(&self) {
+        self.is_open.set(true)
+    }
+
+    pub fn close(&self) {
+        self.is_open.set(false)
+    }
+
+    pub fn toggle(&self) {
+        self.is_open.update(|open| *open = !*open)
+    }
+
+    pub fn is_open(&self) -> bool {
+        self.is_open.get()
+    }
+}
+
+#[component]
+pub fn FloatingTrigger(
+    context: FloatingContext,
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(default = None, into)] render: Option<
+        Callback<(AnyNodeRef, Callback<MouseEvent>), AnyView>,
+    >,
+    children: Children,
+) -> impl IntoView {
+    let on_click = Callback::new(move |_: MouseEvent| context.toggle());
+
+    match render {
+        Some(render_fn) => Either::Left(render_fn.run((context.trigger_ref, on_click))),
+        None => Either::Right(view! {
+            <button
+                type="button"
+                disabled=disabled
+                class=class
+                on:click=move |_| context.toggle()
+                node_ref=context.trigger_ref
+            >
+                {children()}
+            </button>
+        }),
+    }
+}
+
+#[component]
+pub fn FloatingProvider(context: FloatingContext, children: Children) -> impl IntoView {
+    provide_context(context);
+    children()
+}
+
+#[component]
+pub fn FloatingRoot(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(default = 150, into)] unmount_delay: u64,
+    #[prop(optional)] context: Option<FloatingContext>,
+    children: ChildrenFn,
+) -> impl IntoView {
+    let context = context.unwrap_or_default();
+
+    Effect::new(move |_| {
+        if context.is_open.get() {
+            context.is_mounted.set(true);
+        } else {
+            set_timeout(
+                move || context.is_mounted.set(false),
+                Duration::from_millis(unmount_delay),
+            );
+        }
+    });
+    view! {
+        <Provider value=context>
+            <div class=class>{children()}</div>
+        </Provider>
+    }
+}
+</file>
+
+<file path="src/primitives/popover.rs">
+use crate::{
+    primitives::floating::{FloatingContext, FloatingRoot, FloatingTrigger},
+    utils::{
+        get_placement,
+        types::{Align, Side, SideOffset},
+    },
+};
+use floating_ui_leptos::{
+    use_floating, Flip, FlipOptions, MiddlewareVec, Offset, OffsetOptions, Placement, Shift,
+    ShiftOptions, Strategy, UseFloatingOptions, UseFloatingReturn,
+};
+use leptos::{either::Either, ev, portal::Portal, prelude::*};
+use leptos_node_ref::AnyNodeRef;
+use send_wrapper::SendWrapper;
+
+pub type PopoverContext = FloatingContext;
+
+pub fn use_popover() -> PopoverContext {
+    expect_context::<PopoverContext>()
+}
+
+#[component]
+pub fn PopoverRoot(
+    #[prop(optional, into)] class: Signal<String>,
+    children: ChildrenFn,
+) -> impl IntoView {
+    view! { <FloatingRoot class=class>{children()}</FloatingRoot> }
+}
+
+#[component]
+pub fn PopoverTriggerRoot(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(default = None, into)] as_child: Option<
+        Callback<(AnyNodeRef, Callback<ev::MouseEvent>), AnyView>,
+    >,
+    #[prop(optional)] children: Option<Children>,
+) -> impl IntoView {
+    let ctx = use_popover();
+    view! {
+        <FloatingTrigger context=ctx class=class disabled=disabled render=as_child>
+            {match children {
+                Some(child) => Either::Left(child()),
+                None => Either::Right(""),
+            }}
+        </FloatingTrigger>
+    }
+}
+
+#[component]
+pub fn PopoverPortalRoot(children: ChildrenFn) -> impl IntoView {
+    let ctx = use_popover();
+    let stored_children = StoredValue::new(children);
+
+    view! {
+        <Portal>
+            <Show when=move || ctx.is_mounted.get()>
+                <div
+                    class=move || if ctx.is_open.get() { "fixed inset-0 z-40" } else { "hidden" }
+                    on:click=move |_| ctx.close()
+                ></div>
+
+                {stored_children.with_value(|c| c())}
+            </Show>
+        </Portal>
+    }
+}
+
+#[component]
+pub fn PopoverContentRoot(
+    #[prop(optional)] side: Side,
+    #[prop(optional)] align: Align,
+    #[prop(optional)] side_offset: SideOffset,
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    let ctx = use_popover();
+    let floating_ref = AnyNodeRef::new();
+
+    let middleware: MiddlewareVec = vec![
+        Box::new(Offset::new(OffsetOptions::Value(side_offset.0))),
+        Box::new(Flip::new(FlipOptions::default())),
+        Box::new(Shift::new(ShiftOptions::default())),
+    ];
+
+    let UseFloatingReturn {
+        floating_styles,
+        is_positioned,
+        placement,
+        ..
+    } = use_floating(
+        ctx.trigger_ref,
+        floating_ref,
+        UseFloatingOptions::default()
+            .placement(get_placement(side, align))
+            .strategy(Strategy::Fixed)
+            .while_elements_mounted_auto_update()
+            .middleware(SendWrapper::new(middleware)),
+    );
+
+    view! {
+        // OUTER DIV: The Structural Anchor (Hidden on frame 1)
+        <div
+            node_ref=floating_ref
+            style=move || {
+                if !is_positioned.get() {
+                    format!("{} visibility: hidden;", floating_styles.get())
+                } else {
+                    floating_styles.get().to_string()
+                }
+            }
+            class="fixed z-50 w-max"
+        >
+            <div
+                data-state=move || {
+                    if ctx.is_open.get() && is_positioned.get() { "open" } else { "closed" }
+                }
+                data-slot="popover-portal"
+                data-align=move || match placement.get() {
+                    Placement::TopStart
+                    | Placement::BottomStart
+                    | Placement::LeftStart
+                    | Placement::RightStart => "start",
+                    Placement::TopEnd
+                    | Placement::BottomEnd
+                    | Placement::LeftEnd
+                    | Placement::RightEnd => "end",
+                    _ => "center",
+                }
+                data-side=move || match placement.get() {
+                    Placement::Top | Placement::TopStart | Placement::TopEnd => "top",
+                    Placement::Bottom | Placement::BottomStart | Placement::BottomEnd => "bottom",
+                    Placement::Left | Placement::LeftStart | Placement::LeftEnd => "left",
+                    Placement::Right | Placement::RightStart | Placement::RightEnd => "right",
+                }
+                class=class
+            >
+                {children()}
+            </div>
+        </div>
+    }
+}
+</file>
+
+<file path="src/primitives/select.rs">
+use crate::primitives::floating::{FloatingContext, FloatingRoot, FloatingTrigger};
+use floating_ui_leptos::{
+    use_floating, Flip, FlipOptions, MiddlewareVec, Offset, OffsetOptions, Placement, Shift,
+    ShiftOptions, Strategy, UseFloatingOptions, UseFloatingReturn,
+};
+use leptos::{either::Either, ev, portal::Portal, prelude::*};
+use leptos_node_ref::AnyNodeRef;
+use send_wrapper::SendWrapper;
+
+pub type SelectContext = FloatingContext;
+
+pub fn use_select() -> SelectContext {
+    expect_context::<SelectContext>()
+}
+#[component]
+pub fn SelectRoot(
+    #[prop(optional, into)] value: RwSignal<Option<String>>,
+    #[prop(optional, into)] class: Signal<String>,
+    children: ChildrenFn,
+) -> impl IntoView {
+    let ctx = FloatingContext {
+        value,
+        ..Default::default()
+    };
+
+    view! {
+        <FloatingRoot class=class context=ctx>
+            {children()}
+            <select class="hidden" aria-hidden="true" tabindex="-1">
+                <option value=move || ctx.value.get().unwrap_or_default() selected=true></option>
+            </select>
+        </FloatingRoot>
+    }
+}
+
+#[component]
+pub fn SelectTriggerRoot(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(default = None, into)] as_child: Option<
+        Callback<(AnyNodeRef, Callback<ev::MouseEvent>), AnyView>,
+    >,
+    #[prop(optional)] children: Option<Children>,
+) -> impl IntoView {
+    let ctx = use_select();
+    view! {
+        <FloatingTrigger context=ctx class=class disabled=disabled render=as_child>
+            {match children {
+                Some(child) => Either::Left(child()),
+                None => Either::Right(""),
+            }}
+        </FloatingTrigger>
+    }
+}
+
+#[component]
+pub fn SelectPortalRoot(children: ChildrenFn) -> impl IntoView {
+    let ctx = use_select();
+    let stored_children = StoredValue::new(children);
+
+    view! {
+        <Portal>
+            <Show when=move || ctx.is_mounted.get()>
+                <div
+                    class=move || if ctx.is_open.get() { "fixed inset-0 z-40" } else { "hidden" }
+                    on:click=move |_| ctx.close()
+                ></div>
+
+                {stored_children.with_value(|c| c())}
+            </Show>
+        </Portal>
+    }
+}
+
+#[component]
+pub fn SelectContentRoot(
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    let ctx = use_select();
+    let floating_ref = AnyNodeRef::new();
+
+    let middleware: MiddlewareVec = vec![
+        Box::new(Offset::new(OffsetOptions::Value(0.0))),
+        Box::new(Flip::new(FlipOptions::default())),
+        Box::new(Shift::new(ShiftOptions::default())),
+    ];
+
+    let UseFloatingReturn {
+        floating_styles,
+        is_positioned,
+        placement,
+        ..
+    } = use_floating(
+        ctx.trigger_ref,
+        floating_ref,
+        UseFloatingOptions::default()
+            .placement(Placement::BottomStart)
+            .strategy(Strategy::Fixed)
+            .while_elements_mounted_auto_update()
+            .middleware(SendWrapper::new(middleware)),
+    );
+
+    view! {
+        <div
+            node_ref=floating_ref
+            style=move || {
+                let width = ctx
+                    .trigger_ref
+                    .get()
+                    .map(|el| el.get_bounding_client_rect().width())
+                    .unwrap_or(0.0);
+                let mut base_style = if !is_positioned.get() {
+                    format!("{} visibility: hidden;", floating_styles.get())
+                } else {
+                    floating_styles.get().to_string()
+                };
+                base_style.push_str(&format!(" width: {}px;", width));
+                base_style
+            }
+            class="fixed z-50"
+        >
+            <div
+                data-state=move || {
+                    if ctx.is_open.get() && is_positioned.get() { "open" } else { "closed" }
+                }
+                data-side=move || match placement.get() {
+                    Placement::Top | Placement::TopStart | Placement::TopEnd => "top",
+                    _ => "bottom",
+                }
+                class=class
+            >
+                {children()}
+            </div>
+        </div>
+    }
+}
+
+#[component]
+pub fn SelectItemRoot(
+    #[prop(into)] value: String,
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    let ctx = use_select();
+    let item_value = value.clone();
+
+    let is_selected = move || ctx.value.get() == Some(item_value.clone());
+
+    let on_click = move |_: ev::MouseEvent| {
+        ctx.value.set(Some(value.clone()));
+        ctx.close();
+    };
+
+    view! {
+        <div
+            on:click=on_click
+            data-state=move || if is_selected() { "checked" } else { "unchecked" }
+            class=class
+        >
+            {children()}
+        </div>
+    }
+}
+</file>
+
+<file path="src/primitives/switch.rs">
+use leptos::{ev, prelude::*};
+
+#[component]
+pub fn SwitchRoot(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(into)] checked: RwSignal<bool>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional, into)] id: Signal<String>,
+    #[prop(optional)] children: Option<Children>,
+) -> impl IntoView {
+    let toggle = move |_: ev::MouseEvent| {
+        if !disabled.get() {
+            checked.update(|c| *c = !*c);
+        }
+    };
+
+    view! {
+        <button
+            type="button"
+            id=id
+            role="switch"
+            aria-checked=move || if checked.get() { "true" } else { "false" }
+            data-state=move || if checked.get() { "checked" } else { "unchecked" }
+            disabled=disabled
+            on:click=toggle
+            class=class
+        >
+            {children.map(|c| c())}
+        </button>
+    }
+}
+</file>
+
+<file path="src/primitives/tabs.rs">
+use crate::utils::types::Orientation;
+use leptos::prelude::*;
+
+#[derive(Default, Clone, Copy, PartialEq)]
+pub enum TabsListVariants {
+    #[default]
+    Default,
+    Line,
+}
+
+#[derive(Copy, Clone)]
+pub struct TabsContext {
+    pub current_tab: RwSignal<String>,
+}
+
+impl TabsContext {
+    pub fn set_tab(&self, tab: String) {
+        self.current_tab.set(tab);
+    }
+}
+
+pub fn use_tabs() -> TabsContext {
+    expect_context::<TabsContext>()
+}
+
+#[component]
+pub fn TabsRoot(
+    #[prop(into)] default_value: String,
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] orientation: Orientation,
+    children: Children,
+) -> impl IntoView {
+    let current_tab = RwSignal::new(default_value);
+    let orientation_str = orientation.as_str();
+
+    provide_context(TabsContext { current_tab });
+
+    view! {
+        <div class=class data-orientation=orientation_str data-slot="tabs">
+            {children()}
+        </div>
+    }
+}
+
+#[component]
+pub fn TabsListRoot(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] variant: TabsListVariants,
+    children: Children,
+) -> impl IntoView {
+    let variant_str = match variant {
+        TabsListVariants::Line => "line",
+        _ => "default",
+    };
+
+    view! {
+        <div data-variant=variant_str role="tablist" class=class>
+            {children()}
+        </div>
+    }
+}
+
+#[component]
+pub fn TabsTriggerRoot(
+    #[prop(into)] value: String,
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    children: Children,
+) -> impl IntoView {
+    let ctx = use_tabs();
+
+    let tab_value = value.clone();
+    let is_active = Memo::new(move |_| ctx.current_tab.get() == tab_value);
+
+    view! {
+        <button
+            type="button"
+            role="tab"
+            aria-selected=move || if is_active.get() { "true" } else { "false" }
+            data-state=move || if is_active.get() { "active" } else { "inactive" }
+            disabled=disabled
+            class=class
+            on:click=move |_| ctx.set_tab(value.clone())
+        >
+            {children()}
+        </button>
+    }
+}
+
+#[component]
+pub fn TabsContentRoot(
+    #[prop(into)] value: String,
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    let ctx = use_tabs();
+
+    let is_active = Memo::new(move |_| ctx.current_tab.get() == value);
+
+    view! {
+        <div
+            role="tabpanel"
+            data-state=move || if is_active.get() { "active" } else { "inactive" }
+            hidden=move || !is_active.get()
+            class=class
+        >
+            {children()}
+        </div>
+    }
+}
+</file>
+
+<file path="src/primitives/toast.rs">
+use leptos::{ev, prelude::*};
+use std::time::Duration;
+
+#[derive(Copy, Clone, PartialEq, Default)]
+pub enum ToastVariant {
+    #[default]
+    Default,
+    Destructive,
+}
+
+#[derive(Copy, Clone, PartialEq, Default)]
+pub enum ToastSize {
+    #[default]
+    Default,
+    Lg,
+}
+
+#[derive(Copy, Clone, PartialEq, Default)]
+pub enum ToastPosition {
+    TopLeft,
+    TopCenter,
+    TopRight,
+    BottomLeft,
+    BottomCenter,
+    #[default]
+    BottomRight,
+}
+
+#[derive(Copy, Clone)]
+pub struct ToastDefaults {
+    pub variant: ToastVariant,
+    pub size: ToastSize,
+    pub position: ToastPosition,
+}
+
+#[derive(Clone)]
+pub struct ToastData {
+    pub id: usize,
+    pub title: String,
+    pub description: Option<String>,
+    pub variant: ToastVariant,
+    pub size: ToastSize,
+    pub position: ToastPosition,
+    pub is_open: RwSignal<bool>,
+}
+
+#[derive(Copy, Clone)]
+pub struct ToastContext {
+    pub toasts: RwSignal<Vec<ToastData>>,
+    pub next_id: RwSignal<usize>,
+    pub defaults: ToastDefaults,
+}
+
+impl ToastContext {
+    pub fn toast(&self, title: impl Into<String>) -> ToastBuilder {
+        ToastBuilder {
+            ctx: *self,
+            title: title.into(),
+            description: None,
+            variant: None,
+            size: None,
+            position: None,
+        }
+    }
+
+    pub fn dismiss(&self, id: usize) {
+        self.toasts.update_untracked(|t| {
+            if let Some(toast) = t.iter_mut().find(|t| t.id == id) {
+                toast.is_open.set(false);
+            }
+        });
+
+        let toasts = self.toasts;
+        set_timeout(
+            move || {
+                toasts.update(|t| t.retain(|toast| toast.id != id));
+            },
+            Duration::from_millis(350),
+        );
+    }
+}
+
+pub struct ToastBuilder {
+    ctx: ToastContext,
+    title: String,
+    description: Option<String>,
+    variant: Option<ToastVariant>,
+    size: Option<ToastSize>,
+    position: Option<ToastPosition>,
+}
+
+impl ToastBuilder {
+    pub fn description(mut self, desc: &str) -> Self {
+        self.description = Some(desc.to_string());
+        self
+    }
+
+    pub fn variant(mut self, variant: ToastVariant) -> Self {
+        self.variant = Some(variant);
+        self
+    }
+
+    pub fn size(mut self, size: ToastSize) -> Self {
+        self.size = Some(size);
+        self
+    }
+
+    pub fn position(mut self, position: ToastPosition) -> Self {
+        self.position = Some(position);
+        self
+    }
+
+    pub fn show(self) {
+        let id = self.ctx.next_id.get_untracked();
+        self.ctx.next_id.update(|n| *n += 1);
+
+        let is_open = RwSignal::new(true);
+        let toast = ToastData {
+            id,
+            title: self.title,
+            description: self.description,
+            variant: self.variant.unwrap_or(self.ctx.defaults.variant),
+            size: self.size.unwrap_or(self.ctx.defaults.size),
+            position: self.position.unwrap_or(self.ctx.defaults.position),
+            is_open,
+        };
+
+        self.ctx.toasts.update(|t| t.push(toast));
+
+        let ctx = self.ctx;
+        set_timeout(move || ctx.dismiss(id), Duration::from_secs(5));
+    }
+}
+
+pub fn use_toast() -> ToastContext {
+    expect_context::<ToastContext>()
+}
+
+#[component]
+pub fn ToastProviderRoot(
+    #[prop(default = None, into)] default_variant: Option<ToastVariant>,
+    #[prop(default = None, into)] default_size: Option<ToastSize>,
+    #[prop(default = None, into)] default_position: Option<ToastPosition>,
+    children: Children,
+) -> impl IntoView {
+    let toasts = RwSignal::new(Vec::new());
+    let next_id = RwSignal::new(0);
+
+    let defaults = ToastDefaults {
+        variant: default_variant.unwrap_or_default(),
+        size: default_size.unwrap_or_default(),
+        position: default_position.unwrap_or_default(),
+    };
+
+    provide_context(ToastContext {
+        toasts,
+        next_id,
+        defaults,
+    });
+
+    view! { {children()} }
+}
+
+#[component]
+pub fn ToastRoot(
+    #[prop(optional, into)] class: Signal<String>,
+    toast: ToastData,
+    children: Children,
+) -> impl IntoView {
+    let ctx = use_toast();
+    let id = toast.id;
+
+    let is_dragging = RwSignal::new(false);
+    let drag_offset_x = RwSignal::new(0);
+    let drag_offset_y = RwSignal::new(0);
+    let start_x = RwSignal::new(0);
+    let start_y = RwSignal::new(0);
+
+    let on_pointer_down = move |e: ev::PointerEvent| {
+        is_dragging.set(true);
+        start_x.set(e.client_x());
+        start_y.set(e.client_y());
+    };
+
+    let on_pointer_move = move |e: ev::PointerEvent| {
+        if is_dragging.get() {
+            let diff_x = e.client_x() - start_x.get();
+            let diff_y = e.client_y() - start_y.get();
+
+            match toast.position {
+                ToastPosition::TopLeft | ToastPosition::BottomLeft => {
+                    if diff_x < 0 {
+                        drag_offset_x.set(diff_x);
+                    }
+                }
+                ToastPosition::TopRight | ToastPosition::BottomRight => {
+                    if diff_x > 0 {
+                        drag_offset_x.set(diff_x);
+                    }
+                }
+                ToastPosition::TopCenter => {
+                    if diff_y < 0 {
+                        drag_offset_y.set(diff_y);
+                    }
+                }
+                ToastPosition::BottomCenter => {
+                    if diff_y > 0 {
+                        drag_offset_y.set(diff_y);
+                    }
+                }
+            }
+        }
+    };
+
+    let on_pointer_up = move |_: ev::PointerEvent| {
+        if is_dragging.get() {
+            is_dragging.set(false);
+            if drag_offset_x.get().abs() > 60 || drag_offset_y.get().abs() > 60 {
+                ctx.dismiss(id);
+            } else {
+                drag_offset_x.set(0);
+                drag_offset_y.set(0);
+            }
+        }
+    };
+
+    view! {
+        <div
+            data-state=move || { if toast.is_open.get() { "open" } else { "closed" } }
+            data-dragging=move || { if is_dragging.get() { "true" } else { "false" } }
+            style=move || {
+                let x = drag_offset_x.get();
+                let y = drag_offset_y.get();
+                if x != 0 || y != 0 {
+                    format!("transform: translate({}px, {}px)", x, y)
+                } else {
+                    String::new()
+                }
+            }
+            on:pointerdown=on_pointer_down
+            on:pointermove=on_pointer_move
+            on:pointerup=on_pointer_up
+            on:pointerleave=on_pointer_up
+            on:pointercancel=on_pointer_up
+            class=class
+        >
+            {children()}
+        </div>
+    }
+}
+</file>
+
+<file path="src/utils/cn.rs">
+#[macro_export]
+macro_rules! cn {
+    ($($class:expr),+ $(,)?) => {
+        {
+            let combined = vec![$($class.to_string()),+].join(" ");
+            tw_merge::tw_merge!(&combined)
+        }
+    };
+}
+</file>
+
+<file path="src/utils/theme.rs">
+use std::str::FromStr;
+
+use leptos::prelude::*;
+
+#[derive(Clone, Copy, PartialEq, Debug, Default)]
+pub enum Theme {
+    Light,
+    Dark,
+    #[default]
+    System,
+}
+
+impl Theme {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Theme::Light => "light",
+            Theme::Dark => "dark",
+            Theme::System => "system",
+        }
+    }
+}
+
+impl FromStr for Theme {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "light" => Theme::Light,
+            "dark" => Theme::Dark,
+            _ => Theme::System,
+        })
+    }
+}
+
+#[derive(Copy, Clone)]
+pub struct ThemeContext {
+    pub current: RwSignal<Theme>,
+}
+
+impl ThemeContext {
+    pub fn set_theme(&self, theme: Theme) {
+        self.current.set(theme);
+    }
+}
+
+pub fn use_theme() -> ThemeContext {
+    expect_context::<ThemeContext>()
+}
+
+#[component]
+pub fn ThemeProvider(children: Children) -> impl IntoView {
+    let initial_theme = window()
+        .local_storage()
+        .ok()
+        .flatten()
+        .and_then(|storage| storage.get_item("ui-theme").ok().flatten())
+        .and_then(|s| s.parse::<Theme>().ok())
+        .unwrap_or_default();
+
+    let current = RwSignal::new(initial_theme);
+
+    provide_context(ThemeContext { current });
+
+    Effect::new(move |_| {
+        let theme = current.get();
+        let window = window();
+
+        if let Some(document) = window.document() && let Some(html) = document.document_element() {
+                let is_dark = match theme {
+                    Theme::Dark => true,
+                    Theme::Light => false,
+                    Theme::System => window
+                        .match_media("(prefers-color-scheme: dark)")
+                        .ok()
+                        .flatten()
+                        .map(|m| m.matches())
+                        .unwrap_or(false),
+                };
+
+                let class_list = html.class_list();
+                if is_dark {
+                    let _ = class_list.add_1("dark");
+                } else {
+                    let _ = class_list.remove_1("dark");
+                }
+
+                if let Some(storage) = window.local_storage().ok().flatten() {
+                    let _ = storage.set_item("ui-theme", theme.as_str());
+            }
+        }
+    });
+
+    view! { {children()} }
+}
+</file>
+
+<file path="src/utils/types.rs">
+#[derive(Default, Copy, Clone)]
+pub enum Direction {
+    Left,
+    #[default]
+    Right,
+}
+
+#[derive(Default, Copy, Clone)]
+pub enum State {
+    Open,
+    #[default]
+    Closed,
+}
+
+#[derive(Default, Copy, Clone)]
+pub enum Align {
+    #[default]
+    Start,
+    Center,
+    End,
+}
+
+#[derive(Default, Clone, Copy, PartialEq)]
+pub enum Orientation {
+    #[default]
+    Horizontal,
+    Vertical,
+}
+
+#[derive(Default, Copy, Clone)]
+pub enum Side {
+    Left,
+    Right,
+    #[default]
+    Bottom,
+    Top,
+}
+
+#[derive(Default, Copy, Clone)]
+pub struct TriggerRect {
+    pub width: f64,
+    pub height: f64,
+    pub x: f64,
+    pub y: f64,
+}
+
+#[derive(Copy, Clone)]
+pub struct SideOffset(pub f64);
+
+impl Default for SideOffset {
+    fn default() -> Self {
+        SideOffset(4.0)
+    }
+}
+
+impl Direction {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Direction::Left => "left",
+            Direction::Right => "right",
+        }
+    }
+}
+
+impl State {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            State::Open => "open",
+            State::Closed => "closed",
+        }
+    }
+}
+
+impl Orientation {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Orientation::Horizontal => "horizontal",
+            Orientation::Vertical => "vertical",
+        }
+    }
+}
+
+impl Align {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Align::Start => "start",
+            Align::Center => "center",
+            Align::End => "end",
+        }
+    }
+}
+
+impl Side {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Side::Left => "left",
+            Side::Right => "right",
+            Side::Bottom => "bottom",
+            Side::Top => "top",
+        }
+    }
+}
+</file>
+
+<file path="README.md">
+# NOCOMPONENTS
+
+Disclaimer: style is heavily and obviously from shad/cn, all I did was "try" to
+bring the primitives from radix and also add a "styled" version with shad/cn's styles.
+
+Development is still ongoing and I'm a "bad" developer, so it will take some time
+until I'm content with a "initial" stable version
+(Though I plan on using it in my next personal/work project)
+</file>
+
+<file path="playground/styles/globals.css">
+@import url("https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
+@import "tailwindcss";
+@import "./animate.css";
+@source "../../src";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(
+        --radix-accordion-content-height,
+        var(--accordion-panel-height, auto)
+      );
+    }
+  }
+
+  @keyframes accordion-up {
+    from {
+      height: var(
+        --radix-accordion-content-height,
+        var(--accordion-panel-height, auto)
+      );
+    }
+    to {
+      height: 0;
+    }
+  }
+}
+
+/* Binary-friendly Custom Variants.
+  These automatically generate group-* and peer-* equivalents in v4!
+*/
+@custom-variant data-active (&[data-state="active"]);
+@custom-variant data-disabled (&[disabled], &[data-disabled]);
+@custom-variant data-horizontal (&[data-orientation="horizontal"]);
+@custom-variant data-vertical (&[data-orientation="vertical"]);
+
+/* Standard v4 utility block */
+@utility no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@theme inline {
+  --font-sans: "Inter", sans-serif;
+  --font-figtree: "Figtree", sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --radius: 0rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply font-sans bg-background text-foreground;
+  }
+}
+</file>
+
+<file path="src/components/popover.rs">
+use crate::{
+    cn,
+    components::button::{Button, ButtonSize, ButtonVariant},
+    primitives::popover::{PopoverContentRoot, PopoverPortalRoot, PopoverRoot, use_popover},
+    utils::types::{Align, Side, SideOffset},
+};
+use leptos::{either::Either, ev, prelude::*};
+use leptos_node_ref::AnyNodeRef;
+
+#[component]
+pub fn Popover(children: ChildrenFn) -> impl IntoView {
+    view! { <PopoverRoot>{children()}</PopoverRoot> }
+}
+
+#[component]
+pub fn PopoverTrigger(
+    #[prop(optional)] size: ButtonSize,
+    #[prop(optional)] variant: ButtonVariant,
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional, into)] as_child: Option<
+        Callback<(AnyNodeRef, Callback<ev::MouseEvent>), AnyView>,
+    >,
+    #[prop(optional)] children: Option<ChildrenFn>,
+) -> impl IntoView {
+    let ctx = use_popover();
+    let on_click = Callback::new(move |_: ev::MouseEvent| ctx.toggle());
+
+    match as_child {
+        Some(render_fn) => Either::Left(render_fn.run((ctx.trigger_ref, on_click))),
+        None => Either::Right(view! {
+            <Button
+                size=size
+                variant=variant
+                attr:disabled=disabled
+                class=class
+                node_ref=ctx.trigger_ref
+                on_click=on_click
+            >
+                {
+                    let children = children.clone();
+                    move || match &children {
+                        Some(child) => Either::Left(child()),
+                        None => Either::Right(view! { "" }.into_any()),
+                    }
+                }
+            </Button>
+        }),
+    }
+}
+
+#[component]
+pub fn PopoverPortal(children: ChildrenFn) -> impl IntoView {
+    view! { <PopoverPortalRoot children=children /> }
+}
+
+#[component]
+pub fn PopoverContent(
+    #[prop(optional)] side: Side,
+    #[prop(optional)] align: Align,
+    #[prop(optional)] side_offset: SideOffset,
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <PopoverContentRoot
+            side=side
+            align=align
+            side_offset=side_offset
+            class=move || {
+                let base_one = "flex flex-col gap-2 py-4 rounded-lg bg-popover text-sm text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-none duration-100 fill-mode-forwards";
+                let animations = "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2";
+                let base_two = "has-data-[slot=popover-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl";
+                let base_class = format!("{base_one} {animations} {base_two}");
+                cn!(base_class.as_str(), class.get())
+            }
+        >
+            <div data-slot="popover-content" class="flex flex-col gap-2">
+                {children()}
+            </div>
+        </PopoverContentRoot>
+    }
+}
+
+// Note: Because I moved the `px-4 flex flex-col` inner div directly into the
+// `PopoverContent` above, you can safely DELETE the old `PopoverContent` component block!
+
+#[component]
+pub fn PopoverHeader(
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <div
+            data-slot="popover-header"
+            class=move || cn!("flex flex-col px-4 gap-0.5 text-sm", &class.get())
+        >
+            {children()}
+        </div>
+    }
+}
+
+#[component]
+pub fn PopoverTitle(
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <div
+            data-slot="popover-title"
+            class=move || {
+                cn!("font-medium leading-none tracking-tight text-foreground", &class.get())
+            }
+        >
+            {children()}
+        </div>
+    }
+}
+
+#[component]
+pub fn PopoverDescription(
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <div
+            data-slot="popover-description"
+            class=move || cn!("text-muted-foreground", &class.get())
+        >
+            {children()}
+        </div>
+    }
+}
+
+#[component]
+pub fn PopoverFooter(
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <div
+            data-slot="popover-footer"
+            class=move || {
+                cn!(
+                    "flex mt-auto items-center rounded-b-xl border-t bg-muted/50 p-4 group-data-[size=sm]/card:p-3", &class.get()
+                )
+            }
+        >
+            {children()}
+        </div>
+    }
+}
+</file>
+
+<file path="src/primitives/mod.rs">
+pub mod avatar;
+pub mod button;
+pub mod checkbox;
+pub mod dialog;
+pub mod dropdown_menu;
+pub mod floating;
+pub mod popover;
+pub mod select;
+pub mod switch;
+pub mod tabs;
+pub mod toast;
+</file>
+
+<file path="src/utils/mod.rs">
+pub mod cn;
+pub mod types;
+
+#[cfg(feature = "theme")]
+pub mod theme;
+
+use floating_ui_leptos::Placement;
+use types::{Align, Side};
+
+pub fn get_placement(side: Side, align: Align) -> Placement {
+    match (side, align) {
+        (Side::Top, Align::Start) => Placement::TopStart,
+        (Side::Top, Align::Center) => Placement::Top,
+        (Side::Top, Align::End) => Placement::TopEnd,
+        (Side::Bottom, Align::Start) => Placement::BottomStart,
+        (Side::Bottom, Align::Center) => Placement::Bottom,
+        (Side::Bottom, Align::End) => Placement::BottomEnd,
+        (Side::Left, Align::Start) => Placement::LeftStart,
+        (Side::Left, Align::Center) => Placement::Left,
+        (Side::Left, Align::End) => Placement::LeftEnd,
+        (Side::Right, Align::Start) => Placement::RightStart,
+        (Side::Right, Align::Center) => Placement::Right,
+        (Side::Right, Align::End) => Placement::RightEnd,
+    }
+}
+</file>
+
+<file path="src/lib.rs">
+#[cfg(feature = "primitives")]
+pub mod components;
+
+#[cfg(feature = "primitives")]
+pub mod primitives;
+
+#[cfg(feature = "icons")]
+pub mod icons;
+
+pub mod middleware;
+pub mod utils;
+</file>
+
+<file path=".gitignore">
+node_modules/
+playground/node_modules/
+target/
+dist/
+</file>
+
+<file path="playground/src/components/theme_switcher.rs">
+use leptos::prelude::*;
+use nocomponents::{
+    cn,
+    components::{
+        button::ButtonVariant,
+        dropdown_menu::{
+            DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
+            DropdownMenuPortal, DropdownMenuSeparator, DropdownMenuTrigger,
+        },
+    },
+    utils::{
+        theme::{use_theme, Theme},
+        types::{Align, Side},
+    },
+};
+
+#[component]
+pub fn ThemeSwitcher(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
+    let theme_ctx = use_theme();
+
+    view! {
+        <DropdownMenu>
+            <DropdownMenuTrigger
+                class=move || cn!("w-18", class.get())
+                variant=ButtonVariant::Outline
+            >
+                {move || match theme_ctx.current.get() {
+                    Theme::Light => "Light",
+                    Theme::Dark => "Dark",
+                    Theme::System => "System",
+                }}
+            </DropdownMenuTrigger>
+
+            <DropdownMenuPortal>
+                <DropdownMenuContent align=Align::Center side=Side::Bottom>
+                    <DropdownMenuLabel>"Theme"</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+
+                    <DropdownMenuItem on_click=move |_| {
+                        theme_ctx.set_theme(Theme::Light)
+                    }>"Light"</DropdownMenuItem>
+
+                    <DropdownMenuItem on_click=move |_| {
+                        theme_ctx.set_theme(Theme::Dark)
+                    }>"Dark"</DropdownMenuItem>
+
+                    <DropdownMenuItem on_click=move |_| {
+                        theme_ctx.set_theme(Theme::System)
+                    }>"System"</DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenuPortal>
+        </DropdownMenu>
+    }
+}
+</file>
+
+<file path="playground/Cargo.toml">
+[package]
+name = "playground"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+nocomponents = { path = "..", features = ["full"] }
+leptos = { version = "0.8.19", features = ["csr"] }
+leptos_meta = "0.8.6"
+leptos_router = "0.8.13"
+leptos-node-ref = "0.2.0"
+tw_merge = { version = "0.1.21", features = ["variant"] }
+lucide-leptos = "3.11.0"
+</file>
+
+<file path="playground/index.html">
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link data-trunk rel="rust" data-wasm-opt="z" />
+    <link data-trunk rel="tailwind-css" href="styles/globals.css" />
+    <title>no-components</title>
+  </head>
+  <body class=""></body>
+</html>
+</file>
+
+<file path="playground/Trunk.toml">
+[tools]
+tailwindcss = "4.3.0"
+
+[watch]
+watch = ["src", "../src"]
+
+[serve]
+port = 3000
+</file>
+
+<file path="src/components/mod.rs">
+pub mod alert_dialog;
+pub mod avatar;
+pub mod badge;
+pub mod button;
+pub mod card;
+pub mod checkbox;
+pub mod dialog;
+pub mod dropdown_menu;
+pub mod input;
+pub mod label;
+pub mod popover;
+pub mod select;
+pub mod switch;
+pub mod tabs;
+pub mod toast;
+
+pub mod prelude {
+    pub use super::alert_dialog::*;
+    pub use super::avatar::*;
+    pub use super::badge::*;
+    pub use super::button::*;
+    pub use super::card::*;
+    pub use super::checkbox::*;
+    pub use super::dialog::*;
+    pub use super::dropdown_menu::*;
+    pub use super::input::*;
+    pub use super::label::*;
+    pub use super::popover::*;
+    pub use super::select::*;
+    pub use super::switch::*;
+    pub use super::tabs::*;
+    pub use super::toast::*;
+}
+</file>
+
+<file path="src/primitives/dropdown_menu.rs">
+use crate::{
+    primitives::floating::{FloatingContext, FloatingRoot, FloatingTrigger},
+    utils::{
+        get_placement,
+        types::{Align, Side, SideOffset},
+    },
+};
+use floating_ui_leptos::{
+    Flip, FlipOptions, MiddlewareVec, Offset, OffsetOptions, Placement, Shift, ShiftOptions,
+    Strategy, UseFloatingOptions, UseFloatingReturn, use_floating,
+};
+use leptos::{either::Either, ev, portal::Portal, prelude::*};
+use leptos_node_ref::AnyNodeRef;
+use send_wrapper::SendWrapper;
+use std::time::Duration;
+
+pub type DropdownMenuContext = FloatingContext;
+
+pub fn use_dropdown() -> DropdownMenuContext {
+    expect_context::<DropdownMenuContext>()
+}
+
+#[component]
+pub fn DropdownMenuRoot(
+    #[prop(optional, into)] class: Signal<String>,
+    children: ChildrenFn,
+) -> impl IntoView {
+    view! { <FloatingRoot class=class>{children()}</FloatingRoot> }
+}
+
+#[component]
+pub fn DropdownMenuTriggerRoot(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(default = None, into)] render: Option<
+        Callback<(AnyNodeRef, Callback<ev::MouseEvent>), AnyView>,
+    >,
+    #[prop(optional)] children: Option<Children>,
+) -> impl IntoView {
+    let ctx = use_dropdown();
+
+    view! {
+        <FloatingTrigger context=ctx class=class disabled=disabled render=render>
+            {match children {
+                Some(child) => Either::Left(child()),
+                None => Either::Right(""),
+            }}
+        </FloatingTrigger>
+    }
+}
+
+#[component]
+pub fn DropdownMenuPortalRoot(children: ChildrenFn) -> impl IntoView {
+    let ctx = use_dropdown();
+    let stored_children = StoredValue::new(children);
+
+    view! {
+        <Portal>
+            <Show when=move || ctx.is_mounted.get()>
+                <div
+                    class=move || if ctx.is_open.get() { "fixed inset-0 z-40" } else { "hidden" }
+                    on:click=move |_| ctx.close()
+
+                ></div>
+
+                {stored_children.with_value(|c| c())}
+            </Show>
+        </Portal>
+    }
+}
+
+#[component]
+pub fn DropdownMenuContentRoot(
+    #[prop(optional)] side: Side,
+    #[prop(optional)] align: Align,
+    #[prop(optional)] side_offset: SideOffset,
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    let ctx = use_dropdown();
+    let floating_ref = AnyNodeRef::new();
+
+    let middleware: MiddlewareVec = vec![
+        Box::new(Offset::new(OffsetOptions::Value(side_offset.0))),
+        Box::new(Flip::new(FlipOptions::default())),
+        Box::new(Shift::new(ShiftOptions::default())),
+    ];
+
+    let UseFloatingReturn {
+        floating_styles,
+        is_positioned,
+        placement,
+        ..
+    } = use_floating(
+        ctx.trigger_ref,
+        floating_ref,
+        UseFloatingOptions::default()
+            .placement(get_placement(side, align))
+            .strategy(Strategy::Fixed)
+            .while_elements_mounted_auto_update()
+            .middleware(SendWrapper::new(middleware)),
+    );
+
+    view! {
+        <div
+            node_ref=floating_ref
+            style=move || {
+                if !is_positioned.get() {
+                    format!("{} visibility: hidden;", floating_styles.get())
+                } else {
+                    floating_styles.get().to_string()
+                }
+            }
+            class="fixed z-50 w-max"
+        >
+            <div
+                data-state=move || if ctx.is_open.get() { "open" } else { "closed" }
+                data-align=move || match placement.get() {
+                    Placement::TopStart
+                    | Placement::BottomStart
+                    | Placement::LeftStart
+                    | Placement::RightStart => "start",
+                    Placement::TopEnd
+                    | Placement::BottomEnd
+                    | Placement::LeftEnd
+                    | Placement::RightEnd => "end",
+                    _ => "center",
+                }
+                data-side=move || match placement.get() {
+                    Placement::Top | Placement::TopStart | Placement::TopEnd => "top",
+                    Placement::Bottom | Placement::BottomStart | Placement::BottomEnd => "bottom",
+                    Placement::Left | Placement::LeftStart | Placement::LeftEnd => "left",
+                    Placement::Right | Placement::RightStart | Placement::RightEnd => "right",
+                }
+                class=class
+            >
+                {children()}
+            </div>
+        </div>
+    }
+}
+
+#[component]
+pub fn DropdownMenuItemRoot(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(default = None, into)] on_click: Option<Callback<ev::MouseEvent>>,
+    children: Children,
+) -> impl IntoView {
+    let ctx = use_dropdown();
+
+    let handle_click = move |e: ev::MouseEvent| {
+        if let Some(cb) = on_click {
+            cb.run(e);
+        }
+        ctx.close();
+    };
+
+    view! {
+        <div on:click=handle_click class=class>
+            {children()}
+        </div>
+    }
+}
+
+#[derive(Copy, Clone)]
+struct SubHoverState(RwSignal<bool>);
+
+#[component]
+pub fn DropdownMenuSubRoot(
+    #[prop(optional, into)] class: Signal<String>,
+    children: ChildrenFn,
+) -> impl IntoView {
+    provide_context(SubHoverState(RwSignal::new(false)));
+    view! { <FloatingRoot class=class>{children()}</FloatingRoot> }
+}
+
+#[component]
+pub fn DropdownMenuSubTriggerRoot(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    children: Children,
+) -> impl IntoView {
+    let ctx = use_dropdown();
+    let hover = expect_context::<SubHoverState>();
+
+    view! {
+        <button
+            type="button"
+            disabled=disabled
+            node_ref=ctx.trigger_ref
+            class=class
+            data-state=move || if ctx.is_open.get() { "open" } else { "closed" }
+            on:click=move |e| {
+                e.stop_propagation();
+                ctx.toggle();
+            }
+            on:pointerenter=move |_| {
+                hover.0.set(true);
+                ctx.open();
+            }
+            on:pointerleave=move |_| {
+                hover.0.set(false);
+                set_timeout(
+                    move || {
+                        if !hover.0.get() {
+                            ctx.close();
+                        }
+                    },
+                    Duration::from_millis(50),
+                );
+            }
+        >
+            {children()}
+        </button>
+    }
+}
+
+#[component]
+pub fn DropdownMenuSubContentRoot(
+    #[prop(optional)] side_offset: SideOffset,
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    let ctx = use_dropdown();
+    let floating_ref = AnyNodeRef::new();
+    let hover = expect_context::<SubHoverState>();
+
+    let middleware: MiddlewareVec = vec![
+        Box::new(Offset::new(OffsetOptions::Value(side_offset.0))),
+        Box::new(Flip::new(FlipOptions::default())),
+        Box::new(Shift::new(ShiftOptions::default())),
+    ];
+
+    let UseFloatingReturn {
+        floating_styles,
+        is_positioned,
+        placement,
+        ..
+    } = use_floating(
+        ctx.trigger_ref,
+        floating_ref,
+        UseFloatingOptions::default()
+            .placement(Placement::RightStart)
+            .strategy(Strategy::Fixed)
+            .while_elements_mounted_auto_update()
+            .middleware(SendWrapper::new(middleware)),
+    );
+
+    view! {
+        <div
+            node_ref=floating_ref
+            style=move || {
+                if !is_positioned.get() {
+                    format!("{} visibility: hidden;", floating_styles.get())
+                } else {
+                    floating_styles.get().to_string()
+                }
+            }
+            class="fixed z-50 w-max"
+            on:pointerenter=move |_| {
+                hover.0.set(true);
+            }
+            on:pointerleave=move |_| {
+                hover.0.set(false);
+                set_timeout(
+                    move || {
+                        if !hover.0.get() {
+                            ctx.close();
+                        }
+                    },
+                    Duration::from_millis(50),
+                );
+            }
+        >
+            <div
+                data-state=move || if ctx.is_open.get() { "open" } else { "closed" }
+                data-side=move || match placement.get() {
+                    Placement::Top | Placement::TopStart | Placement::TopEnd => "top",
+                    Placement::Bottom | Placement::BottomStart | Placement::BottomEnd => "bottom",
+                    Placement::Left | Placement::LeftStart | Placement::LeftEnd => "left",
+                    Placement::Right | Placement::RightStart | Placement::RightEnd => "right",
+                }
+                class=class
+            >
+                {children()}
+            </div>
+        </div>
+    }
+}
+</file>
+
+<file path="playground/src/pages/home.rs">
+use crate::components::{
+    profile_settings::{SettingsDialog, User},
+    theme_switcher::ThemeSwitcher,
+};
+use leptos::{ev, prelude::*};
+use leptos_node_ref::AnyNodeRef;
+use nocomponents::{
+    components::{
+        avatar::{Avatar, AvatarFallback, AvatarImage},
+        badge::{Badge, BadgeVariant},
+        button::{Button, ButtonSize, ButtonVariant},
+        card::{Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle},
+        checkbox::Checkbox,
+        dialog::{
+            Dialog, DialogDescription, DialogFooter, DialogHeader, DialogPortal, DialogTitle,
+            DialogTrigger,
+        },
+        dropdown_menu::{
+            DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
+            DropdownMenuPortal, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent,
+            DropdownMenuSubTrigger, DropdownMenuTrigger,
+        },
+        input::{Input, InputType},
+        label::Label,
+        popover::{
+            Popover, PopoverContent, PopoverDescription, PopoverHeader, PopoverPortal,
+            PopoverTitle, PopoverTrigger,
+        },
+        select::{Select, SelectContent, SelectItem, SelectPortal, SelectTrigger, SelectValue},
+        switch::Switch,
+        tabs::{Tabs, TabsContent, TabsList, TabsTrigger},
+        toast::{use_toast, ToastPosition},
+    },
+    utils::types::{Align, Side},
+};
+
+#[component]
+pub fn Home() -> impl IntoView {
+    let settings_open = RwSignal::new(false);
+
+    let current_user = User {
+        name: "Yuri VGR".to_string(),
+        email: Some("yuriguimaraes@proton.me".to_string()),
+        profile_picture: "https://w.wallhaven.cc/full/5d/wallhaven-5d23j9.png".to_string(),
+    };
+
+    let toaster = use_toast();
+
+    view! {
+        <SettingsDialog user=current_user.clone() open=settings_open />
+
+        <main class="flex flex-col min-h-screen bg-background text-foreground font-sans selection:bg-primary/20">
+            <header class="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
+                <div class="container flex h-16 items-center justify-between px-8 max-w-7xl mx-auto">
+                    <div class="flex gap-2 items-center font-bold tracking-tight">
+                        <div class="size-6 rounded-md bg-primary text-primary-foreground flex items-center justify-center">
+                            <span class="text-xs">NC</span>
+                        </div>
+                        "nocomponents"
+                    </div>
+
+                    <div class="flex items-center gap-4">
+                        <ThemeSwitcher />
+                        <DropdownMenu>
+                            <DropdownMenuTrigger render=Callback::new(move |
+                                (trigger_ref, toggle): (AnyNodeRef, Callback<ev::MouseEvent>)|
+                            {
+                                view! {
+                                    <button
+                                        type="button"
+                                        node_ref=trigger_ref
+                                        on:click=move |e| toggle.run(e)
+                                        class="group/avatar relative rounded-full outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                                    >
+                                        <div class="hidden absolute inset-0 z-10 group-hover/avatar:block bg-black/20 transition-colors rounded-full" />
+                                        <Avatar>
+                                            <AvatarImage
+                                                src="https://w.wallhaven.cc/full/5d/wallhaven-5d23j9.png"
+                                                alt="Avatar"
+                                                class="object-cover"
+                                            />
+                                            <AvatarFallback>"YR"</AvatarFallback>
+                                        </Avatar>
+                                    </button>
+                                }
+                                    .into_any()
+                            }) />
+                            <DropdownMenuPortal>
+                                <DropdownMenuContent
+                                    class="w-48"
+                                    align=Align::End
+                                    side=Side::Bottom
+                                >
+                                    <DropdownMenuLabel>"My Account"</DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem>"Profile"</DropdownMenuItem>
+                                    <DropdownMenuSub>
+                                        <DropdownMenuSubTrigger>
+                                            "More Options"
+                                        </DropdownMenuSubTrigger>
+                                        <DropdownMenuSubContent>
+                                            <DropdownMenuItem>"Keyboard Shortcuts"</DropdownMenuItem>
+                                            <DropdownMenuItem>"API Tokens"</DropdownMenuItem>
+                                        </DropdownMenuSubContent>
+                                    </DropdownMenuSub>
+
+                                    <DropdownMenuItem on:click=move |_| {
+                                        settings_open.set(true)
+                                    }>"Settings"</DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem class="text-destructive focus:text-destructive hover:bg-destructive/10 hover:text-destructive">
+                                        "Log out"
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenuPortal>
+                        </DropdownMenu>
+                    </div>
+                </div>
+            </header>
+
+            <div class="w-full border-b bg-muted/30">
+                <div class="container max-w-7xl mx-auto px-8 py-16 flex flex-col gap-4">
+                    <h1 class="text-4xl font-bold tracking-tight lg:text-5xl">
+                        "Component Showcase"
+                    </h1>
+                    <p class="text-lg text-muted-foreground max-w-2xl">
+                        "A playground demonstrating the capabilities, variants, and interactive states of the nocomponents headless UI library."
+                    </p>
+                </div>
+            </div>
+
+            <div class="container max-w-7xl mx-auto px-8 py-12">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
+                    <div class="flex flex-col gap-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>"Buttons"</CardTitle>
+                                <CardDescription>"Standard variants and states."</CardDescription>
+                            </CardHeader>
+                            <CardContent class="flex flex-wrap items-center gap-3">
+                                <Button variant=ButtonVariant::Default>"Default"</Button>
+                                <Button variant=ButtonVariant::Secondary>"Secondary"</Button>
+                                <Button variant=ButtonVariant::Outline>"Outline"</Button>
+                                <Button variant=ButtonVariant::Ghost>"Ghost"</Button>
+                                <Button variant=ButtonVariant::Link>"Link"</Button>
+                                <Button variant=ButtonVariant::Destructive>"Destructive"</Button>
+                                <div class="w-full h-px bg-border my-2" />
+
+                                <Button size=ButtonSize::Xs>"Extra Small"</Button>
+                                <Button size=ButtonSize::Sm>"Small"</Button>
+                                <Button size=ButtonSize::Lg>"Large Button"</Button>
+                                <Button attr:disabled=true>"Disabled"</Button>
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>"Badges"</CardTitle>
+                                <CardDescription>"Small status indicators."</CardDescription>
+                            </CardHeader>
+                            <CardContent class="flex flex-wrap items-center gap-3">
+                                <Badge variant=BadgeVariant::Default>"Default"</Badge>
+                                <Badge variant=BadgeVariant::Secondary>"Secondary"</Badge>
+                                <Badge variant=BadgeVariant::Outline>"Outline"</Badge>
+                                <Badge variant=BadgeVariant::Ghost>"Ghost"</Badge>
+                                <Badge variant=BadgeVariant::Link>"Link"</Badge>
+                                <Badge variant=BadgeVariant::Destructive>"Destructive"</Badge>
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>"Preferences"</CardTitle>
+                                <CardDescription>"Form controls and inputs."</CardDescription>
+                            </CardHeader>
+                            <CardContent class="flex flex-col gap-6">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex flex-col gap-1">
+                                        <Label prop:htmlFor="airplane-mode" class="text-base">
+                                            "Airplane Mode"
+                                        </Label>
+                                        <span class="text-xs text-muted-foreground">
+                                            "Disable all network connectivity."
+                                        </span>
+                                    </div>
+                                    {
+                                        let airplane_mode = RwSignal::new(false);
+                                        view! {
+                                            <Switch id="airplane-mode" checked=airplane_mode />
+                                        }
+                                    }
+                                </div>
+                                <div class="w-full h-px bg-border" />
+                                <div class="flex items-center space-x-3">
+                                    {
+                                        let terms_accepted = RwSignal::new(true);
+                                        view! { <Checkbox id="terms" checked=terms_accepted /> }
+                                    }
+                                    <Label
+                                        prop:htmlFor="terms"
+                                        class="text-sm font-medium leading-none cursor-pointer"
+                                    >
+                                        "Accept terms and conditions"
+                                    </Label>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    <div class="flex flex-col gap-6">
+                        <Card>
+                            <Tabs default_value="login">
+                                <CardHeader>
+                                    <TabsList class="flex w-full">
+                                        <TabsTrigger class="w-full" value="login">
+                                            "Login"
+                                        </TabsTrigger>
+                                        <TabsTrigger class="w-full" value="register">
+                                            "Register"
+                                        </TabsTrigger>
+                                    </TabsList>
+                                </CardHeader>
+                                <TabsContent value="login">
+                                    <CardContent class="flex flex-col gap-4">
+                                        <div class="space-y-1.5">
+                                            <Label prop:htmlFor="email-lo">"Email"</Label>
+                                            <Input
+                                                attr:id="email-lo"
+                                                attr:placeholder="example@mail.com"
+                                            />
+                                        </div>
+                                        <div class="space-y-1.5">
+                                            <Label prop:htmlFor="password-lo">"Password"</Label>
+                                            <Input
+                                                attr:id="password-lo"
+                                                input_type=InputType::Password
+                                                attr:placeholder="••••••••"
+                                            />
+                                        </div>
+                                        <Button class="mt-2 w-full">"Confirm"</Button>
+                                    </CardContent>
+                                </TabsContent>
+
+                                <TabsContent value="register">
+                                    <CardContent class="flex flex-col gap-4">
+                                        <div class="space-y-1.5">
+                                            <Label prop:htmlFor="email-re">"Email"</Label>
+                                            <Input
+                                                attr:id="email-re"
+                                                attr:placeholder="example@mail.com"
+                                            />
+                                        </div>
+                                        <div class="space-y-1.5">
+                                            <Label prop:htmlFor="username-re">"Username"</Label>
+                                            <Input attr:id="username-re" attr:placeholder="@username" />
+                                        </div>
+                                        <div class="space-y-1.5">
+                                            <Label prop:htmlFor="password-re">"Password"</Label>
+                                            <Input
+                                                attr:id="password-re"
+                                                input_type=InputType::Password
+                                                attr:placeholder="••••••••"
+                                            />
+                                        </div>
+                                        <Button class="mt-2 w-full">"Create Account"</Button>
+                                    </CardContent>
+                                </TabsContent>
+                            </Tabs>
+                            <CardFooter class="justify-center border-t bg-muted/20 py-3 text-muted-foreground text-xs">
+                                <span>"Forgot your password?"</span>
+                                <a class="ml-1 text-primary hover:underline underline-offset-4 cursor-pointer font-medium">
+                                    "Recover"
+                                </a>
+                            </CardFooter>
+                        </Card>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>"Select"</CardTitle>
+                                <CardDescription>"Accessible dropdown selection."</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div class="flex flex-col gap-2">
+                                    <Label prop:htmlFor="theme">"Theme"</Label>
+                                    {
+                                        let theme_val = RwSignal::new(Some("System".to_string()));
+                                        view! {
+                                            <Select value=theme_val>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select a theme..." />
+                                                </SelectTrigger>
+                                                <SelectPortal>
+                                                    <SelectContent>
+                                                        <SelectItem value="Light">"Light"</SelectItem>
+                                                        <SelectItem value="Dark">"Dark"</SelectItem>
+                                                        <SelectItem value="System">"System"</SelectItem>
+                                                    </SelectContent>
+                                                </SelectPortal>
+                                            </Select>
+                                        }
+                                    }
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    <div class="flex flex-col gap-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>"Popover"</CardTitle>
+                                <CardDescription>"Contextual floating content."</CardDescription>
+                            </CardHeader>
+                            <CardContent class="flex flex-col gap-3">
+                                <Popover>
+                                    <PopoverTrigger
+                                        variant=ButtonVariant::Outline
+                                        class="w-full justify-between"
+                                    >
+                                        "Basic Popover"
+                                        <span class="text-muted-foreground">"→"</span>
+                                    </PopoverTrigger>
+                                    <PopoverPortal>
+                                        <PopoverContent side=Side::Top class="w-64">
+                                            <PopoverHeader>
+                                                <PopoverTitle class="text-base font-bold">
+                                                    "Quick Info"
+                                                </PopoverTitle>
+                                                <PopoverDescription class="mt-1">
+                                                    "Popovers are perfect for rich tooltips or small inline forms that don't require a full dialog."
+                                                </PopoverDescription>
+                                            </PopoverHeader>
+                                        </PopoverContent>
+                                    </PopoverPortal>
+                                </Popover>
+
+                                <Popover>
+                                    <PopoverTrigger
+                                        variant=ButtonVariant::Secondary
+                                        class="w-full justify-between"
+                                    >
+                                        "Popover Form"
+                                        <span class="text-muted-foreground">"→"</span>
+                                    </PopoverTrigger>
+                                    <PopoverPortal>
+                                        <PopoverContent
+                                            class="w-72"
+                                            align=Align::Start
+                                            side=Side::Top
+                                        >
+                                            <PopoverHeader>
+                                                <PopoverTitle class="font-bold">"Dimensions"</PopoverTitle>
+                                                <p class="text-xs text-muted-foreground mt-1">
+                                                    "Adjust the component size."
+                                                </p>
+                                            </PopoverHeader>
+                                            <div class="px-4 py-3 flex flex-col gap-3">
+                                                <div class="flex items-center justify-between gap-4">
+                                                    <Label class="text-sm text-muted-foreground">"Width"</Label>
+                                                    <Input class="w-40 h-7" attr:placeholder="100%" />
+                                                </div>
+                                                <div class="flex items-center justify-between gap-4">
+                                                    <Label class="text-sm text-muted-foreground">
+                                                        "Height"
+                                                    </Label>
+                                                    <Input class="w-40 h-7" attr:placeholder="auto" />
+                                                </div>
+                                            </div>
+                                        </PopoverContent>
+                                    </PopoverPortal>
+                                </Popover>
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>"Dialog"</CardTitle>
+                                <CardDescription>
+                                    "Modal windows requiring attention."
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent class="flex flex-col gap-3">
+                                <Dialog>
+                                    <DialogTrigger class="w-full">"Alert Dialog"</DialogTrigger>
+                                    <DialogPortal>
+                                        <DialogHeader>
+                                            <DialogTitle>"Are you sure?"</DialogTitle>
+                                            <DialogDescription class="mt-2">
+                                                "This action cannot be undone. This will permanently delete your account and remove your data from our servers."
+                                            </DialogDescription>
+                                        </DialogHeader>
+                                        <DialogFooter class="mt-4">
+                                            <Button variant=ButtonVariant::Outline>"Cancel"</Button>
+                                            <Button variant=ButtonVariant::Destructive>
+                                                "Continue"
+                                            </Button>
+                                        </DialogFooter>
+                                    </DialogPortal>
+                                </Dialog>
+
+                                <Dialog>
+                                    <DialogTrigger class="w-full" variant=ButtonVariant::Secondary>
+                                        "Edit Profile"
+                                    </DialogTrigger>
+                                    <DialogPortal>
+                                        <DialogHeader>
+                                            <DialogTitle>"Edit profile"</DialogTitle>
+                                            <DialogDescription class="mt-1">
+                                                "Make changes to your profile here. Click save when you're done."
+                                            </DialogDescription>
+                                        </DialogHeader>
+                                        <div class="grid gap-4 py-6">
+                                            <div class="grid grid-cols-4 items-center gap-4">
+                                                <Label prop:htmlFor="name" class="text-right">
+                                                    "Name"
+                                                </Label>
+                                                <Input
+                                                    attr:id="name"
+                                                    class="col-span-3"
+                                                    attr:placeholder="Yuri Ribeiro"
+                                                />
+                                            </div>
+                                            <div class="grid grid-cols-4 items-center gap-4">
+                                                <Label prop:htmlFor="username" class="text-right">
+                                                    "Username"
+                                                </Label>
+                                                <Input
+                                                    attr:id="username"
+                                                    class="col-span-3"
+                                                    attr:placeholder="@notreallyuri"
+                                                />
+                                            </div>
+                                        </div>
+                                        <DialogFooter>
+                                            <Button>"Save changes"</Button>
+                                        </DialogFooter>
+                                    </DialogPortal>
+                                </Dialog>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    <div class="md:col-span-2 lg:col-span-3 mt-4">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>"Toasts & Notifications"</CardTitle>
+                                <CardDescription>
+                                    "Snackbar notifications that stack dynamically from any corner."
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div class="flex flex-col gap-3">
+                                        <Button
+                                            variant=ButtonVariant::Outline
+                                            on:click=move |_| {
+                                                toaster
+                                                    .toast("Message Sent")
+                                                    .description("We'll get back to you soon.")
+                                                    .position(ToastPosition::TopLeft)
+                                                    .show();
+                                            }
+                                        >
+                                            "Top Left"
+                                        </Button>
+                                        <Button
+                                            variant=ButtonVariant::Outline
+                                            on:click=move |_| {
+                                                toaster
+                                                    .toast("Archived")
+                                                    .description("Conversation moved to archive.")
+                                                    .position(ToastPosition::BottomLeft)
+                                                    .show();
+                                            }
+                                        >
+                                            "Bottom Left"
+                                        </Button>
+                                    </div>
+                                    <div class="flex flex-col gap-3">
+                                        <Button
+                                            variant=ButtonVariant::Secondary
+                                            on:click=move |_| {
+                                                toaster
+                                                    .toast("Update Available")
+                                                    .description("A new version is ready to install.")
+                                                    .position(ToastPosition::TopCenter)
+                                                    .show();
+                                            }
+                                        >
+                                            "Top Center"
+                                        </Button>
+                                        <Button
+                                            variant=ButtonVariant::Secondary
+                                            on:click=move |_| {
+                                                toaster
+                                                    .toast("Warning")
+                                                    .description("Your session is about to expire.")
+                                                    .position(ToastPosition::BottomCenter)
+                                                    .show();
+                                            }
+                                        >
+                                            "Bottom Center"
+                                        </Button>
+                                    </div>
+                                    <div class="flex flex-col gap-3">
+                                        <Button on:click=move |_| {
+                                            toaster
+                                                .toast("Success!")
+                                                .description("Your profile has been saved.")
+                                                .position(ToastPosition::TopRight)
+                                                .show();
+                                        }>"Top Right"</Button>
+                                        <Button on:click=move |_| {
+                                            toaster
+                                                .toast("Error")
+                                                .description("Could not connect to the server.")
+                                                .position(ToastPosition::BottomRight)
+                                                .show();
+                                        }>"Bottom Right"</Button>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
+            </div>
+        </main>
+    }
+}
+</file>
+
+<file path="src/components/dropdown_menu.rs">
+use crate::{
+    cn,
+    components::button::{Button, ButtonSize, ButtonVariant},
+    primitives::dropdown_menu::{
+        DropdownMenuContentRoot, DropdownMenuItemRoot, DropdownMenuPortalRoot, DropdownMenuRoot,
+        DropdownMenuSubContentRoot, DropdownMenuSubRoot, DropdownMenuSubTriggerRoot, use_dropdown,
+    },
+    utils::types::{Align, Side, SideOffset},
+};
+use leptos::{either::Either, ev, portal::Portal, prelude::*};
+use leptos_node_ref::AnyNodeRef;
+
+#[component]
+pub fn DropdownMenu(children: ChildrenFn) -> impl IntoView {
+    view! { <DropdownMenuRoot class="relative inline-block text-left">{children()}</DropdownMenuRoot> }
+}
+
+#[component]
+pub fn DropdownMenuTrigger(
+    #[prop(optional)] size: ButtonSize,
+    #[prop(optional)] variant: ButtonVariant,
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional, into)] render: Option<
+        Callback<(AnyNodeRef, Callback<ev::MouseEvent>), AnyView>,
+    >,
+    #[prop(optional)] children: Option<ChildrenFn>,
+) -> impl IntoView {
+    let ctx = use_dropdown();
+    let on_click = Callback::new(move |_: ev::MouseEvent| ctx.toggle());
+
+    match render {
+        Some(render_fn) => Either::Left(render_fn.run((ctx.trigger_ref, on_click))),
+        None => Either::Right(view! {
+            <Button
+                size=size
+                node_ref=ctx.trigger_ref
+                on_click=on_click
+                variant=variant
+                attr:disabled=disabled
+                class=class
+            >
+                {
+                    let children = children.clone();
+                    move || match &children {
+                        Some(child) => Either::Left(child()),
+                        None => Either::Right(view! { "" }.into_any()),
+                    }
+                }
+            </Button>
+        }),
+    }
+}
+
+#[component]
+pub fn DropdownMenuPortal(children: ChildrenFn) -> impl IntoView {
+    view! { <DropdownMenuPortalRoot children=children /> }
+}
+
+#[component]
+pub fn DropdownMenuContent(
+    #[prop(optional)] side: Side,
+    #[prop(optional)] align: Align,
+    #[prop(optional)] side_offset: SideOffset,
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <DropdownMenuContentRoot
+            side=side
+            align=align
+            side_offset=side_offset
+            class=move || {
+                cn!(
+                    "z-50 min-w-32 overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
+                    "data-[state=open]:animate-in data-[state=closed]:animate-out",
+                    "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+                    "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+                    "data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+                    class.get()
+                )
+            }
+        >
+            {children()}
+        </DropdownMenuContentRoot>
+    }
+}
+
+#[component]
+pub fn DropdownMenuItem(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] on_click: Option<Callback<ev::MouseEvent>>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <DropdownMenuItemRoot
+            on_click=on_click
+            class=move || {
+                cn!(
+                    "relative flex font-medium cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground hover:bg-accent hover:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50",
+                    class.get()
+                )
+            }
+        >
+            {children()}
+        </DropdownMenuItemRoot>
+    }
+}
+
+#[component]
+pub fn DropdownMenuLabel(children: Children) -> impl IntoView {
+    view! { <div class="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{children()}</div> }
+}
+
+#[component]
+pub fn DropdownMenuSeparator() -> impl IntoView {
+    view! { <div class="-mx-1 my-1 h-px bg-muted"></div> }
+}
+
+#[component]
+pub fn DropdownMenuSub(children: ChildrenFn) -> impl IntoView {
+    view! { <DropdownMenuSubRoot>{children()}</DropdownMenuSubRoot> }
+}
+
+#[component]
+pub fn DropdownMenuSubTrigger(
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <DropdownMenuSubTriggerRoot class=move || {
+            cn!(
+                "group flex w-full cursor-default select-none font-medium justify-between items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground",
+                class.get()
+            )
+        }>
+            {children()}
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="ml-auto h-4 w-4 transition-transform duration-200"
+            >
+                <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+        </DropdownMenuSubTriggerRoot>
+    }
+}
+
+#[component]
+pub fn DropdownMenuSubContent(
+    #[prop(optional)] side_offset: SideOffset,
+    #[prop(optional, into)] class: Signal<String>,
+    children: ChildrenFn,
+) -> impl IntoView {
+    let ctx = crate::primitives::dropdown_menu::use_dropdown();
+    let children = StoredValue::new(children);
+
+    view! {
+        <Portal>
+            <Show when=move || ctx.is_mounted.get()>
+                <DropdownMenuSubContentRoot
+                    side_offset=side_offset
+                    class=move || {
+                        cn!(
+                            "z-50 min-w-32 overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+                            class.get()
+                        )
+                    }
+                >
+                    {children.with_value(|c| c())}
+                </DropdownMenuSubContentRoot>
+            </Show>
+        </Portal>
+    }
+}
+</file>
+
+<file path="Cargo.toml">
+[package]
+name = "nocomponents"
+version = "0.1.0"
+edition = "2024"
+
+[workspace]
+members = ["playground"]
+
+[features]
+primitives = []
+icons = []
+components = ["primitives", "icons"]
+theme = []
+full = ["primitives", "components", "theme", "icons"]
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+floating-ui-leptos = "0.6.0"
+leptos = { version = "0.8.19", features = ["csr"] }
+web-sys = { version = "0.3.98", features = ["Storage", "MediaQueryList", "NodeList", "Element", "HtmlElement", "KeyboardEvent"] }
+leptos-node-ref = "0.2.0"
+send_wrapper = "0.6.0"
+tw_merge = { version = "0.1.21", features = ["variant"] }
+</file>
+
+</files>

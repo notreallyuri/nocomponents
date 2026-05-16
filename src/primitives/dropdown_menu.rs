@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use crate::{
     primitives::floating::{FloatingContext, FloatingRoot, FloatingTrigger},
     utils::{
@@ -8,12 +6,13 @@ use crate::{
     },
 };
 use floating_ui_leptos::{
-    use_floating, Flip, FlipOptions, MiddlewareVec, Offset, OffsetOptions, Placement, Shift,
-    ShiftOptions, Strategy, UseFloatingOptions, UseFloatingReturn,
+    Flip, FlipOptions, MiddlewareVec, Offset, OffsetOptions, Placement, Shift, ShiftOptions,
+    Strategy, UseFloatingOptions, UseFloatingReturn, use_floating,
 };
 use leptos::{either::Either, ev, portal::Portal, prelude::*};
 use leptos_node_ref::AnyNodeRef;
 use send_wrapper::SendWrapper;
+use std::time::Duration;
 
 pub type DropdownMenuContext = FloatingContext;
 
@@ -61,6 +60,7 @@ pub fn DropdownMenuPortalRoot(children: ChildrenFn) -> impl IntoView {
                 <div
                     class=move || if ctx.is_open.get() { "fixed inset-0 z-40" } else { "hidden" }
                     on:click=move |_| ctx.close()
+
                 ></div>
 
                 {stored_children.with_value(|c| c())}

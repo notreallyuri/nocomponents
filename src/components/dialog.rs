@@ -1,7 +1,7 @@
 use crate::{
     cn,
     components::button::{Button, ButtonSize, ButtonVariant},
-    primitives::dialog::{use_dialog, DialogPortalRoot, DialogRoot},
+    primitives::dialog::{DialogContentRoot, DialogPortalRoot, DialogRoot, use_dialog},
 };
 use leptos::{either::Either, ev, prelude::*};
 
@@ -17,7 +17,7 @@ pub fn DialogTrigger(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] render: Option<Callback<Callback<ev::MouseEvent>, AnyView>>,
-    #[prop(optional)] children: Option<Children>,
+    #[prop(optional)] children: Option<ChildrenFn>,
 ) -> impl IntoView {
     let ctx = use_dialog();
     let on_click = Callback::new(move |_: ev::MouseEvent| ctx.toggle());
@@ -25,11 +25,20 @@ pub fn DialogTrigger(
     match render {
         Some(render_fn) => Either::Left(render_fn.run(on_click)),
         None => Either::Right(view! {
-            <Button size=size variant=variant class=class disabled=disabled on_click=on_click>
-                {match children {
-                    Some(child) => Either::Left(child()),
-                    None => Either::Right(""),
-                }}
+            <Button
+                size=size
+                variant=variant
+                class=class
+                attr:disabled=disabled
+                on:click=move |e| on_click.run(e)
+            >
+                {
+                    let children = children.clone();
+                    move || match &children {
+                        Some(child) => Either::Left(child()),
+                        None => Either::Right(view! { "" }.into_any()),
+                    }
+                }
             </Button>
         }),
     }
@@ -52,17 +61,13 @@ pub fn DialogPortal(
                     on:click=move |_| context.close()
                 />
 
-                <div
-                    data-state=move || if context.is_open.get() { "open" } else { "closed" }
-                    class=move || {
-                        cn!(
-                            "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+                <DialogContentRoot class=move || {
+                    cn!(
+                        "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
                             class.get()
-                        )
-                    }
-                >
+                    )
+                }>
                     {stored_children.with_value(|c| c())}
-
                     <button
                         on:click=move |_| context.close()
                         class="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
@@ -84,7 +89,7 @@ pub fn DialogPortal(
                         </svg>
                         <span class="sr-only">"Close"</span>
                     </button>
-                </div>
+                </DialogContentRoot>
             </div>
         </DialogPortalRoot>
     }

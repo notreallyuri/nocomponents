@@ -1,5 +1,6 @@
-use leptos::{ev, prelude::*};
+use leptos::{ev, prelude::*, wasm_bindgen::JsCast};
 use std::time::Duration;
+use web_sys::Element;
 
 #[derive(Copy, Clone, PartialEq, Default)]
 pub enum ToastVariant {
@@ -31,6 +32,7 @@ pub struct ToastDefaults {
     pub variant: ToastVariant,
     pub size: ToastSize,
     pub position: ToastPosition,
+    pub duration: f64,
 }
 
 #[derive(Clone)]
@@ -42,6 +44,8 @@ pub struct ToastData {
     pub size: ToastSize,
     pub position: ToastPosition,
     pub is_open: RwSignal<bool>,
+    pub height: RwSignal<f64>,
+    pub duration: f64,
 }
 
 #[derive(Copy, Clone)]
@@ -60,6 +64,7 @@ impl ToastContext {
             variant: None,
             size: None,
             position: None,
+            duration: None,
         }
     }
 
@@ -87,11 +92,17 @@ pub struct ToastBuilder {
     variant: Option<ToastVariant>,
     size: Option<ToastSize>,
     position: Option<ToastPosition>,
+    duration: Option<f64>,
 }
 
 impl ToastBuilder {
     pub fn description(mut self, desc: &str) -> Self {
         self.description = Some(desc.to_string());
+        self
+    }
+
+    pub fn duration(mut self, ms: f64) -> Self {
+        self.duration = Some(ms);
         self
     }
 
@@ -115,6 +126,8 @@ impl ToastBuilder {
         self.ctx.next_id.update(|n| *n += 1);
 
         let is_open = RwSignal::new(true);
+        let height = RwSignal::new(0.0_f64);
+
         let toast = ToastData {
             id,
             title: self.title,
@@ -122,13 +135,12 @@ impl ToastBuilder {
             variant: self.variant.unwrap_or(self.ctx.defaults.variant),
             size: self.size.unwrap_or(self.ctx.defaults.size),
             position: self.position.unwrap_or(self.ctx.defaults.position),
+            duration: self.duration.unwrap_or(self.ctx.defaults.duration),
             is_open,
+            height,
         };
 
         self.ctx.toasts.update(|t| t.push(toast));
-
-        let ctx = self.ctx;
-        set_timeout(move || ctx.dismiss(id), Duration::from_secs(5));
     }
 }
 
@@ -150,6 +162,7 @@ pub fn ToastProviderRoot(
         variant: default_variant.unwrap_or_default(),
         size: default_size.unwrap_or_default(),
         position: default_position.unwrap_or_default(),
+        duration: 5000.0,
     };
 
     provide_context(ToastContext {
@@ -164,6 +177,8 @@ pub fn ToastProviderRoot(
 #[component]
 pub fn ToastRoot(
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] style: Signal<String>,
+    #[prop(optional)] is_interacting: Option<RwSignal<bool>>,
     toast: ToastData,
     children: Children,
 ) -> impl IntoView {
@@ -178,8 +193,19 @@ pub fn ToastRoot(
 
     let on_pointer_down = move |e: ev::PointerEvent| {
         is_dragging.set(true);
+
+        if let Some(interacting) = is_interacting {
+            interacting.set(true);
+        }
+
         start_x.set(e.client_x());
         start_y.set(e.client_y());
+
+        if let Some(target) = e.target() {
+            if let Ok(el) = target.dyn_into::<Element>() {
+                let _ = el.set_pointer_capture(e.pointer_id());
+            }
+        }
     };
 
     let on_pointer_move = move |e: ev::PointerEvent| {
@@ -212,9 +238,20 @@ pub fn ToastRoot(
         }
     };
 
-    let on_pointer_up = move |_: ev::PointerEvent| {
+    let on_pointer_up = move |e: ev::PointerEvent| {
         if is_dragging.get() {
             is_dragging.set(false);
+
+            if let Some(interacting) = is_interacting {
+                interacting.set(false);
+            }
+
+            if let Some(target) = e.target() {
+                if let Ok(el) = target.dyn_into::<Element>() {
+                    let _ = el.release_pointer_capture(e.pointer_id());
+                }
+            }
+
             if drag_offset_x.get().abs() > 60 || drag_offset_y.get().abs() > 60 {
                 ctx.dismiss(id);
             } else {
@@ -226,16 +263,13 @@ pub fn ToastRoot(
 
     view! {
         <div
-            data-state=move || { if toast.is_open.get() { "open" } else { "closed" } }
-            data-dragging=move || { if is_dragging.get() { "true" } else { "false" } }
+            data-state=move || if toast.is_open.get() { "open" } else { "closed" }
+            data-dragging=move || if is_dragging.get() { "true" } else { "false" }
             style=move || {
+                let base = style.get();
                 let x = drag_offset_x.get();
                 let y = drag_offset_y.get();
-                if x != 0 || y != 0 {
-                    format!("transform: translate({}px, {}px)", x, y)
-                } else {
-                    String::new()
-                }
+                format!("{base} --drag-x: {x}px; --drag-y: {y}px;")
             }
             on:pointerdown=on_pointer_down
             on:pointermove=on_pointer_move

@@ -1124,6 +1124,7 @@ name = "nocomponents"
 version = "0.1.0"
 dependencies = [
  "floating-ui-leptos",
+ "js-sys",
  "leptos",
  "leptos-node-ref",
  "send_wrapper",

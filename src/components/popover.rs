@@ -1,7 +1,7 @@
 use crate::{
     cn,
     components::button::{Button, ButtonSize, ButtonVariant},
-    primitives::popover::{use_popover, PopoverContentRoot, PopoverPortalRoot, PopoverRoot},
+    primitives::popover::{PopoverContentRoot, PopoverPortalRoot, PopoverRoot, use_popover},
     utils::types::{Align, Side, SideOffset},
 };
 use leptos::{either::Either, ev, prelude::*};
@@ -21,7 +21,7 @@ pub fn PopoverTrigger(
     #[prop(optional, into)] as_child: Option<
         Callback<(AnyNodeRef, Callback<ev::MouseEvent>), AnyView>,
     >,
-    #[prop(optional)] children: Option<Children>,
+    #[prop(optional)] children: Option<ChildrenFn>,
 ) -> impl IntoView {
     let ctx = use_popover();
     let on_click = Callback::new(move |_: ev::MouseEvent| ctx.toggle());
@@ -32,15 +32,18 @@ pub fn PopoverTrigger(
             <Button
                 size=size
                 variant=variant
+                attr:disabled=disabled
                 class=class
-                disabled=disabled
-                on_click=on_click
                 node_ref=ctx.trigger_ref
+                on_click=on_click
             >
-                {match children {
-                    Some(child) => Either::Left(child()),
-                    None => Either::Right(""),
-                }}
+                {
+                    let children = children.clone();
+                    move || match &children {
+                        Some(child) => Either::Left(child()),
+                        None => Either::Right(view! { "" }.into_any()),
+                    }
+                }
             </Button>
         }),
     }

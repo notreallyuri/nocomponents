@@ -2,9 +2,8 @@ use crate::{
     cn,
     components::button::{Button, ButtonSize, ButtonVariant},
     primitives::dropdown_menu::{
-        use_dropdown, DropdownMenuContentRoot, DropdownMenuItemRoot, DropdownMenuPortalRoot,
-        DropdownMenuRoot, DropdownMenuSubContentRoot, DropdownMenuSubRoot,
-        DropdownMenuSubTriggerRoot,
+        DropdownMenuContentRoot, DropdownMenuItemRoot, DropdownMenuPortalRoot, DropdownMenuRoot,
+        DropdownMenuSubContentRoot, DropdownMenuSubRoot, DropdownMenuSubTriggerRoot, use_dropdown,
     },
     utils::types::{Align, Side, SideOffset},
 };
@@ -25,7 +24,7 @@ pub fn DropdownMenuTrigger(
     #[prop(optional, into)] render: Option<
         Callback<(AnyNodeRef, Callback<ev::MouseEvent>), AnyView>,
     >,
-    #[prop(optional)] children: Option<Children>,
+    #[prop(optional)] children: Option<ChildrenFn>,
 ) -> impl IntoView {
     let ctx = use_dropdown();
     let on_click = Callback::new(move |_: ev::MouseEvent| ctx.toggle());
@@ -35,16 +34,19 @@ pub fn DropdownMenuTrigger(
         None => Either::Right(view! {
             <Button
                 size=size
-                variant=variant
-                class=class
-                disabled=disabled
-                on_click=on_click
                 node_ref=ctx.trigger_ref
+                on_click=on_click
+                variant=variant
+                attr:disabled=disabled
+                class=class
             >
-                {match children {
-                    Some(child) => Either::Left(child()),
-                    None => Either::Right(""),
-                }}
+                {
+                    let children = children.clone();
+                    move || match &children {
+                        Some(child) => Either::Left(child()),
+                        None => Either::Right(view! { "" }.into_any()),
+                    }
+                }
             </Button>
         }),
     }

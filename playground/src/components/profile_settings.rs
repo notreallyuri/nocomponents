@@ -77,14 +77,14 @@ pub fn SettingsDialog(
                                     <Label>"New password"</Label>
                                     <Input
                                         input_type=InputType::Password
-                                        placeholder="••••••••"
+                                        attr:placeholder="••••••••"
                                     />
                                 </div>
                                 <div class="space-y-1.5">
                                     <Label>"Confirm password"</Label>
                                     <Input
                                         input_type=InputType::Password
-                                        placeholder="••••••••"
+                                        attr:placeholder="••••••••"
                                     />
                                 </div>
                             </div>
@@ -135,12 +135,12 @@ pub fn SettingsDialog(
 
                         <div class="space-y-1.5">
                             <Label>"Public Name"</Label>
-                            <Input placeholder="Your name or nickname" />
+                            <Input attr:placeholder="Your name or nickname" />
                         </div>
 
                         <div class="space-y-1.5">
                             <Label>"Bio"</Label>
-                            <Input placeholder="Write about you..." />
+                            <Input attr:placeholder="Write about you..." />
                         </div>
 
                         <Button class="mt-4 w-full sm:w-auto sm:ml-auto cursor-pointer shadow-sm">

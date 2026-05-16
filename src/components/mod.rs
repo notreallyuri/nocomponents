@@ -1,4 +1,6 @@
+pub mod alert_dialog;
 pub mod avatar;
+pub mod badge;
 pub mod button;
 pub mod card;
 pub mod checkbox;
@@ -13,7 +15,9 @@ pub mod tabs;
 pub mod toast;
 
 pub mod prelude {
+    pub use super::alert_dialog::*;
     pub use super::avatar::*;
+    pub use super::badge::*;
     pub use super::button::*;
     pub use super::card::*;
     pub use super::checkbox::*;

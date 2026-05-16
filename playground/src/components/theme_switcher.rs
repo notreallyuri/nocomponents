@@ -20,7 +20,10 @@ pub fn ThemeSwitcher(#[prop(optional, into)] class: Signal<String>) -> impl Into
 
     view! {
         <DropdownMenu>
-            <DropdownMenuTrigger class=cn!("w-18", class.get()) variant=ButtonVariant::Outline>
+            <DropdownMenuTrigger
+                class=move || cn!("w-18", class.get())
+                variant=ButtonVariant::Outline
+            >
                 {move || match theme_ctx.current.get() {
                     Theme::Light => "Light",
                     Theme::Dark => "Dark",
