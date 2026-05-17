@@ -87,8 +87,12 @@ pub fn TabsContent(
     view! {
         <TabsContentRoot
             value=value
-            class=move || { cn!("flex-1 text-sm outline-none",
-                class.get()) }
+            class=move || {
+                cn!(
+                    "flex-1 text-sm outline-none data-[state=inactive]:hidden",
+                class.get()
+                )
+            }
         >
             {children()}
         </TabsContentRoot>

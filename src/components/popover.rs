@@ -82,9 +82,6 @@ pub fn PopoverContent(
     }
 }
 
-// Note: Because I moved the `px-4 flex flex-col` inner div directly into the
-// `PopoverContent` above, you can safely DELETE the old `PopoverContent` component block!
-
 #[component]
 pub fn PopoverHeader(
     #[prop(optional, into)] class: Signal<String>,

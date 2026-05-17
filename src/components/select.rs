@@ -1,8 +1,9 @@
 use crate::{
     cn,
+    icons::{check::Check, chevron::ChevronDown},
     primitives::select::{
-        use_select, SelectContentRoot, SelectItemRoot, SelectPortalRoot, SelectRoot,
-        SelectTriggerRoot,
+        SelectContentRoot, SelectItemRoot, SelectPortalRoot, SelectRoot, SelectTriggerRoot,
+        use_select,
     },
 };
 use leptos::prelude::*;
@@ -31,23 +32,7 @@ pub fn SelectTrigger(
                 "flex h-8 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
                     class.get()
             )
-        }>
-            {children()}
-            <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                class="h-4 w-4 opacity-50"
-            >
-                <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-        </SelectTriggerRoot>
+        }>{children()} <ChevronDown class="text-muted-foreground" /></SelectTriggerRoot>
     }
 }
 
@@ -102,20 +87,7 @@ pub fn SelectItem(
             }
         >
             <span class="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    class="h-4 w-4 hidden group-data-[state=checked]:block"
-                >
-                    <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
+                <Check class="hidden group-data-[state=checked]:block" />
             </span>
             {children()}
         </SelectItemRoot>

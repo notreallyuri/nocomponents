@@ -101,7 +101,6 @@ pub fn TabsContentRoot(
         <div
             role="tabpanel"
             data-state=move || if is_active.get() { "active" } else { "inactive" }
-            hidden=move || !is_active.get()
             class=class
         >
             {children()}

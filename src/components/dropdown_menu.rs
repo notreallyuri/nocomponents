@@ -1,6 +1,7 @@
 use crate::{
     cn,
     components::button::{Button, ButtonSize, ButtonVariant},
+    icons::chevron::ChevronRight,
     primitives::dropdown_menu::{
         DropdownMenuContentRoot, DropdownMenuItemRoot, DropdownMenuPortalRoot, DropdownMenuRoot,
         DropdownMenuSubContentRoot, DropdownMenuSubRoot, DropdownMenuSubTriggerRoot, use_dropdown,
@@ -133,23 +134,7 @@ pub fn DropdownMenuSubTrigger(
                 "group flex w-full cursor-default select-none font-medium justify-between items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground",
                 class.get()
             )
-        }>
-            {children()}
-            <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                class="ml-auto h-4 w-4 transition-transform duration-200"
-            >
-                <polyline points="9 18 15 12 9 6"></polyline>
-            </svg>
-        </DropdownMenuSubTriggerRoot>
+        }>{children()} <ChevronRight class="ml-auto" /></DropdownMenuSubTriggerRoot>
     }
 }
 

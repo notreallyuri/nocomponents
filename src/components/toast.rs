@@ -301,7 +301,16 @@ fn ToastItem(
                         .description
                         .clone()
                         .map(|desc| {
-                            view! { <div class="text-xs text-muted-foreground">{desc}</div> }
+                            view! {
+                                <div class=move || {
+                                    cn!(
+                                        "text-xs font-medium", match toast.variant {
+                                            ToastVariant::Default => "text-muted-foreground",
+                                            ToastVariant::Destructive => "text-primary"
+                                        }
+                                    )
+                                }>{desc}</div>
+                            }
                         })}
                 </div>
             </div>
