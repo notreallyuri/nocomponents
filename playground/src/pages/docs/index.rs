@@ -17,6 +17,7 @@ const COMPONENTS: &[(&str, &str)] = &[
     ("Checkbox", "/docs/checkbox"),
     ("Code", "/docs/code"),
     ("Collapsible", "/docs/collapsible"),
+    ("Context Menu", "/docs/context-menu"),
     ("Dialog", "/docs/dialog"),
     ("Dropdown Menu", "/docs/dropdown-menu"),
     ("Empty", "/docs/empty"),

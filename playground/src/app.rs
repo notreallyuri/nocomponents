@@ -48,6 +48,7 @@ pub fn App() -> impl IntoView {
                         <Route path=path!("/docs/item") view=docs::item::Page />
                         <Route path=path!("/docs/accordion") view=docs::accordion::Page />
                         <Route path=path!("/docs/collapsible") view=docs::collapsible::Page />
+                        <Route path=path!("/docs/context-menu") view=docs::context_menu::Page />
                         <Route path=path!("/docs/tooltip") view=docs::tooltip::Page />
                         <Route path=path!("/docs/sheet") view=docs::sheet::Page />
                         <Route path=path!("/docs/hover-card") view=docs::hover_card::Page />

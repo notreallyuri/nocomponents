@@ -11,6 +11,7 @@ pub mod card;
 pub mod checkbox;
 pub mod code;
 pub mod collapsible;
+pub mod context_menu;
 pub mod dialog;
 pub mod dropdown_menu;
 pub mod empty;
@@ -54,6 +55,7 @@ pub mod prelude {
     pub use super::checkbox::*;
     pub use super::code::*;
     pub use super::collapsible::*;
+    pub use super::context_menu::*;
     pub use super::dialog::*;
     pub use super::dropdown_menu::*;
     pub use super::empty::*;

@@ -89,6 +89,10 @@ const NAV: &[NavGroup] = &[
                 href: "/docs/collapsible",
             },
             NavItem {
+                label: "Context Menu",
+                href: "/docs/context-menu",
+            },
+            NavItem {
                 label: "Dialog",
                 href: "/docs/dialog",
             },

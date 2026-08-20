@@ -31,7 +31,7 @@ pub fn use_dropdown() -> DropdownMenuContext {
 /// submenu can only reach the submenu — selecting one has to close the whole tree, not just the
 /// panel it lives in.
 #[derive(Copy, Clone)]
-struct MenuRoot(DropdownMenuContext);
+pub(crate) struct MenuRoot(pub(crate) DropdownMenuContext);
 
 #[component]
 pub fn DropdownMenuRoot(
@@ -73,7 +73,7 @@ pub fn DropdownMenuTriggerRoot(
 ///
 /// Menus focus their *container* on open rather than an item: opening with the mouse should not
 /// paint a focus ring on the first entry, and the first arrow key then steps into the list.
-fn focus_element(node_ref: AnyNodeRef) {
+pub(crate) fn focus_element(node_ref: AnyNodeRef) {
     if let Some(el) = node_ref.get_untracked()
         && let Ok(el) = el.dyn_into::<HtmlElement>()
     {
@@ -94,7 +94,11 @@ fn focus_first_item(content_ref: AnyNodeRef) {
 
 /// Keys every menu surface handles the same way: arrows and Home/End move between items, Enter and
 /// Space activate the focused one, Tab leaves the menu entirely.
-fn handle_menu_keys(e: &ev::KeyboardEvent, roving: RovingFocus, ctx: DropdownMenuContext) -> bool {
+pub(crate) fn handle_menu_keys(
+    e: &ev::KeyboardEvent,
+    roving: RovingFocus,
+    ctx: DropdownMenuContext,
+) -> bool {
     let key = e.key();
 
     if roving.on_keydown(&key) {
@@ -120,6 +124,30 @@ fn handle_menu_keys(e: &ev::KeyboardEvent, roving: RovingFocus, ctx: DropdownMen
             false
         }
         _ => false,
+    }
+}
+
+/// `data-side` / `data-align` for a resolved placement. Shared with `context_menu.rs`, which
+/// renders the same surface contract from a different anchor.
+pub(crate) fn placement_side(placement: Placement) -> &'static str {
+    match placement {
+        Placement::Top | Placement::TopStart | Placement::TopEnd => "top",
+        Placement::Bottom | Placement::BottomStart | Placement::BottomEnd => "bottom",
+        Placement::Left | Placement::LeftStart | Placement::LeftEnd => "left",
+        Placement::Right | Placement::RightStart | Placement::RightEnd => "right",
+    }
+}
+
+pub(crate) fn placement_align(placement: Placement) -> &'static str {
+    match placement {
+        Placement::TopStart
+        | Placement::BottomStart
+        | Placement::LeftStart
+        | Placement::RightStart => "start",
+        Placement::TopEnd | Placement::BottomEnd | Placement::LeftEnd | Placement::RightEnd => {
+            "end"
+        }
+        _ => "center",
     }
 }
 
@@ -204,23 +232,8 @@ pub fn DropdownMenuContentRoot(
                 }
                 on:focusin=move |_| roving.on_focus_in()
                 data-state=move || if ctx.is_open.get() { "open" } else { "closed" }
-                data-align=move || match placement.get() {
-                    Placement::TopStart
-                    | Placement::BottomStart
-                    | Placement::LeftStart
-                    | Placement::RightStart => "start",
-                    Placement::TopEnd
-                    | Placement::BottomEnd
-                    | Placement::LeftEnd
-                    | Placement::RightEnd => "end",
-                    _ => "center",
-                }
-                data-side=move || match placement.get() {
-                    Placement::Top | Placement::TopStart | Placement::TopEnd => "top",
-                    Placement::Bottom | Placement::BottomStart | Placement::BottomEnd => "bottom",
-                    Placement::Left | Placement::LeftStart | Placement::LeftEnd => "left",
-                    Placement::Right | Placement::RightStart | Placement::RightEnd => "right",
-                }
+                data-align=move || placement_align(placement.get())
+                data-side=move || placement_side(placement.get())
                 class=class
             >
                 {children()}
