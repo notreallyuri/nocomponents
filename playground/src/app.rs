@@ -19,6 +19,7 @@ pub fn App() -> impl IntoView {
                         <Route path=path!("/docs/checkbox") view=docs::checkbox::Page />
                         <Route path=path!("/docs/code") view=docs::code::Page />
                         <Route path=path!("/docs/dialog") view=docs::dialog::Page />
+                        <Route path=path!("/docs/drawer") view=docs::drawer::Page />
                         <Route path=path!("/docs/dropdown-menu") view=docs::dropdown_menu::Page />
                         <Route path=path!("/docs/input") view=docs::input::Page />
                         <Route path=path!("/docs/input-group") view=docs::input_group::Page />

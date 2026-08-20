@@ -13,6 +13,7 @@ pub mod code;
 pub mod collapsible;
 pub mod context_menu;
 pub mod dialog;
+pub mod drawer;
 pub mod dropdown_menu;
 pub mod empty;
 pub mod field;
@@ -60,6 +61,7 @@ pub mod prelude {
     pub use super::collapsible::*;
     pub use super::context_menu::*;
     pub use super::dialog::*;
+    pub use super::drawer::*;
     pub use super::dropdown_menu::*;
     pub use super::empty::*;
     pub use super::field::*;

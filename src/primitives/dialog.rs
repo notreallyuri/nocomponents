@@ -190,6 +190,10 @@ pub fn DialogPortalRoot(children: ChildrenFn) -> impl IntoView {
 #[component]
 pub fn DialogContentRoot(
     #[prop(optional, into)] class: Signal<String>,
+    /// Inline geometry, for a caller that positions or transforms the panel itself — the drawer
+    /// drags it, so its offset cannot live in a class.
+    #[prop(optional, into)]
+    style: Signal<String>,
     children: Children,
 ) -> impl IntoView {
     let ctx = use_dialog();
@@ -260,6 +264,7 @@ pub fn DialogContentRoot(
         <div
             node_ref=content_ref
             class=class
+            style=style
             role="dialog"
             aria-modal="true"
             aria-labelledby=move || Some(ctx.title_id.get()).filter(|id| !id.is_empty())

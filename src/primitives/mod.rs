@@ -7,6 +7,7 @@ pub mod collapsible;
 pub mod context_menu;
 pub mod dialog;
 pub mod dismiss;
+pub mod drawer;
 pub mod dropdown_menu;
 pub mod field;
 pub mod floating;
@@ -41,6 +42,7 @@ pub mod prelude {
     pub use super::context_menu::*;
     pub use super::dialog::*;
     pub use super::dismiss::*;
+    pub use super::drawer::*;
     pub use super::dropdown_menu::*;
     pub use super::field::*;
     pub use super::floating::*;

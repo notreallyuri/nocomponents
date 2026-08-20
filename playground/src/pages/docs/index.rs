@@ -19,6 +19,7 @@ const COMPONENTS: &[(&str, &str)] = &[
     ("Collapsible", "/docs/collapsible"),
     ("Context Menu", "/docs/context-menu"),
     ("Dialog", "/docs/dialog"),
+    ("Drawer", "/docs/drawer"),
     ("Dropdown Menu", "/docs/dropdown-menu"),
     ("Empty", "/docs/empty"),
     ("Field", "/docs/field"),

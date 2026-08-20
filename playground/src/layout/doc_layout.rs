@@ -97,6 +97,10 @@ const NAV: &[NavGroup] = &[
                 href: "/docs/dialog",
             },
             NavItem {
+                label: "Drawer",
+                href: "/docs/drawer",
+            },
+            NavItem {
                 label: "Dropdown Menu",
                 href: "/docs/dropdown-menu",
             },
