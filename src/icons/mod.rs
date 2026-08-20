@@ -2,6 +2,7 @@ use leptos::prelude::*;
 
 pub mod check;
 pub mod chevron;
+pub mod copy;
 pub mod ellipsis;
 pub mod loader;
 pub mod search;

@@ -11,19 +11,46 @@ pub fn App() -> impl IntoView {
                 <Router>
                     <Routes fallback=|| "Not Found.">
                         <Route path=path!("/") view=Home />
+                        <Route path=path!("/docs") view=docs::index::Page />
                         <Route path=path!("/docs/avatar") view=docs::avatar::Page />
                         <Route path=path!("/docs/badge") view=docs::badge::Page />
                         <Route path=path!("/docs/button") view=docs::button::Page />
                         <Route path=path!("/docs/card") view=docs::card::Page />
                         <Route path=path!("/docs/checkbox") view=docs::checkbox::Page />
+                        <Route path=path!("/docs/code") view=docs::code::Page />
                         <Route path=path!("/docs/dialog") view=docs::dialog::Page />
                         <Route path=path!("/docs/dropdown-menu") view=docs::dropdown_menu::Page />
                         <Route path=path!("/docs/input") view=docs::input::Page />
                         <Route path=path!("/docs/popover") view=docs::popover::Page />
+                        <Route path=path!("/docs/progress") view=docs::progress::Page />
                         <Route path=path!("/docs/select") view=docs::select::Page />
                         <Route path=path!("/docs/switch") view=docs::switch::Page />
                         <Route path=path!("/docs/tabs") view=docs::tabs::Page />
+                        <Route path=path!("/docs/textarea") view=docs::textarea::Page />
+                        <Route path=path!("/docs/skeleton") view=docs::skeleton::Page />
                         <Route path=path!("/docs/toast") view=docs::toast::Page />
+                        <Route path=path!("/docs/alert") view=docs::alert::Page />
+                        <Route path=path!("/docs/alert-dialog") view=docs::alert_dialog::Page />
+                        <Route path=path!("/docs/aspect-ratio") view=docs::aspect_ratio::Page />
+                        <Route path=path!("/docs/kbd") view=docs::kbd::Page />
+                        <Route path=path!("/docs/label") view=docs::label::Page />
+                        <Route path=path!("/docs/separator") view=docs::separator::Page />
+                        <Route path=path!("/docs/spinner") view=docs::spinner::Page />
+                        <Route path=path!("/docs/toggle") view=docs::toggle::Page />
+                        <Route path=path!("/docs/toggle-group") view=docs::toggle_group::Page />
+                        <Route path=path!("/docs/button-group") view=docs::button_group::Page />
+                        <Route path=path!("/docs/radio-group") view=docs::radio_group::Page />
+                        <Route path=path!("/docs/native-select") view=docs::native_select::Page />
+                        <Route path=path!("/docs/table") view=docs::table::Page />
+                        <Route path=path!("/docs/empty") view=docs::empty::Page />
+                        <Route path=path!("/docs/item") view=docs::item::Page />
+                        <Route path=path!("/docs/accordion") view=docs::accordion::Page />
+                        <Route path=path!("/docs/collapsible") view=docs::collapsible::Page />
+                        <Route path=path!("/docs/tooltip") view=docs::tooltip::Page />
+                        <Route path=path!("/docs/sheet") view=docs::sheet::Page />
+                        <Route path=path!("/docs/hover-card") view=docs::hover_card::Page />
+                        <Route path=path!("/docs/breadcrumb") view=docs::breadcrumb::Page />
+                        <Route path=path!("/docs/pagination") view=docs::pagination::Page />
                     </Routes>
                 </Router>
             </ToastProvider>

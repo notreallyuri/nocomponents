@@ -1,65 +1,51 @@
 use crate::components::theme_switcher::ThemeSwitcher;
 use leptos::prelude::*;
 use leptos_router::components::A;
-
-const COMPONENTS: &[(&str, &str)] = &[
-    ("Avatar", "/docs/avatar"),
-    ("Badge", "/docs/badge"),
-    ("Button", "/docs/button"),
-    ("Card", "/docs/card"),
-    ("Checkbox", "/docs/checkbox"),
-    ("Dialog", "/docs/dialog"),
-    ("Dropdown Menu", "/docs/dropdown-menu"),
-    ("Input", "/docs/input"),
-    ("Popover", "/docs/popover"),
-    ("Select", "/docs/select"),
-    ("Switch", "/docs/switch"),
-    ("Tabs", "/docs/tabs"),
-    ("Toast", "/docs/toast"),
-];
+use nocomponents::{
+    components::prelude::{Button, ButtonSize, ButtonVariant},
+    icons::x::X,
+};
 
 #[component]
 pub fn Home() -> impl IntoView {
     view! {
         <div class="flex min-h-screen flex-col bg-background text-foreground font-sans">
-            <header class="sticky top-0 z-40 h-16 flex items-center justify-between px-6 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
-                <div class="flex items-center select-none gap-2 font-bold tracking-tight text-sm">
-                    <div class="size-5 bg-primary text-primary-foreground flex items-center justify-center">
-                        <span class="text-[10px]">"NC"</span>
-                    </div>
-                    "nocomponents"
-                </div>
+            <header class="sticky top-0 justify-end z-40 h-16 flex items-center px-6">
                 <ThemeSwitcher />
             </header>
 
             <main class="flex-1 flex flex-col items-center justify-center px-8 py-24 gap-16">
-                <div class="flex flex-col items-center gap-4 text-center max-w-xl">
-                    <h1 class="text-4xl font-bold tracking-tight">"nocomponents"</h1>
-                    <p class="text-muted-foreground text-lg">
-                        "Headless + styled Leptos UI primitives. Pick what you need."
-                    </p>
-                    <A
-                        href="/docs/button"
-                        attr:class="mt-2 inline-flex h-9 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-                    >
-                        "Browse components →"
-                    </A>
-                </div>
-
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 w-full max-w-3xl">
-                    {COMPONENTS
-                        .iter()
-                        .map(|&(label, href)| {
-                            view! {
-                                <A
-                                    href=href
-                                    attr:class="rounded-lg border bg-card px-3 py-2.5 text-sm font-medium text-card-foreground hover:bg-muted transition-colors text-center"
-                                >
-                                    {label}
-                                </A>
-                            }
-                        })
-                        .collect_view()}
+                <div class="flex border flex-col items-center text-center max-w-xl">
+                    <div class="flex items-center bg-border h-8 w-full px-2">
+                        <div class="flex items-center select-none gap-2">
+                            <div class="size-5 bg-primary font-bold text-primary-foreground flex items-center justify-center">
+                                <span class="text-[10px]">"NC"</span>
+                            </div>
+                            <p class="text-muted-foreground font-medium text-sm">"nocomponents"</p>
+                        </div>
+                        <div class="rounded-full flex items-center ml-auto justify-center bg-muted size-4">
+                            <X class="text-foreground size-3" />
+                        </div>
+                    </div>
+                    <div class="p-4 space-y-1">
+                        <h1 class="text-4xl font-bold tracking-tight">"nocomponents"</h1>
+                        <p class="text-muted-foreground text-sm">
+                            "Headless + styled Leptos UI primitives. Pick what you need."
+                        </p>
+                        <Button
+                            variant=ButtonVariant::Outline
+                            size=ButtonSize::Lg
+                            class="mt-4"
+                            render=Callback::new(move |(class, _node_ref)| {
+                                view! {
+                                    <A href="/docs" attr:class=class>
+                                        "Go to docs"
+                                    </A>
+                                }
+                                    .into_any()
+                            })
+                        />
+                    </div>
                 </div>
             </main>
         </div>
