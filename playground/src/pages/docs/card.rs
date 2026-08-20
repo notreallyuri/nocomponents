@@ -36,9 +36,7 @@ const SMALL: &str = r#"<Card size=CardSize::Sm class="max-w-sm">
         <CardDescription>"72% of 100 GB used"</CardDescription>
     </CardHeader>
     <CardContent>
-        <div class="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-            <div class="h-full w-[72%] rounded-full bg-primary" />
-        </div>
+        <Progress value=70.0 class="h-1.5 w-full" />
     </CardContent>
 </Card>"#;
 
