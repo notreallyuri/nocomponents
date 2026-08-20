@@ -28,6 +28,7 @@ pub mod pagination;
 pub mod popover;
 pub mod progress;
 pub mod radio_group;
+pub mod scroll_area;
 pub mod select;
 pub mod separator;
 pub mod sheet;
@@ -74,6 +75,7 @@ pub mod prelude {
     pub use super::popover::*;
     pub use super::progress::*;
     pub use super::radio_group::*;
+    pub use super::scroll_area::*;
     pub use super::select::*;
     pub use super::separator::*;
     pub use super::sheet::*;

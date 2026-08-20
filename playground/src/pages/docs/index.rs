@@ -34,6 +34,7 @@ const COMPONENTS: &[(&str, &str)] = &[
     ("Popover", "/docs/popover"),
     ("Progress", "/docs/progress"),
     ("Radio Group", "/docs/radio-group"),
+    ("Scroll Area", "/docs/scroll-area"),
     ("Select", "/docs/select"),
     ("Separator", "/docs/separator"),
     ("Sheet", "/docs/sheet"),

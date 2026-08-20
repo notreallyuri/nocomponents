@@ -157,6 +157,10 @@ const NAV: &[NavGroup] = &[
                 href: "/docs/radio-group",
             },
             NavItem {
+                label: "Scroll Area",
+                href: "/docs/scroll-area",
+            },
+            NavItem {
                 label: "Select",
                 href: "/docs/select",
             },

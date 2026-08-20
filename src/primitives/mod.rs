@@ -18,6 +18,7 @@ pub mod popover;
 pub mod progress;
 pub mod radio_group;
 pub mod roving_focus;
+pub mod scroll_area;
 pub mod select;
 pub mod separator;
 pub mod slider;
@@ -51,6 +52,7 @@ pub mod prelude {
     pub use super::progress::*;
     pub use super::radio_group::*;
     pub use super::roving_focus::*;
+    pub use super::scroll_area::*;
     pub use super::select::*;
     pub use super::separator::*;
     pub use super::slider::*;

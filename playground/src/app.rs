@@ -25,6 +25,7 @@ pub fn App() -> impl IntoView {
                         <Route path=path!("/docs/input-otp") view=docs::input_otp::Page />
                         <Route path=path!("/docs/popover") view=docs::popover::Page />
                         <Route path=path!("/docs/progress") view=docs::progress::Page />
+                        <Route path=path!("/docs/scroll-area") view=docs::scroll_area::Page />
                         <Route path=path!("/docs/select") view=docs::select::Page />
                         <Route path=path!("/docs/switch") view=docs::switch::Page />
                         <Route path=path!("/docs/tabs") view=docs::tabs::Page />
