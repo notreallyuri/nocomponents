@@ -65,27 +65,29 @@ pub fn ThemeProvider(children: Children) -> impl IntoView {
         let theme = current.get();
         let window = window();
 
-        if let Some(document) = window.document() && let Some(html) = document.document_element() {
-                let is_dark = match theme {
-                    Theme::Dark => true,
-                    Theme::Light => false,
-                    Theme::System => window
-                        .match_media("(prefers-color-scheme: dark)")
-                        .ok()
-                        .flatten()
-                        .map(|m| m.matches())
-                        .unwrap_or(false),
-                };
+        if let Some(document) = window.document()
+            && let Some(html) = document.document_element()
+        {
+            let is_dark = match theme {
+                Theme::Dark => true,
+                Theme::Light => false,
+                Theme::System => window
+                    .match_media("(prefers-color-scheme: dark)")
+                    .ok()
+                    .flatten()
+                    .map(|m| m.matches())
+                    .unwrap_or(false),
+            };
 
-                let class_list = html.class_list();
-                if is_dark {
-                    let _ = class_list.add_1("dark");
-                } else {
-                    let _ = class_list.remove_1("dark");
-                }
+            let class_list = html.class_list();
+            if is_dark {
+                let _ = class_list.add_1("dark");
+            } else {
+                let _ = class_list.remove_1("dark");
+            }
 
-                if let Some(storage) = window.local_storage().ok().flatten() {
-                    let _ = storage.set_item("ui-theme", theme.as_str());
+            if let Some(storage) = window.local_storage().ok().flatten() {
+                let _ = storage.set_item("ui-theme", theme.as_str());
             }
         }
     });

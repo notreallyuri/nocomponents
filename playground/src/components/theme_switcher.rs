@@ -9,7 +9,7 @@ use nocomponents::{
         },
     },
     utils::{
-        theme::{use_theme, Theme},
+        theme::{Theme, use_theme},
         types::{Align, Side},
     },
 };
@@ -32,7 +32,7 @@ pub fn ThemeSwitcher(#[prop(optional, into)] class: Signal<String>) -> impl Into
             </DropdownMenuTrigger>
 
             <DropdownMenuPortal>
-                <DropdownMenuContent align=Align::Center side=Side::Bottom>
+                <DropdownMenuContent align=Align::End side=Side::Bottom>
                     <DropdownMenuLabel>"Theme"</DropdownMenuLabel>
                     <DropdownMenuSeparator />
 

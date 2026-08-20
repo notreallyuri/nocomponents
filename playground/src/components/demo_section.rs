@@ -1,9 +1,11 @@
 use leptos::prelude::*;
+use nocomponents::components::code::CodeBlock;
 
 #[component]
 pub fn DemoSection(
     title: &'static str,
     #[prop(optional)] description: Option<&'static str>,
+    #[prop(optional)] code: Option<&'static str>,
     children: Children,
 ) -> impl IntoView {
     view! {
@@ -13,6 +15,7 @@ pub fn DemoSection(
                 {description.map(|d| view! { <p class="text-xs text-muted-foreground">{d}</p> })}
             </div>
             <div class="rounded-lg border bg-card p-6">{children()}</div>
+            {code.map(|code| view! { <CodeBlock code=code /> })}
         </section>
     }
 }
