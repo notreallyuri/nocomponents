@@ -1,11 +1,19 @@
-use crate::primitives::floating::{FloatingContext, FloatingRoot, FloatingTrigger};
-use floating_ui_leptos::{
-    use_floating, Flip, FlipOptions, MiddlewareVec, Offset, OffsetOptions, Placement, Shift,
-    ShiftOptions, Strategy, UseFloatingOptions, UseFloatingReturn,
+use crate::{
+    primitives::{
+        floating::{FloatingContext, FloatingRoot, FloatingTrigger, TriggerAria},
+        roving_focus::use_roving_focus,
+        typeahead::Typeahead,
+    },
+    utils::types::Orientation,
 };
-use leptos::{either::Either, ev, portal::Portal, prelude::*};
+use floating_ui_leptos::{
+    Flip, FlipOptions, MiddlewareVec, Offset, OffsetOptions, Placement, Shift, ShiftOptions,
+    Strategy, UseFloatingOptions, UseFloatingReturn, use_floating,
+};
+use leptos::{either::Either, ev, portal::Portal, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
 use send_wrapper::SendWrapper;
+use web_sys::HtmlElement;
 
 pub type SelectContext = FloatingContext;
 
@@ -24,7 +32,7 @@ pub fn SelectRoot(
     };
 
     view! {
-        <FloatingRoot class=class context=ctx>
+        <FloatingRoot class=class context=ctx trigger_aria=TriggerAria::Popup("listbox")>
             {children()}
             <select class="hidden" aria-hidden="true" tabindex="-1">
                 <option value=move || ctx.value.get().unwrap_or_default() selected=true></option>
@@ -61,11 +69,6 @@ pub fn SelectPortalRoot(children: ChildrenFn) -> impl IntoView {
     view! {
         <Portal>
             <Show when=move || ctx.is_mounted.get()>
-                <div
-                    class=move || if ctx.is_open.get() { "fixed inset-0 z-40" } else { "hidden" }
-                    on:click=move |_| ctx.close()
-                ></div>
-
                 {stored_children.with_value(|c| c())}
             </Show>
         </Portal>
@@ -78,7 +81,7 @@ pub fn SelectContentRoot(
     children: Children,
 ) -> impl IntoView {
     let ctx = use_select();
-    let floating_ref = AnyNodeRef::new();
+    let floating_ref = ctx.content_ref;
 
     let middleware: MiddlewareVec = vec![
         Box::new(Offset::new(OffsetOptions::Value(0.0))),
@@ -101,6 +104,18 @@ pub fn SelectContentRoot(
             .middleware(SendWrapper::new(middleware)),
     );
 
+    let listbox_ref = AnyNodeRef::new();
+    let roving = use_roving_focus(listbox_ref, Orientation::Vertical);
+    let typeahead = Typeahead::new();
+
+    // A select opens *on* its current value, the way a native one does: focus lands on the chosen
+    // option, so the first arrow key steps away from it rather than from the top of the list.
+    Effect::new(move |_| {
+        if ctx.is_open.get() && is_positioned.get() {
+            roving.focus_tab_stop();
+        }
+    });
+
     view! {
         <div
             node_ref=floating_ref
@@ -118,9 +133,41 @@ pub fn SelectContentRoot(
                 base_style.push_str(&format!(" width: {}px;", width));
                 base_style
             }
-            class="fixed z-50"
+            class="fixed z-50 pointer-events-none"
         >
             <div
+                node_ref=listbox_ref
+                id=move || ctx.content_id.get()
+                role="listbox"
+                aria-labelledby=move || ctx.trigger_id.get()
+                tabindex="-1"
+                on:keydown=move |e| {
+                    let key = e.key();
+                    if roving.on_keydown(&key) {
+                        e.prevent_default();
+                        return;
+                    }
+                    match key.as_str() {
+                        // An option is a div, so Enter and Space have to be turned into the click
+                        // that commits it.
+                        "Enter" | " " => {
+                            if let Some(active) = document().active_element()
+                                && active.has_attribute("data-roving-item")
+                                && let Ok(active) = active.dyn_into::<HtmlElement>()
+                            {
+                                e.prevent_default();
+                                active.click();
+                            }
+                        }
+                        "Tab" => ctx.close(),
+                        _ => {
+                            if typeahead.push(&key, listbox_ref) {
+                                e.prevent_default();
+                            }
+                        }
+                    }
+                }
+                on:focusin=move |_| roving.on_focus_in()
                 data-state=move || {
                     if ctx.is_open.get() && is_positioned.get() { "open" } else { "closed" }
                 }
@@ -145,7 +192,7 @@ pub fn SelectItemRoot(
     let ctx = use_select();
     let item_value = value.clone();
 
-    let is_selected = move || ctx.value.get() == Some(item_value.clone());
+    let is_selected = Signal::derive(move || ctx.value.get() == Some(item_value.clone()));
 
     let on_click = move |_: ev::MouseEvent| {
         ctx.value.set(Some(value.clone()));
@@ -154,8 +201,12 @@ pub fn SelectItemRoot(
 
     view! {
         <div
+            role="option"
+            tabindex="-1"
+            data-roving-item=""
+            aria-selected=move || is_selected.get().to_string()
             on:click=on_click
-            data-state=move || if is_selected() { "checked" } else { "unchecked" }
+            data-state=move || if is_selected.get() { "checked" } else { "unchecked" }
             class=class
         >
             {children()}

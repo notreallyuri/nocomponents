@@ -1,13 +1,13 @@
 use crate::{
-    primitives::floating::{FloatingContext, FloatingRoot, FloatingTrigger},
+    primitives::floating::{FloatingContext, FloatingRoot, FloatingTrigger, TriggerAria},
     utils::{
         get_placement,
         types::{Align, Side, SideOffset},
     },
 };
 use floating_ui_leptos::{
-    use_floating, Flip, FlipOptions, MiddlewareVec, Offset, OffsetOptions, Placement, Shift,
-    ShiftOptions, Strategy, UseFloatingOptions, UseFloatingReturn,
+    Flip, FlipOptions, MiddlewareVec, Offset, OffsetOptions, Placement, Shift, ShiftOptions,
+    Strategy, UseFloatingOptions, UseFloatingReturn, use_floating,
 };
 use leptos::{either::Either, ev, portal::Portal, prelude::*};
 use leptos_node_ref::AnyNodeRef;
@@ -24,7 +24,7 @@ pub fn PopoverRoot(
     #[prop(optional, into)] class: Signal<String>,
     children: ChildrenFn,
 ) -> impl IntoView {
-    view! { <FloatingRoot class=class>{children()}</FloatingRoot> }
+    view! { <FloatingRoot class=class trigger_aria=TriggerAria::Popup("dialog")>{children()}</FloatingRoot> }
 }
 
 #[component]
@@ -55,11 +55,6 @@ pub fn PopoverPortalRoot(children: ChildrenFn) -> impl IntoView {
     view! {
         <Portal>
             <Show when=move || ctx.is_mounted.get()>
-                <div
-                    class=move || if ctx.is_open.get() { "fixed inset-0 z-40" } else { "hidden" }
-                    on:click=move |_| ctx.close()
-                ></div>
-
                 {stored_children.with_value(|c| c())}
             </Show>
         </Portal>
@@ -75,7 +70,7 @@ pub fn PopoverContentRoot(
     children: Children,
 ) -> impl IntoView {
     let ctx = use_popover();
-    let floating_ref = AnyNodeRef::new();
+    let floating_ref = ctx.content_ref;
 
     let middleware: MiddlewareVec = vec![
         Box::new(Offset::new(OffsetOptions::Value(side_offset.0))),
@@ -109,9 +104,12 @@ pub fn PopoverContentRoot(
                     floating_styles.get().to_string()
                 }
             }
-            class="fixed z-50 w-max"
+            class="fixed z-50 w-max pointer-events-none"
         >
             <div
+                id=move || ctx.content_id.get()
+                role="dialog"
+                aria-labelledby=move || ctx.trigger_id.get()
                 data-state=move || {
                     if ctx.is_open.get() && is_positioned.get() { "open" } else { "closed" }
                 }

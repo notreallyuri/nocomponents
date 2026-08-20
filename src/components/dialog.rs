@@ -2,7 +2,10 @@ use crate::{
     cn,
     components::button::{Button, ButtonSize, ButtonVariant},
     icons::x::X,
-    primitives::dialog::{DialogContentRoot, DialogPortalRoot, DialogRoot, use_dialog},
+    primitives::dialog::{
+        DialogContentRoot, DialogPart, DialogPortalRoot, DialogRoot, use_dialog,
+        use_dialog_label_id,
+    },
 };
 use leptos::{either::Either, ev, prelude::*};
 
@@ -58,13 +61,13 @@ pub fn DialogPortal(
             <div data-slot="dialog-portal">
                 <div
                     data-state=move || if context.is_open.get() { "open" } else { "closed" }
-                    class="fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0"
+                    class="fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:pointer-events-none"
                     on:click=move |_| context.close()
                 />
 
                 <DialogContentRoot class=move || {
                     cn!(
-                        "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+                        "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=closed]:pointer-events-none",
                             class.get()
                     )
                 }>
@@ -111,10 +114,15 @@ pub fn DialogTitle(
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
+    let id = use_dialog_label_id(DialogPart::Title);
+
     view! {
-        <div class=move || {
-            cn!("text-lg font-semibold leading-none tracking-tight", class.get())
-        }>{children()}</div>
+        <div
+            id=id
+            class=move || cn!("text-lg font-semibold leading-none tracking-tight", class.get())
+        >
+            {children()}
+        </div>
     }
 }
 
@@ -123,5 +131,11 @@ pub fn DialogDescription(
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
-    view! { <div class=move || cn!("text-sm text-muted-foreground", class.get())>{children()}</div> }
+    let id = use_dialog_label_id(DialogPart::Description);
+
+    view! {
+        <div id=id class=move || cn!("text-sm text-muted-foreground", class.get())>
+            {children()}
+        </div>
+    }
 }

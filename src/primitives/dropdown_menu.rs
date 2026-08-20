@@ -1,18 +1,24 @@
 use crate::{
-    primitives::floating::{FloatingContext, FloatingRoot, FloatingTrigger},
+    primitives::{
+        floating::{FloatingContext, FloatingRoot, FloatingTrigger, TriggerAria},
+        roving_focus::{RovingFocus, use_roving_focus},
+    },
     utils::{
         get_placement,
-        types::{Align, Side, SideOffset},
+        types::{Align, Orientation, Side, SideOffset},
     },
 };
 use floating_ui_leptos::{
     Flip, FlipOptions, MiddlewareVec, Offset, OffsetOptions, Placement, Shift, ShiftOptions,
     Strategy, UseFloatingOptions, UseFloatingReturn, use_floating,
 };
-use leptos::{either::Either, ev, portal::Portal, prelude::*};
+use leptos::{
+    context::Provider, either::Either, ev, portal::Portal, prelude::*, wasm_bindgen::JsCast,
+};
 use leptos_node_ref::AnyNodeRef;
 use send_wrapper::SendWrapper;
 use std::time::Duration;
+use web_sys::HtmlElement;
 
 pub type DropdownMenuContext = FloatingContext;
 
@@ -20,12 +26,26 @@ pub fn use_dropdown() -> DropdownMenuContext {
     expect_context::<DropdownMenuContext>()
 }
 
+/// The outermost menu's context, reachable from inside a submenu. `DropdownMenuSubRoot` wraps its
+/// children in a `FloatingRoot` of its own, which shadows `DropdownMenuContext`, so an item in a
+/// submenu can only reach the submenu — selecting one has to close the whole tree, not just the
+/// panel it lives in.
+#[derive(Copy, Clone)]
+struct MenuRoot(DropdownMenuContext);
+
 #[component]
 pub fn DropdownMenuRoot(
     #[prop(optional, into)] class: Signal<String>,
     children: ChildrenFn,
 ) -> impl IntoView {
-    view! { <FloatingRoot class=class>{children()}</FloatingRoot> }
+    let context = DropdownMenuContext::default();
+    let stored_children = StoredValue::new(children);
+
+    view! {
+        <FloatingRoot class=class context=context trigger_aria=TriggerAria::Popup("menu")>
+            <Provider value=MenuRoot(context)>{stored_children.with_value(|c| c())}</Provider>
+        </FloatingRoot>
+    }
 }
 
 #[component]
@@ -49,6 +69,60 @@ pub fn DropdownMenuTriggerRoot(
     }
 }
 
+/// Moves focus onto the first item of a menu that has just opened.
+///
+/// Menus focus their *container* on open rather than an item: opening with the mouse should not
+/// paint a focus ring on the first entry, and the first arrow key then steps into the list.
+fn focus_element(node_ref: AnyNodeRef) {
+    if let Some(el) = node_ref.get_untracked()
+        && let Ok(el) = el.dyn_into::<HtmlElement>()
+    {
+        let _ = el.focus();
+    }
+}
+
+/// Focuses the first item of a menu surface, used when stepping into a submenu.
+fn focus_first_item(content_ref: AnyNodeRef) {
+    if let Some(content) = content_ref.get_untracked()
+        && let Ok(Some(first)) = content.query_selector("[data-roving-item]:not([data-disabled])")
+        && let Ok(first) = first.dyn_into::<HtmlElement>()
+    {
+        let _ = first.set_attribute("tabindex", "0");
+        let _ = first.focus();
+    }
+}
+
+/// Keys every menu surface handles the same way: arrows and Home/End move between items, Enter and
+/// Space activate the focused one, Tab leaves the menu entirely.
+fn handle_menu_keys(e: &ev::KeyboardEvent, roving: RovingFocus, ctx: DropdownMenuContext) -> bool {
+    let key = e.key();
+
+    if roving.on_keydown(&key) {
+        return true;
+    }
+
+    match key.as_str() {
+        // A menu item is a div, so Enter and Space have to be turned into the click it would get
+        // for free if it were a button.
+        "Enter" | " " => {
+            if let Some(active) = document().active_element()
+                && active.has_attribute("data-roving-item")
+                && let Ok(active) = active.dyn_into::<HtmlElement>()
+            {
+                active.click();
+                return true;
+            }
+            false
+        }
+        // Tabbing out of a menu closes it rather than leaving it hanging behind the focus.
+        "Tab" => {
+            ctx.close();
+            false
+        }
+        _ => false,
+    }
+}
+
 #[component]
 pub fn DropdownMenuPortalRoot(children: ChildrenFn) -> impl IntoView {
     let ctx = use_dropdown();
@@ -57,12 +131,6 @@ pub fn DropdownMenuPortalRoot(children: ChildrenFn) -> impl IntoView {
     view! {
         <Portal>
             <Show when=move || ctx.is_mounted.get()>
-                <div
-                    class=move || if ctx.is_open.get() { "fixed inset-0 z-40" } else { "hidden" }
-                    on:click=move |_| ctx.close()
-
-                ></div>
-
                 {stored_children.with_value(|c| c())}
             </Show>
         </Portal>
@@ -78,7 +146,7 @@ pub fn DropdownMenuContentRoot(
     children: Children,
 ) -> impl IntoView {
     let ctx = use_dropdown();
-    let floating_ref = AnyNodeRef::new();
+    let floating_ref = ctx.content_ref;
 
     let middleware: MiddlewareVec = vec![
         Box::new(Offset::new(OffsetOptions::Value(side_offset.0))),
@@ -101,6 +169,16 @@ pub fn DropdownMenuContentRoot(
             .middleware(SendWrapper::new(middleware)),
     );
 
+    let menu_ref = AnyNodeRef::new();
+    let roving = use_roving_focus(menu_ref, Orientation::Vertical);
+
+    Effect::new(move |_| {
+        if ctx.is_open.get() && is_positioned.get() {
+            focus_element(menu_ref);
+            roving.sync_tab_stop();
+        }
+    });
+
     view! {
         <div
             node_ref=floating_ref
@@ -111,9 +189,20 @@ pub fn DropdownMenuContentRoot(
                     floating_styles.get().to_string()
                 }
             }
-            class="fixed z-50 w-max"
+            class="fixed z-50 w-max pointer-events-none"
         >
             <div
+                node_ref=menu_ref
+                id=move || ctx.content_id.get()
+                role="menu"
+                aria-labelledby=move || ctx.trigger_id.get()
+                tabindex="-1"
+                on:keydown=move |e| {
+                    if handle_menu_keys(&e, roving, ctx) {
+                        e.prevent_default();
+                    }
+                }
+                on:focusin=move |_| roving.on_focus_in()
                 data-state=move || if ctx.is_open.get() { "open" } else { "closed" }
                 data-align=move || match placement.get() {
                     Placement::TopStart
@@ -148,15 +237,26 @@ pub fn DropdownMenuItemRoot(
 ) -> impl IntoView {
     let ctx = use_dropdown();
 
+    let menu_root = use_context::<MenuRoot>();
+
     let handle_click = move |e: ev::MouseEvent| {
         if let Some(cb) = on_click {
             cb.run(e);
         }
         ctx.close();
+        if let Some(root) = menu_root {
+            root.0.close();
+        }
     };
 
     view! {
-        <div on:click=handle_click class=class>
+        <div
+            role="menuitem"
+            tabindex="-1"
+            data-roving-item=""
+            on:click=handle_click
+            class=class
+        >
             {children()}
         </div>
     }
@@ -186,10 +286,30 @@ pub fn DropdownMenuSubTriggerRoot(
     view! {
         <button
             type="button"
+            role="menuitem"
+            aria-haspopup="menu"
+            aria-expanded=move || ctx.is_open.get().to_string()
+            tabindex="-1"
+            data-roving-item=""
             disabled=disabled
             node_ref=ctx.trigger_ref
             class=class
             data-state=move || if ctx.is_open.get() { "open" } else { "closed" }
+            on:keydown=move |e| {
+                // Right (and Enter/Space, which a button would otherwise turn into a click that
+                // only toggles) opens the submenu and steps into it.
+                if matches!(e.key().as_str(), "ArrowRight" | "Enter" | " ") {
+                    e.prevent_default();
+                    e.stop_propagation();
+                    ctx.open();
+                    // The content mounts on the next tick, so the first item cannot be focused
+                    // until it exists.
+                    set_timeout(
+                        move || focus_first_item(ctx.content_ref),
+                        Duration::from_millis(16),
+                    );
+                }
+            }
             on:click=move |e| {
                 e.stop_propagation();
                 ctx.toggle();
@@ -222,7 +342,7 @@ pub fn DropdownMenuSubContentRoot(
     children: Children,
 ) -> impl IntoView {
     let ctx = use_dropdown();
-    let floating_ref = AnyNodeRef::new();
+    let floating_ref = ctx.content_ref;
     let hover = expect_context::<SubHoverState>();
 
     let middleware: MiddlewareVec = vec![
@@ -230,6 +350,9 @@ pub fn DropdownMenuSubContentRoot(
         Box::new(Flip::new(FlipOptions::default())),
         Box::new(Shift::new(ShiftOptions::default())),
     ];
+
+    let menu_ref = AnyNodeRef::new();
+    let roving = use_roving_focus(menu_ref, Orientation::Vertical);
 
     let UseFloatingReturn {
         floating_styles,
@@ -256,7 +379,7 @@ pub fn DropdownMenuSubContentRoot(
                     floating_styles.get().to_string()
                 }
             }
-            class="fixed z-50 w-max"
+            class="fixed z-50 w-max pointer-events-none"
             on:pointerenter=move |_| {
                 hover.0.set(true);
             }
@@ -273,6 +396,26 @@ pub fn DropdownMenuSubContentRoot(
             }
         >
             <div
+                node_ref=menu_ref
+                id=move || ctx.content_id.get()
+                role="menu"
+                aria-labelledby=move || ctx.trigger_id.get()
+                tabindex="-1"
+                on:keydown=move |e| {
+                    // Left steps back out to the trigger and closes the submenu behind it.
+                    if e.key() == "ArrowLeft" {
+                        e.prevent_default();
+                        e.stop_propagation();
+                        ctx.close();
+                        focus_element(ctx.trigger_ref);
+                        return;
+                    }
+                    if handle_menu_keys(&e, roving, ctx) {
+                        e.prevent_default();
+                        e.stop_propagation();
+                    }
+                }
+                on:focusin=move |_| roving.on_focus_in()
                 data-state=move || if ctx.is_open.get() { "open" } else { "closed" }
                 data-side=move || match placement.get() {
                     Placement::Top | Placement::TopStart | Placement::TopEnd => "top",
