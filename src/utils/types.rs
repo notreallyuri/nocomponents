@@ -100,3 +100,35 @@ impl Side {
         }
     }
 }
+
+pub trait AsClass {
+    fn as_class(&self) -> &'static str;
+}
+
+/// Language hint for `CodeBlock`. Only affects highlighting, which is a no-op unless the
+/// `highlight` feature is enabled.
+#[derive(Default, Copy, Clone, PartialEq, Eq, Debug)]
+pub enum Language {
+    #[default]
+    Rust,
+    Shell,
+    JavaScript,
+    TypeScript,
+    Html,
+    Css,
+    Plain,
+}
+
+impl Language {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Language::Rust => "rust",
+            Language::Shell => "shell",
+            Language::JavaScript => "javascript",
+            Language::TypeScript => "typescript",
+            Language::Html => "html",
+            Language::Css => "css",
+            Language::Plain => "plain",
+        }
+    }
+}

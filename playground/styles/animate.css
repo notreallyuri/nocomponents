@@ -27,7 +27,12 @@
 @property --tw-animation-fill-mode {
   syntax: "*";
   inherits: false;
-  initial-value: none;
+  /* Deliberately has no initial value: a registered property resolves to its
+     initial value rather than to the `var()` fallback, so declaring one here
+     makes every `var(--tw-animation-fill-mode, …)` fallback below dead code.
+     Left unset, `enter`/`exit` default to `forwards` and the accordion and
+     collapsible animations default to `none`, as each usage site asks for.
+     Same reasoning as `--tw-animation-duration` above. */
 }
 
 @property --tw-animation-iteration-count {
@@ -231,37 +236,13 @@
       height: 0;
     }
     to {
-      height: var(
-        --radix-accordion-content-height,
-        var(
-          --bits-accordion-content-height,
-          var(
-            --reka-accordion-content-height,
-            var(
-              --kb-accordion-content-height,
-              var(--ngp-accordion-content-height, auto)
-            )
-          )
-        )
-      );
+      height: var(--nc-content-height, auto);
     }
   }
 
   @keyframes accordion-up {
     from {
-      height: var(
-        --radix-accordion-content-height,
-        var(
-          --bits-accordion-content-height,
-          var(
-            --reka-accordion-content-height,
-            var(
-              --kb-accordion-content-height,
-              var(--ngp-accordion-content-height, auto)
-            )
-          )
-        )
-      );
+      height: var(--nc-content-height, auto);
     }
     to {
       height: 0;
@@ -273,31 +254,13 @@
       height: 0;
     }
     to {
-      height: var(
-        --radix-collapsible-content-height,
-        var(
-          --bits-collapsible-content-height,
-          var(
-            --reka-collapsible-content-height,
-            var(--kb-collapsible-content-height, auto)
-          )
-        )
-      );
+      height: var(--nc-content-height, auto);
     }
   }
 
   @keyframes collapsible-up {
     from {
-      height: var(
-        --radix-collapsible-content-height,
-        var(
-          --bits-collapsible-content-height,
-          var(
-            --reka-collapsible-content-height,
-            var(--kb-collapsible-content-height, auto)
-          )
-        )
-      );
+      height: var(--nc-content-height, auto);
     }
     to {
       height: 0;

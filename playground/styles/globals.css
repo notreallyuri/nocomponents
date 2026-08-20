@@ -11,19 +11,13 @@
       height: 0;
     }
     to {
-      height: var(
-        --radix-accordion-content-height,
-        var(--accordion-panel-height, auto)
-      );
+      height: var(--nc-content-height, auto);
     }
   }
 
   @keyframes accordion-up {
     from {
-      height: var(
-        --radix-accordion-content-height,
-        var(--accordion-panel-height, auto)
-      );
+      height: var(--nc-content-height, auto);
     }
     to {
       height: 0;
@@ -50,8 +44,7 @@
 }
 
 @theme inline {
-  --font-sans: "Inter", sans-serif;
-  --font-figtree: "Figtree", sans-serif;
+  --font-sans: "Figtree", sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
