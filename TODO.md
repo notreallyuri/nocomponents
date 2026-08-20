@@ -163,12 +163,13 @@ they land and add new ones rather than keeping a parallel list elsewhere.
 
 ## Components — gap vs the shadcn/ui catalogue
 
-Shipped (39): accordion, alert, alert-dialog, aspect-ratio, avatar, badge, breadcrumb, button,
-button-group, card, checkbox, code, collapsible, dialog, dropdown-menu, empty, hover-card, input,
-item, kbd, label, native-select, pagination, popover, progress, radio-group, select, separator,
-sheet, skeleton, spinner, switch, table, tabs, textarea, toast, toggle, toggle-group, tooltip. `code` is not in the shadcn catalogue — it is ours, for documenting the rest.
+Shipped (43): accordion, alert, alert-dialog, aspect-ratio, avatar, badge, breadcrumb, button,
+button-group, card, checkbox, code, collapsible, context-menu, dialog, dropdown-menu, empty, field,
+hover-card, input, input-group, item, kbd, label, native-select, pagination, popover, progress,
+radio-group, select, separator, sheet, skeleton, slider, spinner, switch, table, tabs, textarea,
+toast, toggle, toggle-group, tooltip. `code` is not in the shadcn catalogue — it is ours, for documenting the rest.
 
-Missing (25), ordered by priority. Priority = how often it is reached for, weighted down by how much
+Missing (21), ordered by priority. Priority = how often it is reached for, weighted down by how much
 machinery it needs that this library does not have yet.
 
 **P1 — fundamentals, no new machinery.** Static markup or a single bool of state; each is an
@@ -237,7 +238,15 @@ afternoon and closes obvious holes in the current set.
       difference that changes everything: the content is interactive, so the pointer has to be able
       to leave the trigger and enter the card without it closing. Trigger *and* content both cancel
       the pending close, and the card keeps `pointer-events`, which a tooltip deliberately drops.
-- [ ] Context Menu (dropdown machinery on `contextmenu`, positioned at the pointer)
+- [x] Context Menu — `src/primitives/context_menu.rs`. A dropdown whose anchor is a click rather
+      than a button, so the items, roving focus and submenus are `dropdown_menu.rs`'s and the
+      styled parts are re-exported rather than restyled. The anchor is a zero-size element parked
+      at the click point: positioning against a real element keeps flip and shift working, and it
+      is what makes dismissal right — with the trigger *region* as the reference, the dismissable
+      layer counts it as inside and a left-click there fails to close the menu it just opened.
+      Content is the one part not reused: floating-ui's auto-update watches for resizes and
+      scrolls, and an anchor that teleports is neither, so a second right-click elsewhere needs an
+      explicit `update()`.
 - [ ] Scroll Area
 - [x] Breadcrumb — style-only, but the markup is the point: a `<nav>` labelled "breadcrumb" around
       an ordered list, the current page marked `aria-current="page"` instead of linked, and the
@@ -245,10 +254,30 @@ afternoon and closes obvious holes in the current set.
 - [x] Pagination — style-only, and links rather than buttons, because a page of results has a URL
       and the reader should be able to middle-click page 3. `PaginationLink` takes `active` for the
       current page, announced as `aria-current="page"`.
-- [ ] Field (label + control + description + error wiring; would tidy every form demo)
-- [ ] Input Group
+- [x] Field — `src/primitives/field.rs` mints one id per control and hands it out, so the label's
+      `for`, the control's `aria-describedby` and the error's id all come from one place and a
+      caller writes markup instead of wiring. The error registers its id *outside* the `Show` that
+      renders it, which keeps the id stable across every toggle. Controls opt in rather than being
+      wrapped, since a field cannot reach into arbitrary children to add attributes: `Input`,
+      `TextareaRoot`, `NativeSelectRoot`, `CheckboxRoot` and `SwitchRoot` build a `FieldControl`
+      and wear what it resolves to; outside a field every signal reads empty. Still to do: the
+      `<fieldset>`/`<legend>` pair for grouping a radio group or a set of checkboxes under one
+      label, which needs `aria-labelledby` rather than `for`.
+- [x] Input Group — the border moves off the `<input>` and onto the box around it, so an icon, a
+      unit or a button can sit inside what still reads as one field. Mostly styling; the one piece
+      of behaviour, and why there is a primitive, is that clicking the box's own chrome has to land
+      in the control, because a real input has no dead zone inside its own border. `mousedown`
+      rather than `click`, so focus is redirected before the browser hands it elsewhere, and
+      anything that already owns the click — a button in an addon — is left alone.
 - [ ] Input OTP
-- [ ] Slider
+- [x] Slider — `src/primitives/slider.rs`. The value is a `Vec<f64>` and a range slider is the
+      two-element case, so the geometry, the keyboard contract and the ARIA are written once
+      instead of twice; thumbs clamp to their neighbours and each announces its own bounds rather
+      than the track's. Dragging is tracked on the window, since a pointer that leaves the element
+      mid-drag still belongs to the drag, with the listeners installed per gesture and removed on
+      release. Pressing the track moves the nearest thumb to the press and picks it up, so a click
+      and a drag are one gesture. Snapping rounds at the step's own precision, which is what keeps
+      `step=0.5` yielding 3.5 rather than 3.5000000000000004.
 
 **Beyond the shadcn catalogue.** Ours, and both need dependencies the library does not have yet,
 so both go behind their own feature flag rather than into `full` by default.
