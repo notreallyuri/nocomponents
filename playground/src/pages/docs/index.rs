@@ -25,6 +25,7 @@ const COMPONENTS: &[(&str, &str)] = &[
     ("Hover Card", "/docs/hover-card"),
     ("Input", "/docs/input"),
     ("Input Group", "/docs/input-group"),
+    ("Input OTP", "/docs/input-otp"),
     ("Item", "/docs/item"),
     ("Kbd", "/docs/kbd"),
     ("Label", "/docs/label"),

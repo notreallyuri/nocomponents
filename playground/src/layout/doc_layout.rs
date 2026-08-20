@@ -121,6 +121,10 @@ const NAV: &[NavGroup] = &[
                 href: "/docs/input-group",
             },
             NavItem {
+                label: "Input OTP",
+                href: "/docs/input-otp",
+            },
+            NavItem {
                 label: "Item",
                 href: "/docs/item",
             },

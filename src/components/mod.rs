@@ -19,6 +19,7 @@ pub mod field;
 pub mod hover_card;
 pub mod input;
 pub mod input_group;
+pub mod input_otp;
 pub mod item;
 pub mod kbd;
 pub mod label;
@@ -64,6 +65,7 @@ pub mod prelude {
     pub use super::hover_card::*;
     pub use super::input::*;
     pub use super::input_group::*;
+    pub use super::input_otp::*;
     pub use super::item::*;
     pub use super::kbd::*;
     pub use super::label::*;
