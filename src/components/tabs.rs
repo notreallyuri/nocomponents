@@ -7,6 +7,15 @@ use crate::{
 };
 use leptos::prelude::*;
 
+impl TabsListVariants {
+    pub fn as_class(&self) -> &'static str {
+        match self {
+            TabsListVariants::Default => "bg-muted",
+            TabsListVariants::Line => "gap-1 bg-transparent",
+        }
+    }
+}
+
 #[component]
 pub fn Tabs(
     #[prop(into)] default_value: String,
@@ -31,18 +40,13 @@ pub fn TabsList(
     #[prop(optional, into)] variant: TabsListVariants,
     children: Children,
 ) -> impl IntoView {
-    let variant_classes = match variant {
-        TabsListVariants::Default => "bg-muted",
-        TabsListVariants::Line => "gap-1 bg-transparent",
-    };
-
     view! {
         <TabsListRoot
             variant=variant
             class=move || {
                 cn!(
                     "group/tabs-list inline-flex w-fit items-center justify-center rounded-lg p-0.75 text-muted-foreground group-data-horizontal/tabs:h-8 group-data-vertical/tabs:h-fit group-data-vertical/tabs:flex-col data-[variant=line]:rounded-none",
-                variant_classes,
+                variant.as_class(),
                 class.get()
                 )
             }
