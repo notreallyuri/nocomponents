@@ -1,0 +1,38 @@
+//! The browser's own `<select>`, bound to a signal.
+//!
+//! Distinct from `select.rs`, which builds a listbox out of divs to get styling and a portal. This
+//! one is the native control: it costs nothing, works everywhere, and on a phone it opens the
+//! platform picker. Reach for it in forms and dense settings; reach for the other when the options
+//! need to look like anything other than a native menu.
+
+use leptos::{ev, prelude::*};
+
+#[component]
+pub fn NativeSelectRoot(
+    #[prop(optional, into)] class: Signal<String>,
+    /// Two-way binding. Omit it and pass `value` for a one-way one.
+    #[prop(default = None, into)]
+    model: Option<RwSignal<String>>,
+    #[prop(optional, into)] value: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional, into)] id: Signal<String>,
+    /// `<option>` and `<optgroup>` elements, written out as they are.
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <select
+            id=id
+            disabled=disabled
+            data-slot="native-select"
+            prop:value=move || if let Some(model) = model { model.get() } else { value.get() }
+            on:change=move |e: ev::Event| {
+                if let Some(model) = model {
+                    model.set(event_target_value(&e));
+                }
+            }
+            class=class
+        >
+            {children()}
+        </select>
+    }
+}

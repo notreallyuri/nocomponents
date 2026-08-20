@@ -1,0 +1,82 @@
+use crate::{
+    cn,
+    components::toggle::{TOGGLE_BASE, ToggleSize, ToggleVariant},
+    primitives::toggle_group::{ToggleGroupItemRoot, ToggleGroupRoot, ToggleGroupType},
+    utils::types::{AsClass, Orientation},
+};
+use leptos::{context::Provider, prelude::*};
+
+/// Styling handed down from the group to its items. Lives in the styled layer on purpose — the
+/// primitive knows nothing about variants.
+#[derive(Copy, Clone, Default)]
+struct ToggleGroupStyle {
+    variant: ToggleVariant,
+    size: ToggleSize,
+}
+
+#[component]
+pub fn ToggleGroup(
+    #[prop(optional)] kind: ToggleGroupType,
+    #[prop(optional)] orientation: Orientation,
+    #[prop(optional)] variant: ToggleVariant,
+    #[prop(optional)] size: ToggleSize,
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(default = None, into)] value: Option<RwSignal<Vec<String>>>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <Provider value=ToggleGroupStyle { variant, size }>
+            <ToggleGroupRoot
+                kind=kind
+                orientation=orientation
+                disabled=disabled
+                value=value
+                class=move || {
+                    cn!(
+                        "group/toggle-group flex w-fit items-center rounded-lg data-[orientation=vertical]:flex-col data-[orientation=vertical]:items-stretch",
+                        class.get()
+                    )
+                }
+            >
+                {children()}
+            </ToggleGroupRoot>
+        </Provider>
+    }
+}
+
+#[component]
+pub fn ToggleGroupItem(
+    #[prop(into)] value: String,
+    /// Defaults to the variant set on the enclosing `ToggleGroup`.
+    #[prop(optional)]
+    variant: Option<ToggleVariant>,
+    /// Defaults to the size set on the enclosing `ToggleGroup`.
+    #[prop(optional)]
+    size: Option<ToggleSize>,
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional)] children: Option<Children>,
+) -> impl IntoView {
+    let inherited = use_context::<ToggleGroupStyle>().unwrap_or_default();
+    let variant = variant.unwrap_or(inherited.variant);
+    let size = size.unwrap_or(inherited.size);
+
+    view! {
+        <ToggleGroupItemRoot
+            value=value
+            disabled=disabled
+            class=move || {
+                cn!(
+                    TOGGLE_BASE,
+                    variant.as_class(),
+                    size.as_class(),
+                    "rounded-none first:rounded-l-lg last:rounded-r-lg group-data-[orientation=vertical]/toggle-group:first:rounded-t-lg group-data-[orientation=vertical]/toggle-group:last:rounded-b-lg group-data-[orientation=vertical]/toggle-group:first:rounded-r-lg group-data-[orientation=vertical]/toggle-group:last:rounded-l-lg",
+                    class.get()
+                )
+            }
+        >
+            {children.map(|c| c())}
+        </ToggleGroupItemRoot>
+    }
+}
