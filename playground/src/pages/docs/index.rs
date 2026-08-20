@@ -37,6 +37,7 @@ const COMPONENTS: &[(&str, &str)] = &[
     ("Separator", "/docs/separator"),
     ("Sheet", "/docs/sheet"),
     ("Skeleton", "/docs/skeleton"),
+    ("Slider", "/docs/slider"),
     ("Spinner", "/docs/spinner"),
     ("Switch", "/docs/switch"),
     ("Table", "/docs/table"),

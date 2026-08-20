@@ -169,6 +169,10 @@ const NAV: &[NavGroup] = &[
                 href: "/docs/skeleton",
             },
             NavItem {
+                label: "Slider",
+                href: "/docs/slider",
+            },
+            NavItem {
                 label: "Spinner",
                 href: "/docs/spinner",
             },

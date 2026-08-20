@@ -31,6 +31,7 @@ pub mod select;
 pub mod separator;
 pub mod sheet;
 pub mod skeleton;
+pub mod slider;
 pub mod spinner;
 pub mod switch;
 pub mod table;
@@ -75,6 +76,7 @@ pub mod prelude {
     pub use super::separator::*;
     pub use super::sheet::*;
     pub use super::skeleton::*;
+    pub use super::slider::*;
     pub use super::spinner::*;
     pub use super::switch::*;
     pub use super::table::*;

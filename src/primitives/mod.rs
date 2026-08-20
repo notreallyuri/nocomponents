@@ -19,6 +19,7 @@ pub mod radio_group;
 pub mod roving_focus;
 pub mod select;
 pub mod separator;
+pub mod slider;
 pub mod switch;
 pub mod tabs;
 pub mod textarea;
@@ -50,6 +51,7 @@ pub mod prelude {
     pub use super::roving_focus::*;
     pub use super::select::*;
     pub use super::separator::*;
+    pub use super::slider::*;
     pub use super::switch::*;
     pub use super::tabs::*;
     pub use super::textarea::*;
