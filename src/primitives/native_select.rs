@@ -5,6 +5,7 @@
 //! platform picker. Reach for it in forms and dense settings; reach for the other when the options
 //! need to look like anything other than a native menu.
 
+use crate::primitives::field::FieldControl;
 use leptos::{ev, prelude::*};
 
 #[component]
@@ -19,10 +20,14 @@ pub fn NativeSelectRoot(
     /// `<option>` and `<optgroup>` elements, written out as they are.
     children: Children,
 ) -> impl IntoView {
+    let field = FieldControl::new(id, disabled);
+
     view! {
         <select
-            id=id
-            disabled=disabled
+            id=move || field.id.get()
+            disabled=move || field.disabled.get()
+            aria-describedby=move || field.described_by.get()
+            aria-invalid=move || field.invalid.get().then_some("true")
             data-slot="native-select"
             prop:value=move || if let Some(model) = model { model.get() } else { value.get() }
             on:change=move |e: ev::Event| {

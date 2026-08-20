@@ -20,6 +20,7 @@ const COMPONENTS: &[(&str, &str)] = &[
     ("Dialog", "/docs/dialog"),
     ("Dropdown Menu", "/docs/dropdown-menu"),
     ("Empty", "/docs/empty"),
+    ("Field", "/docs/field"),
     ("Hover Card", "/docs/hover-card"),
     ("Input", "/docs/input"),
     ("Item", "/docs/item"),

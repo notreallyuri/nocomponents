@@ -1,3 +1,4 @@
+use crate::primitives::field::FieldControl;
 use leptos::{ev, prelude::*};
 
 #[component]
@@ -8,8 +9,10 @@ pub fn CheckboxRoot(
     #[prop(optional, into)] id: Signal<String>,
     children: Children,
 ) -> impl IntoView {
+    let field = FieldControl::new(id, disabled);
+
     let toggle = move |_: ev::MouseEvent| {
-        if !disabled.get() {
+        if !field.disabled.get() {
             checked.update(|c| *c = !*c);
         }
     };
@@ -17,11 +20,13 @@ pub fn CheckboxRoot(
     view! {
         <button
             type="button"
-            id=id
+            id=move || field.id.get()
             role="checkbox"
             aria-checked=move || if checked.get() { "true" } else { "false" }
             data-state=move || if checked.get() { "checked" } else { "unchecked" }
-            disabled=disabled
+            disabled=move || field.disabled.get()
+            aria-describedby=move || field.described_by.get()
+            aria-invalid=move || field.invalid.get().then_some("true")
             on:click=toggle
             class=class
         >

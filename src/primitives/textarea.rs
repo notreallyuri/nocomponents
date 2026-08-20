@@ -1,4 +1,4 @@
-use crate::cn;
+use crate::{cn, primitives::field::FieldControl};
 use leptos::{prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
 use web_sys::HtmlElement;
@@ -8,8 +8,11 @@ pub fn TextareaRoot(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(default = None, into)] model: Option<RwSignal<String>>,
     #[prop(optional, into)] value: Signal<String>,
+    #[prop(optional, into)] id: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(default = false)] auto_resize: bool,
 ) -> impl IntoView {
+    let field = FieldControl::new(id, disabled);
     let node_ref = AnyNodeRef::new();
 
     let resize = move || {
@@ -43,6 +46,10 @@ pub fn TextareaRoot(
     view! {
         <textarea
             node_ref=node_ref
+            id=move || field.id.get()
+            disabled=move || field.disabled.get()
+            aria-describedby=move || field.described_by.get()
+            aria-invalid=move || field.invalid.get().then_some("true")
             prop:value=move || if let Some(m) = model { m.get() } else { value.get() }
             on:input=move |ev| {
                 if let Some(m) = model {

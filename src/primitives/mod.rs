@@ -7,6 +7,7 @@ pub mod collapsible;
 pub mod dialog;
 pub mod dismiss;
 pub mod dropdown_menu;
+pub mod field;
 pub mod floating;
 pub mod hover_card;
 pub mod native_select;
@@ -35,6 +36,7 @@ pub mod prelude {
     pub use super::dialog::*;
     pub use super::dismiss::*;
     pub use super::dropdown_menu::*;
+    pub use super::field::*;
     pub use super::floating::*;
     pub use super::hover_card::*;
     pub use super::native_select::*;

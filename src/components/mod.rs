@@ -14,6 +14,7 @@ pub mod collapsible;
 pub mod dialog;
 pub mod dropdown_menu;
 pub mod empty;
+pub mod field;
 pub mod hover_card;
 pub mod input;
 pub mod item;
@@ -55,6 +56,7 @@ pub mod prelude {
     pub use super::dialog::*;
     pub use super::dropdown_menu::*;
     pub use super::empty::*;
+    pub use super::field::*;
     pub use super::hover_card::*;
     pub use super::input::*;
     pub use super::item::*;

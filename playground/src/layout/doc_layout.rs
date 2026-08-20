@@ -101,6 +101,10 @@ const NAV: &[NavGroup] = &[
                 href: "/docs/empty",
             },
             NavItem {
+                label: "Field",
+                href: "/docs/field",
+            },
+            NavItem {
                 label: "Hover Card",
                 href: "/docs/hover-card",
             },

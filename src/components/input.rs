@@ -1,4 +1,4 @@
-use crate::cn;
+use crate::{cn, primitives::field::FieldControl};
 use leptos::prelude::*;
 
 #[derive(Default, Clone, Copy, PartialEq)]
@@ -29,10 +29,20 @@ pub fn Input(
     #[prop(optional)] input_type: InputType,
     #[prop(default = None, into)] model: Option<RwSignal<String>>,
     #[prop(optional, into)] value: Signal<String>,
+    #[prop(optional, into)] id: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
 ) -> impl IntoView {
+    // Picks up the id and the description when there is a `Field` around it, and resolves to the
+    // caller's own props when there is not.
+    let field = FieldControl::new(id, disabled);
+
     view! {
         <input
             type=input_type.as_str()
+            id=move || field.id.get()
+            disabled=move || field.disabled.get()
+            aria-describedby=move || field.described_by.get()
+            aria-invalid=move || field.invalid.get().then_some("true")
             prop:value=move || { if let Some(m) = model { m.get() } else { value.get() } }
             on:input=move |ev| {
                 if let Some(m) = model {

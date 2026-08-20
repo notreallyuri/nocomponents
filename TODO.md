@@ -163,12 +163,12 @@ they land and add new ones rather than keeping a parallel list elsewhere.
 
 ## Components — gap vs the shadcn/ui catalogue
 
-Shipped (35): accordion, alert, alert-dialog, aspect-ratio, avatar, badge, button, button-group,
-card, checkbox, code, collapsible, dialog, dropdown-menu, empty, input, item, kbd, label,
-native-select, popover, progress, radio-group, select, separator, skeleton, spinner, switch, table,
-tabs, textarea, toast, toggle, toggle-group, tooltip. `code` is not in the shadcn catalogue — it is ours, for documenting the rest.
+Shipped (39): accordion, alert, alert-dialog, aspect-ratio, avatar, badge, breadcrumb, button,
+button-group, card, checkbox, code, collapsible, dialog, dropdown-menu, empty, hover-card, input,
+item, kbd, label, native-select, pagination, popover, progress, radio-group, select, separator,
+sheet, skeleton, spinner, switch, table, tabs, textarea, toast, toggle, toggle-group, tooltip. `code` is not in the shadcn catalogue — it is ours, for documenting the rest.
 
-Missing (29), ordered by priority. Priority = how often it is reached for, weighted down by how much
+Missing (25), ordered by priority. Priority = how often it is reached for, weighted down by how much
 machinery it needs that this library does not have yet.
 
 **P1 — fundamentals, no new machinery.** Static markup or a single bool of state; each is an
@@ -228,13 +228,23 @@ afternoon and closes obvious holes in the current set.
       The orphan keyframes are now wired to a real component and renamed: `--radix-…`,
       `--bits-…`, `--reka-…` and friends collapse to one project-owned `--nc-content-height`,
       shared by the accordion and collapsible pairs since both animate the same thing.
-- [ ] Sheet (dialog primitive + side placement)
+- [x] Sheet — style-only over `src/primitives/dialog.rs`, no primitive of its own. The modality,
+      the focus trap, the layer stack and the exit animation are already the dialog's; what a sheet
+      adds is one `side` prop, from which both the edge it pins to and the direction it slides from
+      are derived.
 - [ ] Drawer (sheet plus drag-to-dismiss)
-- [ ] Hover Card (tooltip machinery, richer content)
+- [x] Hover Card — `src/primitives/hover_card.rs`, the tooltip's hover-intent shape with the one
+      difference that changes everything: the content is interactive, so the pointer has to be able
+      to leave the trigger and enter the card without it closing. Trigger *and* content both cancel
+      the pending close, and the card keeps `pointer-events`, which a tooltip deliberately drops.
 - [ ] Context Menu (dropdown machinery on `contextmenu`, positioned at the pointer)
 - [ ] Scroll Area
-- [ ] Breadcrumb
-- [ ] Pagination
+- [x] Breadcrumb — style-only, but the markup is the point: a `<nav>` labelled "breadcrumb" around
+      an ordered list, the current page marked `aria-current="page"` instead of linked, and the
+      separators hidden from assistive tech — they are punctuation, not content.
+- [x] Pagination — style-only, and links rather than buttons, because a page of results has a URL
+      and the reader should be able to middle-click page 3. `PaginationLink` takes `active` for the
+      current page, announced as `aria-current="page"`.
 - [ ] Field (label + control + description + error wiring; would tidy every form demo)
 - [ ] Input Group
 - [ ] Input OTP

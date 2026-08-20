@@ -43,6 +43,7 @@ pub fn App() -> impl IntoView {
                         <Route path=path!("/docs/native-select") view=docs::native_select::Page />
                         <Route path=path!("/docs/table") view=docs::table::Page />
                         <Route path=path!("/docs/empty") view=docs::empty::Page />
+                        <Route path=path!("/docs/field") view=docs::field::Page />
                         <Route path=path!("/docs/item") view=docs::item::Page />
                         <Route path=path!("/docs/accordion") view=docs::accordion::Page />
                         <Route path=path!("/docs/collapsible") view=docs::collapsible::Page />
