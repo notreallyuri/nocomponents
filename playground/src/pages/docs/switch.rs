@@ -38,11 +38,12 @@ const WITH_LABEL: &str = r#"{
 
 const DISABLED: &str = r#"{
     let off = RwSignal::new(false);
-    view! { <Switch checked=off disabled=true /> }
-}
-{
     let on = RwSignal::new(true);
-    view! { <Switch checked=on disabled=true /> }
+
+    view! { 
+        <Switch checked=off disabled=true /> 
+        <Switch checked=on disabled=true />
+    }
 }"#;
 
 #[component]
