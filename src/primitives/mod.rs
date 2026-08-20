@@ -10,6 +10,7 @@ pub mod dropdown_menu;
 pub mod field;
 pub mod floating;
 pub mod hover_card;
+pub mod input_group;
 pub mod native_select;
 pub mod popover;
 pub mod progress;
@@ -39,6 +40,7 @@ pub mod prelude {
     pub use super::field::*;
     pub use super::floating::*;
     pub use super::hover_card::*;
+    pub use super::input_group::*;
     pub use super::native_select::*;
     pub use super::popover::*;
     pub use super::progress::*;

@@ -23,6 +23,7 @@ const COMPONENTS: &[(&str, &str)] = &[
     ("Field", "/docs/field"),
     ("Hover Card", "/docs/hover-card"),
     ("Input", "/docs/input"),
+    ("Input Group", "/docs/input-group"),
     ("Item", "/docs/item"),
     ("Kbd", "/docs/kbd"),
     ("Label", "/docs/label"),

@@ -113,6 +113,10 @@ const NAV: &[NavGroup] = &[
                 href: "/docs/input",
             },
             NavItem {
+                label: "Input Group",
+                href: "/docs/input-group",
+            },
+            NavItem {
                 label: "Item",
                 href: "/docs/item",
             },
