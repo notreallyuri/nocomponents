@@ -16,6 +16,15 @@ pub enum ToastSize {
     Lg,
 }
 
+impl ToastSize {
+    fn as_str(&self) -> &'static str {
+        match self {
+            ToastSize::Default => "default",
+            ToastSize::Lg => "lg",
+        }
+    }
+}
+
 #[derive(Copy, Clone, PartialEq, Default)]
 pub enum ToastPosition {
     TopLeft,
@@ -201,10 +210,10 @@ pub fn ToastRoot(
         start_x.set(e.client_x());
         start_y.set(e.client_y());
 
-        if let Some(target) = e.target() {
-            if let Ok(el) = target.dyn_into::<Element>() {
-                let _ = el.set_pointer_capture(e.pointer_id());
-            }
+        if let Some(target) = e.target()
+            && let Ok(el) = target.dyn_into::<Element>()
+        {
+            let _ = el.set_pointer_capture(e.pointer_id());
         }
     };
 
@@ -246,10 +255,10 @@ pub fn ToastRoot(
                 interacting.set(false);
             }
 
-            if let Some(target) = e.target() {
-                if let Ok(el) = target.dyn_into::<Element>() {
-                    let _ = el.release_pointer_capture(e.pointer_id());
-                }
+            if let Some(target) = e.target()
+                && let Ok(el) = target.dyn_into::<Element>()
+            {
+                let _ = el.release_pointer_capture(e.pointer_id());
             }
 
             if drag_offset_x.get().abs() > 60 || drag_offset_y.get().abs() > 60 {
@@ -265,6 +274,7 @@ pub fn ToastRoot(
         <div
             data-state=move || if toast.is_open.get() { "open" } else { "closed" }
             data-dragging=move || if is_dragging.get() { "true" } else { "false" }
+            data-size=toast.size.as_str()
             style=move || {
                 let base = style.get();
                 let x = drag_offset_x.get();

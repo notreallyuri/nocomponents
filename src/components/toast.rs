@@ -1,3 +1,4 @@
+use crate::utils::types::AsClass;
 pub use crate::{
     cn,
     primitives::toast::{
@@ -7,6 +8,17 @@ pub use crate::{
 };
 use leptos::prelude::*;
 use leptos_node_ref::AnyNodeRef;
+
+impl AsClass for ToastVariant {
+    fn as_class(&self) -> &'static str {
+        match self {
+            ToastVariant::Default => "bg-popover text-foreground",
+            ToastVariant::Destructive => {
+                "border-destructive bg-destructive text-destructive-foreground"
+            }
+        }
+    }
+}
 
 const STACK_GAP: f64 = 8.0;
 const STACK_SCALE_STEP: f64 = 0.05;
@@ -275,15 +287,8 @@ fn ToastItem(
                     exit_classes,
                     "data-[dragging=false]:cursor-grab data-[dragging=true]:cursor-grabbing data-[dragging=true]:transition-none",
                     "text-popover-foreground touch-none select-none",
-
-                    match toast.variant {
-                        ToastVariant::Default => "bg-popover text-foreground",
-                        ToastVariant::Destructive => "border-destructive bg-destructive text-destructive-foreground",
-                    },
-                    match toast.size {
-                        ToastSize::Default => "py-3 px-4 text-sm",
-                        ToastSize::Lg => "py-6 px-8 text-base",
-                    }
+                    "py-3 px-4 text-sm data-[size=lg]:py-6 data-[size=lg]:px-8 data=[size=lg]:text-base",
+                    toast.variant.as_class(),
                 )
             }
             style=move || {
