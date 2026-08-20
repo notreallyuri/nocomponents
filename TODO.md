@@ -163,13 +163,13 @@ they land and add new ones rather than keeping a parallel list elsewhere.
 
 ## Components — gap vs the shadcn/ui catalogue
 
-Shipped (43): accordion, alert, alert-dialog, aspect-ratio, avatar, badge, breadcrumb, button,
-button-group, card, checkbox, code, collapsible, context-menu, dialog, dropdown-menu, empty, field,
-hover-card, input, input-group, item, kbd, label, native-select, pagination, popover, progress,
-radio-group, select, separator, sheet, skeleton, slider, spinner, switch, table, tabs, textarea,
-toast, toggle, toggle-group, tooltip. `code` is not in the shadcn catalogue — it is ours, for documenting the rest.
+Shipped (46): accordion, alert, alert-dialog, aspect-ratio, avatar, badge, breadcrumb, button,
+button-group, card, checkbox, code, collapsible, context-menu, dialog, drawer, dropdown-menu,
+empty, field, hover-card, input, input-group, input-otp, item, kbd, label, native-select,
+pagination, popover, progress, radio-group, scroll-area, select, separator, sheet, skeleton,
+slider, spinner, switch, table, tabs, textarea, toast, toggle, toggle-group, tooltip. `code` is not in the shadcn catalogue — it is ours, for documenting the rest.
 
-Missing (21), ordered by priority. Priority = how often it is reached for, weighted down by how much
+Missing (18), ordered by priority. Priority = how often it is reached for, weighted down by how much
 machinery it needs that this library does not have yet.
 
 **P1 — fundamentals, no new machinery.** Static markup or a single bool of state; each is an
@@ -233,7 +233,15 @@ afternoon and closes obvious holes in the current set.
       the focus trap, the layer stack and the exit animation are already the dialog's; what a sheet
       adds is one `side` prop, from which both the edge it pins to and the direction it slides from
       are derived.
-- [ ] Drawer (sheet plus drag-to-dismiss)
+- [x] Drawer — `src/primitives/drawer.rs`. The dialog's modality, focus trap, layer stack and exit
+      animation, the sheet's header/title/description/footer/close re-exported rather than
+      restyled, and one gesture on top. It travels outward only, since there is nothing behind the
+      edge to reveal; a flick dismisses as surely as a haul, because throwing something away is not
+      the same gesture as placing it. Velocity is sampled *between* moves — measured at release it
+      always reads zero — and is signed, so a quick shove back toward the edge does not dismiss. A
+      press landing in something already scrolled belongs to that scroller. On dismissal the offset
+      carries on to fully closed rather than resetting, which would snap the panel back before
+      sliding it out.
 - [x] Hover Card — `src/primitives/hover_card.rs`, the tooltip's hover-intent shape with the one
       difference that changes everything: the content is interactive, so the pointer has to be able
       to leave the trigger and enter the card without it closing. Trigger *and* content both cancel
@@ -247,7 +255,13 @@ afternoon and closes obvious holes in the current set.
       Content is the one part not reused: floating-ui's auto-update watches for resizes and
       scrolls, and an anchor that teleports is neither, so a second right-click elsewhere needs an
       explicit `update()`.
-- [ ] Scroll Area
+- [x] Scroll Area — `src/primitives/scroll_area.rs`. The box still scrolls natively; only the
+      *painting* of the scrollbar is replaced, because a native one cannot be styled consistently
+      across platforms and takes layout space on some and not others. Measurement is driven by a
+      `ResizeObserver` on the viewport *and* its content as well as the scroll event, since content
+      that grows after mount changes the thumb without any scroll firing. Hiding the native bar is
+      split across the layers of necessity: `scrollbar-width` is inline on the primitive, but
+      WebKit needs a `::-webkit-scrollbar` rule that an inline style cannot express.
 - [x] Breadcrumb — style-only, but the markup is the point: a `<nav>` labelled "breadcrumb" around
       an ordered list, the current page marked `aria-current="page"` instead of linked, and the
       separators hidden from assistive tech — they are punctuation, not content.
@@ -269,7 +283,14 @@ afternoon and closes obvious holes in the current set.
       in the control, because a real input has no dead zone inside its own border. `mousedown`
       rather than `click`, so focus is redirected before the browser hands it elsewhere, and
       anything that already owns the click — a button in an addon — is left alone.
-- [ ] Input OTP
+- [x] Input OTP — one real input holding the whole value, laid transparently over painted boxes.
+      One input per box is the obvious build and the wrong one: paste drops everything after the
+      first character, phones will not offer the SMS code, and password managers fill one box and
+      give up. Two things it got wrong first: collapsing the selection to pin the caret also killed
+      select-all, so pasting a fresh code over a full field silently did nothing (the caret is
+      pinned by refusing the keys that move it instead); and native `maxlength` truncates the *raw*
+      text, so "12-34-56" was cut to "12-34-" and then filtered to four digits — the cap is applied
+      after filtering now.
 - [x] Slider — `src/primitives/slider.rs`. The value is a `Vec<f64>` and a range slider is the
       two-element case, so the geometry, the keyboard contract and the ARIA are written once
       instead of twice; thumbs clamp to their neighbours and each announces its own bounds rather
