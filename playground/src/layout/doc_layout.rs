@@ -1,7 +1,11 @@
 use crate::components::theme_switcher::ThemeSwitcher;
 use leptos::prelude::*;
-use leptos_router::components::A;
-use nocomponents::components::{button::ButtonVariant, prelude::Button};
+use leptos_router::{components::A, hooks::use_location};
+use nocomponents::components::sidebar::{
+    Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader,
+    SidebarInset, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarRail,
+    SidebarTrigger,
+};
 
 #[derive(Clone)]
 struct NavGroup {
@@ -177,6 +181,10 @@ const NAV: &[NavGroup] = &[
                 href: "/docs/sheet",
             },
             NavItem {
+                label: "Sidebar",
+                href: "/docs/sidebar",
+            },
+            NavItem {
                 label: "Skeleton",
                 href: "/docs/skeleton",
             },
@@ -230,22 +238,26 @@ pub fn DocLayout(
     description: &'static str,
     children: Children,
 ) -> impl IntoView {
+    // The docs nav is the library's own sidebar, which is the only honest way to find out what it
+    // is like to live with: the collapse, the rail and the stored preference are all the real ones.
+    let location = use_location();
+
     view! {
-        <div class="flex min-h-screen bg-background text-foreground font-sans">
-            <aside class="hidden lg:flex flex-col w-60 shrink-0 border-r bg-background sticky top-0 h-screen overflow-y-auto">
-                <div class="flex h-16 bg-background sticky top-0 items-center justify-between px-6 border-b shrink-0">
+        <SidebarProvider class="bg-background font-sans text-foreground">
+            <Sidebar>
+                <SidebarHeader class="border-b h-14">
                     <A
                         href="/"
-                        attr:class="flex items-center gap-2 font-bold tracking-tight text-sm"
+                        attr:class="flex h-10 items-center gap-2 px-2 text-sm font-bold tracking-tight"
                     >
-                        <div class="size-5 bg-primary text-primary-foreground flex items-center justify-center">
+                        <div class="flex size-5 items-center justify-center bg-primary text-primary-foreground">
                             <span class="text-[10px]">"NC"</span>
                         </div>
                         "nocomponents"
                     </A>
-                </div>
+                </SidebarHeader>
 
-                <nav class="flex-1 px-3 py-4 flex flex-col gap-6">
+                <SidebarContent>
                     {NAV
                         .iter()
                         .map(|group| {
@@ -255,47 +267,74 @@ pub fn DocLayout(
                             }
 
                             view! {
-                                <div class="flex flex-col gap-1">
-                                    <span class="px-3 text-xs font-medium text-muted-foreground mb-1">
-                                        {group.label}
-                                    </span>
-                                    {sorted_items
-                                        .into_iter()
-                                        .map(|item| {
-                                            view! {
-                                                <Button
-                                                    class="justify-start"
-                                                    variant=ButtonVariant::Ghost
-                                                    render=Callback::new(move |(class, _node_ref)| {
-                                                        view! {
-                                                            <A href=item.href attr:class=class>
-                                                                {item.label}
-                                                            </A>
-                                                        }
-                                                            .into_any()
-                                                    })
-                                                />
-                                            }
-                                        })
-                                        .collect_view()}
-                                </div>
+                                <SidebarGroup>
+                                    <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+                                    <SidebarGroupContent>
+                                        <SidebarMenu>
+                                            {sorted_items
+                                                .into_iter()
+                                                .map(|item| {
+                                                    let is_current = Signal::derive(move || {
+                                                        location.pathname.get() == item.href
+                                                    });
+
+                                                    view! {
+                                                        <SidebarMenuItem>
+                                                            <SidebarMenuButton
+                                                                active=is_current
+                                                                // `A` takes no node ref, so the
+                                                                // state attribute is written on
+                                                                // the link itself. It sets
+                                                                // `aria-current` on its own.
+                                                                render=Callback::new(move |(class, _): (Signal<String>, _)| {
+                                                                    view! {
+                                                                        <A
+                                                                            href=item.href
+                                                                            // Prefix matching would
+                                                                            // mark "Components"
+                                                                            // current on every
+                                                                            // /docs/* page.
+                                                                            exact=true
+                                                                            attr:class=class
+                                                                            attr:data-active=move || {
+                                                                                is_current.get().then_some("true")
+                                                                            }
+                                                                        >
+                                                                            {item.label}
+                                                                        </A>
+                                                                    }
+                                                                        .into_any()
+                                                                })
+                                                            />
+                                                        </SidebarMenuItem>
+                                                    }
+                                                })
+                                                .collect_view()}
+                                        </SidebarMenu>
+                                    </SidebarGroupContent>
+                                </SidebarGroup>
                             }
                         })
                         .collect_view()}
-                </nav>
-            </aside>
+                </SidebarContent>
 
-            <div class="flex-1 flex flex-col min-w-0">
-                <header class="sticky top-0 z-40 h-16 flex items-center justify-between px-6 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 shrink-0">
-                    <div class="flex flex-col">
-                        <h1 class="text-sm font-semibold leading-none">{title}</h1>
-                        <p class="text-xs text-muted-foreground mt-1">{description}</p>
+                <SidebarRail />
+            </Sidebar>
+
+            <SidebarInset class="min-w-0">
+                <header class="sticky top-0 z-40 flex h-14 shrink-0 items-center justify-between gap-3 border-b bg-background/95 px-6 backdrop-blur supports-backdrop-filter:bg-background/60">
+                    <div class="flex items-center gap-3">
+                        <SidebarTrigger />
+                        <div class="flex flex-col">
+                            <h1 class="text-sm leading-none font-semibold">{title}</h1>
+                            <p class="mt-1 text-xs text-muted-foreground">{description}</p>
+                        </div>
                     </div>
                     <ThemeSwitcher />
                 </header>
 
-                <main class="flex-1 px-6 py-8 max-w-4xl mx-auto w-full">{children()}</main>
-            </div>
-        </div>
+                <main class="mx-auto w-full max-w-4xl flex-1 px-6 py-8">{children()}</main>
+            </SidebarInset>
+        </SidebarProvider>
     }
 }
