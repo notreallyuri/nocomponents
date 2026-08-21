@@ -25,6 +25,11 @@ use web_sys::Element;
 const DISTANCE_THRESHOLD: f64 = 0.25;
 /// Pixels per millisecond past which a release counts as a flick regardless of distance.
 const VELOCITY_THRESHOLD: f64 = 0.4;
+/// How much a panel gives up while a nested drawer sits over it, and how far it slides back from
+/// its own edge. Small on purpose: the point is to show that something is behind the child, not to
+/// animate the parent away.
+const RECEDE_SCALE: f64 = 0.96;
+const RECEDE_SHIFT: f64 = 14.0;
 
 #[derive(Copy, Clone)]
 pub struct DrawerContext {
@@ -33,21 +38,61 @@ pub struct DrawerContext {
     /// the module note about travelling outward only.
     pub offset: RwSignal<f64>,
     pub dragging: RwSignal<bool>,
+    /// How many drawers are currently open inside this one. A count rather than a flag because
+    /// two children can overlap while one is still animating out, and a flag would flicker.
+    pub nested_open: RwSignal<usize>,
+    /// The same counter belonging to the drawer this one sits inside, so a child can announce
+    /// itself. `None` at the top of the stack. Holding the parent's *signal* rather than its
+    /// context is what keeps `DrawerContext` a fixed size.
+    parent_nested: Option<RwSignal<usize>>,
 }
 
 impl DrawerContext {
-    /// The transform for the current offset. Which axis, and which way along it, is the side's.
+    /// Whether a nested drawer is currently sitting over this one.
+    pub fn is_receded(&self) -> bool {
+        self.nested_open.get() > 0
+    }
+
+    /// The panel's transform: its drag offset, or its recede when a nested drawer is over it.
+    ///
+    /// A drag in progress wins over the recede. The panel under the finger has to follow the
+    /// finger, and there is no sensible way to be halfway between "shoved aside" and "held".
     pub fn transform(&self) -> String {
         let offset = self.offset.get();
-        if offset == 0.0 {
-            return String::new();
-        }
+        let receded = self.is_receded();
 
+        // Receding moves *inward*, the opposite way from a dismissal: sliding back from its own
+        // edge is what leaves the parent's far edge visible behind the child.
+        let travel = match (offset != 0.0, receded) {
+            (true, _) => offset,
+            (false, true) => -RECEDE_SHIFT,
+            (false, false) => return String::new(),
+        };
+
+        let translate = match self.side {
+            Side::Bottom => format!("translate3d(0, {travel}px, 0)"),
+            Side::Top => format!("translate3d(0, {}px, 0)", -travel),
+            Side::Right => format!("translate3d({travel}px, 0, 0)"),
+            Side::Left => format!("translate3d({}px, 0, 0)", -travel),
+        };
+
+        if receded && offset == 0.0 {
+            format!("{translate} scale({RECEDE_SCALE})")
+        } else {
+            translate
+        }
+    }
+
+    /// Which corner the recede shrinks toward: the edge facing the viewport, never the anchored
+    /// one. Scaling about the centre pulls the panel's inner edge *inward*, which cancels out the
+    /// shift and leaves nothing peeking past the child; scaling about the inner edge moves that
+    /// edge outward and puts the slack behind the child, where it cannot be seen.
+    pub fn transform_origin(&self) -> &'static str {
         match self.side {
-            Side::Bottom => format!("translate3d(0, {offset}px, 0)"),
-            Side::Top => format!("translate3d(0, {}px, 0)", -offset),
-            Side::Right => format!("translate3d({offset}px, 0, 0)"),
-            Side::Left => format!("translate3d({}px, 0, 0)", -offset),
+            Side::Bottom => "center top",
+            Side::Top => "center bottom",
+            Side::Right => "left center",
+            Side::Left => "right center",
         }
     }
 
@@ -80,10 +125,15 @@ pub fn DrawerRoot(
     modal: bool,
     children: Children,
 ) -> impl IntoView {
+    // Read before providing: this resolves to the drawer this one is nested inside, if any.
+    let parent_nested = use_context::<DrawerContext>().map(|parent| parent.nested_open);
+
     let context = DrawerContext {
         side,
         offset: RwSignal::new(0.0),
         dragging: RwSignal::new(false),
+        nested_open: RwSignal::new(0),
+        parent_nested,
     };
 
     view! {
@@ -156,6 +206,37 @@ pub fn DrawerContentRoot(
             ctx.offset.set(0.0);
         }
     });
+
+    // Tell the drawer above us that we are here, so it can give up some size and slide back. The
+    // count is nudged on transitions rather than assigned, since two children of one parent each
+    // own a share of it.
+    let counted = StoredValue::new(false);
+    let release_parent = move || {
+        if counted.get_value()
+            && let Some(parent) = ctx.parent_nested
+        {
+            counted.set_value(false);
+            parent.update(|open| *open = open.saturating_sub(1));
+        }
+    };
+
+    Effect::new(move |_| {
+        let is_open = dialog.is_open.get();
+        let Some(parent) = ctx.parent_nested else {
+            return;
+        };
+
+        if is_open && !counted.get_value() {
+            counted.set_value(true);
+            parent.update(|open| *open += 1);
+        } else if !is_open {
+            release_parent();
+        }
+    });
+
+    // A drawer torn down while still open — its whole subtree closing at once — has to hand the
+    // count back, or the parent stays shrunken with nothing over it.
+    on_cleanup(release_parent);
 
     on_cleanup(stop_listening);
 
@@ -255,13 +336,16 @@ pub fn DrawerContentRoot(
             data-slot="drawer"
             data-side=ctx.side.as_str()
             data-dragging=move || ctx.dragging.get().then_some("true")
+            data-nested=move || ctx.is_receded().then_some("true")
             // `data-state` is normally the dialog content's, but the panel is what animates here,
             // so it has to carry the attribute the animations key off.
             data-state=move || if dialog.is_open.get() { "open" } else { "closed" }
             style=move || {
                 let transform = match ctx.transform().as_str() {
                     "" => String::new(),
-                    value => format!("transform: {value};"),
+                    value => {
+                        format!("transform: {value}; transform-origin: {};", ctx.transform_origin())
+                    }
                 };
                 // Transitions are off while a finger is down: the panel has to track the pointer
                 // exactly, and easing it would feel like lag.
