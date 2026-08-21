@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::components::{checkbox::Checkbox, input::Input, label::Label};
 
@@ -17,6 +23,25 @@ const WITH_A_CHECKBOX: &str = r#"{
 
 const DISABLED_CONTROL: &str = r#"<Input attr:id="handle" attr:placeholder="@handle" attr:disabled=true />
 <Label class="peer-disabled:opacity-50">"Username (unavailable)"</Label>"#;
+
+const API: &[ApiEntry] = &[ApiEntry {
+    name: "Label",
+    description: "The name of a control. Point its `for` at the control's id, or let a `Field` do it.",
+    props: &[
+        Prop {
+            name: "class",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "Merged over the label's own classes.",
+        },
+        Prop {
+            name: "children",
+            ty: "Children",
+            default: "",
+            description: "The label text.",
+        },
+    ],
+}];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -60,6 +85,8 @@ pub fn Page() -> impl IntoView {
                         <Label class="peer-disabled:opacity-50">"Username (unavailable)"</Label>
                     </div>
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }

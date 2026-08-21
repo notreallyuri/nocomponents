@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::components::toggle::{Toggle, ToggleSize, ToggleVariant};
 
@@ -28,6 +34,55 @@ const DISABLED: &str = r#"<Toggle disabled=true>"Off"</Toggle>
 <Toggle variant=ToggleVariant::Outline disabled=true>
     "Outline"
 </Toggle>"#;
+
+const API: &[ApiEntry] = &[ApiEntry {
+    name: "Toggle",
+    description: "A button that stays pressed. For a formatting control, not for a form value.",
+    props: &[
+        Prop {
+            name: "variant",
+            ty: "ToggleVariant",
+            default: "Default",
+            description: "One of: Default, Outline.",
+        },
+        Prop {
+            name: "size",
+            ty: "ToggleSize",
+            default: "Default",
+            description: "One of: Xs, Sm, Default, Lg.",
+        },
+        Prop {
+            name: "class",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "Merged over the variant and size classes.",
+        },
+        Prop {
+            name: "pressed",
+            ty: "Option<RwSignal<bool>>",
+            default: "None",
+            description: "Omit for an uncontrolled toggle that owns its own state.",
+        },
+        Prop {
+            name: "disabled",
+            ty: "Signal<bool>",
+            default: "false",
+            description: "Stops it taking pointer events and marks it disabled.",
+        },
+        Prop {
+            name: "on_change",
+            ty: "Option<Callback<bool>>",
+            default: "None",
+            description: "Called with the new state on every press.",
+        },
+        Prop {
+            name: "children",
+            ty: "Option<Children>",
+            default: "None",
+            description: "The label, usually an icon.",
+        },
+    ],
+}];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -86,6 +141,8 @@ pub fn Page() -> impl IntoView {
                         }
                     }
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }

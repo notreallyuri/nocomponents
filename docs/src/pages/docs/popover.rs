@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::components::{
     button::ButtonVariant,
@@ -90,6 +96,179 @@ const PLACEMENT: &str = r#"<Popover>
         </PopoverContent>
     </PopoverPortal>
 </Popover>"#;
+
+const API: &[ApiEntry] = &[
+    ApiEntry {
+        name: "Popover",
+        description: "A panel anchored to what opened it, for content that needs room a tooltip does not have.",
+        props: &[Prop {
+            name: "children",
+            ty: "ChildrenFn",
+            default: "",
+            description: "A trigger and a portal.",
+        }],
+    },
+    ApiEntry {
+        name: "PopoverTrigger",
+        description: "Opens it. A `Button` unless `as_child` says otherwise.",
+        props: &[
+            Prop {
+                name: "size",
+                ty: "ButtonSize",
+                default: "Default",
+                description: "One of: Xs, Sm, Default, Lg, Icon, IconSm, IconXs, IconLg.",
+            },
+            Prop {
+                name: "variant",
+                ty: "ButtonVariant",
+                default: "Default",
+                description: "One of: Default, Outline, Ghost, Secondary, Link, Destructive.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the button's own classes.",
+            },
+            Prop {
+                name: "disabled",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Rendered as the `disabled` attribute.",
+            },
+            Prop {
+                name: "as_child",
+                ty: "Option<Callback<(AnyNodeRef, Callback<ev::MouseEvent>), AnyView>>",
+                default: "None",
+                description: "Render the trigger as something else. Handed the node ref and the click handler, both of which must reach the element.",
+            },
+            Prop {
+                name: "children",
+                ty: "Option<ChildrenFn>",
+                default: "None",
+                description: "The label.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "PopoverPortal",
+        description: "The panel, positioned against the trigger and flipped when there is no room.",
+        props: &[Prop {
+            name: "children",
+            ty: "ChildrenFn",
+            default: "",
+            description: "Distance from the trigger, in pixels.",
+        }],
+    },
+    ApiEntry {
+        name: "PopoverContent",
+        description: "Merged over the panel's classes.",
+        props: &[
+            Prop {
+                name: "side",
+                ty: "Side",
+                default: "Bottom",
+                description: "One of: Left, Right, Bottom, Top.",
+            },
+            Prop {
+                name: "align",
+                ty: "Align",
+                default: "Start",
+                description: "One of: Start, Center, End.",
+            },
+            Prop {
+                name: "side_offset",
+                ty: "SideOffset",
+                default: "SideOffset(4.0)",
+                description: "The panel's contents.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Stacks the title over the description.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Merged over the layout classes.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "PopoverHeader",
+        description: "Usually a title and a description.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The panel's name.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Merged over the heading classes.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "PopoverTitle",
+        description: "The title text.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The line under the title.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Merged over the muted text classes.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "PopoverDescription",
+        description: "The description text.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The bottom strip, for actions.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Merged over the layout classes.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "PopoverFooter",
+        description: "Usually buttons.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Renders the panel at the end of the document, so it escapes any clipping ancestor.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "The panel. Re-run on each mount, hence `ChildrenFn`.",
+            },
+        ],
+    },
+];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -195,6 +374,8 @@ pub fn Page() -> impl IntoView {
                         </Popover>
                     </div>
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }

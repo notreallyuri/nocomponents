@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::{
     components::{
@@ -40,6 +46,99 @@ const SIDES: &str = r#"<HoverCard>
     <HoverCardTrigger render=… />
     <HoverCardContent side=Side::Right>"Anchored to the right"</HoverCardContent>
 </HoverCard>"#;
+
+const API: &[ApiEntry] = &[
+    ApiEntry {
+        name: "HoverCard",
+        description: "A card that opens on hover, whose contents can be reached — unlike a tooltip's.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the wrapper's classes.",
+            },
+            Prop {
+                name: "delay",
+                ty: "u64",
+                default: "600",
+                description: "How long the pointer has to rest before the card opens.",
+            },
+            Prop {
+                name: "close_delay",
+                ty: "u64",
+                default: "250",
+                description: "The grace period after leaving, long enough to cross the gap into the card.",
+            },
+            Prop {
+                name: "children",
+                ty: "ChildrenFn",
+                default: "",
+                description: "A trigger and a content.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "HoverCardTrigger",
+        description: "What the card is about.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the wrapper's classes.",
+            },
+            Prop {
+                name: "render",
+                ty: "Option<Callback<AnyNodeRef, AnyView>>",
+                default: "None",
+                description: "Render the trigger as something else — a link, a `Button`. Forward the node ref.",
+            },
+            Prop {
+                name: "children",
+                ty: "Option<Children>",
+                default: "None",
+                description: "The trigger's contents.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "HoverCardContent",
+        description: "The card. Keeps pointer events, so what is in it can be used.",
+        props: &[
+            Prop {
+                name: "side",
+                ty: "Side",
+                default: "Side::Bottom",
+                description: "One of: Left, Right, Bottom, Top.",
+            },
+            Prop {
+                name: "align",
+                ty: "Align",
+                default: "Start",
+                description: "One of: Start, Center, End.",
+            },
+            Prop {
+                name: "side_offset",
+                ty: "SideOffset",
+                default: "SideOffset(8.0)",
+                description: "Distance from the trigger, in pixels.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the card's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "ChildrenFn",
+                default: "",
+                description: "The card's contents. Re-run on each mount, hence `ChildrenFn`.",
+            },
+        ],
+    },
+];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -164,6 +263,8 @@ pub fn Page() -> impl IntoView {
                         </HoverCard>
                     </div>
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }

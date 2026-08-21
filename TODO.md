@@ -106,6 +106,10 @@ both go behind their own feature flag rather than into `full`.
 - [ ] Adding a component means editing five files, two of which (`NAV`, `COMPONENTS`) are
       hand-maintained copies of the same list — which is how `/docs` came to be missing progress,
       skeleton and textarea. Drive routes, nav and the index from one const.
+- [ ] A `/docs/types` page under Sections: the shared types the prop tables keep naming —
+      `Signal<String>`, `ChildrenFn`, the `render` callback shape, `Side` / `Align` /
+      `Orientation` / `SideOffset` — described once, so a table can point at them instead of
+      re-explaining them per component.
 - [ ] Prop tables: `button` and `dialog` have one, the other 45 pages do not. The rows are data
       (`ApiEntry` / `Prop` in `docs/src/components/api_table.rs`), in the shape an extractor over
       `#[component]` signatures could emit — write a few more by hand first, then generate them

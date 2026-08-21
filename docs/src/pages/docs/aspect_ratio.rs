@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::components::aspect_ratio::AspectRatio;
 
@@ -15,6 +21,31 @@ const PORTRAIT: &str = r#"<AspectRatio ratio=3.0 / 4.0 class="rounded-xl">
 </AspectRatio>"#;
 
 const IMAGE_URL: &str = "https://w.wallhaven.cc/full/5d/wallhaven-5d23j9.png";
+
+const API: &[ApiEntry] = &[ApiEntry {
+    name: "AspectRatio",
+    description: "Holds its child to a ratio, whatever the width is.",
+    props: &[
+        Prop {
+            name: "ratio",
+            ty: "f64",
+            default: "1.0",
+            description: "Width divided by height — `16.0 / 9.0` for widescreen, `1.0` for a square.",
+        },
+        Prop {
+            name: "class",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "Merged over the box's classes.",
+        },
+        Prop {
+            name: "children",
+            ty: "Children",
+            default: "",
+            description: "Usually an image or an iframe, which is stretched to fill.",
+        },
+    ],
+}];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -59,6 +90,8 @@ pub fn Page() -> impl IntoView {
                         </AspectRatio>
                     </div>
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }

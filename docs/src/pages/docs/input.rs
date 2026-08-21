@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::components::{
     input::{Input, InputType},
@@ -38,6 +44,49 @@ const CONTROLLED: &str = r#"{
 const DISABLED: &str = r#"<Input attr:disabled=true value="Cannot edit this" class="max-w-sm" />"#;
 
 const FILE: &str = r#"<Input input_type=InputType::File class="max-w-sm" />"#;
+
+const API: &[ApiEntry] = &[ApiEntry {
+    name: "Input",
+    description: "A single-line text field.",
+    props: &[
+        Prop {
+            name: "class",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "Merged over the field's own classes.",
+        },
+        Prop {
+            name: "input_type",
+            ty: "InputType",
+            default: "Text",
+            description: "One of: Text, Email, Password, Number, File.",
+        },
+        Prop {
+            name: "model",
+            ty: "Option<RwSignal<String>>",
+            default: "None",
+            description: "Two-way binding. Pass this or `value`, not both.",
+        },
+        Prop {
+            name: "value",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "One-way: the field shows it and never writes back.",
+        },
+        Prop {
+            name: "id",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "Overridden by an enclosing `Field`, which mints its own.",
+        },
+        Prop {
+            name: "disabled",
+            ty: "Signal<bool>",
+            default: "false",
+            description: "Stops it taking pointer events and marks it disabled.",
+        },
+    ],
+}];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -109,6 +158,8 @@ pub fn Page() -> impl IntoView {
                 >
                     <Input input_type=InputType::File class="max-w-sm" />
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }

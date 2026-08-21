@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::components::pagination::{
     Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink,
@@ -36,6 +42,137 @@ const CONTROLLED: &str = r##"<PaginationLink
 >
     {n}
 </PaginationLink>"##;
+
+const API: &[ApiEntry] = &[
+    ApiEntry {
+        name: "Pagination",
+        description: "Page links for a list that does not fit on one page.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the nav's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Usually one content.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "PaginationContent",
+        description: "The row of links.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the row's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Items.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "PaginationItem",
+        description: "One cell in the row.",
+        props: &[Prop {
+            name: "children",
+            ty: "Children",
+            default: "",
+            description: "A link, a previous/next control, or an ellipsis.",
+        }],
+    },
+    ApiEntry {
+        name: "PaginationLink",
+        description: "One page. A link rather than a button, because a page of results has a URL.",
+        props: &[
+            Prop {
+                name: "href",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Where it goes.",
+            },
+            Prop {
+                name: "active",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "The page currently being shown.",
+            },
+            Prop {
+                name: "size",
+                ty: "ButtonSize",
+                default: "ButtonSize::Icon",
+                description: "One of: Xs, Sm, Default, Lg, Icon, IconSm, IconXs, IconLg.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the link's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "The page number.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "PaginationPrevious",
+        description: "The step back, with a label beside the chevron.",
+        props: &[
+            Prop {
+                name: "href",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Where it goes.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the link's classes.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "PaginationNext",
+        description: "The step forward, with a label beside the chevron.",
+        props: &[
+            Prop {
+                name: "href",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Where it goes.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the link's classes.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "PaginationEllipsis",
+        description: "Stands in for the pages not listed.",
+        props: &[Prop {
+            name: "class",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "Merged over the ellipsis's classes.",
+        }],
+    },
+];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -139,6 +276,8 @@ pub fn Page() -> impl IntoView {
                         </span>
                     </div>
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }

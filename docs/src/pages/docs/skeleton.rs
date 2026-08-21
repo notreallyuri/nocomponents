@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::components::skeleton::Skeleton;
 
@@ -13,6 +19,17 @@ const CARD: &str = r#"<Skeleton class="h-[125px] w-[250px] rounded-xl" />
     <Skeleton class="h-4 w-[250px]" />
     <Skeleton class="h-4 w-[200px]" />
 </div>"#;
+
+const API: &[ApiEntry] = &[ApiEntry {
+    name: "Skeleton",
+    description: "A pulsing placeholder in the shape of what is loading. Size it with `class`.",
+    props: &[Prop {
+        name: "class",
+        ty: "Signal<String>",
+        default: "\"\"",
+        description: "The shape: width, height and rounding.",
+    }],
+}];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -49,6 +66,8 @@ pub fn Page() -> impl IntoView {
                         </div>
                     </div>
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }

@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::components::{
     button::Button,
@@ -97,6 +103,117 @@ const DISABLED_TAB: &str = r#"<Tabs default_value="active" class="w-full max-w-m
         <p class="text-sm text-muted-foreground">"Another tab."</p>
     </TabsContent>
 </Tabs>"#;
+
+const API: &[ApiEntry] = &[
+    ApiEntry {
+        name: "Tabs",
+        description: "One panel at a time, chosen from a row of triggers.",
+        props: &[
+            Prop {
+                name: "default_value",
+                ty: "String",
+                default: "",
+                description: "Which tab starts selected. Match a trigger's `value`.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the wrapper's classes.",
+            },
+            Prop {
+                name: "orientation",
+                ty: "Orientation",
+                default: "Horizontal",
+                description: "One of: Horizontal, Vertical.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "A list and its panels.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "TabsList",
+        description: "The row of triggers. One tab stop: the arrows walk it, and selection follows focus.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the list's classes.",
+            },
+            Prop {
+                name: "variant",
+                ty: "TabsListVariants",
+                default: "Default",
+                description: "One of: Default, Line.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Triggers.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "TabsTrigger",
+        description: "Selects the panel with the same `value`.",
+        props: &[
+            Prop {
+                name: "value",
+                ty: "String",
+                default: "",
+                description: "Which panel this selects.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the trigger's classes.",
+            },
+            Prop {
+                name: "disabled",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Skipped by the arrow keys as well as the pointer.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "The tab's label.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "TabsContent",
+        description: "The panel for one trigger. Only the selected one renders.",
+        props: &[
+            Prop {
+                name: "value",
+                ty: "String",
+                default: "",
+                description: "Which trigger this belongs to.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the panel's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "The panel's contents.",
+            },
+        ],
+    },
+];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -218,6 +335,8 @@ pub fn Page() -> impl IntoView {
                         </TabsContent>
                     </Tabs>
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }

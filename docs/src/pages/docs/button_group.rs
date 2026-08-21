@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::{
     components::{
@@ -41,6 +47,69 @@ const VERTICAL: &str = r#"<ButtonGroup orientation=Orientation::Vertical>
     <Button variant=ButtonVariant::Outline>"Align center"</Button>
     <Button variant=ButtonVariant::Outline>"Align right"</Button>
 </ButtonGroup>"#;
+
+const API: &[ApiEntry] = &[
+    ApiEntry {
+        name: "ButtonGroup",
+        description: "Buttons welded into one control: flattened corners, one border where they meet.",
+        props: &[
+            Prop {
+                name: "orientation",
+                ty: "Orientation",
+                default: "Horizontal",
+                description: "One of: Horizontal, Vertical.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the group's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Buttons, texts and separators.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "ButtonGroupText",
+        description: "A label inside a group — a unit, a prefix, a count — styled like a button but inert.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the label's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "The text.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "ButtonGroupSeparator",
+        description: "A rule between two buttons of the same variant, where the flattened border is not enough.",
+        props: &[
+            Prop {
+                name: "orientation",
+                ty: "Orientation",
+                default: "Orientation::Vertical",
+                description: "One of: Horizontal, Vertical.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the rule's classes.",
+            },
+        ],
+    },
+];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -119,6 +188,8 @@ pub fn Page() -> impl IntoView {
                         <Button variant=ButtonVariant::Outline>"Align right"</Button>
                     </ButtonGroup>
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }

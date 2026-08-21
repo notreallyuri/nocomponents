@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::components::{
     badge::{Badge, BadgeVariant},
@@ -55,6 +61,141 @@ const WITH_ACTION: &str = r#"<Card class="max-w-sm">
         </p>
     </CardContent>
 </Card>"#;
+
+const API: &[ApiEntry] = &[
+    ApiEntry {
+        name: "Card",
+        description: "A surface for one thing: a header, its content, and whatever acts on it.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the card's own classes.",
+            },
+            Prop {
+                name: "size",
+                ty: "CardSize",
+                default: "Default",
+                description: "One of: Default, Sm.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Header, content and footer, in whatever order the card wants them.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "CardHeader",
+        description: "The top strip: title, description, and an action clear of them.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the layout classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Usually a title, a description and an action.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "CardTitle",
+        description: "The card's name.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the heading classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "The title text.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "CardDescription",
+        description: "A line under the title.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the muted text classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "The description text.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "CardAction",
+        description: "The top-right corner of the header, for a button or a menu.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the positioning classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Usually one control.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "CardContent",
+        description: "The body.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the padding classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Whatever the card is about.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "CardFooter",
+        description: "The bottom strip, for actions.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the layout classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Usually buttons.",
+            },
+        ],
+    },
+];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -122,6 +263,8 @@ pub fn Page() -> impl IntoView {
                         </CardContent>
                     </Card>
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }
