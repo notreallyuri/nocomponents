@@ -51,6 +51,10 @@ pub fn DialogTrigger(
 #[component]
 pub fn DialogPortal(
     #[prop(optional, into)] class: Signal<String>,
+    /// The corner close button. Off for a panel whose whole surface is the control — a command
+    /// palette, where a stray button in the corner is one more thing to tab past.
+    #[prop(default = true)]
+    show_close: bool,
     children: ChildrenFn,
 ) -> impl IntoView {
     let context = use_dialog();
@@ -72,13 +76,18 @@ pub fn DialogPortal(
                     )
                 }>
                     {stored_children.with_value(|c| c())}
-                    <button
-                        on:click=move |_| context.close()
-                        class="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
-                    >
-                        <X />
-                        <span class="sr-only">"Close"</span>
-                    </button>
+                    {show_close
+                        .then(|| {
+                            view! {
+                                <button
+                                    on:click=move |_| context.close()
+                                    class="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
+                                >
+                                    <X />
+                                    <span class="sr-only">"Close"</span>
+                                </button>
+                            }
+                        })}
                 </DialogContentRoot>
             </div>
         </DialogPortalRoot>

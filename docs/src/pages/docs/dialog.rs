@@ -157,6 +157,12 @@ const API: &[ApiEntry] = &[
                 description: "Merged onto the panel, not the overlay.",
             },
             Prop {
+                name: "show_close",
+                ty: "bool",
+                default: "true",
+                description: "The corner close button. Off for a panel that is itself the control, as the command palette is.",
+            },
+            Prop {
                 name: "children",
                 ty: "ChildrenFn",
                 default: "",
