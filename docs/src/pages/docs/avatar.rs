@@ -6,20 +6,23 @@ use crate::{
     layout::doc_layout::DocLayout,
 };
 use leptos::prelude::*;
-use nocomponents::components::avatar::{
-    Avatar, AvatarFallback, AvatarGroup, AvatarGroupCount, AvatarImage, AvatarSize,
+use nocomponents::{
+    components::avatar::{
+        Avatar, AvatarFallback, AvatarGroup, AvatarGroupCount, AvatarImage, AvatarSize,
+    },
+    utils::image::{revoke_object_url, sniff_mime, to_object_url},
 };
 
 const SIZES: &str = r#"<Avatar size=AvatarSize::Sm>
-    <AvatarImage src=AVATAR_URL alt="User" class="object-cover" />
+    <AvatarImage src=AVATAR alt="User" class="object-cover" />
     <AvatarFallback>"U"</AvatarFallback>
 </Avatar>
 <Avatar>
-    <AvatarImage src=AVATAR_URL alt="User" class="object-cover" />
+    <AvatarImage src=AVATAR alt="User" class="object-cover" />
     <AvatarFallback>"U"</AvatarFallback>
 </Avatar>
 <Avatar size=AvatarSize::Lg>
-    <AvatarImage src=AVATAR_URL alt="User" class="object-cover" />
+    <AvatarImage src=AVATAR alt="User" class="object-cover" />
     <AvatarFallback>"U"</AvatarFallback>
 </Avatar>"#;
 
@@ -34,7 +37,7 @@ const FALLBACK: &str = r#"<Avatar>
 
 const GROUP: &str = r#"<AvatarGroup>
     <Avatar>
-        <AvatarImage src=AVATAR_URL alt="User 1" class="object-cover" />
+        <AvatarImage src=AVATAR alt="User 1" class="object-cover" />
         <AvatarFallback>"A"</AvatarFallback>
     </Avatar>
     <Avatar>
@@ -48,7 +51,7 @@ const GROUP: &str = r#"<AvatarGroup>
     <AvatarGroupCount>"+4"</AvatarGroupCount>
 </AvatarGroup>"#;
 
-const AVATAR_URL: &str = "https://w.wallhaven.cc/full/5d/wallhaven-5d23j9.png";
+const AVATAR_PATH: &[u8] = include_bytes!("../../../assets/avatar.jpg");
 
 const API: &[ApiEntry] = &[
     ApiEntry {
@@ -181,6 +184,15 @@ const API: &[ApiEntry] = &[
 
 #[component]
 pub fn Page() -> impl IntoView {
+    let avatar = StoredValue::new(
+        to_object_url(AVATAR_PATH, sniff_mime(AVATAR_PATH).unwrap_or("image/jpeg"))
+            .unwrap_or_default(),
+    );
+
+    on_cleanup(move || {
+        revoke_object_url(&avatar.get_value());
+    });
+
     view! {
         <DocLayout
             title="Avatar"
@@ -190,15 +202,15 @@ pub fn Page() -> impl IntoView {
                 <DemoSection title="Sizes" description="Sm, the default, and Lg." code=SIZES>
                     <div class="flex items-end gap-4">
                         <Avatar size=AvatarSize::Sm>
-                            <AvatarImage src=AVATAR_URL alt="User" class="object-cover" />
+                            <AvatarImage src=avatar.get_value() alt="User" class="object-cover" />
                             <AvatarFallback>"U"</AvatarFallback>
                         </Avatar>
                         <Avatar>
-                            <AvatarImage src=AVATAR_URL alt="User" class="object-cover" />
+                            <AvatarImage src=avatar.get_value() alt="User" class="object-cover" />
                             <AvatarFallback>"U"</AvatarFallback>
                         </Avatar>
                         <Avatar size=AvatarSize::Lg>
-                            <AvatarImage src=AVATAR_URL alt="User" class="object-cover" />
+                            <AvatarImage src=avatar.get_value() alt="User" class="object-cover" />
                             <AvatarFallback>"U"</AvatarFallback>
                         </Avatar>
                     </div>
@@ -228,7 +240,7 @@ pub fn Page() -> impl IntoView {
                 >
                     <AvatarGroup>
                         <Avatar>
-                            <AvatarImage src=AVATAR_URL alt="User 1" class="object-cover" />
+                            <AvatarImage src=avatar.get_value() alt="User 1" class="object-cover" />
                             <AvatarFallback>"A"</AvatarFallback>
                         </Avatar>
                         <Avatar>

@@ -6,7 +6,10 @@ use crate::{
     layout::doc_layout::DocLayout,
 };
 use leptos::prelude::*;
-use nocomponents::components::aspect_ratio::AspectRatio;
+use nocomponents::{
+    components::aspect_ratio::AspectRatio,
+    utils::image::{revoke_object_url, sniff_mime, to_object_url},
+};
 
 const DEMO_16_9: &str = r#"<AspectRatio ratio=16.0 / 9.0 class="rounded-xl">
     <img src=IMAGE_URL alt="Landscape" />
@@ -20,7 +23,7 @@ const PORTRAIT: &str = r#"<AspectRatio ratio=3.0 / 4.0 class="rounded-xl">
     <img src=IMAGE_URL alt="Portrait crop" />
 </AspectRatio>"#;
 
-const IMAGE_URL: &str = "https://w.wallhaven.cc/full/5d/wallhaven-5d23j9.png";
+const IMAGE_URL: &[u8] = include_bytes!("../../../assets/avatar.jpg");
 
 const API: &[ApiEntry] = &[ApiEntry {
     name: "AspectRatio",
@@ -49,6 +52,15 @@ const API: &[ApiEntry] = &[ApiEntry {
 
 #[component]
 pub fn Page() -> impl IntoView {
+    let avatar = StoredValue::new(
+        to_object_url(IMAGE_URL, sniff_mime(IMAGE_URL).unwrap_or("image/jpeg"))
+            .expect("failed to create object URL"),
+    );
+
+    on_cleanup(move || {
+        revoke_object_url(&avatar.get_value());
+    });
+
     view! {
         <DocLayout
             title="Aspect Ratio"
@@ -62,7 +74,7 @@ pub fn Page() -> impl IntoView {
                 >
                     <div class="max-w-md">
                         <AspectRatio ratio=16.0 / 9.0 class="rounded-xl">
-                            <img src=IMAGE_URL alt="Landscape" />
+                            <img src=avatar.get_value() alt="Landscape" />
                         </AspectRatio>
                     </div>
                 </DemoSection>
@@ -74,7 +86,7 @@ pub fn Page() -> impl IntoView {
                 >
                     <div class="w-48">
                         <AspectRatio ratio=1.0 class="rounded-xl">
-                            <img src=IMAGE_URL alt="Square crop" />
+                            <img src=avatar.get_value() alt="Square crop" />
                         </AspectRatio>
                     </div>
                 </DemoSection>
@@ -86,7 +98,7 @@ pub fn Page() -> impl IntoView {
                 >
                     <div class="w-40">
                         <AspectRatio ratio=3.0 / 4.0 class="rounded-xl">
-                            <img src=IMAGE_URL alt="Portrait crop" />
+                            <img src=avatar.get_value() alt="Portrait crop" />
                         </AspectRatio>
                     </div>
                 </DemoSection>
