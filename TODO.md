@@ -106,6 +106,9 @@ both go behind their own feature flag rather than into `full`.
 - [ ] Adding a component means editing five files, two of which (`NAV`, `COMPONENTS`) are
       hand-maintained copies of the same list — which is how `/docs` came to be missing progress,
       skeleton and textarea. Drive routes, nav and the index from one const.
+- [ ] The primitives have no docs pages at all: every page documents the styled layer, and the
+      behaviour layer — the half a Radix-style library is sold on — is undocumented. Needs its own
+      section in the nav, and the same table treatment.
 - [ ] A `/docs/types` page under Sections: the shared types the prop tables keep naming —
       `Signal<String>`, `ChildrenFn`, the `render` callback shape, `Side` / `Align` /
       `Orientation` / `SideOffset` — described once, so a table can point at them instead of
@@ -114,7 +117,7 @@ both go behind their own feature flag rather than into `full`.
       heading. The rows were drafted by a script over the `#[component]` signatures (names, types,
       defaults, and any prop that already carries a `///`) and the prose written per page.
 - [ ] Generate those rows at build time rather than keeping 199 hand-pasted tables in step. The
-      draft script in this session's scratchpad is the prototype; it wants to be an `xtask` or a
+      draft script in `tools/api-extract.py` is the prototype; it wants to be an `xtask` or a
       build script emitting the same `ApiEntry` shape, and it could drive `NAV` and `COMPONENTS`
       too, closing the five-files item above.
 - [ ] `Cargo.toml` has no `description`, `license`, `repository`, `keywords` or `categories` —
