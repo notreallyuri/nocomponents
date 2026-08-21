@@ -30,6 +30,9 @@ pub fn App() -> impl IntoView {
                     <Routes fallback=|| "Not Found.">
                         <Route path=path!("/") view=Home />
                         <Route path=path!("/docs") view=docs::index::Page />
+                        // One route for every component's blocks page: the page looks its
+                        // component up rather than there being sixty near-empty files.
+                        <Route path=path!("/docs/:component/blocks") view=docs::blocks::Page />
                         <Route path=path!("/docs/avatar") view=docs::avatar::Page />
                         <Route path=path!("/docs/badge") view=docs::badge::Page />
                         <Route path=path!("/docs/button") view=docs::button::Page />
@@ -70,6 +73,8 @@ pub fn App() -> impl IntoView {
                         <Route path=path!("/docs/item") view=docs::item::Page />
                         <Route path=path!("/docs/accordion") view=docs::accordion::Page />
                         <Route path=path!("/docs/collapsible") view=docs::collapsible::Page />
+                        <Route path=path!("/docs/combobox") view=docs::combobox::Page />
+                        <Route path=path!("/docs/command") view=docs::command::Page />
                         <Route path=path!("/docs/context-menu") view=docs::context_menu::Page />
                         <Route path=path!("/docs/tooltip") view=docs::tooltip::Page />
                         <Route path=path!("/docs/sheet") view=docs::sheet::Page />
@@ -77,6 +82,19 @@ pub fn App() -> impl IntoView {
                         <Route path=path!("/docs/hover-card") view=docs::hover_card::Page />
                         <Route path=path!("/docs/breadcrumb") view=docs::breadcrumb::Page />
                         <Route path=path!("/docs/pagination") view=docs::pagination::Page />
+                        <Route path=path!("/docs/image-cropper") view=docs::image_cropper::Page />
+                        <Route path=path!("/docs/color-picker") view=docs::color_picker::Page />
+                        <Route path=path!("/docs/chart") view=docs::chart::Page />
+                        <Route path=path!("/docs/data-table") view=docs::data_table::Page />
+                        <Route path=path!("/docs/date-picker") view=docs::date_picker::Page />
+                        <Route path=path!("/docs/calendar") view=docs::calendar::Page />
+                        <Route path=path!("/docs/carousel") view=docs::carousel::Page />
+                        <Route path=path!("/docs/resizable") view=docs::resizable::Page />
+                        <Route
+                            path=path!("/docs/navigation-menu")
+                            view=docs::navigation_menu::Page
+                        />
+                        <Route path=path!("/docs/menubar") view=docs::menubar::Page />
                     </Routes>
                 </Router>
             </ToastProvider>
