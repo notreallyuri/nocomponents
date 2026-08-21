@@ -10,7 +10,7 @@ use crate::{
     icons::x::X,
     primitives::{
         dialog::{DialogPortalRoot, use_dialog},
-        drawer::{DrawerContentRoot, DrawerHandleRoot, DrawerRoot},
+        drawer::{DrawerContentRoot, DrawerHandleRoot, DrawerRoot, use_drawer},
     },
     utils::types::{AsClass, Side},
 };
@@ -30,9 +30,9 @@ impl AsClass for DrawerSide {
     fn as_class(&self) -> &'static str {
         match self.0 {
             Side::Bottom => "inset-x-0 bottom-0 max-h-[85vh] rounded-t-2xl border-t",
-            Side::Top => "inset-x-0 top-0 max-h-[85vh] rounded-b-2xl border-b",
-            Side::Right => "inset-y-0 right-0 w-3/4 sm:max-w-sm rounded-l-2xl border-l",
-            Side::Left => "inset-y-0 left-0 w-3/4 sm:max-w-sm rounded-r-2xl border-r",
+            Side::Top => "inset-x-0 top-0 max-h-[85vh] pb-6 rounded-b-2xl border-b",
+            Side::Right => "inset-y-0 right-0 w-3/4 pl-6 sm:max-w-sm rounded-l-2xl border-l",
+            Side::Left => "inset-y-0 left-0 w-3/4 pr-6 sm:max-w-sm rounded-r-2xl border-r",
         }
     }
 }
@@ -57,7 +57,6 @@ pub fn Drawer(
 
 #[component]
 pub fn DrawerContent(
-    #[prop(default = Side::Bottom)] side: Side,
     /// Draw the grab bar. On by default, since a drawer that does not look draggable will not be
     /// dragged.
     #[prop(default = true)]
@@ -68,7 +67,10 @@ pub fn DrawerContent(
     let ctx = use_dialog();
     let modal = ctx.modal;
     let stored_children = StoredValue::new(children);
-    let side_class = DrawerSide(side).as_class();
+    // The edge comes from the root, like modality does. It decides the drag axis as well as the
+    // corners, and a panel that slid up from the bottom while being dragged sideways would be a
+    // contradiction, so the two halves are not allowed to disagree.
+    let side_class = DrawerSide(use_drawer().side).as_class();
 
     view! {
         <DialogPortalRoot>
@@ -118,10 +120,16 @@ pub fn DrawerHandle(#[prop(optional, into)] class: Signal<String>) -> impl IntoV
         <DrawerHandleRoot class=move || {
             cn!(
                 "shrink-0 rounded-full bg-muted-foreground/40",
+                // A bottom drawer's handle sits at the top of the column and belongs in the flow.
                 "data-[side=bottom]:mx-auto data-[side=bottom]:h-1.5 data-[side=bottom]:w-12",
-                "data-[side=top]:mx-auto data-[side=top]:mt-auto data-[side=top]:h-1.5 data-[side=top]:w-12",
-                "data-[side=left]:my-auto data-[side=left]:ml-auto data-[side=left]:h-12 data-[side=left]:w-1.5",
-                "data-[side=right]:my-auto data-[side=right]:mr-auto data-[side=right]:h-12 data-[side=right]:w-1.5",
+                // The other three do not. The panel is a flex column, and an auto margin on a flex
+                // item eats the free space rather than just centring the item — `my-auto` on a
+                // side drawer's handle pushed the header into the middle of the panel, and
+                // `mt-auto` on a top drawer's pushed it below the handle. Taking them out of the
+                // flow centres them against the edge without moving anything else.
+                "data-[side=top]:absolute data-[side=top]:bottom-2 data-[side=top]:left-1/2 data-[side=top]:-translate-x-1/2 data-[side=top]:h-1.5 data-[side=top]:w-12",
+                "data-[side=right]:absolute data-[side=right]:left-2 data-[side=right]:top-1/2 data-[side=right]:-translate-y-1/2 data-[side=right]:h-12 data-[side=right]:w-1.5",
+                "data-[side=left]:absolute data-[side=left]:right-2 data-[side=left]:top-1/2 data-[side=left]:-translate-y-1/2 data-[side=left]:h-12 data-[side=left]:w-1.5",
                 class.get()
             )
         } />

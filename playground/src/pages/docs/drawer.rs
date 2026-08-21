@@ -30,21 +30,22 @@ const DEFAULT: &str = r#"<Drawer>
 const SIDES: &str = r#"// Any edge. The drag axis and its direction follow the side.
 <Drawer side=Side::Right>
     <DrawerTrigger>"From the right"</DrawerTrigger>
-    <DrawerContent side=Side::Right>
+    <DrawerContent>
         // ...
     </DrawerContent>
 </Drawer>"#;
 
 const NESTED: &str = r#"// A drawer inside a drawer. Each has its own dialog context, so the
 // layer stack unwinds one Escape at a time and dragging the inner
-// panel leaves the outer where it is.
-<Drawer>
+// panel leaves the outer where it is. The side is set once, on the
+// root: it decides the drag axis as well as the edge.
+<Drawer side=Side::Right>
     <DrawerTrigger>"Open outer"</DrawerTrigger>
     <DrawerContent>
         <DrawerHeader>
             <DrawerTitle>"Choose a project"</DrawerTitle>
         </DrawerHeader>
-        <Drawer>
+        <Drawer side=Side::Right>
             <DrawerTrigger>"New project"</DrawerTrigger>
             <DrawerContent>
                 <DrawerHeader>
@@ -58,7 +59,7 @@ const NESTED: &str = r#"// A drawer inside a drawer. Each has its own dialog con
 const NON_MODAL: &str = r#"// No overlay, no focus trap, and the page underneath stays usable.
 // A pointer landing outside closes it, since there is no overlay to
 // click. Set it once on the root; the content reads it from context.
-<Drawer modal=false>
+<Drawer side=Side::Right modal=false>
     <DrawerTrigger>"Open non-modal"</DrawerTrigger>
     <DrawerContent>
         <DrawerHeader>
@@ -117,7 +118,7 @@ pub fn Page() -> impl IntoView {
                             <DrawerTrigger class="rounded-lg border border-border px-3 py-1.5 text-sm">
                                 "From the right"
                             </DrawerTrigger>
-                            <DrawerContent side=Side::Right>
+                            <DrawerContent>
                                 <DrawerHeader>
                                     <DrawerTitle>"Filters"</DrawerTitle>
                                     <DrawerDescription>"Throw it rightward to dismiss."</DrawerDescription>
@@ -129,7 +130,7 @@ pub fn Page() -> impl IntoView {
                             <DrawerTrigger class="rounded-lg border border-border px-3 py-1.5 text-sm">
                                 "From the top"
                             </DrawerTrigger>
-                            <DrawerContent side=Side::Top>
+                            <DrawerContent>
                                 <DrawerHeader>
                                     <DrawerTitle>"Notifications"</DrawerTitle>
                                     <DrawerDescription>"Throw it upward to dismiss."</DrawerDescription>
@@ -141,7 +142,7 @@ pub fn Page() -> impl IntoView {
                             <DrawerTrigger class="rounded-lg border border-border px-3 py-1.5 text-sm">
                                 "From the left"
                             </DrawerTrigger>
-                            <DrawerContent side=Side::Left>
+                            <DrawerContent>
                                 <DrawerHeader>
                                     <DrawerTitle>"Navigation"</DrawerTitle>
                                     <DrawerDescription>"Throw it leftward to dismiss."</DrawerDescription>
@@ -156,7 +157,7 @@ pub fn Page() -> impl IntoView {
                     description="A drawer opened from inside another. Each has its own dialog context, so Escape unwinds them one at a time and dragging the inner panel leaves the outer one where it is."
                     code=NESTED
                 >
-                    <Drawer>
+                    <Drawer side=Side::Right>
                         <DrawerTrigger class="rounded-lg border border-border px-3 py-1.5 text-sm">
                             "Open outer"
                         </DrawerTrigger>
@@ -167,7 +168,7 @@ pub fn Page() -> impl IntoView {
                                     "Opening the inner drawer stacks a second layer on this one."
                                 </DrawerDescription>
                             </DrawerHeader>
-                            <Drawer>
+                            <Drawer side=Side::Right>
                                 <DrawerTrigger class="w-full rounded-lg border border-border px-3 py-1.5 text-sm">
                                     "New project"
                                 </DrawerTrigger>
@@ -192,7 +193,7 @@ pub fn Page() -> impl IntoView {
                     description="No overlay, no focus trap, and the page underneath stays usable — scroll it, click it, tab through it. A pointer landing outside closes the drawer, since there is no overlay to catch it."
                     code=NON_MODAL
                 >
-                    <Drawer modal=false>
+                    <Drawer side=Side::Right modal=false>
                         <DrawerTrigger class="rounded-lg border border-border px-3 py-1.5 text-sm">
                             "Open non-modal"
                         </DrawerTrigger>
