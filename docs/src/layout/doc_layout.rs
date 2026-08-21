@@ -1,4 +1,4 @@
-use crate::components::theme_switcher::ThemeSwitcher;
+use crate::{app::href, components::theme_switcher::ThemeSwitcher};
 use leptos::prelude::*;
 use leptos_router::{components::A, hooks::use_location};
 use nocomponents::components::sidebar::{
@@ -247,7 +247,7 @@ pub fn DocLayout(
             <Sidebar>
                 <SidebarHeader class="border-b h-14">
                     <A
-                        href="/"
+                        href=href("/")
                         attr:class="flex h-10 items-center gap-2 px-2 text-sm font-bold tracking-tight"
                     >
                         <div class="flex size-5 items-center justify-center bg-primary text-primary-foreground">
@@ -274,8 +274,10 @@ pub fn DocLayout(
                                             {sorted_items
                                                 .into_iter()
                                                 .map(|item| {
+                                                    let target = href(item.href);
+                                                    let current = target.clone();
                                                     let is_current = Signal::derive(move || {
-                                                        location.pathname.get() == item.href
+                                                        location.pathname.get() == current
                                                     });
 
                                                     view! {
@@ -288,7 +290,7 @@ pub fn DocLayout(
                                                                 render=Callback::new(move |(class, _): (Signal<String>, _)| {
                                                                     view! {
                                                                         <A
-                                                                            href=item.href
+                                                                            href=target.clone()
                                                                             // Or "Components"
                                                                             // reads as current
                                                                             // on every page.

@@ -38,7 +38,7 @@ pub fn Home() -> impl IntoView {
                             class="mt-4"
                             render=Callback::new(move |(class, _node_ref)| {
                                 view! {
-                                    <A href="/docs" attr:class=class>
+                                    <A href=crate::app::href("/docs") attr:class=class>
                                         "Go to docs"
                                     </A>
                                 }

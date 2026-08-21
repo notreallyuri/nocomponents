@@ -130,5 +130,6 @@ both go behind their own feature flag rather than into `full`.
       would catch regressions in the floating and toast state machines.
 - [ ] Nothing installs a panic hook, so a panic in the docs app surfaces as
       `RuntimeError: unreachable` with no message. Three lines in `docs/src/main.rs`.
-- [ ] No CI. `cargo fmt --check`, `cargo clippy --features full` and `cargo check -p docs`
-      would cover today's checks (clippy is clean).
+- [x] CI in `.github/workflows/ci.yml`: `fmt --check`, `clippy --features full -D warnings`,
+      `check -p docs`, `test --features full`. `pages.yml` builds the docs site and deploys it to
+      GitHub Pages on every push to main — needs Settings → Pages → Source: GitHub Actions once.
