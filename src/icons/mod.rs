@@ -5,6 +5,7 @@
 
 use leptos::prelude::*;
 
+pub mod calendar;
 pub mod check;
 pub mod chevron;
 pub mod copy;
