@@ -5,6 +5,7 @@ pub mod chevron;
 pub mod copy;
 pub mod ellipsis;
 pub mod loader;
+pub mod panel;
 pub mod search;
 pub mod x;
 

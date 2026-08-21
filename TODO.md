@@ -44,24 +44,24 @@ All closed; this no longer blocks a "stable" tag. What exists, and where to reus
 
 ## Components — gap vs the shadcn/ui catalogue
 
-Shipped (46): accordion, alert, alert-dialog, aspect-ratio, avatar, badge, breadcrumb, button,
+Shipped (47): accordion, alert, alert-dialog, aspect-ratio, avatar, badge, breadcrumb, button,
 button-group, card, checkbox, code, collapsible, context-menu, dialog, drawer, dropdown-menu,
 empty, field, hover-card, input, input-group, input-otp, item, kbd, label, native-select,
-pagination, popover, progress, radio-group, scroll-area, select, separator, sheet, skeleton,
-slider, spinner, switch, table, tabs, textarea, toast, toggle, toggle-group, tooltip. `code` is
+pagination, popover, progress, radio-group, scroll-area, select, separator, sheet, sidebar,
+skeleton, slider, spinner, switch, table, tabs, textarea, toast, toggle, toggle-group, tooltip. `code` is
 not in the shadcn catalogue — it is ours, for documenting the rest.
 
-Missing (18 of the catalogue), ordered by priority. Priority = how often it is reached for,
+Missing (17 of the catalogue), ordered by priority. Priority = how often it is reached for,
 weighted down by how much machinery it needs that this library does not have yet.
 
 **P3 — substantial state machines.** Each needs filtering, list navigation or measurement work
-beyond what the shared helpers cover.
+beyond what the shared helpers cover. Sidebar is done — it is what the docs site's own nav is
+built from, which is the only honest way to find out what living with it is like.
 
 - [ ] Command (filtering + keyboard list navigation)
 - [ ] Combobox (Command + Popover; `FloatingContext.value` / `display_value` were added for it)
 - [ ] Navigation Menu
 - [ ] Menubar
-- [ ] Sidebar
 - [ ] Resizable
 - [ ] Carousel
 - [ ] Calendar

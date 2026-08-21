@@ -22,6 +22,7 @@ pub mod roving_focus;
 pub mod scroll_area;
 pub mod select;
 pub mod separator;
+pub mod sidebar;
 pub mod slider;
 pub mod switch;
 pub mod tabs;
@@ -57,6 +58,7 @@ pub mod prelude {
     pub use super::scroll_area::*;
     pub use super::select::*;
     pub use super::separator::*;
+    pub use super::sidebar::*;
     pub use super::slider::*;
     pub use super::switch::*;
     pub use super::tabs::*;

@@ -33,6 +33,7 @@ pub mod scroll_area;
 pub mod select;
 pub mod separator;
 pub mod sheet;
+pub mod sidebar;
 pub mod skeleton;
 pub mod slider;
 pub mod spinner;
@@ -81,6 +82,7 @@ pub mod prelude {
     pub use super::select::*;
     pub use super::separator::*;
     pub use super::sheet::*;
+    pub use super::sidebar::*;
     pub use super::skeleton::*;
     pub use super::slider::*;
     pub use super::spinner::*;
