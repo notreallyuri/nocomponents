@@ -3,10 +3,14 @@
 //! The value is a `Vec<f64>` and a range slider is the two-element case, so the geometry, the
 //! keyboard contract and the ARIA are written once. Thumbs clamp to their neighbours.
 //!
-//! Dragging is tracked on the window: a pointer that leaves the element mid-drag still belongs to
-//! the drag. Positions are geometry, so this layer writes the inline `left`/`width`.
+//! Dragging goes through [`crate::primitives::drag`], so a pointer that leaves the track mid-drag
+//! still belongs to the drag. Positions are geometry, so this layer writes the inline
+//! `left`/`width`.
 
-use crate::utils::types::Orientation;
+use crate::{
+    primitives::drag::{DragPoint, use_drag},
+    utils::types::Orientation,
+};
 use leptos::{context::Provider, ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
 use web_sys::{Element, HtmlElement};
@@ -169,62 +173,34 @@ pub fn SliderRoot(
         track_ref: AnyNodeRef::new(),
     };
 
-    // Installed per gesture and removed on release, or every slider on the page would react to
-    // every pointer move for the rest of the session.
-    let move_handle = StoredValue::new_local(None::<WindowListenerHandle>);
-    let up_handle = StoredValue::new_local(None::<WindowListenerHandle>);
+    // Which thumb the press picked up, for the rest of the gesture.
+    let thumb = StoredValue::new(0usize);
 
-    // `take` rather than read-then-clear: a listener handle is not `Clone`.
-    let stop_drag = move || {
-        move_handle.update_value(|slot| {
-            if let Some(handle) = slot.take() {
-                handle.remove();
-            }
-        });
-        up_handle.update_value(|slot| {
-            if let Some(handle) = slot.take() {
-                handle.remove();
-            }
-        });
-        context.active_thumb.set(None);
-    };
-
-    let start_drag = move |e: ev::PointerEvent| {
-        if disabled.get_untracked() {
-            return;
+    let drag = use_drag(move |point: DragPoint| {
+        if let Some(value) = context.value_from_pointer(point.client_x, point.client_y) {
+            context.set_thumb(thumb.get_value(), value);
         }
-
-        let Some(value) = context.value_from_pointer(e.client_x() as f64, e.client_y() as f64)
-        else {
+    })
+    // The nearest thumb moves to the press and is picked up from there, so a click and a drag
+    // are one gesture.
+    .on_start(move |point: DragPoint| {
+        let Some(value) = context.value_from_pointer(point.client_x, point.client_y) else {
             return;
         };
 
-        // The nearest thumb moves to the press and is picked up, so a click and a drag are one
-        // gesture.
         let index = context.closest_thumb(value);
+        thumb.set_value(index);
         context.active_thumb.set(Some(index));
         context.set_thumb(index, value);
         focus_thumb(context.track_ref, index);
+    })
+    .on_end(move |_| context.active_thumb.set(None));
 
-        stop_drag();
-
-        move_handle.set_value(Some(window_event_listener(
-            ev::pointermove,
-            move |e: ev::PointerEvent| {
-                if let Some(value) =
-                    context.value_from_pointer(e.client_x() as f64, e.client_y() as f64)
-                {
-                    context.set_thumb(index, value);
-                }
-            },
-        )));
-
-        up_handle.set_value(Some(window_event_listener(ev::pointerup, move |_| {
-            stop_drag();
-        })));
+    let start_drag = move |e: ev::PointerEvent| {
+        if !disabled.get_untracked() {
+            drag.start(&e);
+        }
     };
-
-    on_cleanup(stop_drag);
 
     let orientation_str = orientation.as_str();
 

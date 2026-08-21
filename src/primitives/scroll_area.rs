@@ -7,7 +7,10 @@
 //! Measuring is driven by a `ResizeObserver` on the viewport *and* its content as well as by the
 //! scroll event: content that grows after mount changes the thumb without any scroll firing.
 
-use crate::utils::types::Orientation;
+use crate::{
+    primitives::drag::{DragPoint, use_drag},
+    utils::types::Orientation,
+};
 use leptos::{
     context::Provider,
     ev,
@@ -273,24 +276,44 @@ pub fn ScrollAreaThumbRoot(
     #[prop(optional, into)] class: Signal<String>,
 ) -> impl IntoView {
     let ctx = use_scroll_area();
-    let dragging = RwSignal::new(false);
 
-    let move_handle = StoredValue::new_local(None::<WindowListenerHandle>);
-    let up_handle = StoredValue::new_local(None::<WindowListenerHandle>);
+    // Where the content was when the thumb was taken hold of. The thumb tracks the pointer
+    // absolutely from there, so a drag that overshoots and comes back lands where it started.
+    let start_scroll = StoredValue::new(0.0);
 
-    let stop_drag = move || {
-        move_handle.update_value(|slot| {
-            if let Some(handle) = slot.take() {
-                handle.remove();
-            }
-        });
-        up_handle.update_value(|slot| {
-            if let Some(handle) = slot.take() {
-                handle.remove();
-            }
-        });
-        dragging.set(false);
-    };
+    let drag = use_drag(move |point: DragPoint| {
+        let Some(viewport) = ctx.viewport() else {
+            return;
+        };
+        let metrics = ctx.metrics(orientation);
+
+        let (travelled, client, scroll) = match orientation {
+            Orientation::Vertical => (
+                point.dy,
+                viewport.client_height() as f64,
+                viewport.scroll_height() as f64,
+            ),
+            Orientation::Horizontal => (
+                point.dx,
+                viewport.client_width() as f64,
+                viewport.scroll_width() as f64,
+            ),
+        };
+
+        let max_offset = client - metrics.size;
+        if max_offset <= 0.0 {
+            return;
+        }
+
+        // The thumb travels `max_offset` while the content travels `scroll - client`.
+        let target =
+            (start_scroll.get_value() + travelled * ((scroll - client) / max_offset)).max(0.0);
+
+        match orientation {
+            Orientation::Vertical => viewport.set_scroll_top(target as i32),
+            Orientation::Horizontal => viewport.set_scroll_left(target as i32),
+        }
+    });
 
     let start_drag = move |e: ev::PointerEvent| {
         let Some(viewport) = ctx.viewport() else {
@@ -300,62 +323,13 @@ pub fn ScrollAreaThumbRoot(
         // The press must not reach the track, which would jump before dragging.
         e.stop_propagation();
 
-        let start_pointer = match orientation {
-            Orientation::Vertical => e.client_y() as f64,
-            Orientation::Horizontal => e.client_x() as f64,
-        };
-        let start_scroll = match orientation {
+        start_scroll.set_value(match orientation {
             Orientation::Vertical => viewport.scroll_top() as f64,
             Orientation::Horizontal => viewport.scroll_left() as f64,
-        };
+        });
 
-        dragging.set(true);
-        stop_drag();
-        dragging.set(true);
-
-        move_handle.set_value(Some(window_event_listener(
-            ev::pointermove,
-            move |e: ev::PointerEvent| {
-                let Some(viewport) = ctx.viewport() else {
-                    return;
-                };
-                let metrics = ctx.metrics(orientation);
-
-                let (pointer, client, scroll) = match orientation {
-                    Orientation::Vertical => (
-                        e.client_y() as f64,
-                        viewport.client_height() as f64,
-                        viewport.scroll_height() as f64,
-                    ),
-                    Orientation::Horizontal => (
-                        e.client_x() as f64,
-                        viewport.client_width() as f64,
-                        viewport.scroll_width() as f64,
-                    ),
-                };
-
-                let max_offset = client - metrics.size;
-                if max_offset <= 0.0 {
-                    return;
-                }
-
-                // The thumb travels `max_offset` while the content travels `scroll - client`.
-                let travel = (pointer - start_pointer) * ((scroll - client) / max_offset);
-                let target = (start_scroll + travel).max(0.0);
-
-                match orientation {
-                    Orientation::Vertical => viewport.set_scroll_top(target as i32),
-                    Orientation::Horizontal => viewport.set_scroll_left(target as i32),
-                }
-            },
-        )));
-
-        up_handle.set_value(Some(window_event_listener(ev::pointerup, move |_| {
-            stop_drag();
-        })));
+        drag.start(&e);
     };
-
-    on_cleanup(stop_drag);
 
     let position = move || {
         let metrics = ctx.metrics(orientation);
@@ -375,7 +349,7 @@ pub fn ScrollAreaThumbRoot(
         <div
             data-slot="scroll-area-thumb"
             data-orientation=orientation.as_str()
-            data-state=move || if dragging.get() { "dragging" } else { "idle" }
+            data-state=move || if drag.active.get() { "dragging" } else { "idle" }
             on:pointerdown=start_drag
             style=position
             class=class

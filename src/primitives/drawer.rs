@@ -5,7 +5,10 @@
 //! landing in something already scrolled belongs to that scroller.
 
 use crate::{
-    primitives::dialog::{DialogContentRoot, DialogRoot, use_dialog},
+    primitives::{
+        dialog::{DialogContentRoot, DialogRoot, use_dialog},
+        drag::{DragEnd, DragPoint, use_drag},
+    },
     utils::types::Side,
 };
 use leptos::{context::Provider, ev, prelude::*, wasm_bindgen::JsCast};
@@ -16,6 +19,8 @@ use web_sys::Element;
 const DISTANCE_THRESHOLD: f64 = 0.25;
 /// Pixels per millisecond past which a release counts as a flick regardless of distance.
 const VELOCITY_THRESHOLD: f64 = 0.4;
+/// How recently the pointer must have moved for a release to count as a flick at all.
+const FLICK_WINDOW: f64 = 100.0;
 /// How much a panel gives up, and how far it slides back, while a nested drawer sits over it.
 const RECEDE_SCALE: f64 = 0.96;
 const RECEDE_SHIFT: f64 = 14.0;
@@ -176,21 +181,40 @@ pub fn DrawerContentRoot(
     let dialog = use_dialog();
     let panel_ref = AnyNodeRef::new();
 
-    let move_handle = StoredValue::new_local(None::<WindowListenerHandle>);
-    let up_handle = StoredValue::new_local(None::<WindowListenerHandle>);
+    // The panel's length along the drag axis, measured at the press: what the travel is judged
+    // against, and how far it has left to go once a release dismisses it.
+    let length = StoredValue::new(0.0);
 
-    let stop_listening = move || {
-        move_handle.update_value(|slot| {
-            if let Some(handle) = slot.take() {
-                handle.remove();
-            }
-        });
-        up_handle.update_value(|slot| {
-            if let Some(handle) = slot.take() {
-                handle.remove();
-            }
-        });
-    };
+    let drag = use_drag(move |point: DragPoint| {
+        // Outward only: a haul back toward the anchored edge leaves the panel where it rests.
+        ctx.offset.set(ctx.travel(point.dx, point.dy).max(0.0));
+    })
+    .on_end(move |end: DragEnd| {
+        ctx.dragging.set(false);
+
+        let travel = ctx.offset.get_untracked();
+        let length = length.get_value();
+
+        // A pause before release is a placement, not a throw; the velocity is projected onto the
+        // drag axis, so a shove back toward the edge comes out negative and does not dismiss.
+        let velocity = if end.idle < FLICK_WINDOW {
+            ctx.travel(end.velocity_x, end.velocity_y)
+        } else {
+            0.0
+        };
+
+        let far_enough = length > 0.0 && travel / length > DISTANCE_THRESHOLD;
+        let fast_enough = velocity > VELOCITY_THRESHOLD && travel > 0.0;
+
+        if far_enough || fast_enough {
+            dialog.close();
+            // Carry on to closed rather than zeroing, which would rewind the panel before
+            // sliding it out. The effect below clears the offset on the next open.
+            ctx.offset.set(length);
+        } else {
+            ctx.offset.set(0.0);
+        }
+    });
 
     // A drawer closed some other way mid-drag must not reopen still shoved off its edge.
     Effect::new(move |_| {
@@ -230,8 +254,6 @@ pub fn DrawerContentRoot(
     // Torn down while open, it still has to hand the count back.
     on_cleanup(release_ancestors);
 
-    on_cleanup(stop_listening);
-
     let panel_element = move || {
         panel_ref
             .get_untracked()
@@ -251,70 +273,15 @@ pub fn DrawerContentRoot(
             return;
         }
 
-        let start_x = e.client_x() as f64;
-        let start_y = e.client_y() as f64;
-
         let rect = panel.get_bounding_client_rect();
-        let length = if ctx.is_vertical() {
+        length.set_value(if ctx.is_vertical() {
             rect.height()
         } else {
             rect.width()
-        };
-
-        // Velocity of the last movement, sampled between moves: at release it always reads zero.
-        let last_sample = StoredValue::new((0.0f64, js_sys::Date::now()));
-        let last_velocity = StoredValue::new(0.0f64);
+        });
 
         ctx.dragging.set(true);
-        stop_listening();
-
-        move_handle.set_value(Some(window_event_listener(
-            ev::pointermove,
-            move |e: ev::PointerEvent| {
-                let travel = ctx
-                    .travel(e.client_x() as f64 - start_x, e.client_y() as f64 - start_y)
-                    .max(0.0);
-
-                let now = js_sys::Date::now();
-                let (previous_travel, previous_time) = last_sample.get_value();
-                let elapsed = now - previous_time;
-
-                if elapsed > 0.0 {
-                    last_velocity.set_value((travel - previous_travel) / elapsed);
-                }
-
-                last_sample.set_value((travel, now));
-                ctx.offset.set(travel);
-            },
-        )));
-
-        up_handle.set_value(Some(window_event_listener(ev::pointerup, move |_| {
-            stop_listening();
-            ctx.dragging.set(false);
-
-            let travel = ctx.offset.get_untracked();
-            let (_, last_time) = last_sample.get_value();
-
-            // A pause before release is a placement, not a throw; a signed velocity means a
-            // shove back toward the edge does not dismiss.
-            let velocity = if js_sys::Date::now() - last_time < 100.0 {
-                last_velocity.get_value()
-            } else {
-                0.0
-            };
-
-            let far_enough = length > 0.0 && travel / length > DISTANCE_THRESHOLD;
-            let fast_enough = velocity > VELOCITY_THRESHOLD && travel > 0.0;
-
-            if far_enough || fast_enough {
-                dialog.close();
-                // Carry on to closed rather than zeroing, which would rewind the panel before
-                // sliding it out. The effect above clears the offset on the next open.
-                ctx.offset.set(length);
-            } else {
-                ctx.offset.set(0.0);
-            }
-        })));
+        drag.start(&e);
     };
 
     view! {
