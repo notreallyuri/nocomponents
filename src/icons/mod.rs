@@ -1,3 +1,8 @@
+//! The handful of icons the styled layer needs, drawn inline rather than pulled from a crate: a
+//! UI library should not hand its consumers an icon dependency for six glyphs.
+//!
+//! The path data is [Lucide](https://lucide.dev)'s, under the ISC licence.
+
 use leptos::prelude::*;
 
 pub mod check;
