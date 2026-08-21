@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::components::{
     label::Label,
@@ -70,6 +76,113 @@ const CONTROLLED: &str = r#"{
         </div>
     }
 }"#;
+
+const API: &[ApiEntry] = &[
+    ApiEntry {
+        name: "Select",
+        description: "A listbox built out of divs, for options that need to look like more than a native menu.",
+        props: &[
+            Prop {
+                name: "value",
+                ty: "RwSignal<Option<String>>",
+                default: "None",
+                description: "The chosen value. Empty until something is picked.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the wrapper's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "ChildrenFn",
+                default: "",
+                description: "A trigger and a portal.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SelectTrigger",
+        description: "The closed control, showing the current value.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the trigger's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Usually a `SelectValue`.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SelectValue",
+        description: "The current value, or a placeholder when there is none. Renders the value itself, so an item's value and its text should read the same.",
+        props: &[Prop {
+            name: "placeholder",
+            ty: "String",
+            default: "",
+            description: "Shown while nothing is chosen.",
+        }],
+    },
+    ApiEntry {
+        name: "SelectPortal",
+        description: "Renders the listbox at the end of the document, so it escapes any clipping ancestor.",
+        props: &[Prop {
+            name: "children",
+            ty: "ChildrenFn",
+            default: "",
+            description: "The listbox. Re-run on each mount, hence `ChildrenFn`.",
+        }],
+    },
+    ApiEntry {
+        name: "SelectContent",
+        description: "The listbox, positioned under the trigger and matched to its width.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the listbox's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Items.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SelectItem",
+        description: "One option. Enter, Space or a click commits it and closes the listbox.",
+        props: &[
+            Prop {
+                name: "value",
+                ty: "String",
+                default: "",
+                description: "What committing this option sets the value to.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the item's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "The option's text.",
+            },
+        ],
+    },
+];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -162,6 +275,8 @@ pub fn Page() -> impl IntoView {
                         }
                     }
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }

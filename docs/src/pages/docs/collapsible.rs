@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::components::{
     button::{Button, ButtonVariant},
@@ -37,6 +43,81 @@ const DISABLED: &str = r#"<Collapsible disabled=true class="w-full max-w-md">
         <p class="p-3">"Never reachable."</p>
     </CollapsibleContent>
 </Collapsible>"#;
+
+const API: &[ApiEntry] = &[
+    ApiEntry {
+        name: "Collapsible",
+        description: "One panel that opens and closes, with no selection to share.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the wrapper's classes.",
+            },
+            Prop {
+                name: "disabled",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Disables the trigger.",
+            },
+            Prop {
+                name: "open",
+                ty: "Option<RwSignal<bool>>",
+                default: "None",
+                description: "Omit for an uncontrolled panel that owns its own state.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "A trigger and a content.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "CollapsibleTrigger",
+        description: "Toggles the panel.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the trigger's classes.",
+            },
+            Prop {
+                name: "disabled",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Stops it toggling.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "The trigger's label.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "CollapsibleContent",
+        description: "The panel, measured after it mounts so the animation has a height to run to.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the panel's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "ChildrenFn",
+                default: "",
+                description: "The panel's contents. Re-run on each mount, hence `ChildrenFn`.",
+            },
+        ],
+    },
+];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -118,6 +199,8 @@ pub fn Page() -> impl IntoView {
                         ", so the panel machinery is not written twice."
                     </p>
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }

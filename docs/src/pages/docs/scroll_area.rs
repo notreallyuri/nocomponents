@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::components::{button::Button, scroll_area::ScrollArea};
 
@@ -31,6 +37,93 @@ const FITS: &str = r#"// Content that fits gets no scrollbar at all.
 <ScrollArea class="h-40 w-full rounded-lg border">
     <div class="p-4 text-sm">"Three short lines."</div>
 </ScrollArea>"#;
+
+const API: &[ApiEntry] = &[
+    ApiEntry {
+        name: "ScrollArea",
+        description: "A scrolling box with scrollbars the library draws. The box still scrolls natively; only the bar is replaced.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Sizes the box. Give it a height, or it has nothing to scroll.",
+            },
+            Prop {
+                name: "horizontal",
+                ty: "bool",
+                default: "false",
+                description: "Also draw a horizontal scrollbar. Off by default, since most scroll areas are vertical.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Whatever scrolls.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "ScrollAreaViewport",
+        description: "The scrolling element itself. Rendered by `ScrollArea`, so it is rarely written by hand.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the viewport's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "The content.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "ScrollAreaScrollbar",
+        description: "The track. A press on it jumps the thumb to the pointer.",
+        props: &[
+            Prop {
+                name: "orientation",
+                ty: "Orientation",
+                default: "Orientation::Vertical",
+                description: "One of: Horizontal, Vertical.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the track's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Usually a thumb.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "ScrollAreaThumb",
+        description: "The thumb, sized and positioned from the measured content.",
+        props: &[
+            Prop {
+                name: "orientation",
+                ty: "Orientation",
+                default: "Orientation::Vertical",
+                description: "One of: Horizontal, Vertical.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the thumb's classes.",
+            },
+        ],
+    },
+];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -134,6 +227,8 @@ pub fn Page() -> impl IntoView {
                         </ScrollArea>
                     </div>
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }

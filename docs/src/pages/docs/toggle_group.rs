@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::{
     components::{
@@ -57,6 +63,105 @@ const CONTROLLED: &str = r#"{
         </div>
     }
 }"#;
+
+const API: &[ApiEntry] = &[
+    ApiEntry {
+        name: "ToggleGroup",
+        description: "Toggles that belong together, sharing a selection and one tab stop.",
+        props: &[
+            Prop {
+                name: "kind",
+                ty: "ToggleGroupType",
+                default: "Single",
+                description: "One of: Single, Multiple.",
+            },
+            Prop {
+                name: "orientation",
+                ty: "Orientation",
+                default: "Horizontal",
+                description: "One of: Horizontal, Vertical.",
+            },
+            Prop {
+                name: "variant",
+                ty: "ToggleVariant",
+                default: "Default",
+                description: "One of: Default, Outline.",
+            },
+            Prop {
+                name: "size",
+                ty: "ToggleSize",
+                default: "Default",
+                description: "One of: Xs, Sm, Default, Lg.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the group's classes.",
+            },
+            Prop {
+                name: "disabled",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Disables every item in the group.",
+            },
+            Prop {
+                name: "value",
+                ty: "Option<RwSignal<Vec<String>>>",
+                default: "None",
+                description: "Omit for an uncontrolled group. `Single` keeps at most one entry in the vector.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Items.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "ToggleGroupItem",
+        description: "One toggle in the group; takes its variant and size from the group unless told otherwise.",
+        props: &[
+            Prop {
+                name: "value",
+                ty: "String",
+                default: "",
+                description: "Its key, as used in the group's value.",
+            },
+            Prop {
+                name: "variant",
+                ty: "Option<ToggleVariant>",
+                default: "None",
+                description: "Defaults to the variant set on the enclosing `ToggleGroup`.",
+            },
+            Prop {
+                name: "size",
+                ty: "Option<ToggleSize>",
+                default: "None",
+                description: "Defaults to the size set on the enclosing `ToggleGroup`.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the item's classes.",
+            },
+            Prop {
+                name: "disabled",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Disables this item only.",
+            },
+            Prop {
+                name: "children",
+                ty: "Option<Children>",
+                default: "None",
+                description: "The label, usually an icon.",
+            },
+        ],
+    },
+];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -146,6 +251,8 @@ pub fn Page() -> impl IntoView {
                         }
                     }
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }

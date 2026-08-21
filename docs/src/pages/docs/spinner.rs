@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::components::{
     button::{Button, ButtonVariant},
@@ -25,6 +31,31 @@ const IN_A_BUTTON: &str = r#"<Button attr:disabled=true>
 const INHERITS_COLOR: &str = r#"<Spinner class="text-primary" />
 <Spinner class="text-destructive" />
 <Spinner class="text-muted-foreground" />"#;
+
+const API: &[ApiEntry] = &[ApiEntry {
+    name: "Spinner",
+    description: "A busy indicator for something with no measurable progress.",
+    props: &[
+        Prop {
+            name: "variant",
+            ty: "SpinnerVariant",
+            default: "Default",
+            description: "One of: Default, Lined.",
+        },
+        Prop {
+            name: "size",
+            ty: "SpinnerSize",
+            default: "Default",
+            description: "One of: Xs, Sm, Default, Lg, Icon.",
+        },
+        Prop {
+            name: "class",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "Merged over the size classes.",
+        },
+    ],
+}];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -79,6 +110,8 @@ pub fn Page() -> impl IntoView {
                         <Spinner class="text-muted-foreground" />
                     </div>
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }

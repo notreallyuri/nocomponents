@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::components::{
     label::Label,
@@ -46,6 +52,55 @@ const CONTROLLED: &str = r#"<NativeSelect model=role class="max-w-56">
     <option value="viewer">"Viewer"</option>
 </NativeSelect>
 <p class="text-sm text-muted-foreground">"Selected: " {move || role.get()}</p>"#;
+
+const API: &[ApiEntry] = &[ApiEntry {
+    name: "NativeSelect",
+    description: "The browser's own `<select>`, bound to a signal. Opens the platform picker on a phone, and keeps `optgroup`.",
+    props: &[
+        Prop {
+            name: "size",
+            ty: "NativeSelectSize",
+            default: "Default",
+            description: "One of: Sm, Default.",
+        },
+        Prop {
+            name: "class",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "Merged over the control's classes.",
+        },
+        Prop {
+            name: "model",
+            ty: "Option<RwSignal<String>>",
+            default: "None",
+            description: "Two-way binding. Omit it and pass `value` for a one-way one.",
+        },
+        Prop {
+            name: "value",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "One-way: the control shows it and never writes back.",
+        },
+        Prop {
+            name: "disabled",
+            ty: "Signal<bool>",
+            default: "false",
+            description: "Stops it taking pointer events and marks it disabled.",
+        },
+        Prop {
+            name: "id",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "Overridden by an enclosing `Field`, which mints its own.",
+        },
+        Prop {
+            name: "children",
+            ty: "Children",
+            default: "",
+            description: "`<option>` and `<optgroup>` elements, written out as they are.",
+        },
+    ],
+}];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -142,6 +197,8 @@ pub fn Page() -> impl IntoView {
                         </p>
                     </div>
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }

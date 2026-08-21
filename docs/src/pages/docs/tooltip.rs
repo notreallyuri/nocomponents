@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::{
     components::{
@@ -43,6 +49,105 @@ const ON_TEXT: &str = r#"<p class="text-sm">
         <TooltipContent>"docs/styles/globals.css"</TooltipContent>
     </Tooltip> "."
 </p>"#;
+
+const API: &[ApiEntry] = &[
+    ApiEntry {
+        name: "Tooltip",
+        description: "A label that appears on hover or focus. Not for anything the reader has to act on.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the wrapper's classes.",
+            },
+            Prop {
+                name: "delay",
+                ty: "u64",
+                default: "400",
+                description: "How long the pointer has to rest on the trigger before the tooltip opens.",
+            },
+            Prop {
+                name: "close_delay",
+                ty: "u64",
+                default: "100",
+                description: "The grace period after leaving, long enough to cross the gap to the content.",
+            },
+            Prop {
+                name: "children",
+                ty: "ChildrenFn",
+                default: "",
+                description: "A trigger and a content.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "TooltipTrigger",
+        description: "What the tooltip describes.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the wrapper's classes.",
+            },
+            Prop {
+                name: "disabled",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Stops the tooltip opening at all.",
+            },
+            Prop {
+                name: "render",
+                ty: "Option<Callback<AnyNodeRef, AnyView>>",
+                default: "None",
+                description: "Render the trigger as something else — usually a `Button`. Forward the node ref.",
+            },
+            Prop {
+                name: "children",
+                ty: "Option<Children>",
+                default: "None",
+                description: "The element the tooltip is about.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "TooltipContent",
+        description: "The label itself, announced through the trigger's `aria-describedby`.",
+        props: &[
+            Prop {
+                name: "side",
+                ty: "Side",
+                default: "Side::Top",
+                description: "One of: Left, Right, Bottom, Top.",
+            },
+            Prop {
+                name: "align",
+                ty: "Align",
+                default: "Start",
+                description: "One of: Start, Center, End.",
+            },
+            Prop {
+                name: "side_offset",
+                ty: "SideOffset",
+                default: "SideOffset(6.0)",
+                description: "Distance from the trigger, in pixels.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the label's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "ChildrenFn",
+                default: "",
+                description: "The label text.",
+            },
+        ],
+    },
+];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -129,6 +234,8 @@ pub fn Page() -> impl IntoView {
                         </Tooltip> "."
                     </p>
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }

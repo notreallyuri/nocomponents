@@ -76,7 +76,7 @@ pub fn Page() -> impl IntoView {
                                 class="text-left justify-start"
                                 render=Callback::new(move |(class, _node_ref)| {
                                     view! {
-                                        <A href=href attr:class=class>
+                                        <A href=crate::app::href(href) attr:class=class>
                                             {label}
                                         </A>
                                     }

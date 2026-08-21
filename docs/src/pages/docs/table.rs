@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::components::{
     badge::{Badge, BadgeVariant},
@@ -76,6 +82,159 @@ const WIDE: &str = r#"<Table>
         </TableRow>
     </TableBody>
 </Table>"#;
+
+const API: &[ApiEntry] = &[
+    ApiEntry {
+        name: "Table",
+        description: "A table in its own horizontally scrolling box, so a wide one scrolls itself instead of stretching the page.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the table's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "A header, a body, and optionally a footer and a caption.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "TableHeader",
+        description: "The `<thead>`.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the header's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Usually one row of `TableHead` cells.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "TableBody",
+        description: "The `<tbody>`.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the body's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Rows.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "TableFooter",
+        description: "The `<tfoot>`, for totals.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the footer's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Usually one row.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "TableRow",
+        description: "One row, which can mark itself selected.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the row's classes.",
+            },
+            Prop {
+                name: "selected",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Renders `data-state=\"selected\"`, which the row styles itself from.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Cells.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "TableHead",
+        description: "A header cell. `scope` and `colspan` work as they do natively.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the cell's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Option<Children>",
+                default: "None",
+                description: "Optional: an empty cell — a checkbox column's header, a spacer — is a normal thing to want.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "TableCell",
+        description: "A body cell.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the cell's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Option<Children>",
+                default: "None",
+                description: "Optional: an empty cell — a checkbox column's header, a spacer — is a normal thing to want.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "TableCaption",
+        description: "The line under the table saying what it is.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the caption's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "The caption text.",
+            },
+        ],
+    },
+];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -244,6 +403,8 @@ pub fn Page() -> impl IntoView {
                         </TableBody>
                     </Table>
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }

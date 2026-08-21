@@ -106,14 +106,17 @@ both go behind their own feature flag rather than into `full`.
 - [ ] Adding a component means editing five files, two of which (`NAV`, `COMPONENTS`) are
       hand-maintained copies of the same list — which is how `/docs` came to be missing progress,
       skeleton and textarea. Drive routes, nav and the index from one const.
-- [ ] Prop tables: `button` and `dialog` have one, the other 45 pages do not. The rows are data
-      (`ApiEntry` / `Prop` in `docs/src/components/api_table.rs`), in the shape an extractor over
-      `#[component]` signatures could emit — write a few more by hand first, then generate them
-      rather than hand-maintaining 47 tables. The same metadata could drive `NAV` and `COMPONENTS`
-      and close the five-files item above.
-
-## Library packaging (needed before publishing)
-
+- [ ] A `/docs/types` page under Sections: the shared types the prop tables keep naming —
+      `Signal<String>`, `ChildrenFn`, the `render` callback shape, `Side` / `Align` /
+      `Orientation` / `SideOffset` — described once, so a table can point at them instead of
+      re-explaining them per component.
+- [x] Prop tables on all 47 component pages — 199 parts, one table each, under one API reference
+      heading. The rows were drafted by a script over the `#[component]` signatures (names, types,
+      defaults, and any prop that already carries a `///`) and the prose written per page.
+- [ ] Generate those rows at build time rather than keeping 199 hand-pasted tables in step. The
+      draft script in this session's scratchpad is the prototype; it wants to be an `xtask` or a
+      build script emitting the same `ApiEntry` shape, and it could drive `NAV` and `COMPONENTS`
+      too, closing the five-files item above.
 - [ ] `Cargo.toml` has no `description`, `license`, `repository`, `keywords` or `categories` —
       `cargo publish` will reject it as-is.
 - [ ] No LICENSE file, though the README credits shadcn/ui and Radix (both MIT).
@@ -130,5 +133,6 @@ both go behind their own feature flag rather than into `full`.
       would catch regressions in the floating and toast state machines.
 - [ ] Nothing installs a panic hook, so a panic in the docs app surfaces as
       `RuntimeError: unreachable` with no message. Three lines in `docs/src/main.rs`.
-- [ ] No CI. `cargo fmt --check`, `cargo clippy --features full` and `cargo check -p docs`
-      would cover today's checks (clippy is clean).
+- [x] CI in `.github/workflows/ci.yml`: `fmt --check`, `clippy --features full -D warnings`,
+      `check -p docs`, `test --features full`. `pages.yml` builds the docs site and deploys it to
+      GitHub Pages on every push to main — needs Settings → Pages → Source: GitHub Actions once.

@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::components::context_menu::{
     ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuLabel, ContextMenuPortal,
@@ -62,6 +68,79 @@ const SELECTION: &str = r#"<ContextMenu>
 </ContextMenu>"#;
 
 const AREA: &str = "flex h-32 items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground";
+
+const API: &[ApiEntry] = &[
+    ApiEntry {
+        name: "ContextMenu",
+        description: "A menu summoned by right-clicking a region, anchored to the pointer. Everything below the trigger is the dropdown menu's.",
+        props: &[Prop {
+            name: "children",
+            ty: "ChildrenFn",
+            default: "",
+            description: "A trigger and a portal.",
+        }],
+    },
+    ApiEntry {
+        name: "ContextMenuTrigger",
+        description: "The region that answers a right-click.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the region's classes.",
+            },
+            Prop {
+                name: "disabled",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Ignores the right-click entirely.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Whatever the menu is about.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "ContextMenuContent",
+        description: "The menu surface. Anchored to the click point, so it grows down and right with no offset.",
+        props: &[
+            Prop {
+                name: "side",
+                ty: "Side",
+                default: "Side::Bottom",
+                description: "One of: Left, Right, Bottom, Top.",
+            },
+            Prop {
+                name: "align",
+                ty: "Align",
+                default: "Align::Start",
+                description: "One of: Start, Center, End.",
+            },
+            Prop {
+                name: "side_offset",
+                ty: "SideOffset",
+                default: "SideOffset(0.0)",
+                description: "Distance from the pointer, in pixels.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the menu's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Items, labels and separators.",
+            },
+        ],
+    },
+];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -150,6 +229,8 @@ pub fn Page() -> impl IntoView {
                         </span>
                     </div>
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }

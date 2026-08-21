@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::components::{
     button::{Button, ButtonVariant},
@@ -104,6 +110,37 @@ const STACKING: &str = r#"<Button on:click=move |_| {
         .position(ToastPosition::BottomRight)
         .show();
 }>"Stack 3 toasts"</Button>"#;
+
+const API: &[ApiEntry] = &[ApiEntry {
+    name: "ToastProvider",
+    description: "Owns the queue and renders it. Wrap the app in one; toasts are pushed with `use_toast()`.",
+    props: &[
+        Prop {
+            name: "default_variant",
+            ty: "Option<ToastVariant>",
+            default: "None",
+            description: "What a toast looks like unless it says otherwise.",
+        },
+        Prop {
+            name: "default_size",
+            ty: "Option<ToastSize>",
+            default: "None",
+            description: "What size a toast is unless it says otherwise.",
+        },
+        Prop {
+            name: "default_position",
+            ty: "Option<ToastPosition>",
+            default: "None",
+            description: "Which corner they stack in unless a toast says otherwise.",
+        },
+        Prop {
+            name: "children",
+            ty: "Children",
+            default: "",
+            description: "The app.",
+        },
+    ],
+}];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -238,6 +275,8 @@ pub fn Page() -> impl IntoView {
                         }>"Stack 3 toasts"</Button>
                     </div>
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }

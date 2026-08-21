@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::components::badge::{Badge, BadgeVariant};
 
@@ -7,6 +13,31 @@ const VARIANTS: &str = r#"<Badge variant=BadgeVariant::Default>"Default"</Badge>
 <Badge variant=BadgeVariant::Outline>"Outline"</Badge>
 <Badge variant=BadgeVariant::Ghost>"Ghost"</Badge>
 <Badge variant=BadgeVariant::Destructive>"Destructive"</Badge>"#;
+
+const API: &[ApiEntry] = &[ApiEntry {
+    name: "Badge",
+    description: "A small label for a status or a count. Style-only.",
+    props: &[
+        Prop {
+            name: "variant",
+            ty: "BadgeVariant",
+            default: "Default",
+            description: "One of: Default, Secondary, Destructive, Outline, Ghost, Link.",
+        },
+        Prop {
+            name: "class",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "Merged over the variant's classes.",
+        },
+        Prop {
+            name: "children",
+            ty: "Children",
+            default: "",
+            description: "The label.",
+        },
+    ],
+}];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -26,6 +57,8 @@ pub fn Page() -> impl IntoView {
                         <Badge variant=BadgeVariant::Destructive>"Destructive"</Badge>
                     </div>
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }

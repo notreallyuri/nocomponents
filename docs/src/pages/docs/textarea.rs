@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::components::textarea::Textarea;
 
@@ -7,6 +13,49 @@ const DEFAULT: &str = r#"<Textarea />"#;
 const AUTO_RESIZE_MAX_HEIGHT_7_5REM: &str = r#"<Textarea auto_resize=true class="max-h-30" />"#;
 
 const AUTO_RESIZE_FREE_HEIGHT: &str = r#"<Textarea auto_resize=true />"#;
+
+const API: &[ApiEntry] = &[ApiEntry {
+    name: "Textarea",
+    description: "A multi-line text field.",
+    props: &[
+        Prop {
+            name: "class",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "Merged over the field's own classes.",
+        },
+        Prop {
+            name: "model",
+            ty: "Option<RwSignal<String>>",
+            default: "None",
+            description: "Two-way binding. Pass this or `value`, not both.",
+        },
+        Prop {
+            name: "value",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "One-way: the field shows it and never writes back.",
+        },
+        Prop {
+            name: "id",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "Overridden by an enclosing `Field`, which mints its own.",
+        },
+        Prop {
+            name: "disabled",
+            ty: "Signal<bool>",
+            default: "false",
+            description: "Stops it taking pointer events and marks it disabled.",
+        },
+        Prop {
+            name: "auto_resize",
+            ty: "bool",
+            default: "false",
+            description: "Grow with the text instead of scrolling, re-measured on every input.",
+        },
+    ],
+}];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -40,6 +89,8 @@ pub fn Page() -> impl IntoView {
                         <Textarea auto_resize=true />
                     </div>
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }

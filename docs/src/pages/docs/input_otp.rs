@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::{
     components::input_otp::{InputOtp, InputOtpGroup, InputOtpSeparator, InputOtpSlot},
@@ -59,6 +65,103 @@ const DISABLED: &str = r#"<InputOtp length=4 disabled=true value=locked>
         <InputOtpSlot index=3 />
     </InputOtpGroup>
 </InputOtp>"#;
+
+const API: &[ApiEntry] = &[
+    ApiEntry {
+        name: "InputOtp",
+        description: "A one-time code, typed a character at a time. One real input holds the whole value; the boxes are painted output.",
+        props: &[
+            Prop {
+                name: "length",
+                ty: "usize",
+                default: "6",
+                description: "How many characters the code has. The value is capped at it.",
+            },
+            Prop {
+                name: "pattern",
+                ty: "OtpPattern",
+                default: "Digits",
+                description: "One of: Digits, Alphanumeric, Any.",
+            },
+            Prop {
+                name: "disabled",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Stops it taking pointer events and marks it disabled.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the wrapper's classes.",
+            },
+            Prop {
+                name: "value",
+                ty: "Option<RwSignal<String>>",
+                default: "None",
+                description: "Omit for an uncontrolled field that owns its own value.",
+            },
+            Prop {
+                name: "on_complete",
+                ty: "Option<Callback<String>>",
+                default: "None",
+                description: "Called with the finished code once the last slot fills.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Groups, slots and separators.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "InputOtpGroup",
+        description: "A run of slots, so a code can be drawn as `123 456`.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the group's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Slots.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "InputOtpSlot",
+        description: "One box. Draws the character at its index, and its own caret while it is the live one.",
+        props: &[
+            Prop {
+                name: "index",
+                ty: "usize",
+                default: "0",
+                description: "Which character of the value this box shows.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the slot's classes.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "InputOtpSeparator",
+        description: "The mark between two groups. Hidden from assistive tech.",
+        props: &[Prop {
+            name: "class",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "Merged over the separator's classes.",
+        }],
+    },
+];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -177,6 +280,8 @@ pub fn Page() -> impl IntoView {
                         </InputOtpGroup>
                     </InputOtp>
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }

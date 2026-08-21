@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::components::{
     button::{Button, ButtonVariant},
@@ -24,6 +30,31 @@ const CONTROLLED: &str = r#"<Progress value=progress />
 >
     "Increase Progress"
 </Button>"#;
+
+const API: &[ApiEntry] = &[ApiEntry {
+    name: "Progress",
+    description: "How far along something is. `None` is indeterminate, and is announced as such.",
+    props: &[
+        Prop {
+            name: "value",
+            ty: "Signal<Option<f64>>",
+            default: "None",
+            description: "The current value, or `None` while it is not known.",
+        },
+        Prop {
+            name: "max",
+            ty: "Signal<f64>",
+            default: "100.0.into()",
+            description: "The value that counts as full.",
+        },
+        Prop {
+            name: "class",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "Merged over the track classes.",
+        },
+    ],
+}];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -76,6 +107,8 @@ pub fn Page() -> impl IntoView {
                         </Button>
                     </div>
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }

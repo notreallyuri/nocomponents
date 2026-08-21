@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::components::{
     avatar::{Avatar, AvatarFallback, AvatarImage},
@@ -60,6 +66,199 @@ const HEADER: &str = r#"<Item variant=ItemVariant::Outline>
         <ItemDescription>"Deployed 12 minutes ago by grace."</ItemDescription>
     </ItemContent>
 </Item>"#;
+
+const API: &[ApiEntry] = &[
+    ApiEntry {
+        name: "ItemGroup",
+        description: "Stacks items, with the spacing decided in one place.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the layout classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Items and separators.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "ItemSeparator",
+        description: "A rule between two items.",
+        props: &[Prop {
+            name: "class",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "Merged over the rule's classes.",
+        }],
+    },
+    ApiEntry {
+        name: "Item",
+        description: "A row: media on the left, text in the middle, actions on the right.",
+        props: &[
+            Prop {
+                name: "variant",
+                ty: "ItemVariant",
+                default: "Default",
+                description: "One of: Default, Outline, Muted.",
+            },
+            Prop {
+                name: "size",
+                ty: "ItemSize",
+                default: "Default",
+                description: "One of: Default, Sm.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the row's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Media, content, actions, and optionally a header and a footer.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "ItemMedia",
+        description: "The picture at the left: a tinted tile for an icon, or plain for an avatar.",
+        props: &[
+            Prop {
+                name: "variant",
+                ty: "ItemMediaVariant",
+                default: "Plain",
+                description: "One of: Plain, Icon.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the media's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "An icon, an avatar, a checkbox.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "ItemContent",
+        description: "The middle: title and description, taking the free space.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the layout classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Usually a title and a description.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "ItemTitle",
+        description: "The row's name.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the title's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "The title text.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "ItemDescription",
+        description: "The line under the title.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the muted text classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "The description text.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "ItemActions",
+        description: "The right-hand end, for controls.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the layout classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Usually buttons.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "ItemHeader",
+        description: "A full-width strip above the row's main line.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the strip's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Usually a label or a status.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "ItemFooter",
+        description: "The same, below.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the strip's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Usually a label or a status.",
+            },
+        ],
+    },
+];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -184,6 +383,8 @@ pub fn Page() -> impl IntoView {
                         </ItemContent>
                     </Item>
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }

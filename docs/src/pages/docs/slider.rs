@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::{components::slider::Slider, utils::types::Orientation};
 
@@ -24,6 +30,109 @@ const VERTICAL: &str = r#"<Slider
 />"#;
 
 const DISABLED: &str = r#"<Slider default_value=vec![30.0] disabled=true />"#;
+
+const API: &[ApiEntry] = &[
+    ApiEntry {
+        name: "Slider",
+        description: "A value chosen by dragging along a track. A range is the two-thumb case of the same component.",
+        props: &[
+            Prop {
+                name: "min",
+                ty: "f64",
+                default: "0.0",
+                description: "The value at the start of the track.",
+            },
+            Prop {
+                name: "max",
+                ty: "f64",
+                default: "100.0",
+                description: "The value at the end of the track.",
+            },
+            Prop {
+                name: "step",
+                ty: "f64",
+                default: "1.0",
+                description: "What the value snaps to, rounded at the step's own precision.",
+            },
+            Prop {
+                name: "orientation",
+                ty: "Orientation",
+                default: "Horizontal",
+                description: "One of: Horizontal, Vertical.",
+            },
+            Prop {
+                name: "disabled",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Stops it taking pointer events and marks it disabled.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the wrapper's classes.",
+            },
+            Prop {
+                name: "value",
+                ty: "Option<RwSignal<Vec<f64>>>",
+                default: "None",
+                description: "Omit for an uncontrolled slider. The length decides how many thumbs there are.",
+            },
+            Prop {
+                name: "default_value",
+                ty: "Option<Vec<f64>>",
+                default: "None",
+                description: "Where an uncontrolled slider starts. Its length decides how many thumbs there are.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SliderTrack",
+        description: "The groove the thumbs run along. A press on it moves the nearest thumb and picks it up.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the track's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "A range and one thumb per value.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SliderRange",
+        description: "The filled stretch: from the start to the only thumb, or between the outer two.",
+        props: &[Prop {
+            name: "class",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "Merged over the range's classes.",
+        }],
+    },
+    ApiEntry {
+        name: "SliderThumb",
+        description: "One handle. Announces its own bounds, which are its neighbours rather than the track's.",
+        props: &[
+            Prop {
+                name: "index",
+                ty: "usize",
+                default: "0",
+                description: "Which value this thumb owns.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the thumb's classes.",
+            },
+        ],
+    },
+];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -105,6 +214,8 @@ pub fn Page() -> impl IntoView {
                         <Slider default_value=vec![30.0] disabled=true />
                     </div>
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }

@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::{
     components::{
@@ -51,6 +57,195 @@ const CONTROLLED: &str = r#"<Button on_click=Callback::new(move |_| open.set(tru
         </SheetHeader>
     </SheetContent>
 </Sheet>"#;
+
+const API: &[ApiEntry] = &[
+    ApiEntry {
+        name: "Sheet",
+        description: "A dialog that arrives from an edge. The dialog's modality and focus trap, plus one `side`.",
+        props: &[
+            Prop {
+                name: "open",
+                ty: "Option<RwSignal<bool>>",
+                default: "None",
+                description: "Pass one to drive it from outside; omit it and the root owns the signal.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "A trigger and a content.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SheetTrigger",
+        description: "Opens it. A `Button` unless `render` says otherwise.",
+        props: &[
+            Prop {
+                name: "size",
+                ty: "ButtonSize",
+                default: "Default",
+                description: "One of: Xs, Sm, Default, Lg, Icon, IconSm, IconXs, IconLg.",
+            },
+            Prop {
+                name: "variant",
+                ty: "ButtonVariant",
+                default: "Default",
+                description: "One of: Default, Outline, Ghost, Secondary, Link, Destructive.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the button's own classes.",
+            },
+            Prop {
+                name: "disabled",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Rendered as the `disabled` attribute.",
+            },
+            Prop {
+                name: "render",
+                ty: "Option<Callback<Callback<ev::MouseEvent>, AnyView>>",
+                default: "None",
+                description: "Render the trigger as something else. Handed the click handler, which must reach the element.",
+            },
+            Prop {
+                name: "children",
+                ty: "Option<ChildrenFn>",
+                default: "None",
+                description: "The label.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SheetContent",
+        description: "The panel, pinned to an edge and sliding in from it.",
+        props: &[
+            Prop {
+                name: "side",
+                ty: "Side",
+                default: "Side::Right",
+                description: "One of: Left, Right, Bottom, Top.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the panel's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "ChildrenFn",
+                default: "",
+                description: "The panel's contents. Re-run on each mount, hence `ChildrenFn`.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SheetHeader",
+        description: "Stacks the title over the description, clear of the close button.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the layout classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Usually a title and a description.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SheetTitle",
+        description: "Claims the id the panel points `aria-labelledby` at.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the heading classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "The title text.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SheetDescription",
+        description: "Claims the id for `aria-describedby`.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the muted text classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "The description text.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SheetFooter",
+        description: "The actions, pushed to the bottom of the panel.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the layout classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Usually buttons.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SheetClose",
+        description: "A button that closes the sheet, for a footer's \"Cancel\" or \"Done\".",
+        props: &[
+            Prop {
+                name: "size",
+                ty: "ButtonSize",
+                default: "Default",
+                description: "One of: Xs, Sm, Default, Lg, Icon, IconSm, IconXs, IconLg.",
+            },
+            Prop {
+                name: "variant",
+                ty: "ButtonVariant",
+                default: "ButtonVariant::Outline",
+                description: "One of: Default, Outline, Ghost, Secondary, Link, Destructive.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the button's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "ChildrenFn",
+                default: "",
+                description: "The label.",
+            },
+        ],
+    },
+];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -165,6 +360,8 @@ pub fn Page() -> impl IntoView {
                         </Sheet>
                     </div>
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }

@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::{components::separator::Separator, utils::types::Orientation};
 
@@ -10,6 +16,31 @@ const VERTICAL: &str = r#""Docs" <Separator orientation=Orientation::Vertical />
 const SEMANTIC: &str = r#"<p class="text-sm">"Account settings"</p>
 <Separator decorative=false />
 <p class="text-sm">"Danger zone"</p>"#;
+
+const API: &[ApiEntry] = &[ApiEntry {
+    name: "Separator",
+    description: "A rule between things.",
+    props: &[
+        Prop {
+            name: "class",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "Merged over the rule's own classes.",
+        },
+        Prop {
+            name: "orientation",
+            ty: "Orientation",
+            default: "Horizontal",
+            description: "One of: Horizontal, Vertical.",
+        },
+        Prop {
+            name: "decorative",
+            ty: "bool",
+            default: "true",
+            description: "Hidden from assistive tech. Set false when the rule groups unrelated things rather than decorating.",
+        },
+    ],
+}];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -55,6 +86,8 @@ pub fn Page() -> impl IntoView {
                         <p class="text-sm">"Danger zone"</p>
                     </div>
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }

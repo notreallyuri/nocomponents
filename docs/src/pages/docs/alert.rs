@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::{
     components::alert::{Alert, AlertDescription, AlertTitle, AlertVariant},
@@ -28,6 +34,69 @@ const DESTRUCTIVE: &str = r#"<Alert variant=AlertVariant::Destructive>
 const TITLE_ONLY: &str = r#"<Alert>
     <AlertTitle>"A short, self-contained message."</AlertTitle>
 </Alert>"#;
+
+const API: &[ApiEntry] = &[
+    ApiEntry {
+        name: "Alert",
+        description: "A message about the page, not about what the reader just did.",
+        props: &[
+            Prop {
+                name: "variant",
+                ty: "AlertVariant",
+                default: "Default",
+                description: "One of: Default, Destructive.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the variant's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "An icon, a title and a description.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "AlertTitle",
+        description: "The one-line summary.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the heading classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "The heading text.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "AlertDescription",
+        description: "The detail under the title.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the muted text classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "The body text.",
+            },
+        ],
+    },
+];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -84,6 +153,8 @@ pub fn Page() -> impl IntoView {
                         <AlertTitle>"A short, self-contained message."</AlertTitle>
                     </Alert>
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }

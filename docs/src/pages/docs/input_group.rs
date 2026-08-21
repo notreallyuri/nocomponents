@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::{
     components::input_group::{
@@ -46,6 +52,189 @@ const DISABLED: &str = r#"<InputGroup>
     </InputGroupAddon>
     <InputGroupInput value="0.00" disabled=true />
 </InputGroup>"#;
+
+const API: &[ApiEntry] = &[
+    ApiEntry {
+        name: "InputGroup",
+        description: "An input and its trimmings behaving as one field: the border moves off the control and onto the box, and clicking the box's chrome lands in the control.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the box's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "A control and its addons.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "InputGroupAddon",
+        description: "An icon, a unit, a button — whatever shares the field with the control.",
+        props: &[
+            Prop {
+                name: "align",
+                ty: "InputGroupAlign",
+                default: "InlineStart",
+                description: "One of: InlineStart, InlineEnd, BlockStart, BlockEnd.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the addon's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "The addon's contents.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "InputGroupInput",
+        description: "The control, stripped of the chrome the group now draws.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the control's classes.",
+            },
+            Prop {
+                name: "input_type",
+                ty: "InputType",
+                default: "Text",
+                description: "One of: Text, Email, Password, Number, File.",
+            },
+            Prop {
+                name: "model",
+                ty: "Option<RwSignal<String>>",
+                default: "None",
+                description: "Two-way binding. Pass this or `value`, not both.",
+            },
+            Prop {
+                name: "value",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "One-way: the field shows it and never writes back.",
+            },
+            Prop {
+                name: "id",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Overridden by an enclosing `Field`, which mints its own.",
+            },
+            Prop {
+                name: "disabled",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Stops it taking pointer events and marks it disabled.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "InputGroupTextarea",
+        description: "The same, for the block-aligned groups where the control needs more than one line.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the control's classes.",
+            },
+            Prop {
+                name: "model",
+                ty: "Option<RwSignal<String>>",
+                default: "None",
+                description: "Two-way binding. Pass this or `value`, not both.",
+            },
+            Prop {
+                name: "value",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "One-way: the field shows it and never writes back.",
+            },
+            Prop {
+                name: "id",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Overridden by an enclosing `Field`, which mints its own.",
+            },
+            Prop {
+                name: "disabled",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Stops it taking pointer events and marks it disabled.",
+            },
+            Prop {
+                name: "auto_resize",
+                ty: "bool",
+                default: "false",
+                description: "Grow with the text instead of scrolling.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "InputGroupText",
+        description: "Text that belongs to the field but is not part of its value: a unit, a character count.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the text's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "The text.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "InputGroupButton",
+        description: "A button sized to sit inside the field rather than beside it.",
+        props: &[
+            Prop {
+                name: "variant",
+                ty: "ButtonVariant",
+                default: "ButtonVariant::Ghost",
+                description: "One of: Default, Outline, Ghost, Secondary, Link, Destructive.",
+            },
+            Prop {
+                name: "size",
+                ty: "ButtonSize",
+                default: "ButtonSize::Xs",
+                description: "One of: Xs, Sm, Default, Lg, Icon, IconSm, IconXs, IconLg.",
+            },
+            Prop {
+                name: "on_click",
+                ty: "Option<Callback<ev::MouseEvent>>",
+                default: "None",
+                description: "Called on press. The group leaves the click alone, so it reaches the button.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the button's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "ChildrenFn",
+                default: "",
+                description: "The label, usually an icon.",
+            },
+        ],
+    },
+];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -145,6 +334,8 @@ pub fn Page() -> impl IntoView {
                         </InputGroup>
                     </div>
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }

@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::{
     components::{
@@ -59,6 +65,117 @@ const DISABLED: &str = r#"<Field disabled=true>
     <Input value="acme-corp" />
     <FieldDescription>"Slugs cannot be changed after creation."</FieldDescription>
 </Field>"#;
+
+const API: &[ApiEntry] = &[
+    ApiEntry {
+        name: "Field",
+        description: "A control with its label, description and error, wired together: the label's `for`, the control's `aria-describedby` and the invalid state all come from here.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the layout classes.",
+            },
+            Prop {
+                name: "orientation",
+                ty: "Orientation",
+                default: "Orientation::Vertical",
+                description: "One of: Horizontal, Vertical.",
+            },
+            Prop {
+                name: "invalid",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Marks the control invalid and lets the error render.",
+            },
+            Prop {
+                name: "disabled",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Disables the control inside it, and greys the parts.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "A label, a control, and optionally a description and an error.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "FieldLabel",
+        description: "The control's name. Its `for` is filled in, so no id has to be invented.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the label's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "The label text.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "FieldDescription",
+        description: "The hint under the control, announced through `aria-describedby`.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the muted text classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "The hint text.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "FieldError",
+        description: "Shown only while the field is invalid; see `FieldErrorRoot`.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the error's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "ChildrenFn",
+                default: "",
+                description: "The message. Re-run on each mount, hence `ChildrenFn`.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "FieldGroup",
+        description: "Stacks fields into a form. Style-only and contextless: unrelated fields should not pretend to be a `<fieldset>`.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the layout classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Fields.",
+            },
+        ],
+    },
+];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -163,6 +280,8 @@ pub fn Page() -> impl IntoView {
                         </Field>
                     </div>
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }

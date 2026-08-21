@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::components::{checkbox::Checkbox, label::Label};
 
@@ -44,6 +50,37 @@ const DISABLED: &str = r#"{
         </div>
     }
 }"#;
+
+const API: &[ApiEntry] = &[ApiEntry {
+    name: "Checkbox",
+    description: "A box that is ticked or not. Renders a real checkbox role, not a styled input.",
+    props: &[
+        Prop {
+            name: "class",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "Merged over the box's own classes.",
+        },
+        Prop {
+            name: "checked",
+            ty: "RwSignal<bool>",
+            default: "",
+            description: "The state, read and written. Required: the checkbox does not own it.",
+        },
+        Prop {
+            name: "disabled",
+            ty: "Signal<bool>",
+            default: "false",
+            description: "Stops it taking pointer events and marks it disabled.",
+        },
+        Prop {
+            name: "id",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "Given to the control, so a `Label` can point `for` at it. Inside a `Field` this is filled in.",
+        },
+    ],
+}];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -115,6 +152,8 @@ pub fn Page() -> impl IntoView {
                         }
                     </div>
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }
