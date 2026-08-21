@@ -74,6 +74,10 @@ pub fn use_drawer() -> DrawerContext {
 pub fn DrawerRoot(
     #[prop(default = Side::Bottom)] side: Side,
     #[prop(default = None, into)] open: Option<RwSignal<bool>>,
+    /// Non-modal leaves the page usable underneath: no overlay, no focus trap, and a pointer
+    /// landing outside closes the drawer instead of being swallowed.
+    #[prop(default = true)]
+    modal: bool,
     children: Children,
 ) -> impl IntoView {
     let context = DrawerContext {
@@ -83,11 +87,16 @@ pub fn DrawerRoot(
     };
 
     view! {
-        <DialogRoot open=open>
+        <DialogRoot open=open modal=modal>
             <Provider value=context>{children()}</Provider>
         </DialogRoot>
     }
 }
+
+/// Anything that owns the press already. Dragging a panel by its own buttons is not a gesture
+/// anybody makes on purpose, and starting one means a press that drifts a few pixels drags the
+/// whole drawer while the user is only trying to click.
+const INTERACTIVE: &str = "button, a, input, textarea, select, [role='button'], [contenteditable]";
 
 /// Whether the press landed inside something already scrolled away from its start, in which case
 /// the gesture belongs to that scroller and not to the drawer.
@@ -163,7 +172,8 @@ pub fn DrawerContentRoot(
 
         if let Some(target) = e.target()
             && let Ok(target) = target.dyn_into::<Element>()
-            && press_is_inside_scrolled_content(&target, &panel, ctx.is_vertical())
+            && (matches!(target.closest(INTERACTIVE), Ok(Some(_)))
+                || press_is_inside_scrolled_content(&target, &panel, ctx.is_vertical()))
         {
             return;
         }

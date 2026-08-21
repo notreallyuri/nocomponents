@@ -14,6 +14,17 @@ pub struct DialogContext {
     pub is_open: RwSignal<bool>,
     pub is_mounted: RwSignal<bool>,
 
+    /// Whether this dialog takes the page. A modal one traps focus, announces `aria-modal`, and is
+    /// only dismissed through its own overlay; a non-modal one leaves the page usable underneath
+    /// and closes when a pointer lands outside it.
+    pub modal: bool,
+
+    /// The panel and the button that opened it. Only a non-modal dialog needs them — a modal one
+    /// is dismissed through its overlay — but they are minted here so the root can hand them to
+    /// the dismissable layer, which is set up long before the content mounts.
+    pub content_ref: AnyNodeRef,
+    pub trigger_ref: AnyNodeRef,
+
     /// Ids of the title and description, empty until those parts render. The content points at
     /// whichever of them exist, so a dialog without a description does not claim to have one.
     pub title_id: RwSignal<String>,
@@ -37,12 +48,19 @@ pub fn use_dialog() -> DialogContext {
 pub fn DialogRoot(
     #[prop(default = 150, into)] unmount_delay: u64,
     #[prop(default = None, into)] open: Option<RwSignal<bool>>,
+    /// Non-modal leaves the page interactive underneath. Defaults to modal, which is what a
+    /// dialog, a sheet and an alert dialog all want.
+    #[prop(default = true)]
+    modal: bool,
     children: Children,
 ) -> impl IntoView {
     let is_open = open.unwrap_or_else(|| RwSignal::new(false));
     let is_mounted = RwSignal::new(is_open.get_untracked());
 
     let context = DialogContext {
+        modal,
+        content_ref: AnyNodeRef::new(),
+        trigger_ref: AnyNodeRef::new(),
         is_open,
         is_mounted,
         title_id: RwSignal::new(String::new()),
@@ -97,9 +115,15 @@ pub fn DialogRoot(
 
     on_cleanup(cancel_unmount);
 
-    use_dismissable_layer(context.is_open, LayerBounds::modal(), move || {
-        context.close()
-    });
+    // A modal layer swallows outside pointerdowns and is dismissed through its own overlay; a
+    // non-modal one has no overlay to click, so the bounds are what tell it apart from outside.
+    let bounds = if modal {
+        LayerBounds::modal()
+    } else {
+        LayerBounds::new(context.content_ref, context.trigger_ref)
+    };
+
+    use_dismissable_layer(context.is_open, bounds, move || context.close());
 
     // Must be a `Provider` rather than a bare `provide_context`: `DialogPortalRoot` mounts its
     // children through leptos' `Portal`, which renders under an owner of its own. A context
@@ -146,7 +170,13 @@ pub fn DialogTriggerRoot(
     match as_child {
         Some(render_fn) => Either::Left(render_fn.run(on_click)),
         None => Either::Right(view! {
-            <button type="button" class=class disabled=disabled on:click=move |_| ctx.toggle()>
+            <button
+                type="button"
+                node_ref=ctx.trigger_ref
+                class=class
+                disabled=disabled
+                on:click=move |_| ctx.toggle()
+            >
                 {match children {
                     Some(child) => Either::Left(child()),
                     None => Either::Right(""),
@@ -161,9 +191,13 @@ pub fn DialogPortalRoot(children: ChildrenFn) -> impl IntoView {
     let context = use_dialog();
     let stored_children = StoredValue::new(children);
 
+    // Only a modal dialog freezes the page behind it. A non-modal one exists precisely so the
+    // page stays usable, and locking its scroll would take that back.
     Effect::new(move |_| {
         let is_open = context.is_open.get();
-        if let Some(body) = document().body() {
+        if context.modal
+            && let Some(body) = document().body()
+        {
             if is_open {
                 let _ = body.style().set_property("overflow", "hidden");
             } else {
@@ -173,7 +207,9 @@ pub fn DialogPortalRoot(children: ChildrenFn) -> impl IntoView {
     });
 
     on_cleanup(move || {
-        if let Some(body) = document().body() {
+        if context.modal
+            && let Some(body) = document().body()
+        {
             let _ = body.style().remove_property("overflow");
         }
     });
@@ -197,10 +233,11 @@ pub fn DialogContentRoot(
     children: Children,
 ) -> impl IntoView {
     let ctx = use_dialog();
-    let content_ref = AnyNodeRef::new();
+    let content_ref = ctx.content_ref;
 
     let focus_trap = move |e: ev::KeyboardEvent| {
-        if !ctx.is_open.get() {
+        // A non-modal dialog must not hold Tab: the page underneath is still the user's.
+        if !ctx.is_open.get() || !ctx.modal {
             return;
         }
 
@@ -266,7 +303,7 @@ pub fn DialogContentRoot(
             class=class
             style=style
             role="dialog"
-            aria-modal="true"
+            aria-modal=move || ctx.modal.then_some("true")
             aria-labelledby=move || Some(ctx.title_id.get()).filter(|id| !id.is_empty())
             aria-describedby=move || Some(ctx.description_id.get()).filter(|id| !id.is_empty())
             data-state=move || if ctx.is_open.get() { "open" } else { "closed" }

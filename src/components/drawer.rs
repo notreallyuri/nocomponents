@@ -41,10 +41,15 @@ impl AsClass for DrawerSide {
 pub fn Drawer(
     #[prop(default = Side::Bottom)] side: Side,
     #[prop(default = None, into)] open: Option<RwSignal<bool>>,
+    /// Non-modal leaves the page usable underneath: no overlay, no focus trap, and a pointer
+    /// landing outside closes the drawer. Set here only — `DrawerContent` reads it from context,
+    /// so the two halves cannot disagree.
+    #[prop(default = true)]
+    modal: bool,
     children: Children,
 ) -> impl IntoView {
     view! {
-        <DrawerRoot side=side open=open>
+        <DrawerRoot side=side open=open modal=modal>
             {children()}
         </DrawerRoot>
     }
@@ -61,17 +66,23 @@ pub fn DrawerContent(
     children: ChildrenFn,
 ) -> impl IntoView {
     let ctx = use_dialog();
+    let modal = ctx.modal;
     let stored_children = StoredValue::new(children);
     let side_class = DrawerSide(side).as_class();
 
     view! {
         <DialogPortalRoot>
             <div data-slot="drawer-portal">
-                <div
-                    data-state=move || if ctx.is_open.get() { "open" } else { "closed" }
-                    class="fixed inset-0 isolate z-50 bg-black/40 duration-100 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:pointer-events-none"
-                    on:click=move |_| ctx.close()
-                />
+                {modal
+                    .then(|| {
+                        view! {
+                            <div
+                                data-state=move || if ctx.is_open.get() { "open" } else { "closed" }
+                                class="fixed inset-0 isolate z-50 bg-black/40 duration-100 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:pointer-events-none"
+                                on:click=move |_| ctx.close()
+                            />
+                        }
+                    })}
 
                 <DrawerContentRoot class=move || {
                     cn!(

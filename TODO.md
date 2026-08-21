@@ -239,9 +239,13 @@ afternoon and closes obvious holes in the current set.
       edge to reveal; a flick dismisses as surely as a haul, because throwing something away is not
       the same gesture as placing it. Velocity is sampled *between* moves — measured at release it
       always reads zero — and is signed, so a quick shove back toward the edge does not dismiss. A
-      press landing in something already scrolled belongs to that scroller. On dismissal the offset
-      carries on to fully closed rather than resetting, which would snap the panel back before
-      sliding it out.
+      press landing in something already scrolled — or on a button, which owns its own press —
+      belongs to that, not to the drawer. On dismissal the offset carries on to fully closed rather
+      than resetting, which would snap the panel back before sliding it out. Nests: each drawer has
+      its own dialog context, so Escape unwinds one layer at a time and dragging the inner panel
+      leaves the outer one alone. `modal=false` drops the overlay, the focus trap, the scroll lock
+      and `aria-modal`, and lets an outside pointer close it — the flags live on `DialogRoot`, so
+      `Dialog`, `Sheet` and `AlertDialog` can take the same treatment when they want it.
 - [x] Hover Card — `src/primitives/hover_card.rs`, the tooltip's hover-intent shape with the one
       difference that changes everything: the content is interactive, so the pointer has to be able
       to leave the trigger and enter the card without it closing. Trigger *and* content both cancel

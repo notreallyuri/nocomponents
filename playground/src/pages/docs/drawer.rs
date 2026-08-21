@@ -35,6 +35,38 @@ const SIDES: &str = r#"// Any edge. The drag axis and its direction follow the s
     </DrawerContent>
 </Drawer>"#;
 
+const NESTED: &str = r#"// A drawer inside a drawer. Each has its own dialog context, so the
+// layer stack unwinds one Escape at a time and dragging the inner
+// panel leaves the outer where it is.
+<Drawer>
+    <DrawerTrigger>"Open outer"</DrawerTrigger>
+    <DrawerContent>
+        <DrawerHeader>
+            <DrawerTitle>"Choose a project"</DrawerTitle>
+        </DrawerHeader>
+        <Drawer>
+            <DrawerTrigger>"New project"</DrawerTrigger>
+            <DrawerContent>
+                <DrawerHeader>
+                    <DrawerTitle>"New project"</DrawerTitle>
+                </DrawerHeader>
+            </DrawerContent>
+        </Drawer>
+    </DrawerContent>
+</Drawer>"#;
+
+const NON_MODAL: &str = r#"// No overlay, no focus trap, and the page underneath stays usable.
+// A pointer landing outside closes it, since there is no overlay to
+// click. Set it once on the root; the content reads it from context.
+<Drawer modal=false>
+    <DrawerTrigger>"Open non-modal"</DrawerTrigger>
+    <DrawerContent>
+        <DrawerHeader>
+            <DrawerTitle>"Now playing"</DrawerTitle>
+        </DrawerHeader>
+    </DrawerContent>
+</Drawer>"#;
+
 const SCROLLING: &str = r#"// A press that lands in something already scrolled belongs to that
 // scroller, so the list scrolls instead of the drawer leaving. Scroll
 // back to the top and the drag dismisses again.
@@ -117,6 +149,62 @@ pub fn Page() -> impl IntoView {
                             </DrawerContent>
                         </Drawer>
                     </div>
+                </DemoSection>
+
+                <DemoSection
+                    title="Nested"
+                    description="A drawer opened from inside another. Each has its own dialog context, so Escape unwinds them one at a time and dragging the inner panel leaves the outer one where it is."
+                    code=NESTED
+                >
+                    <Drawer>
+                        <DrawerTrigger class="rounded-lg border border-border px-3 py-1.5 text-sm">
+                            "Open outer"
+                        </DrawerTrigger>
+                        <DrawerContent>
+                            <DrawerHeader>
+                                <DrawerTitle>"Choose a project"</DrawerTitle>
+                                <DrawerDescription>
+                                    "Opening the inner drawer stacks a second layer on this one."
+                                </DrawerDescription>
+                            </DrawerHeader>
+                            <Drawer>
+                                <DrawerTrigger class="w-full rounded-lg border border-border px-3 py-1.5 text-sm">
+                                    "New project"
+                                </DrawerTrigger>
+                                <DrawerContent>
+                                    <DrawerHeader>
+                                        <DrawerTitle>"New project"</DrawerTitle>
+                                        <DrawerDescription>
+                                            "Escape closes this one and leaves the one behind it open."
+                                        </DrawerDescription>
+                                    </DrawerHeader>
+                                    <DrawerFooter>
+                                        <DrawerClose>"Back"</DrawerClose>
+                                    </DrawerFooter>
+                                </DrawerContent>
+                            </Drawer>
+                        </DrawerContent>
+                    </Drawer>
+                </DemoSection>
+
+                <DemoSection
+                    title="Non-modal"
+                    description="No overlay, no focus trap, and the page underneath stays usable — scroll it, click it, tab through it. A pointer landing outside closes the drawer, since there is no overlay to catch it."
+                    code=NON_MODAL
+                >
+                    <Drawer modal=false>
+                        <DrawerTrigger class="rounded-lg border border-border px-3 py-1.5 text-sm">
+                            "Open non-modal"
+                        </DrawerTrigger>
+                        <DrawerContent>
+                            <DrawerHeader>
+                                <DrawerTitle>"Now playing"</DrawerTitle>
+                                <DrawerDescription>
+                                    "Keep reading the page behind this — it is still yours."
+                                </DrawerDescription>
+                            </DrawerHeader>
+                        </DrawerContent>
+                    </Drawer>
                 </DemoSection>
 
                 <DemoSection
