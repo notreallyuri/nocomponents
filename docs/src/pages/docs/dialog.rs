@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::components::{
     button::{Button, ButtonVariant},
@@ -77,6 +83,160 @@ const CONTROLLED: &str = r#"{
         </div>
     }
 }"#;
+
+/// Read off the `#[component]` signatures in `src/components/dialog.rs`, in declaration order.
+const API: &[ApiEntry] = &[
+    ApiEntry {
+        name: "Dialog",
+        description: "The root. Owns the open state and provides it to every part below.",
+        props: &[
+            Prop {
+                name: "open",
+                ty: "Option<RwSignal<bool>>",
+                default: "None",
+                description: "Pass one to drive the dialog from outside; omit it and the root owns the signal.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "The trigger and the portal.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "DialogTrigger",
+        description: "Opens it. A `Button` unless `render` says otherwise.",
+        props: &[
+            Prop {
+                name: "variant",
+                ty: "ButtonVariant",
+                default: "Default",
+                description: "Forwarded to the underlying `Button`.",
+            },
+            Prop {
+                name: "size",
+                ty: "ButtonSize",
+                default: "Default",
+                description: "Forwarded to the underlying `Button`.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the button's own classes.",
+            },
+            Prop {
+                name: "disabled",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Rendered as the `disabled` attribute.",
+            },
+            Prop {
+                name: "render",
+                ty: "Option<Callback<Callback<MouseEvent>, AnyView>>",
+                default: "None",
+                description: "Render the trigger as something else. Handed the click handler, which must reach the element.",
+            },
+            Prop {
+                name: "children",
+                ty: "Option<ChildrenFn>",
+                default: "None",
+                description: "The label.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "DialogPortal",
+        description: "The overlay and the panel, rendered at the end of the document. Stays mounted for 150ms after closing so the exit animation can run.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged onto the panel, not the overlay.",
+            },
+            Prop {
+                name: "children",
+                ty: "ChildrenFn",
+                default: "",
+                description: "The panel's contents. Re-run on each mount, hence `ChildrenFn`.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "DialogHeader",
+        description: "Stacks the title over the description, clear of the close button.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the layout classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Usually a title and a description.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "DialogTitle",
+        description: "Claims the id the panel points `aria-labelledby` at, so it is what the dialog is announced as.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the heading classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "The title text.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "DialogDescription",
+        description: "Claims the id for `aria-describedby`. Leave it out and the dialog does not claim to have one.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the muted text classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "The description text.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "DialogFooter",
+        description: "The actions, reversed into a column on a narrow viewport so the primary one is nearest the thumb.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the layout classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Usually buttons.",
+            },
+        ],
+    },
+];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -171,6 +331,8 @@ pub fn Page() -> impl IntoView {
                         }
                     }
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }
