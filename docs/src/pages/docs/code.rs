@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::{
     components::code::{Code, CodeBlock},
@@ -62,6 +68,73 @@ const IN_DEMO: &str = r##"<DemoSection
 >
     <Toggle>"Default"</Toggle>
 </DemoSection>"##;
+
+const API: &[ApiEntry] = &[
+    ApiEntry {
+        name: "Code",
+        description: "Inline code, for a symbol or a fragment mentioned in running text.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the inline code classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "The symbol or fragment.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "CodeBlock",
+        description: "A block of code with an optional filename header and a copy button.",
+        props: &[
+            Prop {
+                name: "code",
+                ty: "String",
+                default: "",
+                description: "The snippet, rendered as it is written.",
+            },
+            Prop {
+                name: "label",
+                ty: "Option<String>",
+                default: "None",
+                description: "Shown in the header — usually a file name or a short caption.",
+            },
+            Prop {
+                name: "language",
+                ty: "Language",
+                default: "Rust",
+                description: "One of: Rust, Shell, JavaScript, TypeScript, Html, Css, Plain.",
+            },
+            Prop {
+                name: "copyable",
+                ty: "bool",
+                default: "true",
+                description: "Draw the copy button.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the block's classes.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "CodeCopyButton",
+        description: "The copy trigger for the enclosing block. Swaps to a check for a moment after copying.",
+        props: &[Prop {
+            name: "class",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "Merged over the button's classes.",
+        }],
+    },
+];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -144,6 +217,8 @@ pub fn Page() -> impl IntoView {
                         "The snippet under each demo on these pages comes from that prop."
                     </p>
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }

@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::{
     components::sidebar::{
@@ -179,6 +185,521 @@ fn Body(#[prop(default = "Overview")] title: &'static str) -> impl IntoView {
     }
 }
 
+const API: &[ApiEntry] = &[
+    ApiEntry {
+        name: "SidebarProvider",
+        description: "Owns the state and provides it to every part below: the wide-viewport open state, which is persisted, and the narrow one, which is not.",
+        props: &[
+            Prop {
+                name: "side",
+                ty: "Side",
+                default: "Side::Left",
+                description: "One of: Left, Right, Bottom, Top.",
+            },
+            Prop {
+                name: "collapsible",
+                ty: "SidebarCollapsible",
+                default: "OffCanvas",
+                description: "One of: OffCanvas, Icon, None.",
+            },
+            Prop {
+                name: "open",
+                ty: "Option<RwSignal<bool>>",
+                default: "None",
+                description: "Pass one to drive it from outside. A controlled sidebar is not persisted.",
+            },
+            Prop {
+                name: "default_open",
+                ty: "bool",
+                default: "true",
+                description: "Where an uncontrolled sidebar starts, before local storage has anything to say.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the wrapper's classes.",
+            },
+            Prop {
+                name: "style",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Added to the wrapper's own custom properties, for overriding the widths.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "A sidebar and an inset.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "Sidebar",
+        description: "The panel. Two boxes on a wide viewport — one reserving the width, one fixed — and a sheet on a narrow one.",
+        props: &[
+            Prop {
+                name: "variant",
+                ty: "SidebarVariant",
+                default: "Sidebar",
+                description: "One of: Sidebar, Floating, Inset.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the container's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "ChildrenFn",
+                default: "",
+                description: "A header, content, a footer and a rail. Re-run on each mount, hence `ChildrenFn`.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SidebarInset",
+        description: "The page beside the sidebar; takes the room the sidebar is not using.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the layout classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "The page.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SidebarTrigger",
+        description: "The button that opens and closes it.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the button's classes.",
+            },
+            Prop {
+                name: "disabled",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Rendered as the `disabled` attribute.",
+            },
+            Prop {
+                name: "children",
+                ty: "Option<Children>",
+                default: "None",
+                description: "Defaults to a panel icon and a screen-reader label.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SidebarRail",
+        description: "The strip along the panel's inner edge, which toggles it. Out of the tab order, since the trigger is already in it.",
+        props: &[Prop {
+            name: "class",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "Merged over the rail's classes.",
+        }],
+    },
+    ApiEntry {
+        name: "SidebarHeader",
+        description: "The top of the panel, above the scrolling part.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the layout classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Usually a logo or a search box.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SidebarFooter",
+        description: "The bottom of the panel, below the scrolling part.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the layout classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Usually an account row.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SidebarContent",
+        description: "Everything between the header and the footer; the part that scrolls.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the layout classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Groups.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SidebarSeparator",
+        description: "A rule across the panel, inset from its edges.",
+        props: &[Prop {
+            name: "class",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "Merged over the rule's classes.",
+        }],
+    },
+    ApiEntry {
+        name: "SidebarInput",
+        description: "A search box sized for the sidebar's header.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the control's classes.",
+            },
+            Prop {
+                name: "model",
+                ty: "Option<RwSignal<String>>",
+                default: "None",
+                description: "Two-way binding.",
+            },
+            Prop {
+                name: "placeholder",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Shown while it is empty.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SidebarGroup",
+        description: "A section of the menu, with its own label and action.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the layout classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "A label, an action and a content.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SidebarGroupLabel",
+        description: "The heading over a group; folds away when the sidebar collapses to icons.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the heading classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "The heading text.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SidebarGroupAction",
+        description: "A button in a group's top-right corner.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the button's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Usually an icon.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SidebarGroupContent",
+        description: "The group's body.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the layout classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Usually a menu.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SidebarMenu",
+        description: "The list of rows.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the list's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Items.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SidebarMenuItem",
+        description: "One row and whatever hangs off it: an action, a badge, a sub-list.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the item's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "A button, and optionally an action, a badge or a sub-menu.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SidebarMenuButton",
+        description: "A row in the menu: the icon, the label and the current-page state. `tooltip` stands in for the label once the sidebar is collapsed to icons, and is rendered only in that state.",
+        props: &[
+            Prop {
+                name: "active",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "The current page's row. Announced with `aria-current`, not just painted.",
+            },
+            Prop {
+                name: "size",
+                ty: "SidebarMenuSize",
+                default: "Default",
+                description: "One of: Default, Sm, Lg.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the row's classes.",
+            },
+            Prop {
+                name: "disabled",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Stops it taking pointer events and marks it disabled.",
+            },
+            Prop {
+                name: "tooltip",
+                ty: "Option<Signal<String>>",
+                default: "None",
+                description: "Stands in for the label once the sidebar is collapsed to icons, and is rendered only then.",
+            },
+            Prop {
+                name: "render",
+                ty: "Option<Callback<(Signal<String>, AnyNodeRef), AnyView>>",
+                default: "None",
+                description: "Render the row as something else — usually an `<a>`. Handed the row's class and the node ref its state attributes go on.",
+            },
+            Prop {
+                name: "children",
+                ty: "Option<ChildrenFn>",
+                default: "None",
+                description: "An icon and a label.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SidebarMenuAction",
+        description: "A second control on a menu row: a \"more\" menu, a dismiss.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the button's classes.",
+            },
+            Prop {
+                name: "show_on_hover",
+                ty: "bool",
+                default: "false",
+                description: "Keep it hidden until the row is hovered or focused.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Usually an icon.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SidebarMenuBadge",
+        description: "A count on a menu row; not interactive, so it never takes the row's click.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the badge's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Usually a number.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SidebarMenuSkeleton",
+        description: "A placeholder row, for a menu that is still loading.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the row's classes.",
+            },
+            Prop {
+                name: "show_icon",
+                ty: "bool",
+                default: "true",
+                description: "Draw a square where the icon will be.",
+            },
+            Prop {
+                name: "width",
+                ty: "u32",
+                default: "70",
+                description: "Width of the text bar, as a percentage; vary it across a list.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SidebarMenuSub",
+        description: "The nested list under an expanded row.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the list's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Sub-items.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SidebarMenuSubItem",
+        description: "One row of the nested list.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the item's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Usually a sub-button.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SidebarMenuSubButton",
+        description: "A row in the nested list, shorter than a top-level one.",
+        props: &[
+            Prop {
+                name: "active",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "The current page's row.",
+            },
+            Prop {
+                name: "size",
+                ty: "SidebarMenuSize",
+                default: "SidebarMenuSize::Default",
+                description: "One of: Default, Sm, Lg.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the row's classes.",
+            },
+            Prop {
+                name: "disabled",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Stops it taking pointer events and marks it disabled.",
+            },
+            Prop {
+                name: "render",
+                ty: "Option<Callback<(Signal<String>, AnyNodeRef), AnyView>>",
+                default: "None",
+                description: "Render the row as something else — usually an `<a>`.",
+            },
+            Prop {
+                name: "children",
+                ty: "Option<ChildrenFn>",
+                default: "None",
+                description: "The label.",
+            },
+        ],
+    },
+];
+
 #[component]
 pub fn Page() -> impl IntoView {
     // Controlled, so the demos do not all write the one stored preference between them.
@@ -353,6 +874,8 @@ pub fn Page() -> impl IntoView {
                         </SidebarProvider>
                     </Frame>
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }

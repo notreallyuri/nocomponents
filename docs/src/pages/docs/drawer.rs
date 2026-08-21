@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::{
     components::{
@@ -100,6 +106,91 @@ const SCROLLING: &str = r#"// A press that lands in something already scrolled b
         // ...a long list...
     </ScrollArea>
 </DrawerContent>"#;
+
+const API: &[ApiEntry] = &[
+    ApiEntry {
+        name: "Drawer",
+        description: "A sheet you can throw away with your thumb: drag it toward its edge and let go.",
+        props: &[
+            Prop {
+                name: "side",
+                ty: "Side",
+                default: "Side::Bottom",
+                description: "One of: Left, Right, Bottom, Top.",
+            },
+            Prop {
+                name: "open",
+                ty: "Option<RwSignal<bool>>",
+                default: "None",
+                description: "Pass one to drive it from outside; omit it and the root owns the signal.",
+            },
+            Prop {
+                name: "modal",
+                ty: "bool",
+                default: "true",
+                description: "Non-modal leaves the page usable underneath: no overlay, no focus trap, and an outside pointer closes the drawer. Set here only; the content reads it from context.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "A trigger and a content.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "DrawerContent",
+        description: "The panel. Dragging it moves it; releasing past a quarter of its length, or at speed, dismisses it.",
+        props: &[
+            Prop {
+                name: "handle",
+                ty: "bool",
+                default: "true",
+                description: "Draw the grab bar. On by default: a drawer that does not look draggable will not be.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the panel's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "ChildrenFn",
+                default: "",
+                description: "The panel's contents. Re-run on each mount, hence `ChildrenFn`.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "DrawerHandle",
+        description: "The grab bar. Rendered by `DrawerContent` unless `handle=false`, so it is rarely written by hand.",
+        props: &[Prop {
+            name: "class",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "Merged over the handle's classes.",
+        }],
+    },
+    ApiEntry {
+        name: "DrawerTrigger",
+        description: "The button that opens the drawer.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The trigger is unstyled: everything it looks like comes from here.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "The label.",
+            },
+        ],
+    },
+];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -302,6 +393,8 @@ pub fn Page() -> impl IntoView {
                         </DrawerContent>
                     </Drawer>
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }

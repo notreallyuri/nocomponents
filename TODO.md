@@ -110,14 +110,13 @@ both go behind their own feature flag rather than into `full`.
       `Signal<String>`, `ChildrenFn`, the `render` callback shape, `Side` / `Align` /
       `Orientation` / `SideOffset` — described once, so a table can point at them instead of
       re-explaining them per component.
-- [ ] Prop tables: `button` and `dialog` have one, the other 45 pages do not. The rows are data
-      (`ApiEntry` / `Prop` in `docs/src/components/api_table.rs`), in the shape an extractor over
-      `#[component]` signatures could emit — write a few more by hand first, then generate them
-      rather than hand-maintaining 47 tables. The same metadata could drive `NAV` and `COMPONENTS`
-      and close the five-files item above.
-
-## Library packaging (needed before publishing)
-
+- [x] Prop tables on all 47 component pages — 199 parts, one table each, under one API reference
+      heading. The rows were drafted by a script over the `#[component]` signatures (names, types,
+      defaults, and any prop that already carries a `///`) and the prose written per page.
+- [ ] Generate those rows at build time rather than keeping 199 hand-pasted tables in step. The
+      draft script in this session's scratchpad is the prototype; it wants to be an `xtask` or a
+      build script emitting the same `ApiEntry` shape, and it could drive `NAV` and `COMPONENTS`
+      too, closing the five-files item above.
 - [ ] `Cargo.toml` has no `description`, `license`, `repository`, `keywords` or `categories` —
       `cargo publish` will reject it as-is.
 - [ ] No LICENSE file, though the README credits shadcn/ui and Radix (both MIT).

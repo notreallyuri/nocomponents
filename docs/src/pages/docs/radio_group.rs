@@ -1,4 +1,10 @@
-use crate::{components::demo_section::DemoSection, layout::doc_layout::DocLayout};
+use crate::{
+    components::{
+        api_table::{ApiEntry, ApiReference, Prop},
+        demo_section::DemoSection,
+    },
+    layout::doc_layout::DocLayout,
+};
 use leptos::prelude::*;
 use nocomponents::{
     components::{
@@ -66,6 +72,75 @@ const CONTROLLED: &str = r#"<RadioGroup value=plan>
 <span class="text-sm text-muted-foreground">
     "Selected: " {move || plan.get().unwrap_or_else(|| "none".to_string())}
 </span>"#;
+
+const API: &[ApiEntry] = &[
+    ApiEntry {
+        name: "RadioGroup",
+        description: "A set of radios where exactly one may be chosen. One tab stop, and the arrows both move and select.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the group's classes.",
+            },
+            Prop {
+                name: "orientation",
+                ty: "Orientation",
+                default: "Orientation::Vertical",
+                description: "Radios stack by default, the way a native group does; the arrow keys follow suit.",
+            },
+            Prop {
+                name: "disabled",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Disables every radio in the group.",
+            },
+            Prop {
+                name: "value",
+                ty: "Option<RwSignal<Option<String>>>",
+                default: "None",
+                description: "Omit for an uncontrolled group that owns its own selection.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "Items, usually each beside a `Label`.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "RadioGroupItem",
+        description: "One radio. Focusing it with the arrows also chooses it.",
+        props: &[
+            Prop {
+                name: "value",
+                ty: "String",
+                default: "",
+                description: "What choosing this sets the group's value to.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the radio's classes.",
+            },
+            Prop {
+                name: "disabled",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Skipped by the arrow keys as well as the pointer.",
+            },
+            Prop {
+                name: "id",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Given to the control, so a `Label` can point `for` at it.",
+            },
+        ],
+    },
+];
 
 #[component]
 pub fn Page() -> impl IntoView {
@@ -161,6 +236,8 @@ pub fn Page() -> impl IntoView {
                         </span>
                     </div>
                 </DemoSection>
+
+                <ApiReference entries=API />
             </div>
         </DocLayout>
     }
