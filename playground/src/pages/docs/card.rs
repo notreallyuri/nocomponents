@@ -6,6 +6,7 @@ use nocomponents::components::{
     card::{
         Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardSize, CardTitle,
     },
+    prelude::Progress,
 };
 
 const DEFAULT: &str = r#"<Card class="max-w-sm">
@@ -36,7 +37,7 @@ const SMALL: &str = r#"<Card size=CardSize::Sm class="max-w-sm">
         <CardDescription>"72% of 100 GB used"</CardDescription>
     </CardHeader>
     <CardContent>
-        <Progress value=70.0 class="h-1.5 w-full" />
+        <Progress value=72.0 class="h-1.5" />
     </CardContent>
 </Card>"#;
 
@@ -96,9 +97,7 @@ pub fn Page() -> impl IntoView {
                             <CardDescription>"72% of 100 GB used"</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div class="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                                <div class="h-full w-[72%] rounded-full bg-primary" />
-                            </div>
+                            <Progress value=72.0 class="h-1.5" />
                         </CardContent>
                     </Card>
                 </DemoSection>

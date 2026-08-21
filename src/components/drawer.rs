@@ -28,11 +28,23 @@ struct DrawerSide(Side);
 
 impl AsClass for DrawerSide {
     fn as_class(&self) -> &'static str {
+        // Flush to the edge on a phone, where the drawer *is* the bottom of the screen and a gap
+        // would only waste the little room there is; inset and fully rounded from `sm` up, where
+        // it reads as a panel resting on the page rather than welded to the window. The corners
+        // follow: an edge-to-edge drawer rounds only the corners anyone can see.
         match self.0 {
-            Side::Bottom => "inset-x-0 bottom-0 max-h-[85vh] rounded-t-2xl border-t",
-            Side::Top => "inset-x-0 top-0 max-h-[85vh] pb-6 rounded-b-2xl border-b",
-            Side::Right => "inset-y-0 right-0 w-3/4 pl-6 sm:max-w-sm rounded-l-2xl border-l",
-            Side::Left => "inset-y-0 left-0 w-3/4 pr-6 sm:max-w-sm rounded-r-2xl border-r",
+            Side::Bottom => {
+                "inset-x-0 bottom-0 max-h-[85vh] rounded-t-2xl border-t sm:inset-x-4 sm:bottom-4 sm:rounded-2xl sm:border"
+            }
+            Side::Top => {
+                "inset-x-0 top-0 max-h-[85vh] pb-6 rounded-b-2xl border-b sm:inset-x-4 sm:top-4 sm:rounded-2xl sm:border"
+            }
+            Side::Right => {
+                "inset-y-0 right-0 w-3/4 pl-6 rounded-l-2xl border-l sm:inset-y-4 sm:right-4 sm:max-w-sm sm:rounded-2xl sm:border"
+            }
+            Side::Left => {
+                "inset-y-0 left-0 w-3/4 pr-6 rounded-r-2xl border-r sm:inset-y-4 sm:left-4 sm:max-w-sm sm:rounded-2xl sm:border"
+            }
         }
     }
 }
@@ -95,6 +107,10 @@ pub fn DrawerContent(
                         "data-[state=closed]:pointer-events-none",
                         "data-[side=bottom]:data-[state=closed]:translate-y-full data-[side=top]:data-[state=closed]:-translate-y-full",
                         "data-[side=right]:data-[state=closed]:translate-x-full data-[side=left]:data-[state=closed]:-translate-x-full",
+                        // Its own length is no longer enough once the panel is inset: it has to
+                        // clear the gap as well, or a sliver stays on screen while it leaves.
+                        "sm:data-[side=bottom]:data-[state=closed]:translate-y-[calc(100%+1rem)] sm:data-[side=top]:data-[state=closed]:-translate-y-[calc(100%+1rem)]",
+                        "sm:data-[side=right]:data-[state=closed]:translate-x-[calc(100%+1rem)] sm:data-[side=left]:data-[state=closed]:-translate-x-[calc(100%+1rem)]",
                         side_class,
                         class.get()
                     )
