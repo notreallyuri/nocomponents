@@ -1,4 +1,8 @@
 pub mod cn;
+pub mod color;
+pub mod date;
+pub mod gif;
+pub mod image;
 pub mod types;
 
 #[cfg(feature = "highlight")]

@@ -19,7 +19,9 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 floating-ui-leptos = "0.6.0"
 leptos = { version = "0.8.19", features = ["csr"] }
-web-sys = { version = "0.3.98", features = ["Storage", "MediaQueryList", "NodeList", "Element", "HtmlElement", "KeyboardEvent", "Navigator", "Clipboard"] }
+# `HtmlCanvasElement` / `CanvasRenderingContext2d` / `HtmlImageElement` are the image cropper's
+# encoder: `drawImage` then `toDataURL`, rather than an image crate.
+web-sys = { version = "0.3.98", features = ["Storage", "MediaQueryList", "NodeList", "Element", "HtmlElement", "KeyboardEvent", "Navigator", "Clipboard", "HtmlCanvasElement", "CanvasRenderingContext2d", "HtmlImageElement", "Blob", "BlobPropertyBag", "Url"] }
 leptos-node-ref = "0.2.0"
 send_wrapper = "0.6.0"
 tw_merge = { version = "0.1.21", features = ["variant"] }
