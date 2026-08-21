@@ -46,7 +46,10 @@ pub fn CodeBlock(
             code=code
             class=move || {
                 cn!(
-                    "group/code relative overflow-hidden rounded-xl bg-card text-card-foreground ring-1 ring-foreground/10",
+                    // A shade under whatever it sits on, in both themes: `card` and `background`
+                    // are the same colour in light, so light tints and dark drops instead. A code
+                    // block beside a demo card in the same colour reads as one surface.
+                    "group/code relative overflow-hidden rounded-xl bg-muted/60 text-foreground ring-1 ring-foreground/10 dark:bg-background",
                     class.get(),
                 )
             }
@@ -86,7 +89,7 @@ pub fn CodeCopyButton(#[prop(optional, into)] class: Signal<String>) -> impl Int
     view! {
         <CodeCopyRoot class=move || {
             cn!(
-                "absolute right-3 z-10 inline-flex size-7 items-center justify-center rounded-lg border border-transparent bg-card/80 text-muted-foreground opacity-0 backdrop-blur-xs transition-all outline-none hover:bg-muted hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:opacity-100 group-hover/code:opacity-100 data-[state=copied]:text-foreground data-[state=copied]:opacity-100",
+                "absolute right-3 z-10 inline-flex size-7 items-center justify-center rounded-lg border border-transparent bg-background/80 text-muted-foreground opacity-0 backdrop-blur-xs transition-all outline-none hover:bg-muted hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:opacity-100 group-hover/code:opacity-100 data-[state=copied]:text-foreground data-[state=copied]:opacity-100",
                 class.get(),
             )
         }>
