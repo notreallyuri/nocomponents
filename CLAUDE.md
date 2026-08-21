@@ -24,6 +24,11 @@ cd docs && trunk build --release
 Trunk downloads and runs the Tailwind CLI itself (pinned in `docs/Trunk.toml`); there is no
 `tailwind.config.js` and no npm build step. There is no test suite — verify changes in `trunk serve`.
 
+`leptosfmt` is what formats `view!` blocks, and `cargo fmt` leaves them alone. Run it on the files
+you changed, never over `src/` or `docs/src/`: 0.1.33 silently **deletes** Rust comments that sit
+inside a `view!` — e.g. on a `match` arm in an `on:keydown` handler — so a whole-tree run strips
+commentary out of files you never meant to touch.
+
 ## Feature flags
 
 `primitives`, `icons`, `components` (= primitives + icons), `theme`, `full`. In `src/lib.rs` **both**
@@ -39,8 +44,15 @@ Components are named `<Name>Root`, `<Name>TriggerRoot`, `<Name>ContentRoot`, …
 
 `src/components/<name>.rs` — the shadcn-styled wrapper: same tree, named `<Name>`, `<Name>Trigger`, …,
 passing a `cn!(...)` class down into the matching `*Root`. Some components are style-only and have no
-primitive (`skeleton`, `spinner`, `badge`, `card`, `input`, `label`); `alert_dialog` is built on the
-dialog primitive. Both modules re-export everything through a `prelude`.
+primitive (`skeleton`, `spinner`, `badge`, `card`, `input`, `label`); `alert_dialog`, `date_picker`
+and `combobox` are built on other primitives rather than one of their own. Both modules re-export
+everything through a `prelude`.
+
+Three components ship as **one component instead of a tree of parts** — `Calendar`, `Chart`,
+`DataTable` — because nobody rearranges a month grid or an axis, and the parts would be a worse API
+than the props. Their primitives are still parts (`CalendarGridRoot`, `ChartPlotRoot`, …) for anyone
+who disagrees, and `DataTable` takes its columns as a `Vec<DataTableColumn<T>>` value rather than as
+children.
 
 When adding a component, put behavior in the primitive and only classes in the component; if you find
 yourself writing `if is_open` styling logic in `src/components/`, it belongs in a `data-*` attribute
@@ -61,11 +73,18 @@ with Offset/Flip/Shift middleware; `utils::get_placement(side, align)` maps `Sid
 `unmount_delay` (150ms) after close so exit animations can run — never key content on `is_open` alone.
 
 **Styling**: the `cn!` macro (`src/utils/cn.rs`, exported at crate root, `use crate::cn`) joins classes
-and runs `tw_merge`. The consistent idiom is a derived signal so the caller's `class` wins:
+and runs `tw_merge`, which is coarser than the JS `tailwind-merge` in places — `overflow-x-*` and
+`overflow-y-*` are one group, so writing both keeps only the last. The consistent idiom is a derived
+signal so the caller's `class` wins:
 
 ```rust
 class=move || cn!("base classes here", class.get())
 ```
+
+A bare `duration-*` sets `transition-duration` as well as `--tw-duration`, and `transition-property`
+defaults to `all` — so on a floating layer it transitions the shell's `visibility: hidden` away over
+that duration, and anything focused inside it in the meantime silently stays unfocused. Use
+`animation-duration-*` (from `animate.css`) when only the enter/exit animation is meant.
 
 **Variants** are plain enums implementing `AsClass` (`src/utils/types.rs`) returning a `&'static str`
 of Tailwind classes — e.g. `ButtonVariant`, `ButtonSize`, `BadgeVariant`, `ToastVariant`. Shared enums
@@ -84,6 +103,41 @@ positioning can measure the trigger.
 
 **Prop conventions**: `#[prop(optional, into)] class: Signal<String>`, `#[prop(optional, into)] disabled: Signal<bool>`,
 `children: Option<ChildrenFn>` when children may be re-rendered inside a `Portal` or `Either` branch.
+An optional callback or value prop is `#[prop(default = None, into)] x: Option<T>` — `optional` on an
+`Option<T>` makes the setter take `T`, and `&str` will not coerce into `Option<String>`; where the
+empty string can stand in for "unset" (a label, a heading), prefer `Signal<String>`.
+
+**Pointer gestures** go through `use_drag` (`src/primitives/drag.rs`), never through hand-rolled
+window listeners: it owns the listener lifecycle (including `pointercancel`, which every hand-rolled
+copy missed) and hands each move back as a `DragPoint` carrying the client position, the delta since
+the press, and the position as a fraction of a reference box. `.against(node_ref)` names that box
+when the press lands on a wrapper rather than the surface; `.on_start` is where a click and a drag
+become one gesture; `.on_end` gets the release velocity and how long the pointer had been still, so
+a flick can be told from a placement. Guard the press in your own `on:pointerdown` and then call
+`drag.start(&e)`.
+
+**Not everything is a context.** `TableSort` and `TableSelection` (`primitives/table.rs`) are plain
+`Copy` handles the caller passes where they are needed: a table already has its rows and columns in
+one place, so a context would only hide the wiring. Use a context when parts have to find each other
+across a portal or an unknown depth, and a handle when they do not.
+
+**A line's width belongs in pixels, not percent.** The cropper's rule-of-thirds was drawn with
+gradient stops 0.17% apart, which is a fraction of a device pixel on a small crop: browsers round
+it away and bring it back on zoom, so the lines flickered. Anything hairline-thin — a grid, a
+divider, a focus ring — takes `w-px` / `h-px` and is *positioned* in percent.
+
+**Colour and images**: `utils::color` (`Rgba`/`Hsva`/`Hsla`/`Oklch`, parsing, formatting),
+`utils::image` (a normalised crop rectangle, and a canvas for the output) and `utils::gif`
+(cropping an animated GIF at the LZW level, so palettes and timing survive). All three are
+arithmetic with unit tests, and none of them is a dependency — the same call as `utils::date`. The
+one thing a unit test cannot check is a *format* we emit: an encoder and a decoder written together
+will agree on a stream nobody else can read, so `utils::gif` is verified by handing its output to a
+real browser (`dump_for_a_real_decoder`, ignored by default).
+
+**Dates**: `utils::date::Date` is a 12-byte civil date (`year`, `month`, `day`) with Hinnant's
+day-count conversions under `to_days` / `from_days`, so month ends and leap days are never special
+cases. Deliberately not a date-time library and deliberately not `chrono` — a UI library should not
+hand its consumers a version to agree with. English month and weekday names live there too.
 
 ## Theming & CSS
 
@@ -102,7 +156,8 @@ resolves `Theme::System` via `prefers-color-scheme`, and toggles the `dark` clas
 `docs/src/app.rs` wraps everything in `ThemeProvider` → `ToastProvider` → `Router`. Adding a docs
 page means touching five places: the new `docs/src/pages/docs/<name>.rs` (a `Page` component
 using `DocLayout` + `DemoSection`), `pages/docs/mod.rs`, the route in `app.rs`, the `NAV` const in
-`docs/src/layout/doc_layout.rs`, and the `COMPONENTS` const in `pages/docs/index.rs`.
+`docs/src/layout/doc_layout.rs`, and the `COMPONENTS` const in `pages/docs/index.rs`. The header's
+⌘K palette (`docs/src/components/doc_search.rs`) reads `NAV`, so it is not a sixth place.
 
 `DemoSection` takes an optional `code` prop that renders the snippet below the demo. **Put snippets in
 module-level consts, never inline in `view!`** — leptosfmt reformats raw strings inside the macro,
