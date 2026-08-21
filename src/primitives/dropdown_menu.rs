@@ -8,7 +8,7 @@ use crate::{
     },
     utils::{
         get_placement,
-        types::{Align, Orientation, Side, SideOffset},
+        types::{Align, Direction, Orientation, Side, SideOffset},
     },
 };
 use floating_ui_leptos::{
@@ -162,9 +162,7 @@ pub fn DropdownMenuPortalRoot(children: ChildrenFn) -> impl IntoView {
 
     view! {
         <Portal>
-            <Show when=move || ctx.is_mounted.get()>
-                {stored_children.with_value(|c| c())}
-            </Show>
+            <Show when=move || ctx.is_mounted.get()>{stored_children.with_value(|c| c())}</Show>
         </Portal>
     }
 }
@@ -174,6 +172,10 @@ pub fn DropdownMenuContentRoot(
     #[prop(optional)] side: Side,
     #[prop(optional)] align: Align,
     #[prop(optional)] side_offset: SideOffset,
+    /// What Left and Right do inside this surface. A dropdown ignores them; a menubar's menu
+    /// steps to the menu beside it, which is why this is a callback rather than a rule here.
+    #[prop(default = None, into)]
+    on_arrow_horizontal: Option<Callback<Direction>>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
@@ -240,6 +242,18 @@ pub fn DropdownMenuContentRoot(
                 aria-labelledby=move || ctx.trigger_id.get()
                 tabindex="-1"
                 on:keydown=move |e| {
+                    if let Some(on_arrow_horizontal) = on_arrow_horizontal {
+                        let step = match e.key().as_str() {
+                            "ArrowLeft" => Some(Direction::Left),
+                            "ArrowRight" => Some(Direction::Right),
+                            _ => None,
+                        };
+                        if let Some(step) = step {
+                            e.prevent_default();
+                            on_arrow_horizontal.run(step);
+                            return;
+                        }
+                    }
                     if handle_menu_keys(&e, roving, typeahead, ctx) {
                         e.prevent_default();
                     }
@@ -277,13 +291,7 @@ pub fn DropdownMenuItemRoot(
     };
 
     view! {
-        <div
-            role="menuitem"
-            tabindex="-1"
-            data-roving-item=""
-            on:click=handle_click
-            class=class
-        >
+        <div role="menuitem" tabindex="-1" data-roving-item="" on:click=handle_click class=class>
             {children()}
         </div>
     }
@@ -323,13 +331,10 @@ pub fn DropdownMenuSubTriggerRoot(
             class=class
             data-state=move || if ctx.is_open.get() { "open" } else { "closed" }
             on:keydown=move |e| {
-                // Right, plus Enter and Space, which a button would otherwise turn into a
-                // click that only toggles.
                 if matches!(e.key().as_str(), "ArrowRight" | "Enter" | " ") {
                     e.prevent_default();
                     e.stop_propagation();
                     ctx.open();
-                    // The content mounts on the next tick, so the item exists only by then.
                     set_timeout(
                         move || focus_first_item(ctx.content_ref),
                         Duration::from_millis(16),
@@ -429,7 +434,6 @@ pub fn DropdownMenuSubContentRoot(
                 aria-labelledby=move || ctx.trigger_id.get()
                 tabindex="-1"
                 on:keydown=move |e| {
-                    // Left steps out to the trigger and closes the submenu behind it.
                     if e.key() == "ArrowLeft" {
                         e.prevent_default();
                         e.stop_propagation();
