@@ -30,6 +30,9 @@ const VELOCITY_THRESHOLD: f64 = 0.4;
 /// animate the parent away.
 const RECEDE_SCALE: f64 = 0.96;
 const RECEDE_SHIFT: f64 = 14.0;
+/// How many layers deep the recede keeps compounding. Past this the panel would be a sliver, and
+/// nobody can read a stack that deep anyway.
+const RECEDE_MAX_STEPS: usize = 3;
 
 #[derive(Copy, Clone)]
 pub struct DrawerContext {
@@ -38,13 +41,15 @@ pub struct DrawerContext {
     /// the module note about travelling outward only.
     pub offset: RwSignal<f64>,
     pub dragging: RwSignal<bool>,
-    /// How many drawers are currently open inside this one. A count rather than a flag because
-    /// two children can overlap while one is still animating out, and a flag would flicker.
+    /// How many drawers are open inside this one, at any depth — not just its own children. A
+    /// count rather than a flag because two can overlap while one is animating out, and because
+    /// the recede compounds with it: the outermost panel of a three-deep stack has to sit further
+    /// back than the one above it, or the layers land on each other and the stack reads as two.
     pub nested_open: RwSignal<usize>,
-    /// The same counter belonging to the drawer this one sits inside, so a child can announce
-    /// itself. `None` at the top of the stack. Holding the parent's *signal* rather than its
-    /// context is what keeps `DrawerContext` a fixed size.
-    parent_nested: Option<RwSignal<usize>>,
+    /// The counters of every drawer this one sits inside, outermost first. Opening announces
+    /// itself to all of them, which is what makes the count transitive. Holding the *signals*
+    /// rather than the contexts is what keeps `DrawerContext` a fixed size and `Copy`.
+    ancestors: StoredValue<Vec<RwSignal<usize>>>,
 }
 
 impl DrawerContext {
@@ -53,19 +58,25 @@ impl DrawerContext {
         self.nested_open.get() > 0
     }
 
+    /// How many steps back this panel sits, capped so a deep stack stays legible.
+    pub fn recede_depth(&self) -> usize {
+        self.nested_open.get().min(RECEDE_MAX_STEPS)
+    }
+
     /// The panel's transform: its drag offset, or its recede when a nested drawer is over it.
     ///
     /// A drag in progress wins over the recede. The panel under the finger has to follow the
     /// finger, and there is no sensible way to be halfway between "shoved aside" and "held".
     pub fn transform(&self) -> String {
         let offset = self.offset.get();
-        let receded = self.is_receded();
+        let depth = self.recede_depth();
 
         // Receding moves *inward*, the opposite way from a dismissal: sliding back from its own
-        // edge is what leaves the parent's far edge visible behind the child.
-        let travel = match (offset != 0.0, receded) {
+        // edge is what leaves the panel's far edge visible behind the child. It compounds with
+        // depth so each layer of a stack sits a step further back than the one over it.
+        let travel = match (offset != 0.0, depth > 0) {
             (true, _) => offset,
-            (false, true) => -RECEDE_SHIFT,
+            (false, true) => -RECEDE_SHIFT * depth as f64,
             (false, false) => return String::new(),
         };
 
@@ -76,8 +87,8 @@ impl DrawerContext {
             Side::Left => format!("translate3d({}px, 0, 0)", -travel),
         };
 
-        if receded && offset == 0.0 {
-            format!("{translate} scale({RECEDE_SCALE})")
+        if depth > 0 && offset == 0.0 {
+            format!("{translate} scale({})", RECEDE_SCALE.powi(depth as i32))
         } else {
             translate
         }
@@ -125,15 +136,23 @@ pub fn DrawerRoot(
     modal: bool,
     children: Children,
 ) -> impl IntoView {
-    // Read before providing: this resolves to the drawer this one is nested inside, if any.
-    let parent_nested = use_context::<DrawerContext>().map(|parent| parent.nested_open);
+    // Read before providing: this resolves to the drawer this one is nested inside, if any. Its
+    // chain plus itself becomes ours, so every drawer knows the whole line above it.
+    let ancestors = match use_context::<DrawerContext>() {
+        Some(parent) => {
+            let mut chain = parent.ancestors.get_value();
+            chain.push(parent.nested_open);
+            chain
+        }
+        None => Vec::new(),
+    };
 
     let context = DrawerContext {
         side,
         offset: RwSignal::new(0.0),
         dragging: RwSignal::new(false),
         nested_open: RwSignal::new(0),
-        parent_nested,
+        ancestors: StoredValue::new(ancestors),
     };
 
     view! {
@@ -211,32 +230,35 @@ pub fn DrawerContentRoot(
     // count is nudged on transitions rather than assigned, since two children of one parent each
     // own a share of it.
     let counted = StoredValue::new(false);
-    let release_parent = move || {
-        if counted.get_value()
-            && let Some(parent) = ctx.parent_nested
-        {
+    let release_ancestors = move || {
+        if counted.get_value() {
             counted.set_value(false);
-            parent.update(|open| *open = open.saturating_sub(1));
+            ctx.ancestors.with_value(|chain| {
+                for counter in chain {
+                    counter.update(|open| *open = open.saturating_sub(1));
+                }
+            });
         }
     };
 
     Effect::new(move |_| {
         let is_open = dialog.is_open.get();
-        let Some(parent) = ctx.parent_nested else {
-            return;
-        };
 
         if is_open && !counted.get_value() {
             counted.set_value(true);
-            parent.update(|open| *open += 1);
+            ctx.ancestors.with_value(|chain| {
+                for counter in chain {
+                    counter.update(|open| *open += 1);
+                }
+            });
         } else if !is_open {
-            release_parent();
+            release_ancestors();
         }
     });
 
     // A drawer torn down while still open — its whole subtree closing at once — has to hand the
     // count back, or the parent stays shrunken with nothing over it.
-    on_cleanup(release_parent);
+    on_cleanup(release_ancestors);
 
     on_cleanup(stop_listening);
 
@@ -336,7 +358,7 @@ pub fn DrawerContentRoot(
             data-slot="drawer"
             data-side=ctx.side.as_str()
             data-dragging=move || ctx.dragging.get().then_some("true")
-            data-nested=move || ctx.is_receded().then_some("true")
+            data-nested=move || (ctx.nested_open.get() > 0).then(|| ctx.nested_open.get().to_string())
             // `data-state` is normally the dialog content's, but the panel is what animates here,
             // so it has to carry the attribute the animations key off.
             data-state=move || if dialog.is_open.get() { "open" } else { "closed" }

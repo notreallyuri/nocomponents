@@ -35,10 +35,12 @@ const SIDES: &str = r#"// Any edge. The drag axis and its direction follow the s
     </DrawerContent>
 </Drawer>"#;
 
-const NESTED: &str = r#"// A drawer inside a drawer. Each has its own dialog context, so the
-// layer stack unwinds one Escape at a time and dragging the inner
-// panel leaves the outer where it is. The side is set once, on the
-// root: it decides the drag axis as well as the edge.
+const NESTED: &str = r#"// Drawers inside drawers, four deep. Each has its own dialog context, so
+// the layer stack unwinds one Escape at a time and dragging the inner panel
+// leaves the ones behind it where they are. Every open child pushes its
+// ancestors a step further back, and the recede stops compounding after
+// three. The side is set once per root: it decides the drag axis as well as
+// the edge.
 <Drawer side=Side::Right>
     <DrawerTrigger>"Open outer"</DrawerTrigger>
     <DrawerContent>
@@ -51,6 +53,25 @@ const NESTED: &str = r#"// A drawer inside a drawer. Each has its own dialog con
                 <DrawerHeader>
                     <DrawerTitle>"New project"</DrawerTitle>
                 </DrawerHeader>
+                <Drawer side=Side::Right>
+                    <DrawerTrigger>"Pick a template"</DrawerTrigger>
+                    <DrawerContent>
+                        <DrawerHeader>
+                            <DrawerTitle>"Templates"</DrawerTitle>
+                        </DrawerHeader>
+                        <Drawer side=Side::Right>
+                            <DrawerTrigger>"Configure the repository"</DrawerTrigger>
+                            <DrawerContent>
+                                <DrawerHeader>
+                                    <DrawerTitle>"Repository"</DrawerTitle>
+                                </DrawerHeader>
+                                <DrawerFooter>
+                                    <DrawerClose>"Back"</DrawerClose>
+                                </DrawerFooter>
+                            </DrawerContent>
+                        </Drawer>
+                    </DrawerContent>
+                </Drawer>
             </DrawerContent>
         </Drawer>
     </DrawerContent>
@@ -121,7 +142,9 @@ pub fn Page() -> impl IntoView {
                             <DrawerContent>
                                 <DrawerHeader>
                                     <DrawerTitle>"Filters"</DrawerTitle>
-                                    <DrawerDescription>"Throw it rightward to dismiss."</DrawerDescription>
+                                    <DrawerDescription>
+                                        "Throw it rightward to dismiss."
+                                    </DrawerDescription>
                                 </DrawerHeader>
                             </DrawerContent>
                         </Drawer>
@@ -133,7 +156,9 @@ pub fn Page() -> impl IntoView {
                             <DrawerContent>
                                 <DrawerHeader>
                                     <DrawerTitle>"Notifications"</DrawerTitle>
-                                    <DrawerDescription>"Throw it upward to dismiss."</DrawerDescription>
+                                    <DrawerDescription>
+                                        "Throw it upward to dismiss."
+                                    </DrawerDescription>
                                 </DrawerHeader>
                             </DrawerContent>
                         </Drawer>
@@ -145,7 +170,9 @@ pub fn Page() -> impl IntoView {
                             <DrawerContent>
                                 <DrawerHeader>
                                     <DrawerTitle>"Navigation"</DrawerTitle>
-                                    <DrawerDescription>"Throw it leftward to dismiss."</DrawerDescription>
+                                    <DrawerDescription>
+                                        "Throw it leftward to dismiss."
+                                    </DrawerDescription>
                                 </DrawerHeader>
                             </DrawerContent>
                         </Drawer>
@@ -154,7 +181,7 @@ pub fn Page() -> impl IntoView {
 
                 <DemoSection
                     title="Nested"
-                    description="A drawer opened from inside another. Each has its own dialog context, so Escape unwinds them one at a time and dragging the inner panel leaves the outer one where it is."
+                    description="Drawers opened from inside one another. Each has its own dialog context, so Escape unwinds them one at a time and dragging the inner panel leaves the ones behind it where they are. Every open child pushes its ancestors a step further back, and the recede stops compounding after three of them."
                     code=NESTED
                 >
                     <Drawer side=Side::Right>
@@ -176,9 +203,41 @@ pub fn Page() -> impl IntoView {
                                     <DrawerHeader>
                                         <DrawerTitle>"New project"</DrawerTitle>
                                         <DrawerDescription>
-                                            "Escape closes this one and leaves the one behind it open."
+                                            "The panel behind this one has given up a little room. Go deeper and it gives up a little more."
                                         </DrawerDescription>
                                     </DrawerHeader>
+                                    <Drawer side=Side::Right>
+                                        <DrawerTrigger class="w-full rounded-lg border border-border px-3 py-1.5 text-sm">
+                                            "Pick a template"
+                                        </DrawerTrigger>
+                                        <DrawerContent>
+                                            <DrawerHeader>
+                                                <DrawerTitle>"Templates"</DrawerTitle>
+                                                <DrawerDescription>
+                                                    "Two layers are behind this one now, each set back one step further than the last."
+                                                </DrawerDescription>
+                                            </DrawerHeader>
+                                            <Drawer side=Side::Right>
+                                                <DrawerTrigger class="w-full rounded-lg border border-border px-3 py-1.5 text-sm">
+                                                    "Configure the repository"
+                                                </DrawerTrigger>
+                                                <DrawerContent>
+                                                    <DrawerHeader>
+                                                        <DrawerTitle>"Repository"</DrawerTitle>
+                                                        <DrawerDescription>
+                                                            "The bottom of the stack has stopped receding — past three layers the panel would be a sliver."
+                                                        </DrawerDescription>
+                                                    </DrawerHeader>
+                                                    <DrawerFooter>
+                                                        <DrawerClose>"Back"</DrawerClose>
+                                                    </DrawerFooter>
+                                                </DrawerContent>
+                                            </Drawer>
+                                            <DrawerFooter>
+                                                <DrawerClose>"Back"</DrawerClose>
+                                            </DrawerFooter>
+                                        </DrawerContent>
+                                    </Drawer>
                                     <DrawerFooter>
                                         <DrawerClose>"Back"</DrawerClose>
                                     </DrawerFooter>
