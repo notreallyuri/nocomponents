@@ -19,6 +19,7 @@ use crate::{
         },
         floating::{FloatingContext, FloatingRoot},
         roving_focus::use_roving_focus,
+        typeahead::Typeahead,
     },
     utils::{
         get_placement,
@@ -176,6 +177,7 @@ pub fn ContextMenuContentRoot(
 
     let menu_ref = AnyNodeRef::new();
     let roving = use_roving_focus(menu_ref, Orientation::Vertical);
+    let typeahead = Typeahead::new();
 
     Effect::new(move |_| {
         if ctx.is_open.get() && is_positioned.get() {
@@ -202,7 +204,7 @@ pub fn ContextMenuContentRoot(
                 role="menu"
                 tabindex="-1"
                 on:keydown=move |e| {
-                    if handle_menu_keys(&e, roving, ctx) {
+                    if handle_menu_keys(&e, roving, typeahead, ctx) {
                         e.prevent_default();
                     }
                 }

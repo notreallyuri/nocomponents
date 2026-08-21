@@ -4,9 +4,16 @@ use crate::{
     primitives::dismiss::{LayerBounds, use_dismissable_layer},
     utils::{next_id, types::TriggerRect},
 };
-use leptos::{context::Provider, either::Either, ev::MouseEvent, prelude::*, wasm_bindgen::JsCast};
+use leptos::{
+    context::Provider,
+    either::Either,
+    ev::MouseEvent,
+    prelude::*,
+    tachys::renderer::{RemoveEventHandler, dom::Dom},
+    wasm_bindgen::{JsCast, JsValue},
+};
 use leptos_node_ref::AnyNodeRef;
-use web_sys::HtmlElement;
+use web_sys::{Element, HtmlElement, KeyboardEvent};
 
 #[derive(Copy, Clone)]
 pub struct FloatingContext {
@@ -29,6 +36,10 @@ pub struct FloatingContext {
     // Accessibility
     pub trigger_id: RwSignal<String>,
     pub content_id: RwSignal<String>,
+    /// Where focus should land the next time the content opens, set by whatever opened it. The
+    /// content reads it once and the root puts it back to `Auto` on close, so it describes the
+    /// *current* opening rather than sticking around.
+    pub open_focus: RwSignal<OpenFocus>,
 }
 
 impl Default for FloatingContext {
@@ -43,6 +54,7 @@ impl Default for FloatingContext {
             display_value: RwSignal::new(None),
             trigger_id: RwSignal::new(String::new()),
             content_id: RwSignal::new(String::new()),
+            open_focus: RwSignal::new(OpenFocus::Auto),
         }
     }
 }
@@ -63,6 +75,33 @@ impl FloatingContext {
     pub fn is_open(&self) -> bool {
         self.is_open.get()
     }
+}
+
+/// Where focus goes when the content opens.
+#[derive(Default, Clone, Copy, PartialEq)]
+pub enum OpenFocus {
+    /// Whatever the surface does by default: a menu focuses its container, a select the option it
+    /// currently holds.
+    #[default]
+    Auto,
+    /// The first item, however the surface finds its items.
+    First,
+    /// The last item.
+    Last,
+}
+
+/// What ArrowDown and ArrowUp do while the trigger is focused and the layer is closed.
+#[derive(Default, Clone, Copy, PartialEq)]
+pub enum ArrowOpen {
+    /// Nothing. A popover, tooltip or hover card is not a list, and swallowing the arrows on a
+    /// focused button would only stop the page scrolling.
+    #[default]
+    None,
+    /// Open it, and let the surface place focus — a select opens on its current value.
+    Open,
+    /// Open it and step straight into the list: Down onto the first item, Up onto the last. This
+    /// is the menu-button convention.
+    OpenIntoList,
 }
 
 /// How a trigger and its floating content are related, for assistive tech.
@@ -134,6 +173,9 @@ pub fn FloatingRoot(
     /// How the trigger relates to the content, announced on the trigger element.
     #[prop(optional)]
     trigger_aria: TriggerAria,
+    /// Whether the arrow keys open this layer from its closed trigger, and where they leave focus.
+    #[prop(optional)]
+    arrow_open: ArrowOpen,
     children: ChildrenFn,
 ) -> impl IntoView {
     let context = context.unwrap_or_default();
@@ -178,6 +220,47 @@ pub fn FloatingRoot(
         }
     });
 
+    // The arrow keys are bound to the trigger node for the same reason the ARIA is written onto
+    // it: the element belongs to the layer above and comes in three shapes, and a handler declared
+    // here would only reach the one this module renders itself. The remover lives in a
+    // `StoredValue`, so replacing it — or disposing the root — takes the old listener off the
+    // element it was attached to.
+    let arrow_listener: StoredValue<Option<RemoveEventHandler<Element>>> = StoredValue::new(None);
+
+    if arrow_open != ArrowOpen::None {
+        Effect::new(move |_| {
+            let Some(trigger) = context.trigger_ref.get() else {
+                return;
+            };
+
+            let handler = Box::new(move |e: JsValue| {
+                let Ok(e) = e.dyn_into::<KeyboardEvent>() else {
+                    return;
+                };
+                // Only from the closed state: the content has its own arrow handling once it is
+                // open, and the trigger is still focused while a menu opened by the mouse is up.
+                if context.is_open.get_untracked() {
+                    return;
+                }
+
+                let focus = match (e.key().as_str(), arrow_open) {
+                    ("ArrowDown", ArrowOpen::OpenIntoList) => OpenFocus::First,
+                    ("ArrowUp", ArrowOpen::OpenIntoList) => OpenFocus::Last,
+                    ("ArrowDown" | "ArrowUp", _) => OpenFocus::Auto,
+                    _ => return,
+                };
+
+                e.prevent_default();
+                context.open_focus.set(focus);
+                context.open();
+            });
+
+            arrow_listener.set_value(Some(Dom::add_event_listener(&trigger, "keydown", handler)));
+        });
+
+        on_cleanup(move || arrow_listener.set_value(None));
+    }
+
     use_dismissable_layer(
         context.is_open,
         LayerBounds::new(context.content_ref, context.trigger_ref),
@@ -215,11 +298,17 @@ pub fn FloatingRoot(
         if is_open {
             cancel_unmount();
             context.is_mounted.set(true);
-        } else if let Ok(handle) = set_timeout_with_handle(
-            move || context.is_mounted.set(false),
-            Duration::from_millis(unmount_delay),
-        ) {
-            unmount_handle.set_value(Some(handle));
+        } else {
+            // The focus intent belongs to a single opening. It is cleared here rather than by the
+            // content, which may never have mounted to read it.
+            context.open_focus.set(OpenFocus::Auto);
+
+            if let Ok(handle) = set_timeout_with_handle(
+                move || context.is_mounted.set(false),
+                Duration::from_millis(unmount_delay),
+            ) {
+                unmount_handle.set_value(Some(handle));
+            }
         }
 
         is_open

@@ -1,6 +1,6 @@
 use crate::{
     primitives::{
-        floating::{FloatingContext, FloatingRoot, FloatingTrigger, TriggerAria},
+        floating::{ArrowOpen, FloatingContext, FloatingRoot, FloatingTrigger, TriggerAria},
         roving_focus::use_roving_focus,
         typeahead::Typeahead,
     },
@@ -32,7 +32,12 @@ pub fn SelectRoot(
     };
 
     view! {
-        <FloatingRoot class=class context=ctx trigger_aria=TriggerAria::Popup("listbox")>
+        <FloatingRoot
+            class=class
+            context=ctx
+            trigger_aria=TriggerAria::Popup("listbox")
+            arrow_open=ArrowOpen::Open
+        >
             {children()}
             <select class="hidden" aria-hidden="true" tabindex="-1">
                 <option value=move || ctx.value.get().unwrap_or_default() selected=true></option>

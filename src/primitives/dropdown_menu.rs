@@ -1,7 +1,10 @@
 use crate::{
     primitives::{
-        floating::{FloatingContext, FloatingRoot, FloatingTrigger, TriggerAria},
+        floating::{
+            ArrowOpen, FloatingContext, FloatingRoot, FloatingTrigger, OpenFocus, TriggerAria,
+        },
         roving_focus::{RovingFocus, use_roving_focus},
+        typeahead::Typeahead,
     },
     utils::{
         get_placement,
@@ -42,7 +45,12 @@ pub fn DropdownMenuRoot(
     let stored_children = StoredValue::new(children);
 
     view! {
-        <FloatingRoot class=class context=context trigger_aria=TriggerAria::Popup("menu")>
+        <FloatingRoot
+            class=class
+            context=context
+            trigger_aria=TriggerAria::Popup("menu")
+            arrow_open=ArrowOpen::OpenIntoList
+        >
             <Provider value=MenuRoot(context)>{stored_children.with_value(|c| c())}</Provider>
         </FloatingRoot>
     }
@@ -93,10 +101,12 @@ fn focus_first_item(content_ref: AnyNodeRef) {
 }
 
 /// Keys every menu surface handles the same way: arrows and Home/End move between items, Enter and
-/// Space activate the focused one, Tab leaves the menu entirely.
+/// Space activate the focused one, Tab leaves the menu entirely, and anything printable is a jump
+/// to the item that starts with it.
 pub(crate) fn handle_menu_keys(
     e: &ev::KeyboardEvent,
     roving: RovingFocus,
+    typeahead: Typeahead,
     ctx: DropdownMenuContext,
 ) -> bool {
     let key = e.key();
@@ -123,7 +133,8 @@ pub(crate) fn handle_menu_keys(
             ctx.close();
             false
         }
-        _ => false,
+        // Space is spoken for above, so typeahead only ever sees the rest of the printable keys.
+        _ => typeahead.push(&key, roving.container()),
     }
 }
 
@@ -199,11 +210,22 @@ pub fn DropdownMenuContentRoot(
 
     let menu_ref = AnyNodeRef::new();
     let roving = use_roving_focus(menu_ref, Orientation::Vertical);
+    let typeahead = Typeahead::new();
 
     Effect::new(move |_| {
         if ctx.is_open.get() && is_positioned.get() {
-            focus_element(menu_ref);
-            roving.sync_tab_stop();
+            match ctx.open_focus.get_untracked() {
+                // Opened with a pointer, or with Enter on the trigger: focus the menu itself
+                // rather than an item, so nothing wears a focus ring until an arrow key asks for
+                // it. `sync_tab_stop` decides which item that first arrow will land on.
+                OpenFocus::Auto => {
+                    focus_element(menu_ref);
+                    roving.sync_tab_stop();
+                }
+                // Opened with an arrow key, which is a request to be *in* the list already.
+                OpenFocus::First => roving.focus_first(),
+                OpenFocus::Last => roving.focus_last(),
+            }
         }
     });
 
@@ -226,7 +248,7 @@ pub fn DropdownMenuContentRoot(
                 aria-labelledby=move || ctx.trigger_id.get()
                 tabindex="-1"
                 on:keydown=move |e| {
-                    if handle_menu_keys(&e, roving, ctx) {
+                    if handle_menu_keys(&e, roving, typeahead, ctx) {
                         e.prevent_default();
                     }
                 }
@@ -366,6 +388,7 @@ pub fn DropdownMenuSubContentRoot(
 
     let menu_ref = AnyNodeRef::new();
     let roving = use_roving_focus(menu_ref, Orientation::Vertical);
+    let typeahead = Typeahead::new();
 
     let UseFloatingReturn {
         floating_styles,
@@ -423,7 +446,7 @@ pub fn DropdownMenuSubContentRoot(
                         focus_element(ctx.trigger_ref);
                         return;
                     }
-                    if handle_menu_keys(&e, roving, ctx) {
+                    if handle_menu_keys(&e, roving, typeahead, ctx) {
                         e.prevent_default();
                         e.stop_propagation();
                     }

@@ -78,6 +78,12 @@ impl RovingFocus {
         self
     }
 
+    /// The element whose `data-roving-item` descendants this group moves between. Typeahead
+    /// searches the same set, so a surface with both hands it the one container.
+    pub fn container(&self) -> AnyNodeRef {
+        self.container
+    }
+
     fn items(&self) -> Vec<HtmlElement> {
         self.container
             .get_untracked()

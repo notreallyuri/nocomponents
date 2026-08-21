@@ -131,9 +131,29 @@ they land and add new ones rather than keeping a parallel list elsewhere.
       rendered — a dialog with no description does not claim to have one. `alert_dialog` shares
       the primitive and got it too.
 
-- [ ] Two keyboard conventions still missing, both small: ArrowDown on a *closed* select or menu
-      trigger should open it (today only Enter/Space/click do), and menus have no typeahead —
-      `src/primitives/typeahead.rs` is generic, so it is one call in each menu surface.
+- [x] The last two keyboard conventions: opening from the trigger with an arrow key, and typeahead
+      in menus.
+      `FloatingRoot` takes an `ArrowOpen` telling it what the arrows do from the closed trigger —
+      `Open` for a select, which lands on its current value the way it already does when clicked,
+      `OpenIntoList` for a menu, where Down opens onto the first item and Up onto the last, as the
+      menu-button pattern asks. Which one the surface wants is carried to the content as
+      `FloatingContext.open_focus`, read once when the content is positioned and put back to `Auto`
+      when the layer closes, so opening with the mouse still focuses the menu container and paints
+      no ring on the first entry.
+      The keys are bound to the trigger *node* from an effect, next to the ARIA that is written the
+      same way and for the same reason: the trigger belongs to the layer above and comes in three
+      shapes, and the one that matters most — `components::DropdownMenuTrigger`, which renders its
+      own `Button` — never goes through `FloatingTrigger` at all, so a declarative handler would
+      have missed it. The remover lives in a `StoredValue` and is dropped on cleanup.
+      Typeahead is one call in `handle_menu_keys`, which all three menu surfaces already share, so
+      dropdown, submenu and context menu got it together; `RovingFocus::container()` hands the
+      search the same element the arrows walk. Space is matched above it and still activates.
+      Verified over CDP: Down/Up open the menu onto the first/last item and Escape hands focus back
+      to the trigger; a mouse-opened menu still focuses its container; single letters jump,
+      keystrokes inside the 1s window accumulate ("se" finds Settings), a repeated letter cycles;
+      typeahead works in a submenu and in the context menu; the select opens on ArrowDown and its
+      own typeahead still commits with Enter; and ArrowDown on a popover or tooltip trigger does
+      nothing, while a click still opens the popover.
 - [x] Outside-click dismissal, in the layer stack. The three full-screen overlay divs are gone —
       an open popover no longer covers the page — and dismissal runs off one document-level
       `pointerdown` listener in `src/primitives/dismiss.rs`.
