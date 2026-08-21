@@ -40,7 +40,7 @@ const ON_TEXT: &str = r#"<p class="text-sm">
         <TooltipTrigger>
             <span class="underline decoration-dotted underline-offset-4">"globals.css"</span>
         </TooltipTrigger>
-        <TooltipContent>"playground/styles/globals.css"</TooltipContent>
+        <TooltipContent>"docs/styles/globals.css"</TooltipContent>
     </Tooltip> "."
 </p>"#;
 
@@ -125,7 +125,7 @@ pub fn Page() -> impl IntoView {
                                     "globals.css"
                                 </span>
                             </TooltipTrigger>
-                            <TooltipContent>"playground/styles/globals.css"</TooltipContent>
+                            <TooltipContent>"docs/styles/globals.css"</TooltipContent>
                         </Tooltip> "."
                     </p>
                 </DemoSection>

@@ -94,14 +94,14 @@ both go behind their own feature flag rather than into `full`.
       capitalisation is what makes a "type", JS regex literals are unrecognised, and `${…}` is not
       broken out of a template literal. A new language means a new scanner beside `tokenize_rust`.
 
-## Playground
+## Docs site
 
 - [x] Docs pages for alert-dialog, label and spinner.
 - [x] A `code` snippet under every demo — 89 blocks across 26 pages, extracted from the demo markup
       so the two cannot drift.
 - [ ] Snippets are extracted, not curated. A few still carry the demo's layout wrapper (`<div
       class="flex gap-3">`). Worth a pass to trim the ones where it adds nothing.
-- [ ] Dead nav links in `playground/src/layout/doc_layout.rs`: `/docs/introduction` and
+- [ ] Dead nav links in `docs/src/layout/doc_layout.rs`: `/docs/introduction` and
       `/docs/installation` have no route and fall through to "Not Found."
 - [ ] Adding a component means editing five files, two of which (`NAV`, `COMPONENTS`) are
       hand-maintained copies of the same list — which is how `/docs` came to be missing progress,
@@ -114,7 +114,7 @@ both go behind their own feature flag rather than into `full`.
       `cargo publish` will reject it as-is.
 - [ ] No LICENSE file, though the README credits shadcn/ui and Radix (both MIT).
 - [ ] Consumers have no way to get the CSS: the tokens, `@custom-variant`s and `animate.css` live
-      in `playground/styles/` only. Ship them from the crate, or document a copy-paste install.
+      in `docs/styles/` only. Ship them from the crate, or document a copy-paste install.
 - [ ] `leptos` is pinned to `features = ["csr"]`, which forces CSR on every consumer.
 - [ ] No `///` docs on public components, so docs.rs would be empty.
 - [ ] README is a disclaimer — needs install steps, a minimal example and the feature-flag table.
@@ -124,7 +124,7 @@ both go behind their own feature flag rather than into `full`.
 - [ ] Almost no tests. `src/utils/highlight.rs` has 7 (`cargo test --features full`); nothing else
       is covered. `wasm-bindgen-test` smoke tests over the primitives' `data-state` transitions
       would catch regressions in the floating and toast state machines.
-- [ ] Nothing installs a panic hook, so a panic in the playground surfaces as
-      `RuntimeError: unreachable` with no message. Three lines in `playground/src/main.rs`.
-- [ ] No CI. `cargo fmt --check`, `cargo clippy --features full` and `cargo check -p playground`
+- [ ] Nothing installs a panic hook, so a panic in the docs app surfaces as
+      `RuntimeError: unreachable` with no message. Three lines in `docs/src/main.rs`.
+- [ ] No CI. `cargo fmt --check`, `cargo clippy --features full` and `cargo check -p docs`
       would cover today's checks (clippy is clean).

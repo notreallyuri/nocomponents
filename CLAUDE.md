@@ -5,23 +5,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this is
 
 `nocomponents` is a Leptos 0.8 (CSR-only) UI library for the browser: unstyled behavior primitives in the
-spirit of Radix, plus a styled layer that mirrors shadcn/ui. `playground/` is a Trunk + Tailwind v4 docs
+spirit of Radix, plus a styled layer that mirrors shadcn/ui. `docs/` is a Trunk + Tailwind v4 docs
 site that is both the demo and the only way to exercise the library in a browser.
 
-Cargo workspace: root crate `nocomponents`, member `playground`.
+Cargo workspace: root crate `nocomponents`, member `docs`.
 
 ## Commands
 
 ```bash
 cargo check --features full          # type-check the library (default features compile almost nothing)
-cargo check -p playground            # type-check the docs app
+cargo check -p docs                  # type-check the docs app
 cargo fmt && cargo clippy --features full
 
-cd playground && trunk serve         # dev server on :3000, watches ../src too (see Trunk.toml)
-cd playground && trunk build --release
+cd docs && trunk serve               # dev server on :3000, watches ../src too (see Trunk.toml)
+cd docs && trunk build --release
 ```
 
-Trunk downloads and runs the Tailwind CLI itself (pinned in `playground/Trunk.toml`); there is no
+Trunk downloads and runs the Tailwind CLI itself (pinned in `docs/Trunk.toml`); there is no
 `tailwind.config.js` and no npm build step. There is no test suite — verify changes in `trunk serve`.
 
 ## Feature flags
@@ -29,7 +29,7 @@ Trunk downloads and runs the Tailwind CLI itself (pinned in `playground/Trunk.to
 `primitives`, `icons`, `components` (= primitives + icons), `theme`, `full`. In `src/lib.rs` **both**
 `components` and `primitives` modules are gated on the `primitives` feature, and `theme` gates
 `utils::theme`. With no features only `utils` and `middleware` exist, so always check/build with
-`--features full` (which is what `playground` depends on).
+`--features full` (which is what `docs` depends on).
 
 ## Architecture: the two layers
 
@@ -75,7 +75,7 @@ expose `as_str()` for rendering into `data-*` attributes.
 **State is expressed as data attributes**, not conditional classes: `data-state` (`open`/`closed`,
 `checked`/`unchecked`, `active`/`inactive`), `data-side`, `data-align`, `data-orientation`,
 `data-slot`, `data-variant`. Styling then targets them via `data-[state=open]:…` or the
-`@custom-variant`s declared in `playground/styles/globals.css`.
+`@custom-variant`s declared in `docs/styles/globals.css`.
 
 **Polymorphic children (`asChild`)**: components that may render as something else take an optional
 `render` / `as_child: Callback<(AnyNodeRef, Callback<MouseEvent>), AnyView>` and branch with
@@ -87,22 +87,22 @@ positioning can measure the trigger.
 
 ## Theming & CSS
 
-All Tailwind v4 configuration is CSS-side in `playground/styles/globals.css`: `@theme inline` token
+All Tailwind v4 configuration is CSS-side in `docs/styles/globals.css`: `@theme inline` token
 definitions, `@custom-variant dark (&:is(.dark *))`, radius scale derived from `--radius`, and
 crucially `@source "../../src"` so Tailwind scans the library's Rust sources for class names. Classes
-that only exist in `src/` and are never referenced from the playground still get generated — but only
+that only exist in `src/` and are never referenced from the docs app still get generated — but only
 as literal strings; do not build class names dynamically. `styles/animate.css` is a v4-compatible
 port of `tailwindcss-animate` (`animate-in`, `fade-in-0`, `slide-in-from-top-2`, …).
 
 `ThemeProvider` (`src/utils/theme.rs`, `theme` feature) reads/writes the `ui-theme` localStorage key,
 resolves `Theme::System` via `prefers-color-scheme`, and toggles the `dark` class on `<html>`.
 
-## Playground
+## Docs site
 
-`playground/src/app.rs` wraps everything in `ThemeProvider` → `ToastProvider` → `Router`. Adding a docs
-page means touching five places: the new `playground/src/pages/docs/<name>.rs` (a `Page` component
+`docs/src/app.rs` wraps everything in `ThemeProvider` → `ToastProvider` → `Router`. Adding a docs
+page means touching five places: the new `docs/src/pages/docs/<name>.rs` (a `Page` component
 using `DocLayout` + `DemoSection`), `pages/docs/mod.rs`, the route in `app.rs`, the `NAV` const in
-`playground/src/layout/doc_layout.rs`, and the `COMPONENTS` const in `pages/docs/index.rs`.
+`docs/src/layout/doc_layout.rs`, and the `COMPONENTS` const in `pages/docs/index.rs`.
 
 `DemoSection` takes an optional `code` prop that renders the snippet below the demo. **Put snippets in
 module-level consts, never inline in `view!`** — leptosfmt reformats raw strings inside the macro,
