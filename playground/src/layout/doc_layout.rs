@@ -238,8 +238,8 @@ pub fn DocLayout(
     description: &'static str,
     children: Children,
 ) -> impl IntoView {
-    // The docs nav is the library's own sidebar, which is the only honest way to find out what it
-    // is like to live with: the collapse, the rail and the stored preference are all the real ones.
+    // The docs nav is the library's own sidebar, dogfooded: the collapse, the rail and the
+    // stored preference are the real ones.
     let location = use_location();
 
     view! {
@@ -283,17 +283,15 @@ pub fn DocLayout(
                                                             <SidebarMenuButton
                                                                 active=is_current
                                                                 // `A` takes no node ref, so the
-                                                                // state attribute is written on
-                                                                // the link itself. It sets
-                                                                // `aria-current` on its own.
+                                                                // state attribute goes on the
+                                                                // link itself.
                                                                 render=Callback::new(move |(class, _): (Signal<String>, _)| {
                                                                     view! {
                                                                         <A
                                                                             href=item.href
-                                                                            // Prefix matching would
-                                                                            // mark "Components"
-                                                                            // current on every
-                                                                            // /docs/* page.
+                                                                            // Or "Components"
+                                                                            // reads as current
+                                                                            // on every page.
                                                                             exact=true
                                                                             attr:class=class
                                                                             attr:data-active=move || {

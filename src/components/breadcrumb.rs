@@ -1,8 +1,8 @@
 //! The trail back up.
 //!
-//! Style-only, but the markup matters: a `<nav>` labelled "breadcrumb" around an ordered list, the
-//! current page marked `aria-current="page"` rather than linked, and the separators hidden from
-//! assistive tech — they are punctuation, not content.
+//! Style-only, but the markup is the point: a `<nav>` labelled "breadcrumb" around an ordered
+//! list, the current page marked rather than linked, and the separators hidden — punctuation,
+//! not content.
 
 use crate::{cn, icons::chevron::ChevronRight};
 use leptos::prelude::*;

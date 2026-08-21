@@ -1,21 +1,13 @@
 //! A one-time code, typed a character at a time.
 //!
-//! The obvious build — one `<input>` per box, with focus hopping between them — is the one that
-//! breaks everywhere it matters: paste drops everything after the first character, iOS and Android
-//! will not offer the SMS code, password managers fill the first box and give up, and selecting
-//! across boxes is impossible. So there is exactly **one** real input here, holding the whole
-//! value, laid transparently over the boxes. The boxes are just painted output.
+//! One real input holds the whole value, laid transparently over painted boxes. One input per box
+//! is the obvious build and the wrong one: paste drops everything after the first character,
+//! phones will not offer the SMS code, and password managers fill one box and give up.
 //!
-//! That inverts what needs writing. Paste, autofill, `autocomplete="one-time-code"`, backspace and
-//! the mobile numeric keyboard all come from the platform. What this module adds is filtering the
-//! value to the allowed characters, capping it at `length`, publishing which slot is live, and
-//! keeping the caret at the end — a code is a queue, typed at the back and rubbed out from the
-//! back, and letting the caret sit in the middle only produces digits that shuffle sideways.
-//!
-//! "Caret at the end" is enforced by refusing the keys that move it, not by collapsing every
-//! selection. Collapsing selections looks equivalent and is not: it also kills select-all, and
-//! then pasting a fresh code over a full field does nothing at all, because the selection is gone
-//! by the time the paste lands and `maxlength` rejects it.
+//! Paste, autofill and the numeric keyboard come from the platform; this filters the value, caps
+//! it at `length`, publishes the live slot, and keeps the caret at the end by refusing the keys
+//! that move it — collapsing selections instead would also kill select-all, and then pasting over
+//! a full field would do nothing.
 
 use leptos::{context::Provider, ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
@@ -70,8 +62,8 @@ impl InputOtpContext {
         self.filled() >= self.length
     }
 
-    /// The slot the next character will land in, or the last one once the code is full. `None`
-    /// while the input is not focused — an unfocused field should not look like it is waiting.
+    /// The slot the next character lands in, or the last once full. `None` while unfocused, so
+    /// an idle field does not look like it is waiting.
     pub fn active_index(&self) -> Option<usize> {
         if !self.focused.get() || self.length == 0 {
             return None;
@@ -116,9 +108,8 @@ pub fn InputOtpRoot(
             .and_then(|node| node.dyn_into::<HtmlInputElement>().ok())
     };
 
-    // The caret belongs at the end, always. Clicking the fourth box does not mean "insert here":
-    // the boxes are painted output, and the invisible text behind them does not line up with them
-    // anyway, so honouring the browser's caret would put it somewhere the user did not point at.
+    // The caret belongs at the end: the boxes are painted output, and the text behind them does
+    // not line up with them anyway.
     let snap_caret = move || {
         if let Some(input) = input_element() {
             let end = input.value().chars().count() as u32;
@@ -126,8 +117,8 @@ pub fn InputOtpRoot(
         }
     };
 
-    // Refuse the keys that would park the caret mid-string. Selection keys are deliberately left
-    // alone: Ctrl+A then typing or pasting is how a code gets replaced.
+    // Refuse the keys that park the caret mid-string; selection keys are left alone, since
+    // Ctrl+A then typing is how a code gets replaced.
     let handle_keydown = move |e: ev::KeyboardEvent| {
         if matches!(
             e.key().as_str(),
@@ -148,8 +139,7 @@ pub fn InputOtpRoot(
             .take(length)
             .collect();
 
-        // The DOM keeps whatever was typed, including characters the pattern rejects, so it has to
-        // be written back rather than left to drift out of step with the signal.
+        // The DOM keeps whatever was typed, rejected characters included, so write it back.
         if let Some(input) = input_element()
             && input.value() != filtered
         {
@@ -176,16 +166,14 @@ pub fn InputOtpRoot(
                 {children()}
                 <input
                     node_ref=input_ref
-                    // A real, focusable, pasteable input — merely invisible. `caret-color` is
-                    // transparent because the slots draw their own cursor.
+                    // A real, focusable, pasteable input, merely invisible; the slots draw
+                    // their own cursor.
                     style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; caret-color: transparent; background: transparent; border: 0; outline: none; padding: 0; cursor: default;"
                     inputmode=pattern.input_mode()
                     autocomplete="one-time-code"
                     spellcheck="false"
-                    // Deliberately no `maxlength`: it truncates the *raw* text, so pasting
-                    // "12-34-56" into a six-slot field would be cut to "12-34-" and then filtered
-                    // down to four digits. The cap is applied after filtering instead, and the
-                    // filtered value is written straight back to the element.
+                    // No `maxlength`: it truncates the raw text, so "12-34-56" would be cut to
+                    // "12-34-" and then filtered to four digits. The cap comes after filtering.
                     disabled=disabled
                     prop:value=move || value.get()
                     on:input=handle_input
@@ -202,7 +190,7 @@ pub fn InputOtpRoot(
     }
 }
 
-/// A group of slots. Purely presentational — it exists so a code can be drawn as `123 456`.
+/// A group of slots; presentational, so a code can be drawn as `123 456`.
 #[component]
 pub fn InputOtpGroupRoot(
     #[prop(optional, into)] class: Signal<String>,
@@ -228,8 +216,8 @@ pub fn InputOtpSlotRoot(
             data-active=move || (ctx.active_index() == Some(index)).then_some("true")
             data-filled=move || ctx.char_at(index).is_some().then_some("true")
             data-disabled=move || ctx.disabled.get().then_some("true")
-            // The value lives in the input; the slots are output, and announcing each box
-            // separately would read the code out one meaningless character at a time.
+            // The slots are output: announcing each would read the code out character by
+            // character.
             aria-hidden="true"
             class=class
         >

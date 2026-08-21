@@ -1,14 +1,11 @@
 //! A scrolling box with scrollbars this library draws itself.
 //!
-//! The element still scrolls natively — wheel, trackpad, touch, keyboard, focus-scrolling and
-//! `scrollIntoView` all belong to the browser and none of them are reimplemented here. What is
-//! replaced is only the *painting* of the scrollbar, because a native one cannot be styled
-//! consistently across platforms and takes layout space on some of them and not others.
+//! The box still scrolls natively; only the painting of the scrollbar is replaced, because a
+//! native one cannot be styled consistently across platforms. The viewport hides its own bars and
+//! this measures it, publishing thumb geometry in pixels.
 //!
-//! So the viewport hides its native bars and this module measures it — `scrollHeight` against
-//! `clientHeight` — and publishes thumb geometry in pixels. Measuring is driven by a
-//! `ResizeObserver` on both the viewport and its content as well as the scroll event, because
-//! content that grows after mount changes the thumb without ever firing a scroll.
+//! Measuring is driven by a `ResizeObserver` on the viewport *and* its content as well as by the
+//! scroll event: content that grows after mount changes the thumb without any scroll firing.
 
 use crate::utils::types::Orientation;
 use leptos::{
@@ -20,14 +17,13 @@ use leptos::{
 use leptos_node_ref::AnyNodeRef;
 use web_sys::{Element, HtmlElement, ResizeObserver};
 
-/// A thumb never shrinks below this, however long the content is — a two-pixel thumb is a target
-/// nobody can hit.
+/// A thumb never shrinks below this: a two-pixel thumb is a target nobody can hit.
 const MIN_THUMB: f64 = 20.0;
 
 #[derive(Copy, Clone, Default, PartialEq, Debug)]
 pub struct ScrollMetrics {
-    /// Whether the content actually overflows on this axis. A scrollbar for content that fits is
-    /// noise, so the styled layer hides it.
+    /// Whether the content overflows on this axis; the styled layer hides the bar when it does
+    /// not.
     pub overflowing: bool,
     /// Thumb length along the track, in pixels.
     pub size: f64,
@@ -73,8 +69,7 @@ impl ScrollAreaContext {
             viewport.scroll_left() as f64,
         );
 
-        // Written through `maybe_update` so a scroll that does not move the thumb — which is most
-        // of them, at one pixel of thumb per several of content — does not wake every subscriber.
+        // Most scrolls do not move the thumb, and those must not wake every subscriber.
         if self.vertical.get_untracked() != next_vertical {
             self.vertical.set(next_vertical);
         }
@@ -85,8 +80,7 @@ impl ScrollAreaContext {
 }
 
 fn axis_metrics(client: f64, scroll: f64, offset: f64) -> ScrollMetrics {
-    // The one-pixel slack is for sub-pixel layout, which routinely reports a scrollHeight a
-    // fraction larger than clientHeight for content that plainly fits.
+    // A pixel of slack for sub-pixel layout, which reports content that fits as overflowing.
     if client <= 0.0 || scroll <= client + 1.0 {
         return ScrollMetrics::default();
     }
@@ -156,16 +150,14 @@ pub fn ScrollAreaViewportRoot(
             return;
         }
 
-        // Both are watched: the viewport for the box getting bigger or smaller, the content for it
-        // growing underneath. Either changes the thumb without a scroll event ever firing.
+        // The viewport for the box resizing, the content for it growing underneath.
         let callback = Closure::<dyn Fn()>::new(move || ctx.measure());
         if let Ok(resize_observer) = ResizeObserver::new(callback.as_ref().unchecked_ref()) {
             resize_observer.observe(&viewport);
             resize_observer.observe(&content);
             observer.set_value(Some(resize_observer));
         }
-        // The closure outlives this scope by design; the observer holds it, and both are dropped
-        // together when the observer is disconnected below.
+        // The observer holds the closure; both go when it is disconnected below.
         callback.forget();
     });
 
@@ -181,9 +173,8 @@ pub fn ScrollAreaViewportRoot(
         <div
             node_ref=ctx.viewport_ref
             data-slot="scroll-area-viewport"
-            // Functional, not decorative: the box has to scroll, and its native bars have to go,
-            // or there would be two. The WebKit half of hiding them needs a pseudo-element rule,
-            // which an inline style cannot express — the styled layer carries that one class.
+            // Functional: the box scrolls and its native bars go. WebKit needs a pseudo-element
+            // rule an inline style cannot express, which the styled layer carries.
             style="overflow: auto; scrollbar-width: none; -ms-overflow-style: none;"
             on:scroll=move |_| ctx.measure()
             class=class
@@ -195,8 +186,7 @@ pub fn ScrollAreaViewportRoot(
     }
 }
 
-/// The track. Clicking it jumps the thumb to the pointer rather than paging, which is what a
-/// pointer aimed at a specific place in a long document means.
+/// The track. A press jumps the thumb to the pointer rather than paging.
 #[component]
 pub fn ScrollAreaScrollbarRoot(
     #[prop(default = Orientation::Vertical)] orientation: Orientation,
@@ -207,7 +197,7 @@ pub fn ScrollAreaScrollbarRoot(
     let track_ref = AnyNodeRef::new();
 
     let jump_to = move |e: ev::PointerEvent| {
-        // A press that landed on the thumb is the start of a drag, and the thumb handles it.
+        // A press on the thumb is the start of a drag, which the thumb handles.
         if let Some(target) = e.target()
             && let Ok(target) = target.dyn_into::<Element>()
             && matches!(target.closest("[data-slot=scroll-area-thumb]"), Ok(Some(_)))
@@ -307,7 +297,7 @@ pub fn ScrollAreaThumbRoot(
             return;
         };
 
-        // The press must not also reach the track underneath, which would jump before dragging.
+        // The press must not reach the track, which would jump before dragging.
         e.stop_propagation();
 
         let start_pointer = match orientation {
@@ -349,9 +339,7 @@ pub fn ScrollAreaThumbRoot(
                     return;
                 }
 
-                // A pixel of thumb is worth many pixels of content, and that ratio is the whole
-                // conversion: the thumb travels `max_offset` while the content travels
-                // `scroll - client`.
+                // The thumb travels `max_offset` while the content travels `scroll - client`.
                 let travel = (pointer - start_pointer) * ((scroll - client) / max_offset);
                 let target = (start_scroll + travel).max(0.0);
 

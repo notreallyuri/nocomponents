@@ -1,17 +1,10 @@
 //! A value chosen by dragging along a track.
 //!
-//! One thumb or several: the value is a `Vec<f64>`, and a range slider is just the two-element
-//! case, which keeps the geometry, the keyboard contract and the ARIA in one place instead of
-//! growing a second component that does almost the same thing. Thumbs cannot cross — each is
-//! clamped to its neighbours — so a range stays a range no matter how hard it is dragged.
+//! The value is a `Vec<f64>` and a range slider is the two-element case, so the geometry, the
+//! keyboard contract and the ARIA are written once. Thumbs clamp to their neighbours.
 //!
-//! Dragging is tracked on the window rather than on the thumb. A pointer that leaves the element
-//! mid-drag still belongs to the drag: releasing outside the track has to end it, and moving fast
-//! enough to outrun the thumb must not drop it.
-//!
-//! Positions are geometry, not decoration, so this layer writes the inline `left`/`width` (or
-//! `bottom`/`height`) and publishes `data-orientation` / `data-disabled` for the styled layer to
-//! hang everything else on.
+//! Dragging is tracked on the window: a pointer that leaves the element mid-drag still belongs to
+//! the drag. Positions are geometry, so this layer writes the inline `left`/`width`.
 
 use crate::utils::types::Orientation;
 use leptos::{context::Provider, ev, prelude::*, wasm_bindgen::JsCast};
@@ -113,7 +106,7 @@ impl SliderContext {
                 }
                 (client_x - rect.left()) / rect.width()
             }
-            // A vertical slider runs bottom-to-top: the larger value is the higher one.
+            // A vertical slider runs bottom-to-top.
             Orientation::Vertical => {
                 if rect.height() <= 0.0 {
                     return None;
@@ -125,8 +118,8 @@ impl SliderContext {
         Some(self.min + fraction.clamp(0.0, 1.0) * (self.max - self.min))
     }
 
-    /// The thumb closest to a value — the one a click on the track should pick up. Ties go to the
-    /// lower thumb, except at the very top of the range, where it has nowhere to go.
+    /// The thumb a press on the track picks up. Ties go to the lower thumb, except at the top of
+    /// the range, where it has nowhere to go.
     pub fn closest_thumb(&self, value: f64) -> usize {
         self.values.with(|values| {
             let mut best = 0;
@@ -176,14 +169,12 @@ pub fn SliderRoot(
         track_ref: AnyNodeRef::new(),
     };
 
-    // The window listeners live only for the length of a drag. Storing the handles is what lets
-    // them be removed again — leaving them installed would mean every slider on the page reacted
-    // to every pointer move for the rest of the session.
+    // Installed per gesture and removed on release, or every slider on the page would react to
+    // every pointer move for the rest of the session.
     let move_handle = StoredValue::new_local(None::<WindowListenerHandle>);
     let up_handle = StoredValue::new_local(None::<WindowListenerHandle>);
 
-    // `take` rather than read-then-clear: a listener handle is not `Clone`, so the only way to
-    // get one out in order to remove it is to move it out.
+    // `take` rather than read-then-clear: a listener handle is not `Clone`.
     let stop_drag = move || {
         move_handle.update_value(|slot| {
             if let Some(handle) = slot.take() {
@@ -208,8 +199,8 @@ pub fn SliderRoot(
             return;
         };
 
-        // Pressing the track moves the nearest thumb to the press and picks it up, so a click and
-        // a drag are the same gesture rather than two.
+        // The nearest thumb moves to the press and is picked up, so a click and a drag are one
+        // gesture.
         let index = context.closest_thumb(value);
         context.active_thumb.set(Some(index));
         context.set_thumb(index, value);
@@ -252,8 +243,7 @@ pub fn SliderRoot(
     }
 }
 
-/// Moves focus onto the thumb being dragged, so releasing the mouse leaves the keyboard on the
-/// thumb the user was just holding.
+/// Moves focus onto the thumb being dragged, so a release leaves the keyboard on it.
 fn focus_thumb(track_ref: AnyNodeRef, index: usize) {
     if let Some(track) = track_ref.get_untracked()
         && let Some(root) = track
@@ -333,8 +323,7 @@ pub fn SliderThumbRoot(
     let position = move || {
         let percent = ctx.percent(ctx.value_at(index)) * 100.0;
         match ctx.orientation {
-            // The translate is what keeps the thumb centred on its value rather than hanging off
-            // the end of the track at 0% and 100%.
+            // Centres the thumb on its value rather than hanging it off the track's ends.
             Orientation::Horizontal => format!("left: {percent}%; transform: translateX(-50%);"),
             Orientation::Vertical => format!("bottom: {percent}%; transform: translateY(50%);"),
         }
@@ -387,8 +376,7 @@ pub fn SliderThumbRoot(
             data-state=move || if ctx.active_thumb.get() == Some(index) { "dragging" } else { "idle" }
             tabindex=move || if ctx.disabled.get() { "-1" } else { "0" }
             aria-orientation=ctx.orientation.as_str()
-            // The announced bounds are the thumb's own, not the track's: the lower thumb of a
-            // range genuinely cannot go past the upper one.
+            // The thumb's own bounds, not the track's: it cannot pass its neighbour.
             aria-valuemin=move || ctx.bounds(index).0
             aria-valuemax=move || ctx.bounds(index).1
             aria-valuenow=move || ctx.value_at(index)

@@ -1,17 +1,8 @@
 //! A sheet you can throw away with your thumb.
 //!
-//! Everything a drawer shares with a dialog is the dialog's: modality, the focus trap, the layer
-//! stack, Escape, and the exit animation that `is_mounted` keeps alive. What this adds is the one
-//! gesture a sheet does not have — drag the panel toward its own edge and let go, and it leaves.
-//!
-//! Two rules make that gesture feel right rather than merely work. It only travels *outward*: a
-//! bottom drawer dragged upward does not lift off its edge, because there is nothing up there to
-//! reveal. And a flick counts as much as a haul — releasing at speed dismisses even a short drag,
-//! since throwing something away is not the same gesture as placing it, and requiring a fixed
-//! distance would make a fast flick feel ignored.
-//!
-//! The drag is refused when the press lands inside something that is itself scrolled away from the
-//! top, so a drawer containing a long list scrolls that list instead of leaving.
+//! Modality, the focus trap, the layer stack and the exit animation are the dialog's; what this
+//! adds is the drag. It travels outward only, a flick dismisses as surely as a haul, and a press
+//! landing in something already scrolled belongs to that scroller.
 
 use crate::{
     primitives::dialog::{DialogContentRoot, DialogRoot, use_dialog},
@@ -21,34 +12,27 @@ use leptos::{context::Provider, ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
 use web_sys::Element;
 
-/// How far the panel has to travel, as a fraction of its own length, before letting go dismisses.
+/// How far the panel must travel, as a fraction of its own length, before a release dismisses.
 const DISTANCE_THRESHOLD: f64 = 0.25;
 /// Pixels per millisecond past which a release counts as a flick regardless of distance.
 const VELOCITY_THRESHOLD: f64 = 0.4;
-/// How much a panel gives up while a nested drawer sits over it, and how far it slides back from
-/// its own edge. Small on purpose: the point is to show that something is behind the child, not to
-/// animate the parent away.
+/// How much a panel gives up, and how far it slides back, while a nested drawer sits over it.
 const RECEDE_SCALE: f64 = 0.96;
 const RECEDE_SHIFT: f64 = 14.0;
-/// How many layers deep the recede keeps compounding. Past this the panel would be a sliver, and
-/// nobody can read a stack that deep anyway.
+/// Depth past which the recede stops compounding; further back the panel would be a sliver.
 const RECEDE_MAX_STEPS: usize = 3;
 
 #[derive(Copy, Clone)]
 pub struct DrawerContext {
     pub side: Side,
-    /// How far the panel has been dragged from its resting place, in pixels. Never negative — see
-    /// the module note about travelling outward only.
+    /// Drag distance from the resting place, in pixels. Never negative: it travels outward only.
     pub offset: RwSignal<f64>,
     pub dragging: RwSignal<bool>,
-    /// How many drawers are open inside this one, at any depth — not just its own children. A
-    /// count rather than a flag because two can overlap while one is animating out, and because
-    /// the recede compounds with it: the outermost panel of a three-deep stack has to sit further
-    /// back than the one above it, or the layers land on each other and the stack reads as two.
+    /// Drawers open inside this one, at any depth. A count rather than a flag: two can overlap
+    /// while one animates out, and the recede compounds with it.
     pub nested_open: RwSignal<usize>,
-    /// The counters of every drawer this one sits inside, outermost first. Opening announces
-    /// itself to all of them, which is what makes the count transitive. Holding the *signals*
-    /// rather than the contexts is what keeps `DrawerContext` a fixed size and `Copy`.
+    /// The counters of every drawer this one sits inside, outermost first; opening announces
+    /// itself to all of them. Signals rather than contexts, so `DrawerContext` stays `Copy`.
     ancestors: StoredValue<Vec<RwSignal<usize>>>,
 }
 
@@ -58,22 +42,18 @@ impl DrawerContext {
         self.nested_open.get() > 0
     }
 
-    /// How many steps back this panel sits, capped so a deep stack stays legible.
+    /// How many steps back this panel sits, capped at `RECEDE_MAX_STEPS`.
     pub fn recede_depth(&self) -> usize {
         self.nested_open.get().min(RECEDE_MAX_STEPS)
     }
 
     /// The panel's transform: its drag offset, or its recede when a nested drawer is over it.
-    ///
-    /// A drag in progress wins over the recede. The panel under the finger has to follow the
-    /// finger, and there is no sensible way to be halfway between "shoved aside" and "held".
+    /// A drag in progress wins — the panel under the finger has to follow the finger.
     pub fn transform(&self) -> String {
         let offset = self.offset.get();
         let depth = self.recede_depth();
 
-        // Receding moves *inward*, the opposite way from a dismissal: sliding back from its own
-        // edge is what leaves the panel's far edge visible behind the child. It compounds with
-        // depth so each layer of a stack sits a step further back than the one over it.
+        // Receding moves inward, the opposite way from a dismissal, and compounds with depth.
         let travel = match (offset != 0.0, depth > 0) {
             (true, _) => offset,
             (false, true) => -RECEDE_SHIFT * depth as f64,
@@ -95,9 +75,7 @@ impl DrawerContext {
     }
 
     /// Which corner the recede shrinks toward: the edge facing the viewport, never the anchored
-    /// one. Scaling about the centre pulls the panel's inner edge *inward*, which cancels out the
-    /// shift and leaves nothing peeking past the child; scaling about the inner edge moves that
-    /// edge outward and puts the slack behind the child, where it cannot be seen.
+    /// one. Scaling about the centre would cancel the shift out and leave nothing peeking past.
     pub fn transform_origin(&self) -> &'static str {
         match self.side {
             Side::Bottom => "center top",
@@ -130,14 +108,13 @@ pub fn use_drawer() -> DrawerContext {
 pub fn DrawerRoot(
     #[prop(default = Side::Bottom)] side: Side,
     #[prop(default = None, into)] open: Option<RwSignal<bool>>,
-    /// Non-modal leaves the page usable underneath: no overlay, no focus trap, and a pointer
-    /// landing outside closes the drawer instead of being swallowed.
+    /// Non-modal leaves the page usable underneath: no overlay, no focus trap, and an outside
+    /// pointer closes the drawer.
     #[prop(default = true)]
     modal: bool,
     children: Children,
 ) -> impl IntoView {
-    // Read before providing: this resolves to the drawer this one is nested inside, if any. Its
-    // chain plus itself becomes ours, so every drawer knows the whole line above it.
+    // Read before providing, so this resolves to the parent: its chain plus itself becomes ours.
     let ancestors = match use_context::<DrawerContext>() {
         Some(parent) => {
             let mut chain = parent.ancestors.get_value();
@@ -162,13 +139,10 @@ pub fn DrawerRoot(
     }
 }
 
-/// Anything that owns the press already. Dragging a panel by its own buttons is not a gesture
-/// anybody makes on purpose, and starting one means a press that drifts a few pixels drags the
-/// whole drawer while the user is only trying to click.
+/// Anything that owns the press already: a press on these that drifts is a click, not a drag.
 const INTERACTIVE: &str = "button, a, input, textarea, select, [role='button'], [contenteditable]";
 
-/// Whether the press landed inside something already scrolled away from its start, in which case
-/// the gesture belongs to that scroller and not to the drawer.
+/// Whether the press landed in something already scrolled, in which case the gesture is its.
 fn press_is_inside_scrolled_content(target: &Element, panel: &Element, vertical: bool) -> bool {
     let mut node = Some(target.clone());
 
@@ -218,17 +192,14 @@ pub fn DrawerContentRoot(
         });
     };
 
-    // A drawer that was dragged part-way and then closed some other way — Escape, the overlay —
-    // must not reopen still shoved halfway off its edge.
+    // A drawer closed some other way mid-drag must not reopen still shoved off its edge.
     Effect::new(move |_| {
         if dialog.is_open.get() {
             ctx.offset.set(0.0);
         }
     });
 
-    // Tell the drawer above us that we are here, so it can give up some size and slide back. The
-    // count is nudged on transitions rather than assigned, since two children of one parent each
-    // own a share of it.
+    // Nudged on transitions rather than assigned: siblings each own a share of the same count.
     let counted = StoredValue::new(false);
     let release_ancestors = move || {
         if counted.get_value() {
@@ -256,8 +227,7 @@ pub fn DrawerContentRoot(
         }
     });
 
-    // A drawer torn down while still open — its whole subtree closing at once — has to hand the
-    // count back, or the parent stays shrunken with nothing over it.
+    // Torn down while open, it still has to hand the count back.
     on_cleanup(release_ancestors);
 
     on_cleanup(stop_listening);
@@ -291,9 +261,7 @@ pub fn DrawerContentRoot(
             rect.width()
         };
 
-        // The flick test needs the speed of the *last* movement, so each move is compared against
-        // the sample before it. Measuring at release instead would always read zero: by then the
-        // newest sample is the release position itself.
+        // Velocity of the last movement, sampled between moves: at release it always reads zero.
         let last_sample = StoredValue::new((0.0f64, js_sys::Date::now()));
         let last_velocity = StoredValue::new(0.0f64);
 
@@ -327,9 +295,8 @@ pub fn DrawerContentRoot(
             let travel = ctx.offset.get_untracked();
             let (_, last_time) = last_sample.get_value();
 
-            // A gap since the last movement means the pointer came to rest before letting go,
-            // which is a placement rather than a throw. And the velocity is signed on purpose: a
-            // quick shove *back* toward the edge should not dismiss.
+            // A pause before release is a placement, not a throw; a signed velocity means a
+            // shove back toward the edge does not dismiss.
             let velocity = if js_sys::Date::now() - last_time < 100.0 {
                 last_velocity.get_value()
             } else {
@@ -341,10 +308,8 @@ pub fn DrawerContentRoot(
 
             if far_enough || fast_enough {
                 dialog.close();
-                // Carry on to fully closed rather than resetting to zero. Zeroing here would snap
-                // the panel back to its resting place and only *then* slide it out, so a drag that
-                // succeeded would visibly rewind first. The offset is cleared when the drawer next
-                // opens, by the effect above.
+                // Carry on to closed rather than zeroing, which would rewind the panel before
+                // sliding it out. The effect above clears the offset on the next open.
                 ctx.offset.set(length);
             } else {
                 ctx.offset.set(0.0);
@@ -359,8 +324,7 @@ pub fn DrawerContentRoot(
             data-side=ctx.side.as_str()
             data-dragging=move || ctx.dragging.get().then_some("true")
             data-nested=move || (ctx.nested_open.get() > 0).then(|| ctx.nested_open.get().to_string())
-            // `data-state` is normally the dialog content's, but the panel is what animates here,
-            // so it has to carry the attribute the animations key off.
+            // The panel animates rather than the dialog content, so it carries `data-state`.
             data-state=move || if dialog.is_open.get() { "open" } else { "closed" }
             style=move || {
                 let transform = match ctx.transform().as_str() {
@@ -369,8 +333,7 @@ pub fn DrawerContentRoot(
                         format!("transform: {value}; transform-origin: {};", ctx.transform_origin())
                     }
                 };
-                // Transitions are off while a finger is down: the panel has to track the pointer
-                // exactly, and easing it would feel like lag.
+                // The panel has to track the pointer exactly; easing would read as lag.
                 if ctx.dragging.get() {
                     format!("{transform} transition: none;")
                 } else {
@@ -387,8 +350,7 @@ pub fn DrawerContentRoot(
     }
 }
 
-/// The grab bar. Purely an affordance — the whole panel is draggable — but a drawer without one
-/// does not look draggable.
+/// The grab bar. An affordance only, since the whole panel is draggable.
 #[component]
 pub fn DrawerHandleRoot(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
     let ctx = use_drawer();

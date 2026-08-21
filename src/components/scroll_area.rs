@@ -1,8 +1,7 @@
 //! The styled scroll area.
 //!
-//! Sizes and positions come from `src/primitives/scroll_area.rs` as inline geometry; what is
-//! decided here is what a track and a thumb look like, and that a scrollbar for content which
-//! fits is not drawn at all.
+//! Geometry comes from the primitive as inline style; what is decided here is what a track and a
+//! thumb look like, and that a bar for content which fits is not drawn.
 
 use crate::{
     cn,
@@ -16,8 +15,7 @@ use leptos::prelude::*;
 #[component]
 pub fn ScrollArea(
     #[prop(optional, into)] class: Signal<String>,
-    /// Also draw a horizontal scrollbar. Off by default: most scroll areas are vertical, and a
-    /// horizontal track under content that never overflows sideways is just a line.
+    /// Also draw a horizontal scrollbar. Off by default, since most scroll areas are vertical.
     #[prop(default = false)]
     horizontal: bool,
     children: Children,
@@ -48,9 +46,8 @@ pub fn ScrollAreaViewport(
     view! {
         <ScrollAreaViewportRoot class=move || {
             cn!(
-                // The primitive's inline style already sets `scrollbar-width: none`, which covers
-                // Firefox and the standard property. WebKit needs a pseudo-element rule, and an
-                // inline style cannot write one — hence this class.
+                // The primitive's inline `scrollbar-width` covers the standard property; WebKit
+                // needs a pseudo-element rule, which an inline style cannot write.
                 "h-full w-full [&::-webkit-scrollbar]:hidden",
                 class.get()
             )
@@ -70,8 +67,7 @@ pub fn ScrollAreaScrollbar(
             class=move || {
                 cn!(
                     "absolute flex touch-none p-0.5 opacity-0 transition-opacity select-none data-[state=hidden]:pointer-events-none",
-                    // Shown on hover, or whenever the pointer is anywhere in the area — the same
-                    // affordance an overlay scrollbar has on a trackpad.
+                    // Shown while the pointer is anywhere in the area, like an overlay bar.
                     "group-hover/scroll-area:opacity-100 hover:opacity-100 data-[state=visible]:opacity-60",
                     "data-[orientation=vertical]:top-0 data-[orientation=vertical]:right-0 data-[orientation=vertical]:h-full data-[orientation=vertical]:w-2.5",
                     "data-[orientation=horizontal]:bottom-0 data-[orientation=horizontal]:left-0 data-[orientation=horizontal]:h-2.5 data-[orientation=horizontal]:w-full data-[orientation=horizontal]:flex-col",

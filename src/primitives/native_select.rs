@@ -1,9 +1,7 @@
 //! The browser's own `<select>`, bound to a signal.
 //!
-//! Distinct from `select.rs`, which builds a listbox out of divs to get styling and a portal. This
-//! one is the native control: it costs nothing, works everywhere, and on a phone it opens the
-//! platform picker. Reach for it in forms and dense settings; reach for the other when the options
-//! need to look like anything other than a native menu.
+//! Distinct from `select.rs`, which builds a listbox out of divs. This one costs nothing, keeps
+//! `optgroup`, and opens the platform picker on a phone.
 
 use crate::primitives::field::FieldControl;
 use leptos::{ev, prelude::*};

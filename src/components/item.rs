@@ -1,7 +1,6 @@
 //! A row: media on the left, text in the middle, actions on the right.
 //!
-//! Style-only, and deliberately generic — a settings row, a list result, a file entry, a member of
-//! a team. `ItemGroup` stacks them; `ItemSeparator` rules between them.
+//! Style-only and generic. `ItemGroup` stacks them; `ItemSeparator` rules between them.
 
 use crate::{cn, components::separator::Separator, utils::types::AsClass};
 use leptos::prelude::*;
@@ -209,7 +208,7 @@ pub fn ItemActions(
     }
 }
 
-/// A full-width strip above the row's main line — a label, a status, a date.
+/// A full-width strip above the row's main line.
 #[component]
 pub fn ItemHeader(
     #[prop(optional, into)] class: Signal<String>,

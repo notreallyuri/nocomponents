@@ -115,12 +115,8 @@ const MENU: &str = r#"// A row is a button, a badge, an action and a nested list
 // While the rows are still loading:
 <SidebarMenuSkeleton width=70 />"#;
 
-/// A box that holds a whole sidebar layout.
-///
-/// `transform-gpu` is the point: a transformed ancestor becomes the containing block for the
-/// `fixed` panel inside it, so the demo stays in its box instead of pinning itself to the window.
-/// `md:` is what the sidebar's own breakpoint keys off, so the box also has to be wide enough for
-/// the desktop presentation to be the one on show.
+/// A box that holds a whole sidebar layout. `transform-gpu` is the point: a transformed ancestor
+/// becomes the containing block for the `fixed` panel, so the demo stays in its box.
 #[component]
 fn Frame(children: Children) -> impl IntoView {
     view! {
@@ -130,7 +126,7 @@ fn Frame(children: Children) -> impl IntoView {
     }
 }
 
-/// The rows every demo shares, so each section is about the one thing it demonstrates.
+/// The rows every demo shares, so each section is about one thing.
 #[component]
 fn Nav(#[prop(default = false)] tooltips: bool) -> impl IntoView {
     let tooltip =
@@ -166,7 +162,7 @@ fn Nav(#[prop(default = false)] tooltips: bool) -> impl IntoView {
     }
 }
 
-/// The page beside the sidebar: a bar with the trigger in it, and something to look at.
+/// The page beside the sidebar: a bar with the trigger, and something to look at.
 #[component]
 fn Body(#[prop(default = "Overview")] title: &'static str) -> impl IntoView {
     view! {
@@ -185,8 +181,7 @@ fn Body(#[prop(default = "Overview")] title: &'static str) -> impl IntoView {
 
 #[component]
 pub fn Page() -> impl IntoView {
-    // Controlled, so the demos on this page do not all write the one stored preference between
-    // them. An uncontrolled sidebar is the common case and persists on its own.
+    // Controlled, so the demos do not all write the one stored preference between them.
     let default_open = RwSignal::new(true);
     let icon_open = RwSignal::new(true);
     let right_open = RwSignal::new(true);

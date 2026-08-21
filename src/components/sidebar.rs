@@ -1,13 +1,10 @@
 //! The styled sidebar.
 //!
-//! Two presentations of the same state, picked by viewport. Wide: a fixed panel that the layout
-//! makes room for, which is why `Sidebar` renders *two* boxes — one in the flow whose only job is
-//! to reserve the width, and the fixed one the reader actually sees. Animating a fixed panel and
-//! a flow gap separately is what makes the content beside it slide instead of jump. Narrow: a
-//! `Sheet`, because there is no room to reserve.
+//! Two presentations of one state, picked by viewport. Wide, `Sidebar` renders two boxes: one in
+//! the flow that only reserves the width, and the fixed one the reader sees — animating them
+//! separately is what makes the content beside it slide rather than jump. Narrow, it is a `Sheet`.
 //!
-//! Everything below the panel is style-only. The state arrives as `data-*` on the container, so a
-//! collapsed sidebar is `group-data-[collapsible=icon]:…` on each part rather than a branch here.
+//! Everything below the panel is style-only, keyed off the `data-*` on the container.
 
 use crate::{
     cn,
@@ -31,12 +28,12 @@ use leptos_node_ref::AnyNodeRef;
 /// How the panel sits in the page.
 #[derive(Default, Clone, Copy, PartialEq)]
 pub enum SidebarVariant {
-    /// Flush against the edge, with a border where it meets the content.
+    /// Flush against the edge, bordered where it meets the content.
     #[default]
     Sidebar,
     /// Inset from the edges, rounded, with a shadow — a panel resting on the page.
     Floating,
-    /// The panel keeps the page's background and the *content* becomes the floating card.
+    /// The panel keeps the page's background and the content becomes the floating card.
     Inset,
 }
 
@@ -49,14 +46,13 @@ impl SidebarVariant {
         }
     }
 
-    /// Whether the panel is inset from the window, which changes both boxes' widths: the gap has
-    /// to account for the padding around a collapsed icon rail.
+    /// Whether the panel is inset from the window, which widens both boxes by its padding.
     fn is_inset(&self) -> bool {
         matches!(self, SidebarVariant::Floating | SidebarVariant::Inset)
     }
 }
 
-/// Size of a menu row, rendered into `data-size` so badges and actions can line up with it.
+/// Size of a menu row, rendered into `data-size` so badges and actions line up with it.
 #[derive(Default, Clone, Copy, PartialEq)]
 pub enum SidebarMenuSize {
     #[default]
@@ -123,7 +119,7 @@ pub fn Sidebar(
     let ctx = use_sidebar();
     let stored_children = StoredValue::new(children);
 
-    // The panel is the same tree either way; only the box around it changes.
+    // The same tree either way; only the box around it changes.
     let panel = move || {
         view! {
             <div
@@ -156,17 +152,14 @@ pub fn Sidebar(
 
     move || {
         if ctx.is_mobile.get() {
-            // On a phone the sidebar is an errand, so it arrives as a sheet and takes the layer
-            // stack, the focus trap and the dismissal with it. The sheet's own close button is
-            // hidden: the sidebar has a trigger of its own and two would be one too many.
+            // As a sheet it inherits the layer stack, the focus trap and the dismissal. Its own
+            // close button is hidden, since the sidebar already has a trigger.
             Either::Left(view! {
                 <Sheet open=ctx.open_mobile>
                     <SheetContent
                         side=ctx.side
-                        // The sheet is portalled to `<body>`, above the wrapper that defines the
-                        // widths, so `--sidebar-width` does not reach it — hence the mobile width
-                        // and its own fallback. Overriding it means setting
-                        // `--sidebar-width-mobile` somewhere the portal inherits from, `:root`.
+                        // Portalled to `<body>`, above the wrapper that defines the widths, so
+                        // this needs its own fallback; override it on `:root`.
                         class="w-[var(--sidebar-width-mobile,18rem)] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
                     >
                         <SheetTitle class="sr-only">"Sidebar"</SheetTitle>
@@ -184,27 +177,23 @@ pub fn Sidebar(
                     class=move || {
                         cn!(
                             "group peer hidden text-sidebar-foreground md:block",
-                            // The panel pins itself to its edge, but the box that reserves its
-                            // width is in the flow and would otherwise sit where the markup put
-                            // it — a right-hand sidebar with a left-hand gap squeezes the content
-                            // from both sides. Ordering it last makes the markup order stop
-                            // mattering.
+                            // The reserved box is in the flow: without this a right-hand
+                            // panel keeps a left-hand gap and squeezes the content from both
+                            // sides.
                             "data-[side=right]:order-last",
                             class.get(),
                         )
                     }
                 >
-                    // Reserves the width in the flow. Nothing is drawn here — it is the
-                    // reason the page beside the sidebar slides rather than jumps.
+                    // Reserves the width in the flow; nothing is drawn in it.
                     <div class=cn!(
                         "relative w-[var(--sidebar-width)] bg-transparent transition-[width] duration-200 ease-linear",
                         "group-data-[collapsible=offcanvas]:w-0 group-data-[side=right]:rotate-180",
                         gap_class,
                     ) />
                     <div class=cn!(
-                        // `inset-y-0` rather than a viewport height: a fixed box is measured
-                        // against the nearest transformed ancestor when there is one, so a demo
-                        // can hold the whole sidebar without it escaping to the window.
+                        // `inset-y-0` rather than a viewport height, so a transformed
+                        // ancestor can hold the sidebar instead of it escaping to the window.
                         "fixed inset-y-0 z-10 hidden w-[var(--sidebar-width)] transition-[left,right,width] duration-200 ease-linear md:flex",
                         edge_class,
                         fixed_class,
@@ -215,7 +204,7 @@ pub fn Sidebar(
     }
 }
 
-/// The page beside the sidebar. Takes the room the sidebar is not using.
+/// The page beside the sidebar; takes the room the sidebar is not using.
 #[component]
 pub fn SidebarInset(
     #[prop(optional, into)] class: Signal<String>,
@@ -227,8 +216,7 @@ pub fn SidebarInset(
             class=move || {
                 cn!(
                     "relative flex w-full flex-1 flex-col bg-background",
-                    // The inset variant floats the content instead of the panel, and pulls its
-                    // margin back in when the sidebar collapses.
+                    // The inset variant floats the content instead of the panel.
                     "md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm",
                     "md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2",
                     class.get(),
@@ -312,7 +300,7 @@ pub fn SidebarFooter(
     }
 }
 
-/// Everything between the header and the footer, and the part that scrolls.
+/// Everything between the header and the footer; the part that scrolls.
 #[component]
 pub fn SidebarContent(
     #[prop(optional, into)] class: Signal<String>,
@@ -340,7 +328,7 @@ pub fn SidebarSeparator(#[prop(optional, into)] class: Signal<String>) -> impl I
     }
 }
 
-/// A search box in the sidebar's header, sized for it.
+/// A search box sized for the sidebar's header.
 #[component]
 pub fn SidebarInput(
     #[prop(optional, into)] class: Signal<String>,
@@ -371,7 +359,7 @@ pub fn SidebarGroup(
     }
 }
 
-/// The heading over a group, which folds away when the sidebar collapses to icons.
+/// The heading over a group; folds away when the sidebar collapses to icons.
 #[component]
 pub fn SidebarGroupLabel(
     #[prop(optional, into)] class: Signal<String>,
@@ -383,8 +371,8 @@ pub fn SidebarGroupLabel(
             class=move || {
                 cn!(
                     "flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70 outline-none ring-sidebar-ring transition-[margin,opacity] duration-200 ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
-                    // Pulled up under the group above rather than hidden, so the icons keep their
-                    // rhythm instead of shifting when the label goes.
+                    // Pulled up under the group above rather than hidden, so the icons keep
+                    // their rhythm when the label goes.
                     "group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0",
                     class.get(),
                 )
@@ -395,7 +383,7 @@ pub fn SidebarGroupLabel(
     }
 }
 
-/// A button in a group's top-right corner — "add", "more", and the like.
+/// A button in a group's top-right corner.
 #[component]
 pub fn SidebarGroupAction(
     #[prop(optional, into)] class: Signal<String>,
@@ -408,8 +396,8 @@ pub fn SidebarGroupAction(
             class=move || {
                 cn!(
                     "absolute top-3.5 right-3 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-sidebar-foreground outline-none ring-sidebar-ring transition-transform hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
-                    // A 20px target is fine for a mouse and too small for a thumb, so the hit area
-                    // is widened on touch and left alone from `md` up.
+                    // 20px is fine for a mouse and small for a thumb, so touch gets a wider
+                    // hit area.
                     "after:absolute after:-inset-2 md:after:hidden",
                     "group-data-[collapsible=icon]:hidden",
                     class.get(),
@@ -463,11 +451,8 @@ pub fn SidebarMenuItem(
     }
 }
 
-/// A row in the menu: the icon, the label, and the current-page state.
-///
-/// `tooltip` is what the row says when the sidebar is collapsed to icons and the label is gone.
-/// It is only rendered in that state — a tooltip repeating a label the reader can already see is
-/// noise.
+/// A row in the menu: the icon, the label and the current-page state. `tooltip` stands in for
+/// the label once the sidebar is collapsed to icons, and is rendered only in that state.
 #[component]
 pub fn SidebarMenuButton(
     #[prop(optional, into)] active: Signal<bool>,
@@ -475,8 +460,8 @@ pub fn SidebarMenuButton(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(default = None, into)] tooltip: Option<Signal<String>>,
-    /// Render the row as something else — usually an `<a>`. The callback is handed the row's
-    /// class and the node ref its state attributes are written onto.
+    /// Render the row as something else — usually an `<a>`. Handed the row's class and the node
+    /// ref its state attributes go on.
     #[prop(default = None, into)]
     render: Option<Callback<(Signal<String>, AnyNodeRef), AnyView>>,
     #[prop(optional)] children: Option<ChildrenFn>,
@@ -498,9 +483,9 @@ pub fn SidebarMenuButton(
                         "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50",
                         "data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground",
                         "data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground",
-                        // A row with an action beside it leaves room for it.
+                        // Leave room for an action beside it.
                         "group-has-data-[slot=sidebar-menu-action]/menu-item:pr-8",
-                        // Collapsed, the row is exactly one icon.
+                        // Collapsed, the row is one icon.
                         "group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-2",
                         "[&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0",
                         size_class,
@@ -514,8 +499,7 @@ pub fn SidebarMenuButton(
     };
 
     move || match tooltip {
-        // Only while the label is missing: expanded, or on a phone where the panel is full width,
-        // the row already says what it is.
+        // Only while the label is missing; expanded or on a phone the row says what it is.
         Some(tooltip) if ctx.state() == "collapsed" && !ctx.is_mobile.get() => {
             Either::Left(view! {
                 <Tooltip>
@@ -528,12 +512,11 @@ pub fn SidebarMenuButton(
     }
 }
 
-/// A second control on a menu row — a "more" menu, a dismiss.
+/// A second control on a menu row: a "more" menu, a dismiss.
 #[component]
 pub fn SidebarMenuAction(
     #[prop(optional, into)] class: Signal<String>,
-    /// Keep it hidden until the row is hovered or focused. For actions that would otherwise be a
-    /// row of buttons shouting at the reader.
+    /// Keep it hidden until the row is hovered or focused.
     #[prop(default = false)]
     show_on_hover: bool,
     children: Children,
@@ -546,7 +529,7 @@ pub fn SidebarMenuAction(
                 cn!(
                     "absolute top-1.5 right-1 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-sidebar-foreground outline-none ring-sidebar-ring transition-transform hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 peer-hover/menu-button:text-sidebar-accent-foreground [&>svg]:size-4 [&>svg]:shrink-0",
                     "after:absolute after:-inset-2 md:after:hidden",
-                    // Lines up with whichever row height the button asked for.
+                    // Line up with whichever row height the button asked for.
                     "peer-data-[size=sm]/menu-button:top-1 peer-data-[size=default]/menu-button:top-1.5 peer-data-[size=lg]/menu-button:top-2.5",
                     "group-data-[collapsible=icon]:hidden",
                     if show_on_hover {
@@ -563,7 +546,7 @@ pub fn SidebarMenuAction(
     }
 }
 
-/// A count on a menu row. Not interactive, so it never takes the row's click.
+/// A count on a menu row; not interactive, so it never takes the row's click.
 #[component]
 pub fn SidebarMenuBadge(
     #[prop(optional, into)] class: Signal<String>,
@@ -592,8 +575,7 @@ pub fn SidebarMenuBadge(
 pub fn SidebarMenuSkeleton(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(default = true)] show_icon: bool,
-    /// Width of the text bar, as a percentage. Varying it across a list is what stops a loading
-    /// menu looking like a table.
+    /// Width of the text bar, as a percentage; vary it across a list.
     #[prop(default = 70)]
     width: u32,
 ) -> impl IntoView {

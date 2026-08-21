@@ -1,32 +1,27 @@
 //! The application sidebar: a panel that collapses, and remembers that it is collapsed.
 //!
-//! There are two open states rather than one, because a sidebar is two different things depending
-//! on how much room there is. On a wide viewport it is part of the layout and collapsing it is a
-//! preference worth keeping between visits; on a narrow one it is an overlay that opens for one
-//! errand and closes again, and remembering *that* across a reload would be an odd thing to do.
-//! [`SidebarContext`] holds both, and [`SidebarContext::toggle`] flips whichever one applies.
+//! Two open states, not one: the wide-viewport one is a preference and is persisted, the narrow
+//! one is a single errand and is not. [`SidebarContext::toggle`] flips whichever applies.
 //!
-//! What is deliberately not here is the overlay itself. The primitive says how wide the sidebar
-//! is, which edge it is on and whether it is open; presenting the narrow case as a sheet is the
-//! styled layer's decision, and a consumer who wants a different one only needs `is_mobile` and
-//! `open_mobile` to build it.
+//! The overlay itself is the styled layer's; this says how wide the sidebar is, which edge it is
+//! on and whether it is open.
 
 use crate::utils::types::Side;
 use leptos::{context::Provider, ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
 use web_sys::HtmlElement;
 
-/// Widths, as CSS custom properties on the wrapper so a caller can override them per sidebar
-/// rather than per theme: `style="--sidebar-width: 20rem"` on the provider is enough.
+/// Widths, published as custom properties on the wrapper so a caller can override them per
+/// sidebar: `style="--sidebar-width: 20rem"` on the provider is enough.
 pub const SIDEBAR_WIDTH: &str = "16rem";
 pub const SIDEBAR_WIDTH_ICON: &str = "3rem";
 pub const SIDEBAR_WIDTH_MOBILE: &str = "18rem";
 
-/// Below this the sidebar is an overlay rather than part of the layout. It matches Tailwind's `md`
-/// breakpoint, which is what the styled layer's `md:` classes key off.
+/// Below this the sidebar is an overlay rather than layout. Matches Tailwind's `md` breakpoint,
+/// which the styled layer's `md:` classes key off.
 const MOBILE_QUERY: &str = "(max-width: 767px)";
 
-/// The desktop open state, and only that — see the module note.
+/// Holds the desktop open state, and only that.
 const STORAGE_KEY: &str = "ui-sidebar";
 
 /// Ctrl/Cmd + this toggles the sidebar from anywhere on the page.
@@ -40,8 +35,7 @@ pub enum SidebarCollapsible {
     OffCanvas,
     /// A rail of icons, wide enough for the menu buttons' icons and nothing else.
     Icon,
-    /// It does not collapse. The trigger and the rail have nothing to do, and the state stays
-    /// `expanded` for good.
+    /// It does not collapse; the trigger and the rail have nothing to do.
     None,
 }
 
@@ -64,8 +58,8 @@ pub struct SidebarContext {
     pub is_mobile: RwSignal<bool>,
     pub side: Side,
     pub collapsible: SidebarCollapsible,
-    /// The panel, so the trigger can point `aria-controls` at it. Minted by the provider because
-    /// the trigger is usually rendered before the panel it controls.
+    /// The panel, for the trigger's `aria-controls`. Minted here because the trigger is usually
+    /// rendered before the panel it controls.
     pub content_ref: AnyNodeRef,
     pub content_id: RwSignal<String>,
 }
@@ -80,10 +74,8 @@ impl SidebarContext {
         }
     }
 
-    /// `expanded` or `collapsed`, for `data-state`.
-    ///
-    /// A sidebar that cannot collapse is always expanded, whatever the stored preference says —
-    /// otherwise turning `collapsible` off would leave a panel stuck shut with no way to open it.
+    /// `expanded` or `collapsed`, for `data-state`. One that cannot collapse is always expanded,
+    /// whatever is stored, or turning `collapsible` off could leave it stuck shut.
     pub fn state(&self) -> &'static str {
         if self.collapsible == SidebarCollapsible::None || self.is_open() {
             "expanded"
@@ -135,14 +127,11 @@ fn matches_mobile() -> bool {
         .unwrap_or(false)
 }
 
-/// Provides the sidebar state to everything under it.
-///
-/// `open` may be passed in to drive the sidebar from outside; left alone, the provider owns the
-/// signal and restores its last value from local storage.
+/// Provides the sidebar state to everything under it. Pass `open` to drive it from outside;
+/// left alone, the provider owns the signal and restores its last value from local storage.
 #[component]
 pub fn SidebarProviderRoot(
-    /// Which edge the panel is pinned to. `Side::Bottom` and `Side::Top` are meaningless for a
-    /// sidebar and are treated as left.
+    /// Which edge the panel is pinned to; `Side::Top` and `Side::Bottom` are treated as left.
     #[prop(default = Side::Left)]
     side: Side,
     #[prop(optional)] collapsible: SidebarCollapsible,
@@ -167,8 +156,8 @@ pub fn SidebarProviderRoot(
         content_id: RwSignal::new(crate::utils::next_id("sidebar")),
     };
 
-    // A controlled sidebar belongs to its caller; writing its state into storage behind their back
-    // would resurrect it on the next load and contradict whatever they initialise it to.
+    // A controlled sidebar belongs to its caller: storing it would contradict their own initial
+    // value on the next load.
     if !controlled {
         Effect::new(move |_| {
             let open = context.open.get();
@@ -178,14 +167,14 @@ pub fn SidebarProviderRoot(
         });
     }
 
-    // `resize` rather than a `matchMedia` listener: leptos cleans a window listener up with the
-    // component, and the query is re-read on each event, so the two agree by construction.
+    // `resize` rather than a `matchMedia` listener: the query is re-read on each event, so the
+    // two cannot disagree.
     let resize = window_event_listener(ev::resize, move |_| {
         let is_mobile = matches_mobile();
         if context.is_mobile.get_untracked() != is_mobile {
             context.is_mobile.set(is_mobile);
-            // Crossing the breakpoint with the overlay open would otherwise leave it open behind
-            // the layout sidebar, and reopening the overlay later would flash the stale panel.
+            // Crossing the breakpoint would otherwise leave the overlay open behind the layout
+            // sidebar.
             context.open_mobile.set(false);
         }
     });
@@ -221,14 +210,12 @@ pub fn SidebarProviderRoot(
     }
 }
 
-/// The panel itself: the state as attributes, and nothing about how it looks.
-///
-/// `data-state`, `data-side`, `data-collapsible` and `data-variant` are what the styled layer —
-/// and anyone else — styles against, so a collapsed sidebar is a selector rather than a branch.
+/// The panel itself: the state as attributes, and nothing about how it looks. `data-state`,
+/// `data-side`, `data-collapsible` and `data-variant` are what anyone styling it keys off.
 #[component]
 pub fn SidebarRoot(
-    /// Named by the styled layer (`sidebar`, `floating`, `inset`) and rendered verbatim, since a
-    /// primitive has no opinion about how many variants there are.
+    /// Named by the styled layer and rendered verbatim; a primitive has no opinion about how
+    /// many variants there are.
     #[prop(optional, into)]
     variant: Signal<String>,
     #[prop(optional, into)] class: Signal<String>,
@@ -280,10 +267,8 @@ pub fn SidebarTriggerRoot(
     }
 }
 
-/// The strip along the sidebar's inner edge that toggles it.
-///
-/// A second trigger, not a resize handle: it is hidden from the tab order because the real trigger
-/// is already in it, and reached by pointer, which is the only way anyone finds a rail.
+/// The strip along the sidebar's inner edge that toggles it. A second trigger rather than a
+/// resize handle, and out of the tab order because the real trigger is already in it.
 #[component]
 pub fn SidebarRailRoot(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
     let ctx = use_sidebar();
@@ -303,13 +288,11 @@ pub fn SidebarRailRoot(#[prop(optional, into)] class: Signal<String>) -> impl In
     }
 }
 
-/// A row in a sidebar menu.
-///
-/// Renders a button unless `render` is given, which is the common case in a real app: these are
-/// usually links, and a link has to stay a link for middle-click and copy-address to work.
+/// A row in a sidebar menu. Renders a button unless `render` is given — usually it is, since
+/// these are links, and a link has to stay a link for middle-click and copy-address.
 #[component]
 pub fn SidebarMenuButtonRoot(
-    /// The current page's row. Announced with `aria-current`, not just painted.
+    /// The current page's row; announced with `aria-current`, not just painted.
     #[prop(optional, into)]
     active: Signal<bool>,
     /// Rendered into `data-size`, for the styled layer to key off.
@@ -317,17 +300,16 @@ pub fn SidebarMenuButtonRoot(
     size: Signal<String>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
-    /// Render the row as something else — an `<a>`, almost always. The callback is handed the
-    /// class this would have rendered and the node ref the state attributes are written onto,
-    /// which is the same bargain `Button` offers.
+    /// Render the row as something else — an `<a>`, almost always. Handed the class this would
+    /// have rendered and the node ref the state attributes go on, as `Button` does.
     #[prop(default = None, into)]
     render: Option<Callback<(Signal<String>, AnyNodeRef), AnyView>>,
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     let node_ref = AnyNodeRef::new();
 
-    // The trigger is the caller's element when `render` is given, so the attributes are written
-    // onto the node rather than declared here — the same trick `FloatingRoot` uses.
+    // The element is the caller's, so the attributes go onto the node rather than being
+    // declared here.
     if render.is_some() {
         Effect::new(move |_| {
             let Some(el) = node_ref.get() else {

@@ -94,7 +94,7 @@ pub fn PopoverContentRoot(
     );
 
     view! {
-        // OUTER DIV: The Structural Anchor (Hidden on frame 1)
+        // The positioned shell, hidden until floating-ui has measured it.
         <div
             node_ref=floating_ref
             style=move || {

@@ -1,8 +1,7 @@
 //! Page links.
 //!
-//! Style-only, and links rather than buttons: a page of results has a URL, and the reader should be
-//! able to middle-click page 3. `PaginationLink` takes `active` to mark the page you are on, which
-//! is announced with `aria-current="page"`.
+//! Style-only, and links rather than buttons: a page of results has a URL, and the reader should
+//! be able to middle-click page 3. `active` marks the current page with `aria-current`.
 
 use crate::{
     cn,

@@ -1,16 +1,8 @@
 //! Roving tabindex: arrow-key movement inside a group that is a single tab stop.
 //!
-//! A group of related controls — menu items, tabs, toggles, options — should take *one* Tab stop,
-//! not one per item, and move focus between its items with the arrow keys. This is the shared
-//! implementation behind all of them.
-//!
-//! Items are found in the DOM rather than kept in a registry: everything inside the container
-//! marked `data-roving-item` is an item, in document order, which is also the order the arrow keys
-//! follow. That keeps the helper indifferent to how a component renders its children — portalled,
-//! wrapped, conditionally shown or reordered — and there is no registration to keep in sync.
-//!
-//! Disabled items (`disabled`, `aria-disabled="true"` or `data-disabled`) are skipped by the keys
-//! and never hold the tab stop.
+//! Items are found in the DOM by a `data-roving-item` marker rather than kept in a registry, so
+//! the helper is indifferent to how a component renders its children — portalled, wrapped or
+//! reordered — and document order is what the arrows follow. Disabled items are skipped.
 
 use crate::utils::types::Orientation;
 use leptos::{prelude::*, wasm_bindgen::JsCast};
@@ -20,11 +12,8 @@ use web_sys::{Element, HtmlElement};
 /// The attribute that marks an element as a roving-focus item.
 pub const ROVING_ITEM: &str = "data-roving-item";
 
-/// Where the tab stop starts out, when focus has not entered the group yet.
-///
-/// Selectors are tried in order, so a group with a selected item (a tabs list, a toggle group with
-/// something pressed, a select with a chosen option) puts the tab stop there rather than on the
-/// first item — Tab should land on what the group currently represents.
+/// Where the tab stop starts out, tried in order: a group with a selection puts it there rather
+/// than on the first item, so Tab lands on what the group currently represents.
 const SELECTED_ITEM: &[&str] = &[
     "[data-state=active]",
     "[data-state=checked]",
@@ -53,8 +42,8 @@ fn items(container: &Element) -> Vec<HtmlElement> {
 /// Arrow-key focus movement over the items inside `container`.
 ///
 /// Attach [`RovingFocus::on_keydown`] to the container's `on:keydown` and
-/// [`RovingFocus::on_focus_in`] to its `on:focusin`; mark each item with the [`ROVING_ITEM`]
-/// attribute and `tabindex="-1"`.
+/// [`RovingFocus::on_focus_in`] to its `on:focusin`; mark each item with [`ROVING_ITEM`] and
+/// `tabindex="-1"`.
 #[derive(Clone, Copy)]
 pub struct RovingFocus {
     container: AnyNodeRef,
@@ -78,8 +67,8 @@ impl RovingFocus {
         self
     }
 
-    /// The element whose `data-roving-item` descendants this group moves between. Typeahead
-    /// searches the same set, so a surface with both hands it the one container.
+    /// The element whose `data-roving-item` descendants this group moves between; typeahead
+    /// searches the same set.
     pub fn container(&self) -> AnyNodeRef {
         self.container
     }
@@ -98,8 +87,7 @@ impl RovingFocus {
             .position(|item| item.is_same_node(Some(&active)))
     }
 
-    /// Moves the tab stop onto `item` and focuses it: exactly one item in the group is reachable
-    /// with Tab, and it is always the one focus last rested on.
+    /// Moves the tab stop onto `item` and focuses it, so exactly one item is Tab-reachable.
     fn focus(&self, item: &HtmlElement) {
         for other in self.items() {
             let _ = other.set_attribute("tabindex", "-1");
@@ -127,7 +115,7 @@ impl RovingFocus {
         }
 
         let next = match self.focused_index(&items) {
-            // Focus is on the container itself rather than an item — enter from the near end.
+            // Focus is on the container rather than an item: enter from the near end.
             None if offset > 0 => 0,
             None => items.len() - 1,
             Some(current) => {
@@ -154,8 +142,7 @@ impl RovingFocus {
     }
 
     /// Gives the group its initial tab stop: the selected item if it has one, else the first.
-    ///
-    /// Call this when the group appears — items that mount later are handled by `on_focus_in`.
+    /// Call when the group appears; later items are handled by `on_focus_in`.
     pub fn sync_tab_stop(&self) {
         let items = self.items();
         if items.is_empty() || self.focused_index(&items).is_some() {
@@ -174,10 +161,8 @@ impl RovingFocus {
         }
     }
 
-    /// Focuses whichever item holds the tab stop — the selected one, when there is a selection.
-    ///
-    /// Lists that open *on* their current value (a select) use this; menus focus their container
-    /// instead so that opening with the mouse does not paint a focus ring on the first entry.
+    /// Focuses whichever item holds the tab stop. Lists that open on their current value use
+    /// this; menus focus their container instead, so a mouse-opened menu paints no ring.
     pub fn focus_tab_stop(&self) {
         self.sync_tab_stop();
 
@@ -192,11 +177,8 @@ impl RovingFocus {
         }
     }
 
-    /// Handles one key press, returning whether it moved focus.
-    ///
-    /// The caller decides what to do with the keys this leaves alone — a menu closes a submenu on
-    /// the cross-axis arrow, a select commits on Enter — and should `prevent_default` when this
-    /// returns true, so arrows do not also scroll the page.
+    /// Handles one key press, returning whether it moved focus. The caller decides what to do
+    /// with the keys this leaves alone, and should `prevent_default` when it returns true.
     pub fn on_keydown(&self, key: &str) -> bool {
         let vertical = self.orientation.get_untracked() == Orientation::Vertical;
 

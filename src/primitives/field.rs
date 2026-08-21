@@ -1,15 +1,10 @@
 //! Label, control, description and error, wired to each other.
 //!
-//! The point of a field is the wiring nobody writes by hand: the label's `for` has to reach the
-//! control, the control's `aria-describedby` has to name the description *and* the error, and the
-//! error should only be announced while the field is actually invalid. All of that is ids, and ids
-//! are exactly what a caller should not have to invent. The root mints them once and publishes
-//! them on a context; the parts read the one they need.
+//! The wiring is all ids — the label's `for`, the control's `aria-describedby` — and a caller
+//! should not have to invent them. The root mints them once and the parts read what they need.
 //!
-//! Controls opt in rather than being wrapped. A field cannot reach into arbitrary children to add
-//! attributes, so `Input`, `TextareaRoot` and `NativeSelectRoot` build a [`FieldControl`] and wear
-//! whatever it resolves to. Any other control can join in the same one line, and one written
-//! outside a field is unaffected — every signal reads empty when there is no context to find.
+//! Controls opt in rather than being wrapped, since a field cannot reach into arbitrary children:
+//! they build a [`FieldControl`] and wear what it resolves to, which is empty outside a field.
 
 use crate::utils::{next_id, types::Orientation};
 use leptos::{context::Provider, prelude::*};
@@ -26,8 +21,7 @@ pub struct FieldContext {
 }
 
 impl FieldContext {
-    /// The ids the control should announce: the description always, the error only while the field
-    /// is invalid — an error nobody can see should not be read out either.
+    /// The ids the control announces: the description always, the error only while invalid.
     pub fn described_by(&self) -> Option<String> {
         let mut ids = Vec::new();
 
@@ -58,11 +52,8 @@ pub fn use_field_optional() -> Option<FieldContext> {
     use_context::<FieldContext>()
 }
 
-/// The attributes a control wears inside a field, already resolved against the caller's own.
-///
-/// A caller-supplied `id` wins: the field's is a fallback for the common case where nobody wanted
-/// to name the control. Outside a field every signal reads empty, so a control can render these
-/// unconditionally.
+/// The attributes a control wears inside a field, resolved against the caller's own — a supplied
+/// `id` wins. Outside a field every signal reads empty, so these can be rendered unconditionally.
 #[derive(Copy, Clone)]
 pub struct FieldControl {
     pub id: Signal<String>,
@@ -95,8 +86,7 @@ impl FieldControl {
 #[component]
 pub fn FieldRoot(
     #[prop(optional, into)] class: Signal<String>,
-    /// Label above control by default. `Horizontal` puts them on one line, for the checkbox and
-    /// switch rows where the control comes first and the label sits beside it.
+    /// Label above control by default; `Horizontal` puts them on one line, control first.
     #[prop(default = Orientation::Vertical)]
     orientation: Orientation,
     #[prop(optional, into)] invalid: Signal<bool>,
@@ -187,11 +177,8 @@ pub fn FieldDescriptionRoot(
     }
 }
 
-/// Rendered only while the field is invalid, which is also why it may carry `role="alert"` — the
-/// element appearing *is* the event worth announcing.
-///
-/// The id is registered in the component body rather than inside the `Show`, so it stays the same
-/// across every toggle instead of being re-minted each time the error comes back.
+/// Rendered only while the field is invalid, which is why it may carry `role="alert"`. Its id is
+/// registered outside the `Show`, so it stays the same across every toggle.
 #[component]
 pub fn FieldErrorRoot(
     #[prop(optional, into)] class: Signal<String>,

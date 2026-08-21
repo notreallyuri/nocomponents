@@ -1,8 +1,7 @@
 //! A dialog that arrives from an edge.
 //!
-//! Style-only over `src/primitives/dialog.rs` — the modality, the focus trap, the layer stack and
-//! the exit animation are all the dialog's. What a sheet adds is which edge it is pinned to and
-//! which direction it slides from, both derived from one `side` prop.
+//! Style-only over the dialog primitive, which owns the modality, the focus trap and the layer
+//! stack. What a sheet adds is one `side` prop: the edge, and the direction it slides from.
 
 use crate::{
     cn,

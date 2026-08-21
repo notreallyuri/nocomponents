@@ -1,9 +1,8 @@
 //! The box that makes an input and its addons look like one field.
 //!
-//! The border, the background and the focus ring all move here from the control, and
-//! `InputGroupInput` / `InputGroupTextarea` strip their own so there is only ever one of each. The
-//! group takes the focus ring off `:focus-visible` on the *control* rather than `:focus-within`,
-//! so tabbing to a button in an addon does not light up the whole field.
+//! The border, background and focus ring move here from the control, which strips its own. The
+//! ring keys off `:focus-visible` on the control rather than `:focus-within`, so tabbing to a
+//! button in an addon does not light up the whole field.
 
 use crate::{
     cn,
@@ -107,8 +106,7 @@ pub fn InputGroupTextarea(
     }
 }
 
-/// A unit, a prefix, a character count — text that belongs to the field but is not part of its
-/// value.
+/// Text that belongs to the field but is not part of its value: a unit, a character count.
 #[component]
 pub fn InputGroupText(
     #[prop(optional, into)] class: Signal<String>,
@@ -133,8 +131,7 @@ pub fn InputGroupButton(
     #[prop(optional, into)] class: Signal<String>,
     children: ChildrenFn,
 ) -> impl IntoView {
-    // `Button` takes an `Option<Callback>` but its builder wants the `Callback`, so an absent
-    // handler is forwarded as one that does nothing rather than plumbed through as `None`.
+    // `Button`'s builder wants a `Callback`, so an absent handler becomes a no-op one.
     let on_click = Callback::new(move |e: ev::MouseEvent| {
         if let Some(cb) = on_click {
             cb.run(e);

@@ -29,10 +29,8 @@ pub fn use_dropdown() -> DropdownMenuContext {
     expect_context::<DropdownMenuContext>()
 }
 
-/// The outermost menu's context, reachable from inside a submenu. `DropdownMenuSubRoot` wraps its
-/// children in a `FloatingRoot` of its own, which shadows `DropdownMenuContext`, so an item in a
-/// submenu can only reach the submenu — selecting one has to close the whole tree, not just the
-/// panel it lives in.
+/// The outermost menu's context, reachable from inside a submenu, whose own `FloatingRoot`
+/// shadows it. Selecting an item has to close the whole tree, not just the panel it lives in.
 #[derive(Copy, Clone)]
 pub(crate) struct MenuRoot(pub(crate) DropdownMenuContext);
 
@@ -77,10 +75,8 @@ pub fn DropdownMenuTriggerRoot(
     }
 }
 
-/// Moves focus onto the first item of a menu that has just opened.
-///
-/// Menus focus their *container* on open rather than an item: opening with the mouse should not
-/// paint a focus ring on the first entry, and the first arrow key then steps into the list.
+/// Focuses a menu surface itself rather than an item, so a mouse-opened menu paints no focus
+/// ring; the first arrow key steps in from there.
 pub(crate) fn focus_element(node_ref: AnyNodeRef) {
     if let Some(el) = node_ref.get_untracked()
         && let Ok(el) = el.dyn_into::<HtmlElement>()
@@ -100,9 +96,8 @@ fn focus_first_item(content_ref: AnyNodeRef) {
     }
 }
 
-/// Keys every menu surface handles the same way: arrows and Home/End move between items, Enter and
-/// Space activate the focused one, Tab leaves the menu entirely, and anything printable is a jump
-/// to the item that starts with it.
+/// Keys every menu surface handles alike: arrows and Home/End move, Enter and Space activate,
+/// Tab leaves, and anything printable jumps to the item starting with it.
 pub(crate) fn handle_menu_keys(
     e: &ev::KeyboardEvent,
     roving: RovingFocus,
@@ -116,8 +111,7 @@ pub(crate) fn handle_menu_keys(
     }
 
     match key.as_str() {
-        // A menu item is a div, so Enter and Space have to be turned into the click it would get
-        // for free if it were a button.
+        // An item is a div, so Enter and Space become the click a button would get for free.
         "Enter" | " " => {
             if let Some(active) = document().active_element()
                 && active.has_attribute("data-roving-item")
@@ -128,18 +122,17 @@ pub(crate) fn handle_menu_keys(
             }
             false
         }
-        // Tabbing out of a menu closes it rather than leaving it hanging behind the focus.
+        // Tabbing out closes the menu rather than leaving it behind the focus.
         "Tab" => {
             ctx.close();
             false
         }
-        // Space is spoken for above, so typeahead only ever sees the rest of the printable keys.
+        // Space is spoken for above, so typeahead sees the rest of the printable keys.
         _ => typeahead.push(&key, roving.container()),
     }
 }
 
-/// `data-side` / `data-align` for a resolved placement. Shared with `context_menu.rs`, which
-/// renders the same surface contract from a different anchor.
+/// `data-side` / `data-align` for a resolved placement; shared with `context_menu.rs`.
 pub(crate) fn placement_side(placement: Placement) -> &'static str {
     match placement {
         Placement::Top | Placement::TopStart | Placement::TopEnd => "top",
@@ -215,14 +208,13 @@ pub fn DropdownMenuContentRoot(
     Effect::new(move |_| {
         if ctx.is_open.get() && is_positioned.get() {
             match ctx.open_focus.get_untracked() {
-                // Opened with a pointer, or with Enter on the trigger: focus the menu itself
-                // rather than an item, so nothing wears a focus ring until an arrow key asks for
-                // it. `sync_tab_stop` decides which item that first arrow will land on.
+                // Opened with a pointer or Enter: focus the menu itself, so nothing wears a
+                // ring until an arrow asks for it.
                 OpenFocus::Auto => {
                     focus_element(menu_ref);
                     roving.sync_tab_stop();
                 }
-                // Opened with an arrow key, which is a request to be *in* the list already.
+                // Opened with an arrow, which asks to be in the list already.
                 OpenFocus::First => roving.focus_first(),
                 OpenFocus::Last => roving.focus_last(),
             }
@@ -331,14 +323,13 @@ pub fn DropdownMenuSubTriggerRoot(
             class=class
             data-state=move || if ctx.is_open.get() { "open" } else { "closed" }
             on:keydown=move |e| {
-                // Right (and Enter/Space, which a button would otherwise turn into a click that
-                // only toggles) opens the submenu and steps into it.
+                // Right, plus Enter and Space, which a button would otherwise turn into a
+                // click that only toggles.
                 if matches!(e.key().as_str(), "ArrowRight" | "Enter" | " ") {
                     e.prevent_default();
                     e.stop_propagation();
                     ctx.open();
-                    // The content mounts on the next tick, so the first item cannot be focused
-                    // until it exists.
+                    // The content mounts on the next tick, so the item exists only by then.
                     set_timeout(
                         move || focus_first_item(ctx.content_ref),
                         Duration::from_millis(16),
@@ -438,7 +429,7 @@ pub fn DropdownMenuSubContentRoot(
                 aria-labelledby=move || ctx.trigger_id.get()
                 tabindex="-1"
                 on:keydown=move |e| {
-                    // Left steps back out to the trigger and closes the submenu behind it.
+                    // Left steps out to the trigger and closes the submenu behind it.
                     if e.key() == "ArrowLeft" {
                         e.prevent_default();
                         e.stop_propagation();

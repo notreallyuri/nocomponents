@@ -1,8 +1,7 @@
 //! The styled slider.
 //!
-//! Nothing here knows where a thumb is — `src/primitives/slider.rs` writes the positions as inline
-//! geometry and publishes `data-orientation`, `data-disabled` and `data-state`. This layer only
-//! decides what a track, a filled range and a thumb look like, in both orientations.
+//! Positions are the primitive's, written as inline geometry; this decides what a track, a filled
+//! range and a thumb look like in both orientations.
 
 use crate::{
     cn,
@@ -24,8 +23,7 @@ pub fn Slider(
     value: Option<RwSignal<Vec<f64>>>,
     #[prop(optional)] default_value: Option<Vec<f64>>,
 ) -> impl IntoView {
-    // One thumb unless told otherwise; a controlled slider's own length wins, since that is what
-    // decides how many values there actually are.
+    // One thumb unless told otherwise; a controlled slider's own length wins.
     let default_value = default_value.unwrap_or_else(|| vec![min]);
     let thumb_count = value.map_or(default_value.len(), |v| v.with_untracked(|v| v.len()));
 

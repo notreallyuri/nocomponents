@@ -1,9 +1,8 @@
 //! Stacked collapsible sections with one shared selection.
 //!
-//! Each item owns a `CollapsibleContext`, so the panel machinery — mounting through the exit
-//! animation, publishing its own height — is the collapsible's, not a second copy of it. What the
-//! accordion adds on top is the selection (`Single` closes its sibling, `Multiple` does not) and
-//! the keyboard contract: the headers are one tab stop, and the arrows walk between them.
+//! Each item owns a `CollapsibleContext`, so the panel machinery is the collapsible's rather than
+//! a second copy. What the accordion adds is the selection and the keyboard contract: the headers
+//! are one tab stop and the arrows walk between them.
 
 use crate::{
     primitives::{
@@ -132,9 +131,8 @@ pub fn AccordionItemRoot(
     let is_open = RwSignal::new(ctx.is_open(&item));
     let is_disabled = Signal::derive(move || disabled.get() || ctx.disabled.get());
 
-    // The accordion owns the selection and the collapsible owns one panel, so the group's answer
-    // is mirrored into the item's signal — one direction only. The trigger toggles the *group*
-    // (see `AccordionTriggerRoot`), which is what closes the sibling in a `Single` accordion.
+    // One direction only: the group owns the selection and the item mirrors it. The trigger
+    // toggles the group, which is what closes the sibling in a `Single` accordion.
     let mirrored = item.clone();
     Effect::new(move |_| {
         let open = ctx.is_open(&mirrored);
@@ -175,8 +173,8 @@ pub fn AccordionItemRoot(
     }
 }
 
-/// The clickable header of a section. Renders its own `<h3>` wrapper so the accordion is a list of
-/// headings to a screen reader, not a row of loose buttons.
+/// The clickable header of a section, in its own `<h3>`, so the accordion reads as a list of
+/// headings rather than loose buttons.
 #[component]
 pub fn AccordionTriggerRoot(
     #[prop(optional, into)] class: Signal<String>,

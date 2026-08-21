@@ -24,8 +24,8 @@ pub fn Code(#[prop(optional, into)] class: Signal<String>, children: Children) -
     }
 }
 
-/// Colours for the `data-token` spans the highlighter emits. Tailwind's own palette rather than
-/// theme tokens, so a consumer gets readable code without adding variables to their CSS.
+/// Colours for the `data-token` spans, from Tailwind's palette rather than theme tokens, so code
+/// is readable without a consumer adding variables.
 const TOKEN_COLORS: &str = "[&_[data-token=keyword]]:text-rose-600 dark:[&_[data-token=keyword]]:text-rose-400 [&_[data-token=type]]:text-violet-600 dark:[&_[data-token=type]]:text-violet-400 [&_[data-token=macro]]:text-teal-600 dark:[&_[data-token=macro]]:text-teal-300 [&_[data-token=string]]:text-emerald-700 dark:[&_[data-token=string]]:text-emerald-300 [&_[data-token=number]]:text-amber-700 dark:[&_[data-token=number]]:text-amber-300 [&_[data-token=lifetime]]:text-amber-700 dark:[&_[data-token=lifetime]]:text-amber-300 [&_[data-token=attribute]]:text-sky-700 dark:[&_[data-token=attribute]]:text-sky-300 [&_[data-token=comment]]:text-muted-foreground [&_[data-token=comment]]:italic";
 
 /// A block of code with an optional filename header and a copy button.
@@ -46,9 +46,8 @@ pub fn CodeBlock(
             code=code
             class=move || {
                 cn!(
-                    // A shade under whatever it sits on, in both themes: `card` and `background`
-                    // are the same colour in light, so light tints and dark drops instead. A code
-                    // block beside a demo card in the same colour reads as one surface.
+                    // A shade under whatever it sits on. `card` and `background` are the same
+                    // colour in light, so light tints where dark drops.
                     "group/code relative overflow-hidden rounded-xl bg-muted/60 text-foreground ring-1 ring-foreground/10 dark:bg-background",
                     class.get(),
                 )

@@ -57,8 +57,7 @@ pub fn Page() -> impl IntoView {
                     code=DEFAULT
                 >
                     <p class="text-sm">
-                        "Maintained by "
-                        <HoverCard>
+                        "Maintained by " <HoverCard>
                             <HoverCardTrigger>
                                 <span class="underline decoration-dotted underline-offset-4">
                                     "@yuri"

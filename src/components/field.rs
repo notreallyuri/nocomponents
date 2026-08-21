@@ -1,8 +1,7 @@
 //! A labelled control with its description and error.
 //!
-//! Styling only — the ids, the `for`, the `aria-describedby` and the invalid state all come from
-//! `src/primitives/field.rs`. What is decided here is the layout: vertical stacks the label over
-//! the control, horizontal puts them on one line for the checkbox and switch rows.
+//! Styling only; the ids and the wiring are `src/primitives/field.rs`'s. What is decided here is
+//! the layout of the two orientations.
 
 use crate::{
     cn,
@@ -26,8 +25,8 @@ pub fn Field(
             disabled=disabled
             class=move || {
                 cn!(
-                    // `group` so the existing `Label` keeps working inside a field, and so the
-                    // parts can style themselves off the field's own disabled state.
+                    // `group` so `Label` keeps working inside a field and the parts can key off
+                    // the field's disabled state.
                     "group flex w-full gap-2 data-[orientation=vertical]:flex-col data-[orientation=horizontal]:flex-row data-[orientation=horizontal]:items-center data-[orientation=horizontal]:gap-3 data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-60",
                     class.get()
                 )
@@ -78,10 +77,8 @@ pub fn FieldError(
     }
 }
 
-/// Stacks fields into a form, with the spacing between them decided in one place.
-///
-/// Style-only and contextless: it does not have to be a `<fieldset>`, and a group of unrelated
-/// fields should not pretend to be one.
+/// Stacks fields into a form. Style-only and contextless: unrelated fields should not pretend to
+/// be a `<fieldset>`.
 #[component]
 pub fn FieldGroup(
     #[prop(optional, into)] class: Signal<String>,

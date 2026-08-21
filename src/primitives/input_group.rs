@@ -1,20 +1,14 @@
 //! An input and its trimmings, behaving as one control.
 //!
-//! Almost all of an input group is styling — the border moves off the `<input>` and onto the box
-//! around it, so an icon or a button can sit inside what still looks like one field. The one thing
-//! that is behaviour, and the reason this is a primitive at all: the box has padding and addons,
-//! and clicking any of that chrome has to land in the control. A real `<input>` has no dead zone
-//! inside its own border, and a group that does feels broken.
-//!
-//! Where an addon sits is published as `data-align`, so the styled layer can lay the group out
-//! without any of this knowing what it looks like.
+//! Mostly styling — the border moves off the `<input>` and onto the box around it. The behaviour,
+//! and the reason this is a primitive, is that clicking the box's own chrome has to land in the
+//! control: a real input has no dead zone inside its border. Addon placement is `data-align`.
 
 use leptos::{ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
 use web_sys::{Element, HtmlElement};
 
-/// Where an addon sits relative to the control. The inline pair share the control's line; the
-/// block pair take a row of their own above or below it.
+/// Where an addon sits: the inline pair share the control's line, the block pair take a row.
 #[derive(Default, Clone, Copy, PartialEq)]
 pub enum InputGroupAlign {
     #[default]
@@ -35,8 +29,7 @@ impl InputGroupAlign {
     }
 }
 
-/// Anything that owns the click already — pressing a button in an addon must press the button, not
-/// steal focus back to the input.
+/// Anything that owns the click already; pressing a button in an addon must press the button.
 const INTERACTIVE: &str = "input, textarea, select, button, a, [role='button'], [contenteditable]";
 
 #[component]
@@ -46,8 +39,7 @@ pub fn InputGroupRoot(
 ) -> impl IntoView {
     let node_ref = AnyNodeRef::new();
 
-    // `mousedown` rather than `click`: focus has to be redirected before the browser hands it to
-    // whatever was actually under the pointer, and `prevent_default` is what stops it going there.
+    // `mousedown` rather than `click`: focus is redirected before the browser hands it out.
     let focus_control = move |e: ev::MouseEvent| {
         let Some(node) = node_ref.get_untracked() else {
             return;

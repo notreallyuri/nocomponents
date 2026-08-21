@@ -14,19 +14,17 @@ pub struct DialogContext {
     pub is_open: RwSignal<bool>,
     pub is_mounted: RwSignal<bool>,
 
-    /// Whether this dialog takes the page. A modal one traps focus, announces `aria-modal`, and is
-    /// only dismissed through its own overlay; a non-modal one leaves the page usable underneath
-    /// and closes when a pointer lands outside it.
+    /// A modal dialog traps focus, announces `aria-modal` and is dismissed through its overlay;
+    /// a non-modal one leaves the page usable and closes on an outside pointer.
     pub modal: bool,
 
-    /// The panel and the button that opened it. Only a non-modal dialog needs them — a modal one
-    /// is dismissed through its overlay — but they are minted here so the root can hand them to
-    /// the dismissable layer, which is set up long before the content mounts.
+    /// The panel and the button that opened it. Only a non-modal dialog needs them, but they are
+    /// minted here: the dismissable layer is set up long before the content mounts.
     pub content_ref: AnyNodeRef,
     pub trigger_ref: AnyNodeRef,
 
-    /// Ids of the title and description, empty until those parts render. The content points at
-    /// whichever of them exist, so a dialog without a description does not claim to have one.
+    /// Ids of the title and description, empty until those parts render, so a dialog without a
+    /// description does not claim to have one.
     pub title_id: RwSignal<String>,
     pub description_id: RwSignal<String>,
 }
@@ -48,8 +46,7 @@ pub fn use_dialog() -> DialogContext {
 pub fn DialogRoot(
     #[prop(default = 150, into)] unmount_delay: u64,
     #[prop(default = None, into)] open: Option<RwSignal<bool>>,
-    /// Non-modal leaves the page interactive underneath. Defaults to modal, which is what a
-    /// dialog, a sheet and an alert dialog all want.
+    /// Non-modal leaves the page interactive underneath.
     #[prop(default = true)]
     modal: bool,
     children: Children,
@@ -82,8 +79,8 @@ pub fn DialogRoot(
         }
     };
 
-    // `is_mounted` trails `is_open` by `unmount_delay` so the content survives long enough to
-    // play its exit animation; `DialogPortalRoot` gates on it rather than on `is_open`.
+    // `is_mounted` trails `is_open` by `unmount_delay`, so the content survives its exit
+    // animation; the portal gates on it rather than on `is_open`.
     Effect::new(move |was_open: Option<bool>| {
         let is_open = context.is_open.get();
 
@@ -96,7 +93,7 @@ pub fn DialogRoot(
             cancel_unmount();
             context.is_mounted.set(true);
         } else {
-            // Only on an actual close — not on the first run, when nothing was ever focused here.
+            // Only on an actual close, not on the first run.
             if was_open == Some(true)
                 && let Some(el) = previously_focused.get_value()
             {
@@ -115,8 +112,8 @@ pub fn DialogRoot(
 
     on_cleanup(cancel_unmount);
 
-    // A modal layer swallows outside pointerdowns and is dismissed through its own overlay; a
-    // non-modal one has no overlay to click, so the bounds are what tell it apart from outside.
+    // A modal layer is dismissed through its overlay; a non-modal one has none, so it needs
+    // bounds to tell inside from outside.
     let bounds = if modal {
         LayerBounds::modal()
     } else {
@@ -125,11 +122,8 @@ pub fn DialogRoot(
 
     use_dismissable_layer(context.is_open, bounds, move || context.close());
 
-    // Must be a `Provider` rather than a bare `provide_context`: `DialogPortalRoot` mounts its
-    // children through leptos' `Portal`, which renders under an owner of its own. A context
-    // provided on this component's owner is invisible from there, so `use_dialog()` inside the
-    // portal resolves to some *other* dialog's context (the last one provided on the page) and
-    // the content renders with a stale `data-state`. `FloatingRoot` scopes its context the same way.
+    // `Provider`, not a bare `provide_context`: the portal renders under an owner of its own, so
+    // a context on this owner is invisible from there and `use_dialog()` finds another dialog's.
     view! { <Provider value=context>{children()}</Provider> }
 }
 
@@ -191,8 +185,7 @@ pub fn DialogPortalRoot(children: ChildrenFn) -> impl IntoView {
     let context = use_dialog();
     let stored_children = StoredValue::new(children);
 
-    // Only a modal dialog freezes the page behind it. A non-modal one exists precisely so the
-    // page stays usable, and locking its scroll would take that back.
+    // Only a modal dialog freezes the page behind it.
     Effect::new(move |_| {
         let is_open = context.is_open.get();
         if context.modal
@@ -226,8 +219,8 @@ pub fn DialogPortalRoot(children: ChildrenFn) -> impl IntoView {
 #[component]
 pub fn DialogContentRoot(
     #[prop(optional, into)] class: Signal<String>,
-    /// Inline geometry, for a caller that positions or transforms the panel itself — the drawer
-    /// drags it, so its offset cannot live in a class.
+    /// Inline geometry, for a caller that transforms the panel itself: the drawer's drag offset
+    /// cannot live in a class.
     #[prop(optional, into)]
     style: Signal<String>,
     children: Children,

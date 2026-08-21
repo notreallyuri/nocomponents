@@ -1,11 +1,9 @@
 //! A panel that opens and closes.
 //!
-//! The only hard part is animating to a height nobody wrote down. The content is measured after it
-//! mounts and its own height is published as `--nc-content-height` on the element, which is what
-//! the `collapsible-*` and `accordion-*` keyframes animate to — one variable, since both pairs
-//! animate the same thing. Closing keeps the
-//! content mounted for `unmount_delay` so the exit animation has something to run on, the same
-//! trick the floating layers use.
+//! The hard part is animating to a height nobody wrote down: the content measures itself once it
+//! attaches and publishes `--nc-content-height` on its own element, which is what the keyframes
+//! animate to. Closing keeps the content mounted for `unmount_delay`, so the exit animation has
+//! something to run on.
 
 use leptos::{ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
@@ -48,12 +46,11 @@ pub fn use_collapsible() -> CollapsibleContext {
     expect_context::<CollapsibleContext>()
 }
 
-/// Publishes the content's natural height so the keyframes have something to animate to.
+/// Publishes the content's natural height for the keyframes to animate to.
 ///
-/// Reads the node ref *reactively*, so it also runs on the pass where the element first attaches —
-/// the content mounts a tick after `is_open` flips, and measuring before that would silently do
-/// nothing. Re-measures on every transition too: the content can change between openings, and a
-/// stale height either clips the panel or leaves a gap at the end of the animation.
+/// Reads the node ref reactively, so it also runs on the pass where the element attaches — the
+/// content mounts a tick after `is_open` flips, and measuring earlier does nothing. Re-measured on
+/// every transition, since a stale height clips the panel or leaves a gap.
 pub fn publish_content_height(content_ref: AnyNodeRef) {
     if let Some(el) = content_ref.get()
         && let Ok(el) = el.dyn_into::<HtmlElement>()

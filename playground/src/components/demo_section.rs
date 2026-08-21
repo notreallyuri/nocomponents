@@ -21,9 +21,8 @@ pub fn DemoSection(
                 {description.map(|d| view! { <p class="text-xs text-muted-foreground">{d}</p> })}
             </div>
 
-            // The demo and its snippet are one block: the toggle is a strip under the demo and the
-            // code unfolds inside the same border, so it is never in doubt which demo it belongs
-            // to. Folded by default — the demo is the point, and the snippet is for afterwards.
+            // One block: the code unfolds inside the demo's own border, so which demo a snippet
+            // belongs to is never in doubt. Folded by default.
             <div class="overflow-hidden rounded-lg border bg-card">
                 <div class="p-6">{children()}</div>
 

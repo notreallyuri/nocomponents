@@ -74,10 +74,7 @@ pub fn Page() -> impl IntoView {
                     code=HORIZONTAL
                 >
                     <div class="w-full max-w-sm">
-                        <ScrollArea
-                            horizontal=true
-                            class="w-full rounded-lg border border-border"
-                        >
+                        <ScrollArea horizontal=true class="w-full rounded-lg border border-border">
                             <div class="flex w-max gap-3 p-4 pb-6">
                                 {wide
                                     .into_iter()
@@ -116,9 +113,9 @@ pub fn Page() -> impl IntoView {
                             </div>
                         </ScrollArea>
                         <div class="flex gap-2">
-                            <Button on_click=Callback::new(move |_| rows.update(|r| *r += 5))>
-                                "Add five rows"
-                            </Button>
+                            <Button on_click=Callback::new(move |_| {
+                                rows.update(|r| *r += 5)
+                            })>"Add five rows"</Button>
                             <Button on_click=Callback::new(move |_| rows.set(3))>"Reset"</Button>
                         </div>
                     </div>

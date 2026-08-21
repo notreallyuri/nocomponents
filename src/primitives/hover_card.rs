@@ -1,9 +1,8 @@
 //! A card that opens on hover, whose contents you can actually reach.
 //!
-//! The same hover-intent shape as the tooltip, with one difference that changes everything: the
-//! content is interactive, so the pointer has to be able to *leave the trigger and enter the card*
-//! without it closing. Both the trigger and the content cancel the pending close, and the card
-//! keeps `pointer-events`, which a tooltip deliberately does not.
+//! The tooltip's hover-intent shape with one difference: the content is interactive, so the
+//! pointer must be able to leave the trigger and enter the card. Both cancel the pending close,
+//! and the card keeps `pointer-events`, which a tooltip drops.
 
 use crate::{
     primitives::floating::{FloatingContext, FloatingRoot, TriggerAria},
@@ -185,8 +184,7 @@ pub fn HoverCardContentRoot(
                 }
             }
             class="fixed z-50 w-max pointer-events-none"
-            // Entering the card is not leaving the trigger: cancel the close the trigger just
-            // scheduled, and start one again on the way out.
+            // Entering the card is not leaving the trigger: cancel its pending close.
             on:pointerenter=move |_| intent.cancel()
             on:pointerleave=move |_| intent.schedule(false)
         >

@@ -1,12 +1,9 @@
 //! Type-to-jump over a list of items.
 //!
-//! Typing `b`, `a` inside an open select jumps to "Banana", not to "Banana" then "Apple": the
-//! keystrokes accumulate into a search string that resets after a pause. A repeated single letter
-//! is the exception — pressing `b` twice cycles through the items starting with "b", which is what
-//! every native list control does.
+//! Keystrokes accumulate into a search that resets after a pause, so `b`, `a` finds "Banana"
+//! rather than stopping at "Apple"; a repeated letter cycles instead, as native lists do.
 //!
-//! Items come from the same `data-roving-item` marker [`crate::primitives::roving_focus`] uses, so
-//! a component gets typeahead by adding one call to its keydown handler.
+//! Items come from the same `data-roving-item` marker [`crate::primitives::roving_focus`] uses.
 
 use leptos::{prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
@@ -44,11 +41,10 @@ impl Typeahead {
         typeahead
     }
 
-    /// Feeds one key press to the search, returning whether it was a character this consumed.
-    ///
-    /// `container` is the element whose `data-roving-item` descendants are searched.
+    /// Feeds one key press to the search, returning whether it consumed the key. `container` is
+    /// the element whose `data-roving-item` descendants are searched.
     pub fn push(&self, key: &str, container: AnyNodeRef) -> bool {
-        // Anything that is not a single printable character — Shift, Escape, F5 — is not typing.
+        // Anything but a single printable character is not typing.
         let mut chars = key.chars();
         let Some(char) = chars.next() else {
             return false;
@@ -104,7 +100,7 @@ impl Typeahead {
             return;
         }
 
-        // Cycling starts looking *after* whatever is focused; a fresh search starts at the top.
+        // Cycling starts after whatever is focused; a fresh search starts at the top.
         let start = match (from_current, document().active_element()) {
             (true, Some(active)) => items
                 .iter()

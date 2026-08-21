@@ -1,16 +1,11 @@
 //! A menu summoned by right-clicking a region, anchored to the pointer.
 //!
-//! Almost none of this is new. A context menu is a dropdown menu whose anchor is a point rather
-//! than a button, so the surface, the items, the roving focus and the submenus are all
-//! `dropdown_menu.rs`'s — they resolve `FloatingContext` out of the context, and this module
-//! provides the same type. What is different is only where the menu is anchored and what opens it.
+//! A dropdown menu whose anchor is a point rather than a button: the surface, the items, the
+//! roving focus and the submenus are all `dropdown_menu.rs`'s, resolved from the same context type.
 //!
-//! The anchor is a zero-size element parked at the click point and handed to floating-ui as the
-//! reference. Positioning against a real element rather than raw coordinates is what keeps flip
-//! and shift working: a menu summoned near the bottom of the window flips above the pointer for
-//! free. It also fixes dismissal, which is the part that goes wrong if the trigger *region* is
-//! used as the reference — the dismissable layer treats the trigger as "inside", so a left-click
-//! in the region would fail to close the menu it just opened.
+//! The anchor is a zero-size element parked at the click point. Positioning against a real element
+//! keeps flip and shift working, and keeps dismissal right — with the trigger *region* as the
+//! reference, the layer counts it as inside and a left-click there fails to close the menu.
 
 use crate::{
     primitives::{
@@ -64,8 +59,7 @@ pub fn ContextMenuRoot(
     let stored_children = StoredValue::new(children);
 
     view! {
-        // `trigger_aria` stays `None`: the region is not a button, and announcing `aria-expanded`
-        // on a div nobody can focus would be a lie.
+        // `trigger_aria` stays `None`: the region is not a button.
         <FloatingRoot class=class context=context>
             <Provider value=point>
                 <Provider value=MenuRoot(context)>
@@ -88,11 +82,8 @@ pub fn ContextMenuRoot(
     }
 }
 
-/// The region that answers a right-click.
-///
-/// Re-opening while already open is deliberate rather than a toggle: the dismissable layer sees
-/// the pointerdown land outside the menu and closes it, then this moves the anchor and opens it
-/// again, so a second right-click somewhere else moves the menu instead of dismissing it.
+/// The region that answers a right-click. Opening rather than toggling is deliberate: the layer
+/// closes on the pointerdown, then this moves the anchor and opens it where the pointer is.
 #[component]
 pub fn ContextMenuTriggerRoot(
     #[prop(optional, into)] class: Signal<String>,
@@ -123,12 +114,8 @@ pub fn ContextMenuTriggerRoot(
     }
 }
 
-/// The menu surface, anchored to the click point.
-///
-/// This is the dropdown's content root with one thing added, and that one thing is the reason it
-/// is not simply reused: floating-ui's auto-update watches for resizes and scrolls, and an anchor
-/// that *teleports* to a new pointer position is neither. Without the explicit `update` below, a
-/// second right-click somewhere else re-opens the menu exactly where it already was.
+/// The menu surface, anchored to the click point. The dropdown's content root plus the explicit
+/// `update` below, which is why it is not simply reused.
 #[component]
 pub fn ContextMenuContentRoot(
     #[prop(default = Side::Bottom)] side: Side,
@@ -163,10 +150,8 @@ pub fn ContextMenuContentRoot(
             .middleware(SendWrapper::new(middleware)),
     );
 
-    // floating-ui's auto-update watches for resizes and scrolls; an anchor that *teleports* to a
-    // new pointer position is neither, so a second right-click elsewhere would otherwise re-open
-    // the menu exactly where it already was. Verified: removing this pins the menu to the first
-    // click point.
+    // Auto-update watches resizes and scrolls; an anchor that teleports is neither, so without
+    // this a second right-click re-opens the menu where it already was.
     Effect::new(move |_| {
         point.x.track();
         point.y.track();

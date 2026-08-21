@@ -120,7 +120,9 @@ pub fn Page() -> impl IntoView {
                             <SheetContent side=Side::Top>
                                 <SheetHeader>
                                     <SheetTitle>"From the top"</SheetTitle>
-                                    <SheetDescription>"Full width, height from content."</SheetDescription>
+                                    <SheetDescription>
+                                        "Full width, height from content."
+                                    </SheetDescription>
                                 </SheetHeader>
                             </SheetContent>
                         </Sheet>
@@ -129,7 +131,9 @@ pub fn Page() -> impl IntoView {
                             <SheetContent side=Side::Bottom>
                                 <SheetHeader>
                                     <SheetTitle>"From the bottom"</SheetTitle>
-                                    <SheetDescription>"Where a phone would put it."</SheetDescription>
+                                    <SheetDescription>
+                                        "Where a phone would put it."
+                                    </SheetDescription>
                                 </SheetHeader>
                             </SheetContent>
                         </Sheet>
@@ -150,7 +154,9 @@ pub fn Page() -> impl IntoView {
                             <SheetContent side=Side::Bottom>
                                 <SheetHeader>
                                     <SheetTitle>"Controlled"</SheetTitle>
-                                    <SheetDescription>"Open state managed externally."</SheetDescription>
+                                    <SheetDescription>
+                                        "Open state managed externally."
+                                    </SheetDescription>
                                 </SheetHeader>
                                 <SheetFooter>
                                     <SheetClose>"Done"</SheetClose>

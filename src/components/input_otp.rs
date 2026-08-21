@@ -1,9 +1,7 @@
 //! The styled one-time-code field.
 //!
-//! The boxes are painted output over a single invisible input — see
-//! `src/primitives/input_otp.rs`. Everything decided here is what a slot looks like when it is
-//! empty, filled, live or disabled, all off `data-*`; the caret is a CSS animation on the live
-//! slot rather than a real one, since the real caret is deliberately transparent.
+//! The boxes are painted output over one invisible input. What is decided here is how a slot
+//! looks empty, filled, live or disabled, and that the caret is drawn rather than real.
 
 use crate::{
     cn,
@@ -70,8 +68,8 @@ pub fn InputOtpSlot(
                 cn!(
                     "relative flex h-10 w-10 items-center justify-center border border-input text-sm font-medium tabular-nums transition-all first:rounded-l-lg last:rounded-r-lg",
                     "data-[active=true]:z-10 data-[active=true]:border-ring data-[active=true]:ring-3 data-[active=true]:ring-ring/50",
-                    // The blinking cursor is drawn, not real: the input's own caret is
-                    // transparent, and there is only one of it for six boxes anyway.
+                    // Drawn, not real: the input's caret is transparent, and there is one of
+                    // it for six boxes.
                     "data-[active=true]:after:absolute data-[active=true]:after:h-4 data-[active=true]:after:w-px data-[active=true]:after:animate-caret-blink data-[active=true]:after:bg-foreground",
                     "data-[filled=true]:after:hidden",
                     class.get()

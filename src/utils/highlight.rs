@@ -1,10 +1,8 @@
 //! A small, dependency-free tokenizer for the snippets `CodeBlock` renders.
 //!
-//! It is deliberately not a parser: it recognises the lexical shapes that make code readable
-//! (comments, strings, numbers, keywords, types, macros, attributes, lifetimes) and leaves
-//! everything else alone. Tokens always cover the input exactly, so concatenating every
-//! `Token::text` reproduces the source byte for byte — the rendered block can never lose or
-//! reorder a character, whatever the tokenizer makes of it.
+//! A lexer, not a parser: it recognises the shapes that make code readable and leaves the rest
+//! alone. Tokens cover the input exactly, so concatenating every `Token::text` reproduces the
+//! source byte for byte — the rendered block can never lose or reorder a character.
 
 use crate::utils::types::Language;
 

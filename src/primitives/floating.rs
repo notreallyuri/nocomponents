@@ -24,9 +24,8 @@ pub struct FloatingContext {
     pub trigger_ref: AnyNodeRef,
     pub trigger_rect: RwSignal<TriggerRect>,
 
-    // The positioned element the content renders into. Doubles as the floating-ui ref and as the
-    // "inside" test for outside-pointerdown dismissal, which a portal makes impossible to derive
-    // from the DOM tree.
+    // The positioned element the content renders into. Doubles as the "inside" test for outside
+    // dismissal, which a portal makes impossible to derive from the DOM tree.
     pub content_ref: AnyNodeRef,
 
     // For controlled usage (select, combobox)
@@ -36,9 +35,8 @@ pub struct FloatingContext {
     // Accessibility
     pub trigger_id: RwSignal<String>,
     pub content_id: RwSignal<String>,
-    /// Where focus should land the next time the content opens, set by whatever opened it. The
-    /// content reads it once and the root puts it back to `Auto` on close, so it describes the
-    /// *current* opening rather than sticking around.
+    /// Where focus lands the next time the content opens, set by whatever opened it. Read once
+    /// and cleared on close, so it describes the current opening only.
     pub open_focus: RwSignal<OpenFocus>,
 }
 
@@ -80,8 +78,7 @@ impl FloatingContext {
 /// Where focus goes when the content opens.
 #[derive(Default, Clone, Copy, PartialEq)]
 pub enum OpenFocus {
-    /// Whatever the surface does by default: a menu focuses its container, a select the option it
-    /// currently holds.
+    /// Whatever the surface does by default: a menu its container, a select its current value.
     #[default]
     Auto,
     /// The first item, however the surface finds its items.
@@ -93,14 +90,13 @@ pub enum OpenFocus {
 /// What ArrowDown and ArrowUp do while the trigger is focused and the layer is closed.
 #[derive(Default, Clone, Copy, PartialEq)]
 pub enum ArrowOpen {
-    /// Nothing. A popover, tooltip or hover card is not a list, and swallowing the arrows on a
-    /// focused button would only stop the page scrolling.
+    /// Nothing: a popover, tooltip or hover card is not a list.
     #[default]
     None,
     /// Open it, and let the surface place focus — a select opens on its current value.
     Open,
-    /// Open it and step straight into the list: Down onto the first item, Up onto the last. This
-    /// is the menu-button convention.
+    /// Open it and step into the list — Down onto the first item, Up onto the last, as a menu
+    /// button does.
     OpenIntoList,
 }
 
@@ -111,10 +107,10 @@ pub enum TriggerAria {
     #[default]
     None,
     /// The trigger opens the content: `aria-haspopup` with this value, plus `aria-expanded` and,
-    /// while open, `aria-controls`. Menus, listboxes, popovers.
+    /// while open, `aria-controls`.
     Popup(&'static str),
-    /// The content *describes* the trigger rather than being opened by it: `aria-describedby`
-    /// while it is open, and no `aria-expanded`, which would be a lie. Tooltips.
+    /// The content describes the trigger rather than being opened by it: `aria-describedby` while
+    /// open, and no `aria-expanded`, which would be a lie.
     Describes,
 }
 
@@ -185,9 +181,8 @@ pub fn FloatingRoot(
         context.content_id.set(next_id("content"));
     }
 
-    // The trigger is styled and rendered by the layer above — a plain button here, a `Button`
-    // there, an arbitrary element behind `render` — so the only thing every case has in common is
-    // the node ref. Writing the ARIA onto that element keeps all three correct.
+    // The trigger comes in three shapes — a button here, a `Button` there, anything behind
+    // `render` — and the node ref is all they share, so the ARIA is written onto the node.
     Effect::new(move |_| {
         let Some(trigger) = context.trigger_ref.get() else {
             return;
@@ -202,8 +197,8 @@ pub fn FloatingRoot(
                 let _ = trigger.set_attribute("aria-haspopup", haspopup);
                 let _ =
                     trigger.set_attribute("aria-expanded", if is_open { "true" } else { "false" });
-                // `aria-controls` and `aria-describedby` may only point at an element that exists,
-                // and the content is not in the DOM until the layer opens.
+                // These may only point at an element that exists, and the content is not in the
+                // DOM until the layer opens.
                 if is_open {
                     let _ = trigger.set_attribute("aria-controls", &context.content_id.get());
                 } else {
@@ -220,11 +215,8 @@ pub fn FloatingRoot(
         }
     });
 
-    // The arrow keys are bound to the trigger node for the same reason the ARIA is written onto
-    // it: the element belongs to the layer above and comes in three shapes, and a handler declared
-    // here would only reach the one this module renders itself. The remover lives in a
-    // `StoredValue`, so replacing it — or disposing the root — takes the old listener off the
-    // element it was attached to.
+    // Bound to the node for the same reason as the ARIA above. The remover lives in a
+    // `StoredValue`, so replacing it or disposing the root takes the old listener off.
     let arrow_listener: StoredValue<Option<RemoveEventHandler<Element>>> = StoredValue::new(None);
 
     if arrow_open != ArrowOpen::None {
@@ -237,8 +229,7 @@ pub fn FloatingRoot(
                 let Ok(e) = e.dyn_into::<KeyboardEvent>() else {
                     return;
                 };
-                // Only from the closed state: the content has its own arrow handling once it is
-                // open, and the trigger is still focused while a menu opened by the mouse is up.
+                // Only from the closed state; the content handles its own arrows once open.
                 if context.is_open.get_untracked() {
                     return;
                 }
@@ -267,9 +258,8 @@ pub fn FloatingRoot(
         move || context.close(),
     );
 
-    // The pending unmount, cancelled both when the layer reopens inside the delay and when the
-    // root is disposed: a submenu is torn down together with the menu that contains it, and a
-    // timer that fired after that would touch signals which no longer exist.
+    // Cancelled when the layer reopens inside the delay, and when the root is disposed: a
+    // submenu goes down with its menu, and a timer firing after that touches dead signals.
     let unmount_handle: StoredValue<Option<TimeoutHandle>> = StoredValue::new(None);
 
     let cancel_unmount = move || {
@@ -283,9 +273,8 @@ pub fn FloatingRoot(
     Effect::new(move |was_open: Option<bool>| {
         let is_open = context.is_open.get();
 
-        // Hand focus back to the trigger, but only if it is still inside the content: a layer
-        // closed by moving the mouse away, or by a click somewhere else on the page, must leave
-        // focus where the user put it rather than yanking it to the trigger.
+        // Hand focus back only if it is still inside the content: a layer closed by the mouse
+        // moving away must leave focus where the user put it.
         if !is_open
             && was_open == Some(true)
             && focus_is_inside_content(context)
@@ -299,8 +288,7 @@ pub fn FloatingRoot(
             cancel_unmount();
             context.is_mounted.set(true);
         } else {
-            // The focus intent belongs to a single opening. It is cleared here rather than by the
-            // content, which may never have mounted to read it.
+            // Cleared here rather than by the content, which may never have mounted to read it.
             context.open_focus.set(OpenFocus::Auto);
 
             if let Ok(handle) = set_timeout_with_handle(

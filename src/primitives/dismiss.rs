@@ -1,24 +1,18 @@
 //! A global stack of dismissable layers.
 //!
-//! Every overlay that can be dismissed — dialogs, popovers, selects, menus and their submenus —
-//! registers itself here while it is open. The stack is ordered by the moment each layer opened,
-//! so the last entry is the one visually on top, and Escape dismisses *only* that one. Without
-//! this, each overlay would listen for Escape on its own and a popover inside a dialog would take
-//! the whole stack down with a single key press.
+//! Every dismissable overlay registers here while open, ordered by the moment it opened, so
+//! Escape takes only the topmost — one listener rather than one per overlay.
 //!
-//! Layers are keyed on the signal that drives them rather than on the DOM, so a layer leaves the
-//! stack the moment it closes — not when its exit animation finishes and it finally unmounts.
+//! Layers are keyed on the signal that drives them, so a layer leaves the stack when it closes
+//! rather than when its exit animation finishes.
 
 use leptos::{ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
 use std::cell::{Cell, RefCell};
 use web_sys::Node;
 
-/// What a pointerdown has to land in to count as *inside* a layer.
-///
-/// A layer with no bounds — `LayerBounds::modal()` — is never dismissed by an outside pointerdown
-/// and stops the cascade at itself: a popover inside a dialog dismisses on a click in the dialog's
-/// body, but the dialog behind it does not.
+/// What a pointerdown has to land in to count as inside a layer. A layer with no bounds —
+/// `LayerBounds::modal()` — is never dismissed from outside and stops the cascade at itself.
 #[derive(Clone, Copy, Default)]
 pub struct LayerBounds {
     content: Option<AnyNodeRef>,
@@ -43,8 +37,7 @@ impl LayerBounds {
         self.content.is_some() || self.trigger.is_some()
     }
 
-    /// The trigger counts as inside: clicking it while the layer is open must reach the trigger's
-    /// own toggle rather than being turned into a dismiss followed by a reopen.
+    /// The trigger counts as inside, or clicking it while open would dismiss and then reopen.
     fn contains(&self, target: &Node) -> bool {
         [self.content, self.trigger]
             .into_iter()
@@ -91,10 +84,8 @@ fn remove(id: u64) {
     LAYERS.with(|layers| layers.borrow_mut().retain(|layer| layer.id != id));
 }
 
-/// Dismisses the topmost open layer, returning whether there was one to dismiss.
-///
-/// The callback is copied out of the borrow before it runs: dismissing flips a signal, and
-/// anything that reacts to it synchronously must be free to touch the stack itself.
+/// Dismisses the topmost open layer, returning whether there was one. The callback is copied out
+/// of the borrow first: what reacts to the signal must be free to touch the stack.
 pub fn dismiss_topmost() -> bool {
     let topmost = LAYERS.with(|layers| layers.borrow().last().map(|layer| layer.dismiss));
 
@@ -107,11 +98,8 @@ pub fn dismiss_topmost() -> bool {
     }
 }
 
-/// Dismisses every layer above the one the pointer landed in.
-///
-/// Walking down from the top: a layer that contains the target keeps itself and everything below
-/// it, and so does a modal layer, which swallows the click rather than letting it fall through to
-/// whatever it covers.
+/// Dismisses every layer above the one the pointer landed in. Walking down from the top, a layer
+/// containing the target keeps itself and everything below, and so does a modal one.
 fn dismiss_outside(target: &Node) {
     let stack: Vec<(LayerBounds, Callback<()>)> = LAYERS.with(|layers| {
         layers
@@ -160,12 +148,9 @@ fn install_escape_listener() {
     });
 }
 
-/// Registers `is_open` as a dismissable layer.
-///
-/// While the signal is true this layer sits on the global stack. Escape runs `on_dismiss` only if
-/// it is the topmost layer; a pointerdown outside `bounds` runs it too, unless the bounds say the
-/// layer is modal. Call this once per layer root, in the root itself — every open dialog, popover,
-/// select and menu on the page shares one stack.
+/// Registers `is_open` as a dismissable layer, for the length of the signal being true. Escape
+/// runs `on_dismiss` only when it is topmost; a pointerdown outside `bounds` runs it unless the
+/// layer is modal. Call once per layer root, in the root itself.
 pub fn use_dismissable_layer(
     is_open: RwSignal<bool>,
     bounds: LayerBounds,

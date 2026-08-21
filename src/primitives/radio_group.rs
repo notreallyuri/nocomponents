@@ -1,8 +1,7 @@
 //! A set of radios where exactly one may be chosen.
 //!
-//! The group is a single tab stop: Tab reaches the checked radio (or the first one, when nothing is
-//! checked yet) and the arrow keys move between them. Unlike a menu, moving *is* choosing — the
-//! radio pattern selects whatever focus lands on, which is what a native radio group does too.
+//! One tab stop: Tab reaches the checked radio, the arrows move between them, and — unlike a menu
+//! — moving is choosing, as the radio pattern and a native group both have it.
 
 use crate::{primitives::roving_focus::use_roving_focus, utils::types::Orientation};
 use leptos::{context::Provider, ev, prelude::*, wasm_bindgen::JsCast};

@@ -1,12 +1,10 @@
 //! A label that appears on hover or focus.
 //!
-//! Shares the floating layer with popover and friends, but not its trigger: a tooltip is not opened
-//! by a click and does not *control* anything, so its trigger announces `aria-describedby` rather
-//! than `aria-expanded` (see [`TriggerAria`]).
+//! Shares the floating layer but not its trigger: a tooltip controls nothing, so it announces
+//! `aria-describedby` rather than `aria-expanded` (see [`TriggerAria`]).
 //!
-//! The delays are the whole design. Opening waits `delay` so that sweeping the pointer across a
-//! toolbar does not flash a row of tooltips; closing waits `close_delay`, a much shorter one, so
-//! that crossing a gap between the trigger and its content does not dismiss it.
+//! The delays are the design. `delay` keeps a sweep across a toolbar from flashing a row of them;
+//! the shorter `close_delay` keeps the gap between trigger and content from dismissing it.
 
 use crate::{
     primitives::floating::{FloatingContext, FloatingRoot, TriggerAria},
