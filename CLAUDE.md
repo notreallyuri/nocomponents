@@ -16,13 +16,15 @@ Cargo workspace: root crate `nocomponents`, member `docs`.
 cargo check --features full          # type-check the library (default features compile almost nothing)
 cargo check -p docs                  # type-check the docs app
 cargo fmt && cargo clippy --features full
+cargo test --features full           # the unit tests, and the feature-table check below
 
 cd docs && trunk serve               # dev server on :3000, watches ../src too (see Trunk.toml)
 cd docs && trunk build --release
 ```
 
 Trunk downloads and runs the Tailwind CLI itself (pinned in `docs/Trunk.toml`); there is no
-`tailwind.config.js` and no npm build step. There is no test suite — verify changes in `trunk serve`.
+`tailwind.config.js` and no npm build step. The tests cover `utils` and the feature table, and
+nothing that renders — behaviour is still verified in `trunk serve`.
 
 `leptosfmt` is what formats `view!` blocks, and `cargo fmt` leaves them alone. Run it on the files
 you changed, never over `src/` or `docs/src/`: 0.1.33 silently **deletes** Rust comments that sit
@@ -31,10 +33,27 @@ commentary out of files you never meant to touch.
 
 ## Feature flags
 
-`primitives`, `icons`, `components` (= primitives + icons), `theme`, `full`. In `src/lib.rs` **both**
-`components` and `primitives` modules are gated on the `primitives` feature, and `theme` gates
-`utils::theme`. With no features only `utils` and `middleware` exist, so always check/build with
-`--features full` (which is what `docs` depends on).
+Two kinds. The **layers** — `primitives`, `icons`, `components` (= primitives + icons), `theme`,
+`highlight`, and `full` (everything) — gate the modules in `src/lib.rs`. With no features only
+`utils`, `middleware` and `deps` exist, so always check/build with `--features full`, which is what
+`docs` depends on.
+
+The **elements** are one feature per name, and there are 64 of them. A single name gates both
+halves: `#[cfg(feature = "accordion")]` sits on `primitives::accordion` *and* on
+`components::accordion`, because an element is one thing whichever layer you take it from. 46 names
+have a primitive, 59 have a component, and the ones that have only one (`floating`, `drag`,
+`roving_focus`, `dismiss`, `typeahead` have no styled layer; `card`, `badge`, `sheet`, `skeleton`
+and the rest of the style-only set have no primitive) are gated just the same.
+
+Each element feature lists what its own source imports — `accordion = ["collapsible",
+"roving_focus"]` — and cargo works the closure out from there, so `--features primitives,accordion`
+compiles exactly that and nothing else.
+
+**Those lists are facts about the source, not preferences, and `tests/features.rs` enforces it.**
+Add a `use crate::primitives::foo::…` to a file and forget the Cargo.toml line and nothing appears
+to break: `--features full` still builds, and only a consumer who asked for that one element ever
+finds out. The test re-derives the whole table from the imports, fails on a mismatch, and prints the
+corrected table ready to paste in. It runs under `cargo test --features full`.
 
 ## Architecture: the two layers
 
@@ -57,6 +76,38 @@ children.
 When adding a component, put behavior in the primitive and only classes in the component; if you find
 yourself writing `if is_open` styling logic in `src/components/`, it belongs in a `data-*` attribute
 on the primitive instead.
+
+`src/components/` carries **no doc comments** — no `//!` header, no `///` on a part or a prop. That
+prose is the docs site's prop tables (`ApiReference` on every component page), and a description
+kept in two places drifts. Ordinary `//` comments stay: they explain why a class is what it is,
+which no table ever says. `src/primitives/` and `src/utils/` keep their doc comments, being
+documented nowhere else yet.
+
+## Written to be copied into other projects
+
+A Tailwind build only emits a class if it sees the file the class is written in, and it does not
+look inside other crates. So a project that merely *depends* on `nocomponents` gets the styled
+layer's markup with none of its CSS, and nothing on their side fixes it — `@source` would have to
+point into `~/.cargo/registry`, and the tokens the classes are written against would still be
+missing. The answer is that `src/components/<name>.rs` is meant to be **copied into the consuming
+project's own `src/`**, where Tailwind already scans it, while everything with no classes in it —
+the primitives, the icons, `utils`, `middleware` — stays an ordinary dependency.
+
+Two rules follow, and both are invisible here because in-crate everything compiles either way:
+
+**`src/components/` may only name `leptos` and what `nocomponents::deps` re-exports.** `deps`
+(`src/lib.rs`) re-exports `tw_merge`, `leptos_node_ref` and `js_sys` so a copied component needs one
+dependency rather than four kept in version lockstep. `leptos` is the exception because
+`#[component]` expands to `::leptos::…` paths, so it has to be a real dependency of whoever compiles
+the file. It is also why `cn!` expands to `$crate::deps::tw_merge::tw_merge!` — a bare `tw_merge::`
+resolved only because `docs` happens to depend on `tw_merge` itself.
+
+**`src/components/` must not `impl` anything on a type that `src/primitives/` owns.** In-crate it is
+fine; in someone else's crate it is an orphan-rule error, since neither the trait nor the type is
+local to them. `ToastVariant` and `TabsListVariants` belong to their primitives — they are what
+`data-variant` is written from — so their classes are free functions (`variant_class`,
+`list_variant_class`) rather than an `AsClass` impl. Variants *declared* in the styled layer
+(`ButtonVariant`, `BadgeVariant`, `SheetSide`, …) are local, and keep the `AsClass` idiom.
 
 ## Cross-cutting patterns
 
