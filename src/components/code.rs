@@ -6,7 +6,6 @@ use crate::{
 };
 use leptos::{either::Either, prelude::*};
 
-/// Inline code, for a symbol or a fragment mentioned in running text.
 #[component]
 pub fn Code(#[prop(optional, into)] class: Signal<String>, children: Children) -> impl IntoView {
     view! {
@@ -24,17 +23,12 @@ pub fn Code(#[prop(optional, into)] class: Signal<String>, children: Children) -
     }
 }
 
-/// Colours for the `data-token` spans, from Tailwind's palette rather than theme tokens, so code
-/// is readable without a consumer adding variables.
-const TOKEN_COLORS: &str = "[&_[data-token=keyword]]:text-rose-600 dark:[&_[data-token=keyword]]:text-rose-400 [&_[data-token=type]]:text-violet-600 dark:[&_[data-token=type]]:text-violet-400 [&_[data-token=macro]]:text-teal-600 dark:[&_[data-token=macro]]:text-teal-300 [&_[data-token=string]]:text-emerald-700 dark:[&_[data-token=string]]:text-emerald-300 [&_[data-token=number]]:text-amber-700 dark:[&_[data-token=number]]:text-amber-300 [&_[data-token=lifetime]]:text-amber-700 dark:[&_[data-token=lifetime]]:text-amber-300 [&_[data-token=attribute]]:text-sky-700 dark:[&_[data-token=attribute]]:text-sky-300 [&_[data-token=comment]]:text-muted-foreground [&_[data-token=comment]]:italic";
+const TOKEN_COLORS: &str = "[&_[data-token=keyword]]:text-rose-600 dark:[&_[data-token=keyword]]:text-rose-400 [&_[data-token=type]]:text-violet-600 dark:[&_[data-token=type]]:text-violet-400 [&_[data-token=function]]:text-blue-600 dark:[&_[data-token=function]]:text-blue-400 [&_[data-token=macro]]:text-teal-600 dark:[&_[data-token=macro]]:text-teal-300 [&_[data-token=string]]:text-emerald-700 dark:[&_[data-token=string]]:text-emerald-300 [&_[data-token=number]]:text-amber-700 dark:[&_[data-token=number]]:text-amber-300 [&_[data-token=lifetime]]:text-amber-700 dark:[&_[data-token=lifetime]]:text-amber-300 [&_[data-token=attribute]]:text-sky-700 dark:[&_[data-token=attribute]]:text-sky-300 [&_[data-token=comment]]:text-muted-foreground [&_[data-token=comment]]:italic";
 
-/// A block of code with an optional filename header and a copy button.
 #[component]
 pub fn CodeBlock(
     #[prop(into)] code: String,
-    /// Shown in the header — usually a file name or a short caption.
-    #[prop(optional, into)]
-    label: Option<String>,
+    #[prop(optional, into)] label: Option<String>,
     #[prop(optional)] language: Language,
     #[prop(default = true)] copyable: bool,
     #[prop(optional, into)] class: Signal<String>,
@@ -46,8 +40,6 @@ pub fn CodeBlock(
             code=code
             class=move || {
                 cn!(
-                    // A shade under whatever it sits on. `card` and `background` are the same
-                    // colour in light, so light tints where dark drops.
                     "group/code relative overflow-hidden rounded-xl bg-muted/60 text-foreground ring-1 ring-foreground/10 dark:bg-background",
                     class.get(),
                 )
@@ -67,7 +59,7 @@ pub fn CodeBlock(
 
             {copyable
                 .then(|| {
-                    view! { <CodeCopyButton class=if has_header { "top-1.5" } else { "top-3" } /> }
+                    view! { <CodeCopyButton class=if has_header { "top-0.5" } else { "top-3" } /> }
                 })}
 
             <CodeBlockContentRoot
@@ -80,7 +72,6 @@ pub fn CodeBlock(
     }
 }
 
-/// Copy trigger for the enclosing [`CodeBlock`]. Swaps to a check for a moment after copying.
 #[component]
 pub fn CodeCopyButton(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
     let ctx = use_code();

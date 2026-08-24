@@ -11,6 +11,10 @@ pub enum TokenKind {
     Plain,
     Keyword,
     Type,
+    /// An identifier being called, or being declared to be callable: what is on the left of a
+    /// `(`. Not resolved — a lexer cannot know that `f` in `let g = f;` is the same function —
+    /// which is why this is about the shape of the call rather than about the name.
+    Function,
     Macro,
     Str,
     Number,
@@ -26,6 +30,7 @@ impl TokenKind {
             TokenKind::Plain => "plain",
             TokenKind::Keyword => "keyword",
             TokenKind::Type => "type",
+            TokenKind::Function => "function",
             TokenKind::Macro => "macro",
             TokenKind::Str => "string",
             TokenKind::Number => "number",
@@ -246,8 +251,11 @@ fn tokenize_rust(source: &str) -> Vec<Span> {
                 || RUST_PRIMITIVES.contains(&word)
             {
                 // `Self` and every other capitalised path segment read as a type, as do the
-                // lowercase primitives.
+                // lowercase primitives. `Some(x)` is a call, but what a reader wants coloured
+                // there is the variant, so the type wins over the call ahead of it.
                 TokenKind::Type
+            } else if is_called(source, i) {
+                TokenKind::Function
             } else {
                 TokenKind::Plain
             };
@@ -406,12 +414,23 @@ const TS_KEYWORDS: &[&str] = &[
     "unknown",
 ];
 
-/// JavaScript and TypeScript. Regex literals are not recognised — telling `/` apart needs a
-/// parser — so a regex reads as punctuation plus its contents.
+/// The keywords a `/` can follow and still be starting a regex. Every other keyword — `this`,
+/// `true`, `null` — is a value, so what follows it is division.
+const JS_VALUE_KEYWORDS: &[&str] = &["false", "null", "super", "this", "true", "undefined"];
+
+/// JavaScript and TypeScript.
+///
+/// Two shapes here need more than the byte in front of them. A `/` is a regex in one position and
+/// division in another, which is decided by what the last token was — the standard lexer
+/// heuristic, and the reason this loop remembers it. And a `${…}` inside a template literal is
+/// code, not string, so the template is cut around each one and the inside is tokenized by this
+/// same function.
 fn tokenize_curly(source: &str, typescript: bool) -> Vec<Span> {
     let mut tokens = Vec::new();
     let bytes = source.as_bytes();
     let mut i = 0;
+    // What the last token was that a `/` cares about; a comment and whitespace leave it alone.
+    let mut value_before = false;
 
     while i < source.len() {
         let start = i;
@@ -435,26 +454,29 @@ fn tokenize_curly(source: &str, typescript: bool) -> Vec<Span> {
             continue;
         }
 
-        // Plain and template strings alike; `${…}` inside a template is not broken out.
-        if c == b'"' || c == b'\'' || c == b'`' {
-            i += 1;
-            while i < source.len() {
-                match bytes[i] {
-                    b'\\' => i += 2,
-                    q if q == c => {
-                        i += 1;
-                        break;
-                    }
-                    _ => i += next_char_len(source, i),
-                }
-            }
-            push(
-                &mut tokens,
-                TokenKind::Str,
-                source,
-                start,
-                i.min(source.len()),
-            );
+        // A regex only where a value could begin, and only when it closes on its own line: an
+        // unterminated one is division after all, and reading it as a literal would swallow the
+        // rest of the snippet.
+        if c == b'/'
+            && !value_before
+            && let Some(end) = regex_literal_end(source, i)
+        {
+            i = end;
+            push(&mut tokens, TokenKind::Str, source, start, i);
+            value_before = true;
+            continue;
+        }
+
+        if c == b'`' {
+            i = scan_template(source, i, typescript, &mut tokens);
+            value_before = true;
+            continue;
+        }
+
+        if c == b'"' || c == b'\'' {
+            i = string_end(source, i);
+            push(&mut tokens, TokenKind::Str, source, start, i);
+            value_before = true;
             continue;
         }
 
@@ -465,6 +487,7 @@ fn tokenize_curly(source: &str, typescript: bool) -> Vec<Span> {
                 i += 1;
             }
             push(&mut tokens, TokenKind::Number, source, start, i);
+            value_before = true;
             continue;
         }
 
@@ -473,15 +496,21 @@ fn tokenize_curly(source: &str, typescript: bool) -> Vec<Span> {
                 i += 1;
             }
             let word = &source[start..i];
-            let kind = if JS_KEYWORDS.contains(&word) || (typescript && TS_KEYWORDS.contains(&word))
-            {
+            let keyword =
+                JS_KEYWORDS.contains(&word) || (typescript && TS_KEYWORDS.contains(&word));
+            let kind = if keyword {
                 TokenKind::Keyword
             } else if word.starts_with(|ch: char| ch.is_ascii_uppercase()) {
                 TokenKind::Type
+            } else if is_called(source, i) {
+                TokenKind::Function
             } else {
                 TokenKind::Plain
             };
             push(&mut tokens, kind, source, start, i);
+            // `return /a/` is a regex and `this / 2` is division, so a keyword is only a value
+            // when it names one.
+            value_before = !keyword || JS_VALUE_KEYWORDS.contains(&word);
             continue;
         }
 
@@ -491,14 +520,178 @@ fn tokenize_curly(source: &str, typescript: bool) -> Vec<Span> {
                 i += 1;
             }
             push(&mut tokens, TokenKind::Attribute, source, start, i);
+            value_before = false;
             continue;
         }
 
         i += next_char_len(source, i);
         push(&mut tokens, TokenKind::Plain, source, start, i);
+        // Everything that closes an expression can be divided; whitespace decides nothing.
+        if !c.is_ascii_whitespace() {
+            value_before = matches!(c, b')' | b']' | b'}');
+        }
     }
 
     tokens
+}
+
+/// A template literal, cut around every `${…}` so the code inside one is tokenized as code.
+/// Returns where the literal ended — past its closing backtick, or the end of the source when it
+/// never closes.
+fn scan_template(source: &str, start: usize, typescript: bool, tokens: &mut Vec<Span>) -> usize {
+    let bytes = source.as_bytes();
+    // Where the current run of string began: the backtick, then each `}` that closes a hole.
+    let mut segment = start;
+    let mut i = start + 1;
+
+    while i < source.len() {
+        match bytes[i] {
+            b'\\' => i = (i + 2).min(source.len()),
+            b'`' => {
+                i += 1;
+                push(tokens, TokenKind::Str, source, segment, i);
+                return i;
+            }
+            b'$' if bytes.get(i + 1) == Some(&b'{') => {
+                let Some(close) = template_hole_end(source, i + 2) else {
+                    // Unterminated: the rest of the source is this string, which is what an
+                    // editor shows too.
+                    break;
+                };
+
+                push(tokens, TokenKind::Str, source, segment, i);
+                push(tokens, TokenKind::Plain, source, i, i + 2);
+                for (kind, from, to) in tokenize_curly(&source[i + 2..close], typescript) {
+                    push(tokens, kind, source, i + 2 + from, i + 2 + to);
+                }
+                push(tokens, TokenKind::Plain, source, close, close + 1);
+
+                i = close + 1;
+                segment = i;
+            }
+            _ => i += next_char_len(source, i),
+        }
+    }
+
+    push(tokens, TokenKind::Str, source, segment, source.len());
+    source.len()
+}
+
+/// The `}` closing a `${…}` that opens at `start`, or `None` if it never closes. Braces nest, and
+/// a string or a template inside one may hold braces of its own that do not count.
+fn template_hole_end(source: &str, start: usize) -> Option<usize> {
+    let bytes = source.as_bytes();
+    let mut i = start;
+    let mut depth = 0usize;
+
+    while i < source.len() {
+        match bytes[i] {
+            b'{' => {
+                depth += 1;
+                i += 1;
+            }
+            b'}' if depth == 0 => return Some(i),
+            b'}' => {
+                depth -= 1;
+                i += 1;
+            }
+            b'"' | b'\'' => i = string_end(source, i),
+            b'`' => i = template_end(source, i),
+            _ => i += next_char_len(source, i),
+        }
+    }
+
+    None
+}
+
+/// Past the closing quote of the string opening at `start`, or the end of the source.
+fn string_end(source: &str, start: usize) -> usize {
+    let bytes = source.as_bytes();
+    let quote = bytes[start];
+    let mut i = start + 1;
+
+    while i < source.len() {
+        match bytes[i] {
+            b'\\' => i = (i + 2).min(source.len()),
+            b'\n' => break,
+            q if q == quote => return i + 1,
+            _ => i += next_char_len(source, i),
+        }
+    }
+
+    i.min(source.len())
+}
+
+/// Past the closing backtick of the template opening at `start`. Only used to skip one, so it
+/// tokenizes nothing — but it still has to walk its holes, since a `}` inside one is not the end
+/// of anything.
+fn template_end(source: &str, start: usize) -> usize {
+    let bytes = source.as_bytes();
+    let mut i = start + 1;
+
+    while i < source.len() {
+        match bytes[i] {
+            b'\\' => i = (i + 2).min(source.len()),
+            b'`' => return i + 1,
+            b'$' if bytes.get(i + 1) == Some(&b'{') => match template_hole_end(source, i + 2) {
+                Some(close) => i = close + 1,
+                None => break,
+            },
+            _ => i += next_char_len(source, i),
+        }
+    }
+
+    source.len()
+}
+
+/// Past the closing `/` and flags of a regex literal opening at `start`, or `None` when what is
+/// there is not one: an unterminated body, or a newline inside it.
+fn regex_literal_end(source: &str, start: usize) -> Option<usize> {
+    let bytes = source.as_bytes();
+    // An empty regex is not a thing, and `//` is a comment — which is checked before this.
+    let mut i = start + 1;
+    let mut in_class = false;
+
+    while i < source.len() {
+        match bytes[i] {
+            b'\\' => i += 2,
+            b'\n' => return None,
+            b'[' => {
+                in_class = true;
+                i += 1;
+            }
+            b']' => {
+                in_class = false;
+                i += 1;
+            }
+            b'/' if !in_class => {
+                i += 1;
+                // Flags, and only the letters that are ones — so `/a/ g` does not eat the space.
+                while i < source.len() && bytes[i].is_ascii_lowercase() {
+                    i += 1;
+                }
+                return (i > start + 2).then_some(i);
+            }
+            _ => i += next_char_len(source, i),
+        }
+    }
+
+    None
+}
+
+/// Whether the identifier ending at `at` is being called: a `(` after it, or a turbofish and then
+/// a `(`. Whitespace between the two counts — `foo ()` is still a call — but a newline does not,
+/// since that is usually a line ending in a name and the next one opening a group.
+fn is_called(source: &str, at: usize) -> bool {
+    let rest = source[at..].trim_start_matches([' ', '\t']);
+
+    rest.starts_with('(')
+        || rest
+            .strip_prefix("::<")
+            .and_then(|turbofish| turbofish.split_once('('))
+            // Up to the `(` and no further, since `Vec<_>>` closes on the last `>` and not the
+            // first: what makes this a call is that the arguments open where the generics end.
+            .is_some_and(|(generics, _)| generics.trim_end().ends_with('>'))
 }
 
 fn tokenize_html(source: &str) -> Vec<Span> {
@@ -773,6 +966,9 @@ mod tests {
             "for i in 0..3 { println!(\"{i}\"); }",
             "let emoji = \"⌘ K\"; // unicode must survive",
             "const x: Array<string> = [`a ${b}`, 'c'];",
+            "const re = /ab+[/]c/gi.test(s) ? a / b : `${ f({ x: `}` }) }`;",
+            "let s = `outer ${ `inner ${deep}` } end`;",
+            "`unterminated ${ hole",
             "<button class=\"x\" data-state='on'>Go</button><!-- note -->",
             ".card { color: #fff; padding: 1.5rem } @media (hover: hover) { a { color: red } }",
             "export default function App() { return null; }",
@@ -808,9 +1004,72 @@ mod tests {
     }
 
     #[test]
-    fn template_literals_are_strings() {
+    fn template_literals_break_out_their_holes() {
         let t = kinds("const s = `a ${b} c`;", Language::JavaScript);
-        assert!(t.contains(&(TokenKind::Str, "`a ${b} c`")));
+        assert!(t.contains(&(TokenKind::Str, "`a ")));
+        assert!(t.contains(&(TokenKind::Str, " c`")));
+        // The hole is code: `b` is not part of the string.
+        assert!(
+            !t.iter()
+                .any(|(kind, text)| *kind == TokenKind::Str && text.contains('b'))
+        );
+
+        // A brace inside a nested string does not close the hole, and a nested template is walked
+        // rather than counted.
+        let t = kinds("`${ f({ a: `}` }) } tail`", Language::JavaScript);
+        assert!(t.contains(&(TokenKind::Function, "f")));
+        assert!(t.contains(&(TokenKind::Str, " tail`")));
+
+        // An unterminated hole leaves the rest a string rather than losing it.
+        assert_round_trip("`a ${ b", Language::JavaScript);
+        assert_round_trip("`a ${ b } c", Language::JavaScript);
+    }
+
+    #[test]
+    fn regex_literals_are_told_from_division() {
+        let t = kinds("const re = /ab+[/]c/gi;", Language::JavaScript);
+        assert!(t.contains(&(TokenKind::Str, "/ab+[/]c/gi")));
+
+        // After a value, a slash is division — and the tokens after it stay themselves.
+        let t = kinds("const half = width / 2;", Language::JavaScript);
+        assert!(!t.iter().any(|(kind, _)| *kind == TokenKind::Str));
+        assert!(t.contains(&(TokenKind::Number, "2")));
+
+        // `return` is not a value, so what follows it can be one.
+        assert!(
+            kinds("return /x/.test(s);", Language::JavaScript).contains(&(TokenKind::Str, "/x/"))
+        );
+        // ...but `this` is.
+        assert!(
+            !kinds("this / that / other", Language::JavaScript)
+                .iter()
+                .any(|(kind, _)| *kind == TokenKind::Str)
+        );
+
+        // Nothing that fails to close on its line is a regex.
+        let t = kinds("a = b / c;\nd = e / f;", Language::JavaScript);
+        assert!(!t.iter().any(|(kind, _)| *kind == TokenKind::Str));
+    }
+
+    #[test]
+    fn a_call_is_not_a_plain_identifier() {
+        let t = kinds("fn main() { helper(2) }", Language::Rust);
+        assert!(t.contains(&(TokenKind::Function, "main")));
+        assert!(t.contains(&(TokenKind::Function, "helper")));
+
+        // A name that is not called stays plain — merged into the run around it, so what is
+        // checked is that it is not a function — and a turbofish is still a call.
+        let t = kinds("let f = helper; xs.collect::<Vec<_>>()", Language::Rust);
+        assert!(!t.contains(&(TokenKind::Function, "helper")));
+        assert!(t.contains(&(TokenKind::Function, "collect")));
+
+        // The macro and the type keep winning over the call ahead of them.
+        assert!(kinds("println!(\"x\")", Language::Rust).contains(&(TokenKind::Macro, "println!")));
+        assert!(kinds("Some(1)", Language::Rust).contains(&(TokenKind::Type, "Some")));
+
+        let t = kinds("export function run() { count(); }", Language::JavaScript);
+        assert!(t.contains(&(TokenKind::Function, "run")));
+        assert!(t.contains(&(TokenKind::Function, "count")));
     }
 
     #[test]
