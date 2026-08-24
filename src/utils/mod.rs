@@ -12,6 +12,7 @@ pub mod highlight;
 pub mod theme;
 
 use floating_ui_leptos::Placement;
+use leptos::{ev, prelude::*};
 use std::cell::Cell;
 use types::{Align, Side};
 
@@ -31,6 +32,38 @@ pub fn next_id(prefix: &str) -> String {
     });
 
     format!("nc-{prefix}-{n}")
+}
+
+/// Whether a CSS media query matches, kept up to date as the window changes.
+///
+/// For the handful of decisions a class cannot make — a dialog that has to be a drawer on a
+/// phone is a different *component*, not a different width — where the alternative is rendering
+/// both and hiding one, which leaves two of everything in the DOM and two of everything focusable.
+///
+/// Listens for `resize` rather than to the `MediaQueryList` itself: the query is re-read on each
+/// event, so what this says and what CSS is doing cannot drift apart.
+pub fn use_media_query(query: &'static str) -> Signal<bool> {
+    let matches = RwSignal::new(query_matches(query));
+
+    let listener = window_event_listener(ev::resize, move |_| {
+        let now = query_matches(query);
+        if matches.get_untracked() != now {
+            matches.set(now);
+        }
+    });
+
+    on_cleanup(move || listener.remove());
+
+    matches.into()
+}
+
+fn query_matches(query: &str) -> bool {
+    window()
+        .match_media(query)
+        .ok()
+        .flatten()
+        .map(|query| query.matches())
+        .unwrap_or(false)
 }
 
 pub fn get_placement(side: Side, align: Align) -> Placement {
