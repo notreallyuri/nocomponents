@@ -8,35 +8,17 @@ use crate::{
 };
 use leptos::prelude::*;
 
-/// An image with a crop rectangle over it.
-///
-/// One component, like `Calendar`: the frame, the rectangle and its handles are the same three
-/// pieces every time. `primitives::image_cropper` has them apart, and `use_image_cropper()` is how
-/// anything inside reaches the crop — including the export, which is a method on the context
-/// rather than a prop, since when to cut is the caller's decision.
 #[component]
 pub fn ImageCropper(
     #[prop(into)] src: Signal<String>,
     #[prop(optional, into)] alt: Signal<String>,
-    /// The crop rectangle, in fractions of the image. Read it, or write one in.
-    #[prop(optional, into)]
-    crop: RwSignal<Crop>,
-    /// The ratio to hold, width over height in pixels. `None` is free-form.
-    #[prop(default = None, into)]
-    aspect: Option<f64>,
-    /// The thirds over the crop, which is what most people line a photograph up against.
-    #[prop(default = true)]
-    grid: bool,
-    /// Shows the crop as a circle. Only a preview — the rectangle underneath is unchanged and is
-    /// still what gets cut, so pair it with `aspect=Some(1.0)` unless an ellipse is what you meant.
-    #[prop(default = false)]
-    circular: bool,
+    #[prop(optional, into)] crop: RwSignal<Crop>,
+    #[prop(default = None, into)] aspect: Option<f64>,
+    #[prop(default = true)] grid: bool,
+    #[prop(default = false)] circular: bool,
     #[prop(default = true)] cross_origin: bool,
     #[prop(optional, into)] class: Signal<String>,
-    /// Rendered under the image, inside the cropper's context — which is how a toolbar reaches
-    /// the crop and the export without the component having to grow a prop for each of them.
-    #[prop(optional)]
-    children: Option<Children>,
+    #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     view! {
         <ImageCropperRoot
@@ -63,8 +45,6 @@ pub fn ImageCropper(
     }
 }
 
-/// The dimming outside the crop. One element with a vast spread shadow: the alternative is four
-/// boxes to keep in step with the rectangle's edges.
 #[component]
 fn Shade() -> impl IntoView {
     let ctx = use_image_cropper();

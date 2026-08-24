@@ -121,7 +121,6 @@ pub fn NavigationMenuLink(
     }
 }
 
-/// The mark that slides under whichever trigger is open.
 #[component]
 pub fn NavigationMenuIndicator(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
     view! {

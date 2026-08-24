@@ -1,8 +1,3 @@
-//! The styled scroll area.
-//!
-//! Geometry comes from the primitive as inline style; what is decided here is what a track and a
-//! thumb look like, and that a bar for content which fits is not drawn.
-
 use crate::{
     cn,
     primitives::scroll_area::{
@@ -15,9 +10,7 @@ use leptos::prelude::*;
 #[component]
 pub fn ScrollArea(
     #[prop(optional, into)] class: Signal<String>,
-    /// Also draw a horizontal scrollbar. Off by default, since most scroll areas are vertical.
-    #[prop(default = false)]
-    horizontal: bool,
+    #[prop(default = false)] horizontal: bool,
     children: Children,
 ) -> impl IntoView {
     view! {

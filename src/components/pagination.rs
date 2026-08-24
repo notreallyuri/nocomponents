@@ -1,8 +1,3 @@
-//! Page links.
-//!
-//! Style-only, and links rather than buttons: a page of results has a URL, and the reader should
-//! be able to middle-click page 3. `active` marks the current page with `aria-current`.
-
 use crate::{
     cn,
     components::button::{ButtonSize, ButtonVariant},
@@ -11,7 +6,6 @@ use crate::{
 };
 use leptos::prelude::*;
 
-/// Shared by every clickable cell, so the numbers and the prev/next links line up.
 fn link_class(active: bool, size: ButtonSize) -> String {
     let variant = if active {
         ButtonVariant::Outline
@@ -66,9 +60,7 @@ pub fn PaginationItem(children: Children) -> impl IntoView {
 #[component]
 pub fn PaginationLink(
     #[prop(optional, into)] href: Signal<String>,
-    /// The page currently being shown.
-    #[prop(optional, into)]
-    active: Signal<bool>,
+    #[prop(optional, into)] active: Signal<bool>,
     #[prop(default = ButtonSize::Icon)] size: ButtonSize,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
@@ -122,7 +114,6 @@ pub fn PaginationNext(
     }
 }
 
-/// The gap in a long list of pages.
 #[component]
 pub fn PaginationEllipsis(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
     view! {

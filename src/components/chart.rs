@@ -6,22 +6,13 @@ use crate::{
 };
 use leptos::prelude::*;
 
-/// A chart. One component rather than a set of parts: the plot, the key and the tooltip are the
-/// same three pieces every time, and `primitives::chart` has them separately for anyone laying
-/// out their own.
 #[component]
 pub fn Chart(
-    /// The categories along the bottom.
-    #[prop(into)]
-    labels: Signal<Vec<String>>,
+    #[prop(into)] labels: Signal<Vec<String>>,
     #[prop(into)] series: Signal<Vec<ChartSeries>>,
     #[prop(optional)] kind: ChartKind,
-    /// The card that follows the pointer.
-    #[prop(default = true)]
-    tooltip: bool,
-    /// The key beneath the plot. Off for a single series, which needs no key.
-    #[prop(default = true)]
-    legend: bool,
+    #[prop(default = true)] tooltip: bool,
+    #[prop(default = true)] legend: bool,
     #[prop(default = true)] grid: bool,
     #[prop(optional, into)] class: Signal<String>,
 ) -> impl IntoView {
@@ -89,8 +80,6 @@ pub fn Chart(
     }
 }
 
-/// Whole numbers without a decimal point, everything else to one place — a tooltip that says
-/// "12.0" for a count reads as a measurement.
 fn format_value(value: f64) -> String {
     if value.fract().abs() < f64::EPSILON {
         format!("{value:.0}")

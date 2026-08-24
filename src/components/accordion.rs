@@ -12,12 +12,8 @@ pub fn Accordion(
     #[prop(optional)] kind: AccordionType,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
-    /// Whether a `Single` accordion can be closed entirely. Ignored for `Multiple`.
-    #[prop(default = true)]
-    collapsible: bool,
-    /// Omit for an uncontrolled accordion that owns its own selection.
-    #[prop(default = None, into)]
-    value: Option<RwSignal<Vec<String>>>,
+    #[prop(default = true)] collapsible: bool,
+    #[prop(default = None, into)] value: Option<RwSignal<Vec<String>>>,
     children: Children,
 ) -> impl IntoView {
     view! {

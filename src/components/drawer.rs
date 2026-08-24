@@ -1,9 +1,3 @@
-//! The styled drawer.
-//!
-//! The sheet's structure with the drawer primitive's gesture on top. Its header, title,
-//! description, footer and close are re-exported rather than restyled, so what is decided here is
-//! the panel's edge, its rounding, and the grab handle.
-
 use crate::{
     cn,
     icons::x::X,
@@ -20,8 +14,6 @@ pub use crate::components::sheet::{
     SheetHeader as DrawerHeader, SheetTitle as DrawerTitle,
 };
 
-/// Which edge the drawer is pinned to, and which corners are rounded. No slide keyframes, unlike
-/// the sheet's: the panel is transformed while dragging, and a keyframe would fight the finger.
 struct DrawerSide(Side);
 
 impl AsClass for DrawerSide {
@@ -49,10 +41,7 @@ impl AsClass for DrawerSide {
 pub fn Drawer(
     #[prop(default = Side::Bottom)] side: Side,
     #[prop(default = None, into)] open: Option<RwSignal<bool>>,
-    /// Non-modal leaves the page usable underneath: no overlay, no focus trap, and an outside
-    /// pointer closes the drawer. Set here only; the content reads it from context.
-    #[prop(default = true)]
-    modal: bool,
+    #[prop(default = true)] modal: bool,
     children: Children,
 ) -> impl IntoView {
     view! {
@@ -64,9 +53,7 @@ pub fn Drawer(
 
 #[component]
 pub fn DrawerContent(
-    /// Draw the grab bar. On by default: a drawer that does not look draggable will not be.
-    #[prop(default = true)]
-    handle: bool,
+    #[prop(default = true)] handle: bool,
     #[prop(optional, into)] class: Signal<String>,
     children: ChildrenFn,
 ) -> impl IntoView {
@@ -141,7 +128,6 @@ pub fn DrawerHandle(#[prop(optional, into)] class: Signal<String>) -> impl IntoV
     }
 }
 
-/// The button that opens the drawer.
 #[component]
 pub fn DrawerTrigger(
     #[prop(optional, into)] class: Signal<String>,

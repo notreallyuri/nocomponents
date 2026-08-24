@@ -1,9 +1,3 @@
-//! The box that makes an input and its addons look like one field.
-//!
-//! The border, background and focus ring move here from the control, which strips its own. The
-//! ring keys off `:focus-visible` on the control rather than `:focus-within`, so tabbing to a
-//! button in an addon does not light up the whole field.
-
 use crate::{
     cn,
     components::{
@@ -30,7 +24,6 @@ pub fn InputGroup(
     }
 }
 
-/// An icon, a unit, a button — whatever shares the field with the control.
 #[component]
 pub fn InputGroupAddon(
     #[prop(optional)] align: InputGroupAlign,
@@ -52,7 +45,6 @@ pub fn InputGroupAddon(
     }
 }
 
-/// The control, stripped of the chrome the group now draws.
 #[component]
 pub fn InputGroupInput(
     #[prop(optional, into)] class: Signal<String>,
@@ -79,7 +71,6 @@ pub fn InputGroupInput(
     }
 }
 
-/// The same, for the block-aligned groups where the control needs more than one line.
 #[component]
 pub fn InputGroupTextarea(
     #[prop(optional, into)] class: Signal<String>,
@@ -106,7 +97,6 @@ pub fn InputGroupTextarea(
     }
 }
 
-/// Text that belongs to the field but is not part of its value: a unit, a character count.
 #[component]
 pub fn InputGroupText(
     #[prop(optional, into)] class: Signal<String>,
@@ -122,7 +112,6 @@ pub fn InputGroupText(
     }
 }
 
-/// A button sized to sit inside the field rather than beside it.
 #[component]
 pub fn InputGroupButton(
     #[prop(default = ButtonVariant::Ghost)] variant: ButtonVariant,

@@ -1,17 +1,10 @@
-//! The "there is nothing here yet" state.
-//!
-//! Style-only. A centred stack: media, title, description, then whatever gets the user out of the
-//! empty state — a button, a form, a link.
-
 use crate::{cn, utils::types::AsClass};
 use leptos::prelude::*;
 
 #[derive(Default, Clone, Copy)]
 pub enum EmptyMediaVariant {
-    /// A tinted square, for an icon.
     #[default]
     Icon,
-    /// No decoration, for an illustration that brings its own.
     Plain,
 }
 
@@ -119,7 +112,6 @@ pub fn EmptyDescription(
     }
 }
 
-/// The way out of the empty state: an action, a form, a link.
 #[component]
 pub fn EmptyContent(
     #[prop(optional, into)] class: Signal<String>,

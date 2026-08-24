@@ -1,8 +1,3 @@
-//! The styled context menu.
-//!
-//! The surface is the dropdown menu's, down to the class strings, so everything below the trigger
-//! is re-exported rather than restyled. The primitive owns the right-click and the anchor.
-
 use crate::{
     cn,
     primitives::context_menu::{ContextMenuContentRoot, ContextMenuRoot, ContextMenuTriggerRoot},
@@ -38,7 +33,6 @@ pub fn ContextMenuTrigger(
     }
 }
 
-/// The menu surface. Anchored to the click point, so it grows down and right with no offset.
 #[component]
 pub fn ContextMenuContent(
     #[prop(default = Side::Bottom)] side: Side,

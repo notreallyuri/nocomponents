@@ -1,7 +1,3 @@
-//! A row: media on the left, text in the middle, actions on the right.
-//!
-//! Style-only and generic. `ItemGroup` stacks them; `ItemSeparator` rules between them.
-
 use crate::{cn, components::separator::Separator, utils::types::AsClass};
 use leptos::prelude::*;
 
@@ -41,10 +37,8 @@ impl AsClass for ItemSize {
 
 #[derive(Default, Clone, Copy)]
 pub enum ItemMediaVariant {
-    /// Whatever is passed, undecorated — an avatar, a checkbox.
     #[default]
     Plain,
-    /// A bordered tile sized for an icon.
     Icon,
 }
 
@@ -208,7 +202,6 @@ pub fn ItemActions(
     }
 }
 
-/// A full-width strip above the row's main line.
 #[component]
 pub fn ItemHeader(
     #[prop(optional, into)] class: Signal<String>,
@@ -226,7 +219,6 @@ pub fn ItemHeader(
     }
 }
 
-/// The same, below.
 #[component]
 pub fn ItemFooter(
     #[prop(optional, into)] class: Signal<String>,

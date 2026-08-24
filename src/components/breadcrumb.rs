@@ -1,9 +1,3 @@
-//! The trail back up.
-//!
-//! Style-only, but the markup is the point: a `<nav>` labelled "breadcrumb" around an ordered
-//! list, the current page marked rather than linked, and the separators hidden — punctuation,
-//! not content.
-
 use crate::{cn, icons::chevron::ChevronRight};
 use leptos::prelude::*;
 
@@ -73,7 +67,6 @@ pub fn BreadcrumbLink(
     }
 }
 
-/// The page you are on: not a link, and announced as the current one.
 #[component]
 pub fn BreadcrumbPage(
     #[prop(optional, into)] class: Signal<String>,
@@ -95,9 +88,7 @@ pub fn BreadcrumbPage(
 #[component]
 pub fn BreadcrumbSeparator(
     #[prop(optional, into)] class: Signal<String>,
-    /// Defaults to a chevron.
-    #[prop(optional)]
-    children: Option<Children>,
+    #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     view! {
         <li
@@ -114,7 +105,6 @@ pub fn BreadcrumbSeparator(
     }
 }
 
-/// Stands in for the middle of a long trail.
 #[component]
 pub fn BreadcrumbEllipsis(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
     view! {

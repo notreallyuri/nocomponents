@@ -8,9 +8,7 @@ use leptos::prelude::*;
 pub fn Collapsible(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
-    /// Omit for an uncontrolled panel that owns its own state.
-    #[prop(default = None, into)]
-    open: Option<RwSignal<bool>>,
+    #[prop(default = None, into)] open: Option<RwSignal<bool>>,
     children: Children,
 ) -> impl IntoView {
     view! {

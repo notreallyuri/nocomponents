@@ -92,10 +92,7 @@ pub fn CommandEmpty(
 
 #[component]
 pub fn CommandGroup(
-    /// The group's heading. Empty for a group that is only there to be ruled off from the one
-    /// above it.
-    #[prop(optional, into)]
-    heading: Signal<String>,
+    #[prop(optional, into)] heading: Signal<String>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
@@ -143,7 +140,6 @@ pub fn CommandSeparator(#[prop(optional, into)] class: Signal<String>) -> impl I
     view! { <CommandSeparatorRoot class=move || cn!("h-px bg-border", class.get()) /> }
 }
 
-/// The keyboard hint on the right of an item — "⌘K", "Ctrl+N".
 #[component]
 pub fn CommandShortcut(
     #[prop(optional, into)] class: Signal<String>,
@@ -161,17 +157,10 @@ pub fn CommandShortcut(
     }
 }
 
-/// The palette as a dialog: what `Ctrl+K` opens.
-///
-/// The title and description are read out and not shown — a dialog has to be named, and "the
-/// search box" is not what a screen reader should have to infer from the first thing in it.
 #[component]
 pub fn CommandDialog(
     #[prop(optional)] open: Option<RwSignal<bool>>,
-    /// A single unshifted key that opens the palette with Ctrl or Cmd held. `None` leaves the
-    /// shortcut to the caller.
-    #[prop(default = Some("k"))]
-    shortcut: Option<&'static str>,
+    #[prop(default = Some("k"))] shortcut: Option<&'static str>,
     #[prop(optional, into)] title: Signal<String>,
     #[prop(optional, into)] description: Signal<String>,
     #[prop(optional, into)] search: RwSignal<String>,

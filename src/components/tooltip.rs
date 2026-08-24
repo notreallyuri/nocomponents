@@ -9,9 +9,7 @@ use leptos_node_ref::AnyNodeRef;
 #[component]
 pub fn Tooltip(
     #[prop(optional, into)] class: Signal<String>,
-    /// How long the pointer has to rest on the trigger before the tooltip opens.
-    #[prop(default = 400, into)]
-    delay: u64,
+    #[prop(default = 400, into)] delay: u64,
     #[prop(default = 100, into)] close_delay: u64,
     children: ChildrenFn,
 ) -> impl IntoView {
@@ -30,9 +28,7 @@ pub fn Tooltip(
 pub fn TooltipTrigger(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
-    /// Render the trigger as something else — usually a `Button`. Forward the node ref.
-    #[prop(default = None, into)]
-    render: Option<Callback<AnyNodeRef, AnyView>>,
+    #[prop(default = None, into)] render: Option<Callback<AnyNodeRef, AnyView>>,
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     view! {

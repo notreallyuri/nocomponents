@@ -6,8 +6,6 @@ use crate::{
 };
 use leptos::{context::Provider, prelude::*};
 
-/// Styling handed down from the group to its items. Lives in the styled layer on purpose — the
-/// primitive knows nothing about variants.
 #[derive(Copy, Clone, Default)]
 struct ToggleGroupStyle {
     variant: ToggleVariant,
@@ -48,12 +46,8 @@ pub fn ToggleGroup(
 #[component]
 pub fn ToggleGroupItem(
     #[prop(into)] value: String,
-    /// Defaults to the variant set on the enclosing `ToggleGroup`.
-    #[prop(optional)]
-    variant: Option<ToggleVariant>,
-    /// Defaults to the size set on the enclosing `ToggleGroup`.
-    #[prop(optional)]
-    size: Option<ToggleSize>,
+    #[prop(optional)] variant: Option<ToggleVariant>,
+    #[prop(optional)] size: Option<ToggleSize>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional)] children: Option<Children>,

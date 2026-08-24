@@ -1,8 +1,3 @@
-//! The styled one-time-code field.
-//!
-//! The boxes are painted output over one invisible input. What is decided here is how a slot
-//! looks empty, filled, live or disabled, and that the caret is drawn rather than real.
-
 use crate::{
     cn,
     primitives::input_otp::{

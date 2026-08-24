@@ -51,9 +51,7 @@ pub fn ResizablePanel(
 #[component]
 pub fn ResizableHandle(
     index: usize,
-    /// The grip: a few dots on the divider, so it reads as something you can take hold of.
-    #[prop(default = false)]
-    with_handle: bool,
+    #[prop(default = false)] with_handle: bool,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
 ) -> impl IntoView {

@@ -141,7 +141,6 @@ pub fn MenubarSeparator(#[prop(optional, into)] class: Signal<String>) -> impl I
     view! { <div class=move || cn!("-mx-1 my-1 h-px bg-muted", class.get()) /> }
 }
 
-/// The keyboard hint on the right of an item. Presentational — it binds nothing.
 #[component]
 pub fn MenubarShortcut(
     #[prop(optional, into)] class: Signal<String>,

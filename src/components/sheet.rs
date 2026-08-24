@@ -1,8 +1,3 @@
-//! A dialog that arrives from an edge.
-//!
-//! Style-only over the dialog primitive, which owns the modality, the focus trap and the layer
-//! stack. What a sheet adds is one `side` prop: the edge, and the direction it slides from.
-
 use crate::{
     cn,
     components::button::{Button, ButtonSize, ButtonVariant},
@@ -15,7 +10,6 @@ use crate::{
 };
 use leptos::{either::Either, ev, prelude::*};
 
-/// Where the sheet is pinned, and therefore where it slides in from.
 struct SheetSide(Side);
 
 impl AsClass for SheetSide {
@@ -168,7 +162,6 @@ pub fn SheetFooter(
     }
 }
 
-/// A button that closes the sheet, for a footer's "Cancel" or "Done".
 #[component]
 pub fn SheetClose(
     #[prop(optional)] size: ButtonSize,

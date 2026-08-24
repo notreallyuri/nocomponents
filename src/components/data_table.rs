@@ -10,19 +10,11 @@ use crate::{
 use leptos::prelude::*;
 use std::cmp::Ordering;
 
-/// One column of a [`DataTable`].
-///
-/// `cell` is what turns a row into a view, and `compare` is what makes the column sortable —
-/// there is no way to derive an order for an arbitrary `T`, and guessing one from the rendered
-/// text would sort "10" before "9".
 pub struct DataTableColumn<T: Send + Sync + 'static> {
-    /// What this column is called in the sort state. Unique within the table.
     pub key: &'static str,
     pub header: &'static str,
     pub cell: Callback<T, AnyView>,
-    /// Passing one makes the header sortable.
     pub compare: Option<Callback<(T, T), Ordering>>,
-    /// Merged onto both the header cell and every body cell, for alignment and width.
     pub class: &'static str,
 }
 
@@ -48,22 +40,14 @@ impl<T: Send + Sync + 'static> DataTableColumn<T> {
     }
 }
 
-/// A table over a list of rows, with the sorting and the selecting already wired up.
-///
-/// The rows stay the caller's: this sorts a copy for display and never touches the signal it was
-/// given, so the same list can be behind a filter, a page, or a server that sorts it instead.
 #[component]
 pub fn DataTable<T>(
     #[prop(into)] rows: Signal<Vec<T>>,
     columns: Vec<DataTableColumn<T>>,
-    /// What makes a row itself, for selection. Without it there is no checkbox column.
-    #[prop(default = None, into)]
-    row_id: Option<Callback<T, String>>,
+    #[prop(default = None, into)] row_id: Option<Callback<T, String>>,
     #[prop(default = None, into)] selection: Option<TableSelection>,
     #[prop(default = None, into)] sort: Option<TableSort>,
-    /// What to say when there is nothing to show.
-    #[prop(default = "No results.", into)]
-    empty: &'static str,
+    #[prop(default = "No results.", into)] empty: &'static str,
     #[prop(optional, into)] class: Signal<String>,
 ) -> impl IntoView
 where
@@ -296,7 +280,6 @@ where
     }
 }
 
-/// "3 of 12 rows selected." — the line that belongs under a table with a checkbox column.
 #[component]
 pub fn DataTableSelectionCount(
     selection: TableSelection,

@@ -11,9 +11,7 @@ use leptos_node_ref::AnyNodeRef;
 #[component]
 pub fn HoverCard(
     #[prop(optional, into)] class: Signal<String>,
-    /// How long the pointer has to rest before the card opens.
-    #[prop(default = 600, into)]
-    delay: u64,
+    #[prop(default = 600, into)] delay: u64,
     #[prop(default = 250, into)] close_delay: u64,
     children: ChildrenFn,
 ) -> impl IntoView {
@@ -31,9 +29,7 @@ pub fn HoverCard(
 #[component]
 pub fn HoverCardTrigger(
     #[prop(optional, into)] class: Signal<String>,
-    /// Render the trigger as something else — a link, a `Button`. Forward the node ref.
-    #[prop(default = None, into)]
-    render: Option<Callback<AnyNodeRef, AnyView>>,
+    #[prop(default = None, into)] render: Option<Callback<AnyNodeRef, AnyView>>,
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     view! {

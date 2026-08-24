@@ -51,10 +51,7 @@ pub fn DialogTrigger(
 #[component]
 pub fn DialogPortal(
     #[prop(optional, into)] class: Signal<String>,
-    /// The corner close button. Off for a panel whose whole surface is the control — a command
-    /// palette, where a stray button in the corner is one more thing to tab past.
-    #[prop(default = true)]
-    show_close: bool,
+    #[prop(default = true)] show_close: bool,
     children: ChildrenFn,
 ) -> impl IntoView {
     let context = use_dialog();

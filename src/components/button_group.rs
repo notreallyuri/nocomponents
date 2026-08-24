@@ -1,13 +1,6 @@
-//! Buttons welded into one control.
-//!
-//! Style-only: the group flattens the corners and borders where its children meet. `button.rs`
-//! normalises its smaller radii inside `[data-slot=button-group]`, so any size lines up.
-
 use crate::{cn, components::separator::Separator, utils::types::Orientation};
 use leptos::prelude::*;
 
-/// Which edges get flattened where the children meet. Not an `AsClass` impl on `Orientation`:
-/// these classes mean something only inside a button group.
 fn seam_class(orientation: Orientation) -> &'static str {
     match orientation {
         Orientation::Horizontal => {
@@ -46,7 +39,6 @@ pub fn ButtonGroup(
     }
 }
 
-/// A label inside a group — a unit, a prefix, a count — styled like a button but inert.
 #[component]
 pub fn ButtonGroupText(
     #[prop(optional, into)] class: Signal<String>,
@@ -67,7 +59,6 @@ pub fn ButtonGroupText(
     }
 }
 
-/// A rule between two buttons of the same variant, where the flattened border is not enough.
 #[component]
 pub fn ButtonGroupSeparator(
     #[prop(default = Orientation::Vertical)] orientation: Orientation,

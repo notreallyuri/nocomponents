@@ -1,8 +1,3 @@
-//! Style-only wrappers over the native table elements.
-//!
-//! `Table` puts the `<table>` inside its own horizontally scrolling container, so a wide table
-//! scrolls itself instead of stretching the page.
-
 use crate::cn;
 use leptos::prelude::*;
 
@@ -64,9 +59,7 @@ pub fn TableFooter(
 #[component]
 pub fn TableRow(
     #[prop(optional, into)] class: Signal<String>,
-    /// Renders `data-state="selected"`, which the row styles itself from.
-    #[prop(optional, into)]
-    selected: Signal<bool>,
+    #[prop(optional, into)] selected: Signal<bool>,
     children: Children,
 ) -> impl IntoView {
     view! {
@@ -88,9 +81,7 @@ pub fn TableRow(
 #[component]
 pub fn TableHead(
     #[prop(optional, into)] class: Signal<String>,
-    /// Optional: an empty cell — a checkbox column's header, a spacer — is a normal thing to want.
-    #[prop(optional)]
-    children: Option<Children>,
+    #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     view! {
         <th
@@ -110,9 +101,7 @@ pub fn TableHead(
 #[component]
 pub fn TableCell(
     #[prop(optional, into)] class: Signal<String>,
-    /// Optional: an empty cell — a checkbox column's header, a spacer — is a normal thing to want.
-    #[prop(optional)]
-    children: Option<Children>,
+    #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     view! {
         <td

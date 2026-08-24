@@ -8,13 +8,9 @@ use leptos::prelude::*;
 #[component]
 pub fn RadioGroup(
     #[prop(optional, into)] class: Signal<String>,
-    /// Radios stack by default, the way a native group does; the arrow keys follow suit.
-    #[prop(default = Orientation::Vertical)]
-    orientation: Orientation,
+    #[prop(default = Orientation::Vertical)] orientation: Orientation,
     #[prop(optional, into)] disabled: Signal<bool>,
-    /// Omit for an uncontrolled group that owns its own selection.
-    #[prop(default = None, into)]
-    value: Option<RwSignal<Option<String>>>,
+    #[prop(default = None, into)] value: Option<RwSignal<Option<String>>>,
     children: Children,
 ) -> impl IntoView {
     view! {

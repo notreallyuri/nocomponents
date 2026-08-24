@@ -1,8 +1,3 @@
-//! The styled slider.
-//!
-//! Positions are the primitive's, written as inline geometry; this decides what a track, a filled
-//! range and a thumb look like in both orientations.
-
 use crate::{
     cn,
     primitives::slider::{SliderRangeRoot, SliderRoot, SliderThumbRoot, SliderTrackRoot},
@@ -18,9 +13,7 @@ pub fn Slider(
     #[prop(optional)] orientation: Orientation,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
-    /// Omit for an uncontrolled slider. The length decides how many thumbs there are.
-    #[prop(default = None, into)]
-    value: Option<RwSignal<Vec<f64>>>,
+    #[prop(default = None, into)] value: Option<RwSignal<Vec<f64>>>,
     #[prop(optional)] default_value: Option<Vec<f64>>,
 ) -> impl IntoView {
     // One thumb unless told otherwise; a controlled slider's own length wins.
