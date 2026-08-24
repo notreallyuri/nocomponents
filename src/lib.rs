@@ -1,4 +1,4 @@
-#[cfg(feature = "primitives")]
+#[cfg(feature = "components")]
 pub mod components;
 
 #[cfg(feature = "primitives")]

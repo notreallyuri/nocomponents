@@ -7,22 +7,190 @@ edition = "2024"
 members = ["docs"]
 
 [features]
+default = []
+
+# The layers. `primitives` is behaviour on its own — what the CLI installs against, since the
+# styled layer it vendors into a project cannot be compiled from here. `components` is that styled
+# layer, which needs the behaviour under it and the icons it draws.
 primitives = []
 icons = []
 components = ["primitives", "icons"]
 theme = []
 highlight = []
-full = ["primitives", "components", "theme", "icons", "highlight"]
+
+full = ["components", "theme", "highlight", "all-elements"]
+
+# One feature per element, gating `primitives::<name>` and `components::<name>` together — an
+# element is one name whichever layer you take it from. Each lists only what its own source
+# reaches for, so asking for one element compiles its closure and nothing else.
+#
+# Derived from the `use crate::…` paths in `src/`, not maintained by hand: regenerate with the
+# registry generator rather than editing, or a new import will silently not be a feature edge.
+all-elements = [
+    "accordion",
+    "alert",
+    "alert_dialog",
+    "aspect_ratio",
+    "avatar",
+    "badge",
+    "breadcrumb",
+    "button",
+    "button_group",
+    "calendar",
+    "card",
+    "carousel",
+    "chart",
+    "checkbox",
+    "code",
+    "collapsible",
+    "color_picker",
+    "combobox",
+    "command",
+    "context_menu",
+    "data_table",
+    "date_picker",
+    "dialog",
+    "dismiss",
+    "drag",
+    "drawer",
+    "dropdown_menu",
+    "empty",
+    "field",
+    "floating",
+    "hover_card",
+    "image_cropper",
+    "input",
+    "input_group",
+    "input_otp",
+    "item",
+    "kbd",
+    "label",
+    "menubar",
+    "native_select",
+    "navigation_menu",
+    "pagination",
+    "popover",
+    "progress",
+    "radio_group",
+    "resizable",
+    "roving_focus",
+    "scroll_area",
+    "select",
+    "separator",
+    "sheet",
+    "sidebar",
+    "skeleton",
+    "slider",
+    "spinner",
+    "switch",
+    "table",
+    "tabs",
+    "textarea",
+    "toast",
+    "toggle",
+    "toggle_group",
+    "tooltip",
+    "typeahead",
+]
+accordion = ["collapsible", "roving_focus"]
+alert = []
+alert_dialog = ["button", "dialog"]
+aspect_ratio = []
+avatar = []
+badge = []
+breadcrumb = []
+button = []
+button_group = ["separator"]
+calendar = []
+card = []
+carousel = []
+chart = []
+checkbox = ["field"]
+code = ["highlight"]
+collapsible = []
+color_picker = ["drag", "input_group", "select", "separator"]
+combobox = ["button", "command", "field", "floating"]
+command = ["dialog"]
+context_menu = ["dropdown_menu", "floating", "roving_focus", "typeahead"]
+data_table = ["checkbox", "table"]
+date_picker = ["button", "calendar", "floating", "popover"]
+dialog = ["button", "dismiss"]
+dismiss = []
+drag = []
+drawer = ["dialog", "drag", "sheet"]
+dropdown_menu = ["button", "floating", "roving_focus", "typeahead"]
+empty = []
+field = []
+floating = ["dismiss"]
+hover_card = ["floating"]
+image_cropper = ["drag"]
+input = ["field"]
+input_group = ["button", "input", "textarea"]
+input_otp = []
+item = ["separator"]
+kbd = []
+label = []
+menubar = ["dropdown_menu", "floating", "roving_focus"]
+native_select = ["field"]
+navigation_menu = ["dismiss", "roving_focus"]
+pagination = ["button"]
+popover = ["button", "floating"]
+progress = []
+radio_group = ["field", "roving_focus"]
+resizable = ["drag"]
+roving_focus = []
+scroll_area = ["drag"]
+select = ["field", "floating", "roving_focus", "typeahead"]
+separator = []
+sheet = ["button", "dialog"]
+sidebar = ["input", "separator", "sheet", "skeleton", "tooltip"]
+skeleton = []
+slider = ["drag"]
+spinner = []
+switch = ["field"]
+table = []
+tabs = ["roving_focus"]
+textarea = ["field"]
+toast = []
+toggle = []
+toggle_group = ["roving_focus", "toggle"]
+tooltip = ["floating"]
+typeahead = []
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 floating-ui-leptos = "0.6.0"
 leptos = { version = "0.8.19", features = ["csr"] }
-# `HtmlCanvasElement` / `CanvasRenderingContext2d` / `HtmlImageElement` are the image cropper's
-# encoder: `drawImage` then `toDataURL`, rather than an image crate.
-web-sys = { version = "0.3.98", features = ["Storage", "MediaQueryList", "NodeList", "Element", "HtmlElement", "KeyboardEvent", "Navigator", "Clipboard", "HtmlCanvasElement", "CanvasRenderingContext2d", "HtmlImageElement", "Blob", "BlobPropertyBag", "Url"] }
 leptos-node-ref = "0.2.0"
 send_wrapper = "0.6.0"
 tw_merge = { version = "0.1.21", features = ["variant"] }
 js-sys = "0.3.98"
+wasm-bindgen-futures = "0.4.71"
+
+[dependencies.web-sys]
+version = "0.3.98"
+features = [
+  # The DOM the primitives reach for directly.
+  "Element",
+  "HtmlElement",
+  "KeyboardEvent",
+  "NodeList",
+  # `ThemeProvider`: the stored choice, and the system one.
+  "Storage",
+  "MediaQueryList",
+  # Copy buttons.
+  "Navigator",
+  "Clipboard",
+  # The image cropper's encoder: `drawImage` then `toDataURL`, rather than an image crate.
+  "HtmlCanvasElement",
+  "CanvasRenderingContext2d",
+  "HtmlImageElement",
+  # Handing bytes back out as something an `<img>` can load, and taking a picked file in.
+  # `File` is what makes `FileList`'s indexing getter exist at all.
+  "Blob",
+  "BlobPropertyBag",
+  "Url",
+  "File",
+  "FileList",
+]
