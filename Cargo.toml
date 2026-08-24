@@ -194,3 +194,7 @@ features = [
   "File",
   "FileList",
 ]
+
+[dev-dependencies]
+# `tests/features.rs` reads this file back, to check the feature table against the imports.
+toml = "1.0"
