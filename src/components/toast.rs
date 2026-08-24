@@ -1,4 +1,3 @@
-use crate::utils::types::AsClass;
 pub use crate::{
     cn,
     primitives::toast::{
@@ -9,13 +8,15 @@ pub use crate::{
 use leptos::prelude::*;
 use leptos_node_ref::AnyNodeRef;
 
-impl AsClass for ToastVariant {
-    fn as_class(&self) -> &'static str {
-        match self {
-            ToastVariant::Default => "bg-popover text-foreground",
-            ToastVariant::Destructive => {
-                "border-destructive bg-destructive text-destructive-foreground"
-            }
+// A free function rather than `impl AsClass for ToastVariant`. The variant belongs to the
+// primitive — it is what `data-variant` gets written from — while the classes for it belong here,
+// and this file is installed into other people's crates, where a foreign trait on a foreign type
+// is an orphan-rule error. Variants declared in this layer keep the `AsClass` idiom.
+fn variant_class(variant: ToastVariant) -> &'static str {
+    match variant {
+        ToastVariant::Default => "bg-popover text-foreground",
+        ToastVariant::Destructive => {
+            "border-destructive bg-destructive text-destructive-foreground"
         }
     }
 }
@@ -288,7 +289,7 @@ fn ToastItem(
                     "data-[dragging=false]:cursor-grab data-[dragging=true]:cursor-grabbing data-[dragging=true]:transition-none",
                     "text-popover-foreground touch-none select-none",
                     "py-3 px-4 text-sm data-[size=lg]:py-6 data-[size=lg]:px-8 data=[size=lg]:text-base",
-                    toast.variant.as_class(),
+                    variant_class(toast.variant),
                 )
             }
             style=move || {

@@ -7,12 +7,13 @@ use crate::{
 };
 use leptos::prelude::*;
 
-impl TabsListVariants {
-    pub fn as_class(&self) -> &'static str {
-        match self {
-            TabsListVariants::Default => "bg-muted",
-            TabsListVariants::Line => "gap-1 bg-transparent",
-        }
+// A free function rather than an inherent impl, for the reason `toast` gives: the variant is the
+// primitive's, this file is installed into other crates, and an inherent impl on a foreign type
+// does not compile there.
+fn list_variant_class(variant: TabsListVariants) -> &'static str {
+    match variant {
+        TabsListVariants::Default => "bg-muted",
+        TabsListVariants::Line => "gap-1 bg-transparent",
     }
 }
 
@@ -46,7 +47,7 @@ pub fn TabsList(
             class=move || {
                 cn!(
                     "group/tabs-list inline-flex w-fit items-center justify-center rounded-lg p-0.75 text-muted-foreground group-data-horizontal/tabs:h-8 group-data-vertical/tabs:h-fit group-data-vertical/tabs:flex-col data-[variant=line]:rounded-none",
-                variant.as_class(),
+                list_variant_class(variant),
                 class.get()
                 )
             }
