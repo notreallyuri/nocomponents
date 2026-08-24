@@ -304,9 +304,15 @@ pub fn SidebarMenuButtonRoot(
     /// have rendered and the node ref the state attributes go on, as `Button` does.
     #[prop(default = None, into)]
     render: Option<Callback<(Signal<String>, AnyNodeRef), AnyView>>,
+    /// Pass one in when something outside needs this element too — a dropdown that anchors its
+    /// menu to the row it hangs off, say. Leptos allows a single `node_ref` per element, so two
+    /// components that each want to reach the same one have to be handed the same one, the way
+    /// `Button` takes it.
+    #[prop(optional)]
+    node_ref: Option<AnyNodeRef>,
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
-    let node_ref = AnyNodeRef::new();
+    let node_ref = node_ref.unwrap_or_default();
 
     // The element is the caller's, so the attributes go onto the node rather than being
     // declared here.

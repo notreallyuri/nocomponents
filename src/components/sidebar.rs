@@ -1,11 +1,3 @@
-//! The styled sidebar.
-//!
-//! Two presentations of one state, picked by viewport. Wide, `Sidebar` renders two boxes: one in
-//! the flow that only reserves the width, and the fixed one the reader sees — animating them
-//! separately is what makes the content beside it slide rather than jump. Narrow, it is a `Sheet`.
-//!
-//! Everything below the panel is style-only, keyed off the `data-*` on the container.
-
 use crate::{
     cn,
     components::{
@@ -25,15 +17,11 @@ use crate::{
 use leptos::{either::Either, prelude::*};
 use leptos_node_ref::AnyNodeRef;
 
-/// How the panel sits in the page.
 #[derive(Default, Clone, Copy, PartialEq)]
 pub enum SidebarVariant {
-    /// Flush against the edge, bordered where it meets the content.
     #[default]
     Sidebar,
-    /// Inset from the edges, rounded, with a shadow — a panel resting on the page.
     Floating,
-    /// The panel keeps the page's background and the content becomes the floating card.
     Inset,
 }
 
@@ -46,13 +34,11 @@ impl SidebarVariant {
         }
     }
 
-    /// Whether the panel is inset from the window, which widens both boxes by its padding.
     fn is_inset(&self) -> bool {
         matches!(self, SidebarVariant::Floating | SidebarVariant::Inset)
     }
 }
 
-/// Size of a menu row, rendered into `data-size` so badges and actions line up with it.
 #[derive(Default, Clone, Copy, PartialEq)]
 pub enum SidebarMenuSize {
     #[default]
@@ -204,7 +190,6 @@ pub fn Sidebar(
     }
 }
 
-/// The page beside the sidebar; takes the room the sidebar is not using.
 #[component]
 pub fn SidebarInset(
     #[prop(optional, into)] class: Signal<String>,
@@ -259,7 +244,6 @@ pub fn SidebarTrigger(
     }
 }
 
-/// The strip along the panel's inner edge, which toggles it.
 #[component]
 pub fn SidebarRail(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
     view! {
@@ -300,7 +284,6 @@ pub fn SidebarFooter(
     }
 }
 
-/// Everything between the header and the footer; the part that scrolls.
 #[component]
 pub fn SidebarContent(
     #[prop(optional, into)] class: Signal<String>,
@@ -328,7 +311,6 @@ pub fn SidebarSeparator(#[prop(optional, into)] class: Signal<String>) -> impl I
     }
 }
 
-/// A search box sized for the sidebar's header.
 #[component]
 pub fn SidebarInput(
     #[prop(optional, into)] class: Signal<String>,
@@ -359,7 +341,6 @@ pub fn SidebarGroup(
     }
 }
 
-/// The heading over a group; folds away when the sidebar collapses to icons.
 #[component]
 pub fn SidebarGroupLabel(
     #[prop(optional, into)] class: Signal<String>,
@@ -383,7 +364,6 @@ pub fn SidebarGroupLabel(
     }
 }
 
-/// A button in a group's top-right corner.
 #[component]
 pub fn SidebarGroupAction(
     #[prop(optional, into)] class: Signal<String>,
@@ -451,8 +431,6 @@ pub fn SidebarMenuItem(
     }
 }
 
-/// A row in the menu: the icon, the label and the current-page state. `tooltip` stands in for
-/// the label once the sidebar is collapsed to icons, and is rendered only in that state.
 #[component]
 pub fn SidebarMenuButton(
     #[prop(optional, into)] active: Signal<bool>,
@@ -460,15 +438,16 @@ pub fn SidebarMenuButton(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(default = None, into)] tooltip: Option<Signal<String>>,
-    /// Render the row as something else — usually an `<a>`. Handed the row's class and the node
-    /// ref its state attributes go on.
-    #[prop(default = None, into)]
-    render: Option<Callback<(Signal<String>, AnyNodeRef), AnyView>>,
+    #[prop(default = None, into)] render: Option<Callback<(Signal<String>, AnyNodeRef), AnyView>>,
+    #[prop(optional)] node_ref: Option<AnyNodeRef>,
     #[prop(optional)] children: Option<ChildrenFn>,
 ) -> impl IntoView {
     let ctx = use_sidebar();
     let size_class = size.as_class();
     let stored_children = StoredValue::new(children);
+    // Resolved here so the primitive is always handed one: `optional` on an `Option<T>` makes
+    // the setter take the `T`, so the `None` cannot be forwarded as it stands.
+    let node_ref = node_ref.unwrap_or_default();
 
     let button = move || {
         let children = stored_children.get_value();
@@ -478,6 +457,7 @@ pub fn SidebarMenuButton(
                 size=size.as_str()
                 disabled=disabled
                 render=render
+                node_ref=node_ref
                 class=move || {
                     cn!(
                         "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50",
@@ -512,13 +492,10 @@ pub fn SidebarMenuButton(
     }
 }
 
-/// A second control on a menu row: a "more" menu, a dismiss.
 #[component]
 pub fn SidebarMenuAction(
     #[prop(optional, into)] class: Signal<String>,
-    /// Keep it hidden until the row is hovered or focused.
-    #[prop(default = false)]
-    show_on_hover: bool,
+    #[prop(default = false)] show_on_hover: bool,
     children: Children,
 ) -> impl IntoView {
     view! {
@@ -546,7 +523,6 @@ pub fn SidebarMenuAction(
     }
 }
 
-/// A count on a menu row; not interactive, so it never takes the row's click.
 #[component]
 pub fn SidebarMenuBadge(
     #[prop(optional, into)] class: Signal<String>,
@@ -570,14 +546,11 @@ pub fn SidebarMenuBadge(
     }
 }
 
-/// A placeholder row, for a menu that is still loading.
 #[component]
 pub fn SidebarMenuSkeleton(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(default = true)] show_icon: bool,
-    /// Width of the text bar, as a percentage; vary it across a list.
-    #[prop(default = 70)]
-    width: u32,
+    #[prop(default = 70)] width: u32,
 ) -> impl IntoView {
     view! {
         <div
@@ -593,7 +566,6 @@ pub fn SidebarMenuSkeleton(
     }
 }
 
-/// The nested list under an expanded row.
 #[component]
 pub fn SidebarMenuSub(
     #[prop(optional, into)] class: Signal<String>,
