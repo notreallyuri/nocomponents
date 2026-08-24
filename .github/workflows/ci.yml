@@ -29,4 +29,9 @@ jobs:
 
       - run: cargo check -p docs
 
+      # Covers `tests/features.rs`, which checks the per-element feature table against the imports.
       - run: cargo test --features full
+
+      # One narrow slice, because `--features full` builds whether or not the element features are
+      # right and this is the shape a consumer actually asks for.
+      - run: cargo check --no-default-features --features primitives,sidebar
