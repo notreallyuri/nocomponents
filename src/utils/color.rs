@@ -72,7 +72,103 @@ pub enum ColorFormat {
     Hsl,
     /// `oklch(0.623 0.188 259.8)`.
     Oklch,
+    /// `hsv(217 76% 96%)` — the one format here that is **not** CSS. It is the space the picker
+    /// actually stores, so it is the only one where editing a channel changes nothing else, and
+    /// the only one where dragging into the black corner and back leaves the hue where it was.
+    /// [`parse_color`] reads it; a browser will not, so a value in this format belongs in a
+    /// picker rather than in a stylesheet.
+    Hsv,
 }
+
+/// Which component of a colour a numeric field edits. The three saturations and the two hues are
+/// separate on purpose: HSL's saturation is not HSV's, and OKLCH's hue is a different angle from
+/// the one HSL and HSV share.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum ChannelKind {
+    Red,
+    Green,
+    Blue,
+    /// The hue HSL and HSV share.
+    Hue,
+    HslSaturation,
+    Lightness,
+    HsvSaturation,
+    Value,
+    OklchLightness,
+    Chroma,
+    /// OKLCH's hue, which is not [`ChannelKind::Hue`].
+    OklchHue,
+    Alpha,
+}
+
+/// One numeric field of a format: what it edits, what to call it, and the range it moves in.
+///
+/// A descriptor rather than a method per channel because this is what a field needs to *render* —
+/// a label, a step for the arrow keys, and how many decimals to write back when the colour moves
+/// underneath it. Hex has none of these, which is why it has none of these.
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub struct ColorChannel {
+    pub kind: ChannelKind,
+    /// The single letter a field is labelled with.
+    pub label: &'static str,
+    /// The long name, for an `aria-label` and a `data-channel`.
+    pub name: &'static str,
+    pub min: f64,
+    pub max: f64,
+    /// What one arrow key press moves. Shift multiplies it by ten.
+    pub step: f64,
+    /// How many decimals the field is rewritten with when the colour changes elsewhere.
+    pub decimals: usize,
+}
+
+const fn channel(
+    kind: ChannelKind,
+    label: &'static str,
+    name: &'static str,
+    max: f64,
+    step: f64,
+    decimals: usize,
+) -> ColorChannel {
+    ColorChannel {
+        kind,
+        label,
+        name,
+        min: 0.0,
+        max,
+        step,
+        decimals,
+    }
+}
+
+const RGB_CHANNELS: [ColorChannel; 3] = [
+    channel(ChannelKind::Red, "R", "red", 255.0, 1.0, 0),
+    channel(ChannelKind::Green, "G", "green", 255.0, 1.0, 0),
+    channel(ChannelKind::Blue, "B", "blue", 255.0, 1.0, 0),
+];
+
+const HSL_CHANNELS: [ColorChannel; 3] = [
+    channel(ChannelKind::Hue, "H", "hue", 360.0, 1.0, 0),
+    channel(ChannelKind::HslSaturation, "S", "saturation", 100.0, 1.0, 0),
+    channel(ChannelKind::Lightness, "L", "lightness", 100.0, 1.0, 0),
+];
+
+const HSV_CHANNELS: [ColorChannel; 3] = [
+    channel(ChannelKind::Hue, "H", "hue", 360.0, 1.0, 0),
+    channel(ChannelKind::HsvSaturation, "S", "saturation", 100.0, 1.0, 0),
+    channel(ChannelKind::Value, "V", "value", 100.0, 1.0, 0),
+];
+
+// Three decimals on L and C because that is what `format` writes, and a field that rounds
+// harder than the string it stands for loses a step every time it is read back.
+const OKLCH_CHANNELS: [ColorChannel; 3] = [
+    channel(ChannelKind::OklchLightness, "L", "lightness", 1.0, 0.005, 3),
+    channel(ChannelKind::Chroma, "C", "chroma", 0.4, 0.005, 3),
+    channel(ChannelKind::OklchHue, "H", "hue", 360.0, 1.0, 1),
+];
+
+/// Appended to any format's channels when the picker offers an alpha at all. As a percentage,
+/// because `0.5` and `50` in the same row of boxes is a trap.
+pub const ALPHA_CHANNEL: ColorChannel = channel(ChannelKind::Alpha, "A", "alpha", 100.0, 1.0, 0);
 
 impl ColorFormat {
     pub fn as_str(&self) -> &'static str {
@@ -81,14 +177,46 @@ impl ColorFormat {
             ColorFormat::Rgb => "rgb",
             ColorFormat::Hsl => "hsl",
             ColorFormat::Oklch => "oklch",
+            ColorFormat::Hsv => "hsv",
         }
     }
 
-    /// Every format in the order a picker cycles through them.
-    pub const ALL: [ColorFormat; 4] = [
+    /// What a format picker shows. Upper case because these are initialisms, not words.
+    pub fn label(&self) -> &'static str {
+        match self {
+            ColorFormat::Hex => "HEX",
+            ColorFormat::Rgb => "RGB",
+            ColorFormat::Hsl => "HSL",
+            ColorFormat::Oklch => "OKLCH",
+            ColorFormat::Hsv => "HSV",
+        }
+    }
+
+    /// The inverse of [`ColorFormat::as_str`], for reading a choice back out of a select.
+    pub fn from_name(name: &str) -> Option<Self> {
+        ColorFormat::ALL
+            .into_iter()
+            .find(|format| format.as_str() == name)
+    }
+
+    /// The numeric fields this format is edited as, before any alpha. Hex has none: it is one
+    /// string, and three boxes of two hex digits is a worse field than the string already is.
+    pub fn channels(&self) -> &'static [ColorChannel] {
+        match self {
+            ColorFormat::Hex => &[],
+            ColorFormat::Rgb => &RGB_CHANNELS,
+            ColorFormat::Hsl => &HSL_CHANNELS,
+            ColorFormat::Oklch => &OKLCH_CHANNELS,
+            ColorFormat::Hsv => &HSV_CHANNELS,
+        }
+    }
+
+    /// Every format in the order a picker offers them.
+    pub const ALL: [ColorFormat; 5] = [
         ColorFormat::Hex,
         ColorFormat::Rgb,
         ColorFormat::Hsl,
+        ColorFormat::Hsv,
         ColorFormat::Oklch,
     ];
 
@@ -133,8 +261,49 @@ impl ColorFormat {
                     format!("oklch({l} {c} {h} / {})", format_alpha(color.a))
                 }
             }
+            ColorFormat::Hsv => {
+                let hsv = Hsva::from(color);
+                let (h, s, v) = (
+                    hsv.h.round(),
+                    (hsv.s * 100.0).round(),
+                    (hsv.v * 100.0).round(),
+                );
+                if opaque {
+                    format!("hsv({h} {s}% {v}%)")
+                } else {
+                    format!("hsv({h} {s}% {v}% / {})", format_alpha(color.a))
+                }
+            }
         }
     }
+}
+
+/// Reads any colour this module can *write*, which is one function more than CSS can read:
+/// `hsv()` is the picker's own space, not a CSS colour function. Everything else is
+/// [`Rgba::parse`], which stays strictly what a browser would accept.
+pub fn parse_color(text: &str) -> Option<Rgba> {
+    let trimmed = text.trim();
+
+    let Some(body) = trimmed
+        .strip_prefix("hsv(")
+        .or_else(|| trimmed.strip_prefix("hsva("))
+    else {
+        return Rgba::parse(trimmed);
+    };
+
+    let body = body.strip_suffix(')')?;
+    let (values, alpha) = split_components(body);
+    let [h, s, v] = take_three(&values)?;
+
+    Some(Rgba::from(Hsva {
+        h: wrap_hue(parse_number(h, 1.0)?),
+        s: parse_number(s, 1.0).map(percentage)?,
+        v: parse_number(v, 1.0).map(percentage)?,
+        a: match alpha {
+            Some(alpha) => parse_number(alpha, 1.0)?.clamp(0.0, 1.0),
+            None => fourth_alpha(&values, 1.0)?,
+        },
+    }))
 }
 
 /// Trims an alpha to two decimals without leaving `0.50` behind.
@@ -195,9 +364,11 @@ impl Rgba {
         hex
     }
 
-    /// Reads any of the CSS forms this library writes, plus the comma-separated legacy ones and
-    /// percentages. Colour *names* are not parsed — there are 148 of them and a picker has a
-    /// swatch row for that.
+    /// Reads any of the CSS forms this library writes, plus the comma-separated legacy ones,
+    /// percentages, and the 148 named colours.
+    ///
+    /// A name is tried only once the shapes with punctuation in them have been ruled out, so the
+    /// table is never searched for something that cannot be a name.
     pub fn parse(text: &str) -> Option<Self> {
         let text = text.trim();
 
@@ -205,7 +376,9 @@ impl Rgba {
             return Self::parse_hex(hex);
         }
 
-        let (function, body) = text.split_once('(')?;
+        let Some((function, body)) = text.split_once('(') else {
+            return Self::from_name(text);
+        };
         let body = body.strip_suffix(')')?;
         let (values, alpha) = split_components(body);
         let alpha = match alpha {
@@ -269,6 +442,54 @@ impl Rgba {
             b,
             a: a as f64 / 255.0,
         })
+    }
+
+    /// A CSS colour keyword, or `None` for anything that is not one. Case-insensitive, since CSS
+    /// is: `RebeccaPurple` is the same keyword as `rebeccapurple`.
+    ///
+    /// `transparent` is a name like the rest as far as a caller is concerned, and the only one
+    /// that carries an alpha.
+    pub fn from_name(name: &str) -> Option<Self> {
+        let name = name.trim();
+
+        // Only ASCII letters can be a keyword, and checking that first is what keeps a typo'd
+        // `rgb 1 2 3` out of the search.
+        if name.is_empty() || !name.bytes().all(|b| b.is_ascii_alphabetic()) {
+            return None;
+        }
+
+        let name = name.to_ascii_lowercase();
+        if name == "transparent" {
+            return Some(Self::with_alpha(0, 0, 0, 0.0));
+        }
+
+        NAMED_COLORS
+            .binary_search_by(|(known, _)| (*known).cmp(name.as_str()))
+            .ok()
+            .map(|at| {
+                let packed = NAMED_COLORS[at].1;
+                Self::new((packed >> 16) as u8, (packed >> 8) as u8, packed as u8)
+            })
+    }
+
+    /// The CSS keyword for this colour, where there is one — for a swatch that would rather say
+    /// "rebeccapurple" than "#663399".
+    ///
+    /// Where two keywords name one colour the first alphabetically wins, which is the spelling
+    /// CSS itself lists first: `aqua` over `cyan`, `gray` over `grey`.
+    pub fn name(&self) -> Option<&'static str> {
+        if self.a <= 0.0 {
+            return Some("transparent");
+        }
+        if self.a < 1.0 {
+            return None;
+        }
+
+        let packed = (self.r as u32) << 16 | (self.g as u32) << 8 | self.b as u32;
+        NAMED_COLORS
+            .iter()
+            .find(|(_, known)| *known == packed)
+            .map(|(name, _)| *name)
     }
 }
 
@@ -515,6 +736,162 @@ impl From<Oklch> for Hsva {
     }
 }
 
+/// The CSS named colours, sorted so [`Rgba::parse`] can binary-search them, and packed one to a
+/// `u32` so the whole table is 148 names and 148 words rather than 148 structs.
+///
+/// `transparent` is not in here: it is the one name that is not opaque, so it cannot be packed
+/// beside the others and is matched before the search.
+const NAMED_COLORS: &[(&str, u32); 148] = &[
+    ("aliceblue", 0xf0f8ff),
+    ("antiquewhite", 0xfaebd7),
+    ("aqua", 0x00ffff),
+    ("aquamarine", 0x7fffd4),
+    ("azure", 0xf0ffff),
+    ("beige", 0xf5f5dc),
+    ("bisque", 0xffe4c4),
+    ("black", 0x000000),
+    ("blanchedalmond", 0xffebcd),
+    ("blue", 0x0000ff),
+    ("blueviolet", 0x8a2be2),
+    ("brown", 0xa52a2a),
+    ("burlywood", 0xdeb887),
+    ("cadetblue", 0x5f9ea0),
+    ("chartreuse", 0x7fff00),
+    ("chocolate", 0xd2691e),
+    ("coral", 0xff7f50),
+    ("cornflowerblue", 0x6495ed),
+    ("cornsilk", 0xfff8dc),
+    ("crimson", 0xdc143c),
+    ("cyan", 0x00ffff),
+    ("darkblue", 0x00008b),
+    ("darkcyan", 0x008b8b),
+    ("darkgoldenrod", 0xb8860b),
+    ("darkgray", 0xa9a9a9),
+    ("darkgreen", 0x006400),
+    ("darkgrey", 0xa9a9a9),
+    ("darkkhaki", 0xbdb76b),
+    ("darkmagenta", 0x8b008b),
+    ("darkolivegreen", 0x556b2f),
+    ("darkorange", 0xff8c00),
+    ("darkorchid", 0x9932cc),
+    ("darkred", 0x8b0000),
+    ("darksalmon", 0xe9967a),
+    ("darkseagreen", 0x8fbc8f),
+    ("darkslateblue", 0x483d8b),
+    ("darkslategray", 0x2f4f4f),
+    ("darkslategrey", 0x2f4f4f),
+    ("darkturquoise", 0x00ced1),
+    ("darkviolet", 0x9400d3),
+    ("deeppink", 0xff1493),
+    ("deepskyblue", 0x00bfff),
+    ("dimgray", 0x696969),
+    ("dimgrey", 0x696969),
+    ("dodgerblue", 0x1e90ff),
+    ("firebrick", 0xb22222),
+    ("floralwhite", 0xfffaf0),
+    ("forestgreen", 0x228b22),
+    ("fuchsia", 0xff00ff),
+    ("gainsboro", 0xdcdcdc),
+    ("ghostwhite", 0xf8f8ff),
+    ("gold", 0xffd700),
+    ("goldenrod", 0xdaa520),
+    ("gray", 0x808080),
+    ("green", 0x008000),
+    ("greenyellow", 0xadff2f),
+    ("grey", 0x808080),
+    ("honeydew", 0xf0fff0),
+    ("hotpink", 0xff69b4),
+    ("indianred", 0xcd5c5c),
+    ("indigo", 0x4b0082),
+    ("ivory", 0xfffff0),
+    ("khaki", 0xf0e68c),
+    ("lavender", 0xe6e6fa),
+    ("lavenderblush", 0xfff0f5),
+    ("lawngreen", 0x7cfc00),
+    ("lemonchiffon", 0xfffacd),
+    ("lightblue", 0xadd8e6),
+    ("lightcoral", 0xf08080),
+    ("lightcyan", 0xe0ffff),
+    ("lightgoldenrodyellow", 0xfafad2),
+    ("lightgray", 0xd3d3d3),
+    ("lightgreen", 0x90ee90),
+    ("lightgrey", 0xd3d3d3),
+    ("lightpink", 0xffb6c1),
+    ("lightsalmon", 0xffa07a),
+    ("lightseagreen", 0x20b2aa),
+    ("lightskyblue", 0x87cefa),
+    ("lightslategray", 0x778899),
+    ("lightslategrey", 0x778899),
+    ("lightsteelblue", 0xb0c4de),
+    ("lightyellow", 0xffffe0),
+    ("lime", 0x00ff00),
+    ("limegreen", 0x32cd32),
+    ("linen", 0xfaf0e6),
+    ("magenta", 0xff00ff),
+    ("maroon", 0x800000),
+    ("mediumaquamarine", 0x66cdaa),
+    ("mediumblue", 0x0000cd),
+    ("mediumorchid", 0xba55d3),
+    ("mediumpurple", 0x9370db),
+    ("mediumseagreen", 0x3cb371),
+    ("mediumslateblue", 0x7b68ee),
+    ("mediumspringgreen", 0x00fa9a),
+    ("mediumturquoise", 0x48d1cc),
+    ("mediumvioletred", 0xc71585),
+    ("midnightblue", 0x191970),
+    ("mintcream", 0xf5fffa),
+    ("mistyrose", 0xffe4e1),
+    ("moccasin", 0xffe4b5),
+    ("navajowhite", 0xffdead),
+    ("navy", 0x000080),
+    ("oldlace", 0xfdf5e6),
+    ("olive", 0x808000),
+    ("olivedrab", 0x6b8e23),
+    ("orange", 0xffa500),
+    ("orangered", 0xff4500),
+    ("orchid", 0xda70d6),
+    ("palegoldenrod", 0xeee8aa),
+    ("palegreen", 0x98fb98),
+    ("paleturquoise", 0xafeeee),
+    ("palevioletred", 0xdb7093),
+    ("papayawhip", 0xffefd5),
+    ("peachpuff", 0xffdab9),
+    ("peru", 0xcd853f),
+    ("pink", 0xffc0cb),
+    ("plum", 0xdda0dd),
+    ("powderblue", 0xb0e0e6),
+    ("purple", 0x800080),
+    ("rebeccapurple", 0x663399),
+    ("red", 0xff0000),
+    ("rosybrown", 0xbc8f8f),
+    ("royalblue", 0x4169e1),
+    ("saddlebrown", 0x8b4513),
+    ("salmon", 0xfa8072),
+    ("sandybrown", 0xf4a460),
+    ("seagreen", 0x2e8b57),
+    ("seashell", 0xfff5ee),
+    ("sienna", 0xa0522d),
+    ("silver", 0xc0c0c0),
+    ("skyblue", 0x87ceeb),
+    ("slateblue", 0x6a5acd),
+    ("slategray", 0x708090),
+    ("slategrey", 0x708090),
+    ("snow", 0xfffafa),
+    ("springgreen", 0x00ff7f),
+    ("steelblue", 0x4682b4),
+    ("tan", 0xd2b48c),
+    ("teal", 0x008080),
+    ("thistle", 0xd8bfd8),
+    ("tomato", 0xff6347),
+    ("turquoise", 0x40e0d0),
+    ("violet", 0xee82ee),
+    ("wheat", 0xf5deb3),
+    ("white", 0xffffff),
+    ("whitesmoke", 0xf5f5f5),
+    ("yellow", 0xffff00),
+    ("yellowgreen", 0x9acd32),
+];
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -538,7 +915,54 @@ mod tests {
 
         assert_eq!(Rgba::parse("#12345"), None);
         assert_eq!(Rgba::parse("#gg0000"), None);
-        assert_eq!(Rgba::parse("rebeccapurple"), None);
+    }
+
+    #[test]
+    fn reads_colour_keywords() {
+        assert_eq!(Rgba::parse("rebeccapurple"), Some(Rgba::new(102, 51, 153)));
+        assert_eq!(
+            Rgba::parse("  RebeccaPurple "),
+            Some(Rgba::new(102, 51, 153))
+        );
+        assert_eq!(Rgba::parse("white"), Some(Rgba::new(255, 255, 255)));
+
+        // The two spellings of the same colour agree, as do the two names for one hue.
+        assert_eq!(Rgba::parse("gray"), Rgba::parse("grey"));
+        assert_eq!(Rgba::parse("aqua"), Rgba::parse("cyan"));
+
+        // The one keyword with an alpha.
+        let clear = Rgba::parse("transparent").unwrap();
+        assert_eq!(clear.a, 0.0);
+
+        assert_eq!(Rgba::parse("burntsienna"), None);
+        assert_eq!(Rgba::parse(""), None);
+        assert_eq!(Rgba::parse("rgb 255 0 0"), None);
+    }
+
+    #[test]
+    fn names_a_colour_back() {
+        assert_eq!(Rgba::new(102, 51, 153).name(), Some("rebeccapurple"));
+        assert_eq!(Rgba::new(128, 128, 128).name(), Some("gray"));
+        assert_eq!(Rgba::new(0, 255, 255).name(), Some("aqua"));
+        assert_eq!(Rgba::with_alpha(0, 0, 0, 0.0).name(), Some("transparent"));
+
+        // A colour between two keywords has no name, and neither does a translucent one.
+        assert_eq!(Rgba::new(59, 130, 246).name(), None);
+        assert_eq!(Rgba::with_alpha(255, 0, 0, 0.5).name(), None);
+    }
+
+    #[test]
+    fn the_keyword_table_can_be_searched() {
+        // `from_name` binary-searches it, which is only correct while it is sorted.
+        assert!(NAMED_COLORS.windows(2).all(|pair| pair[0].0 < pair[1].0));
+        assert_eq!(NAMED_COLORS.len(), 148);
+
+        // Every name round-trips through the parser, whatever the reverse lookup calls it.
+        for (name, packed) in NAMED_COLORS {
+            let parsed = Rgba::parse(name).unwrap_or_else(|| panic!("{name} did not parse"));
+            let expected = Rgba::new((packed >> 16) as u8, (packed >> 8) as u8, *packed as u8);
+            assert_eq!(parsed, expected, "{name}");
+        }
     }
 
     #[test]
@@ -698,10 +1122,12 @@ mod tests {
         ] {
             for format in ColorFormat::ALL {
                 let text = format.format(color);
-                let parsed = Rgba::parse(&text).unwrap_or_else(|| panic!("could not read {text}"));
+                // `parse_color`, not `Rgba::parse`: `hsv()` is ours and not CSS, which is the
+                // whole distinction between the two readers.
+                let parsed = parse_color(&text).unwrap_or_else(|| panic!("could not read {text}"));
 
-                // Hex and rgb are exact; hsl and oklch are written to a readable number of
-                // decimals, so they come back within a byte.
+                // Hex and rgb are exact; the rest are written to a readable number of decimals,
+                // so they come back within a byte or two.
                 let tolerance = match format {
                     ColorFormat::Hex | ColorFormat::Rgb => 0,
                     _ => 2,
@@ -714,6 +1140,66 @@ mod tests {
                     "{text} read back as {parsed:?}, not {color:?}"
                 );
             }
+        }
+    }
+
+    #[test]
+    fn hsv_is_written_and_read_back() {
+        let blue = Rgba::new(59, 130, 246);
+        let text = ColorFormat::Hsv.format(blue);
+        assert!(text.starts_with("hsv("), "{text}");
+        // Through 8-bit RGB and back, so a channel or two may land next door.
+        let back = parse_color(&text).expect("hsv round trip");
+        assert!(
+            (i16::from(back.r) - 59).abs() <= 1
+                && (i16::from(back.g) - 130).abs() <= 1
+                && (i16::from(back.b) - 246).abs() <= 1,
+            "{back:?}"
+        );
+    }
+
+    #[test]
+    fn hsv_carries_an_alpha_either_way_round() {
+        let half = Rgba {
+            a: 0.5,
+            ..Rgba::new(255, 0, 0)
+        };
+        assert_eq!(
+            parse_color(&ColorFormat::Hsv.format(half)).map(|c| c.a),
+            Some(0.5)
+        );
+        assert_eq!(
+            parse_color("hsva(0 100% 100% / 0.25)").map(|c| c.a),
+            Some(0.25)
+        );
+        assert_eq!(
+            parse_color("hsv(0, 100%, 100%, 0.25)").map(|c| c.a),
+            Some(0.25)
+        );
+    }
+
+    #[test]
+    fn hsv_is_the_one_thing_rgba_parse_will_not_take() {
+        assert!(Rgba::parse("hsv(0 100% 100%)").is_none());
+        assert!(parse_color("hsv(0 100% 100%)").is_some());
+        // And everything else goes straight through it.
+        assert_eq!(parse_color("#3b82f6"), Rgba::parse("#3b82f6"));
+        assert_eq!(parse_color("rebeccapurple"), Rgba::parse("rebeccapurple"));
+    }
+
+    #[test]
+    fn a_format_name_round_trips() {
+        for format in ColorFormat::ALL {
+            assert_eq!(ColorFormat::from_name(format.as_str()), Some(format));
+        }
+        assert_eq!(ColorFormat::from_name("cmyk"), None);
+    }
+
+    #[test]
+    fn every_format_but_hex_is_edited_as_three_channels() {
+        for format in ColorFormat::ALL {
+            let expected = usize::from(format != ColorFormat::Hex) * 3;
+            assert_eq!(format.channels().len(), expected, "{format:?}");
         }
     }
 }

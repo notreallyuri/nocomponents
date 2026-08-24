@@ -1,4 +1,4 @@
-//! A colour picker: a saturation/brightness square, a hue rail, and a text field.
+//! A colour picker: a saturation/brightness square, a hue rail, and the colour as numbers.
 //!
 //! The value it holds is [`Hsva`], and everything else is derived from it. That is not a detail —
 //! it is the difference between a picker that works and one that fights you. Drag into the black
@@ -11,12 +11,20 @@
 //! are already showing is ignored rather than converted back, so writing our own output out never
 //! walks the hue.
 //!
+//! Which numbers a reader edits is a question about the format rather than about the picker, so
+//! [`ColorPickerContext::channels`] answers it and [`ColorPickerChannelRoot`] is one field of the
+//! answer. Hex has no channels — it is one string, and three boxes of two hex digits would be a
+//! worse field than the string already is — so it keeps [`ColorPickerInputRoot`], which is also
+//! the only field anything can be *pasted* into.
+//!
 //! The square is two CSS gradients over a pure hue, so there is no canvas here and nothing to
 //! rasterise. The rails are the same component twice.
 
 use crate::{
     primitives::drag::{DragPoint, use_drag},
-    utils::color::{ColorFormat, Hsva, Rgba},
+    utils::color::{
+        ALPHA_CHANNEL, ChannelKind, ColorChannel, ColorFormat, Hsla, Hsva, Oklch, Rgba, parse_color,
+    },
 };
 use leptos::{context::Provider, ev, prelude::*};
 use leptos_node_ref::AnyNodeRef;
@@ -54,7 +62,7 @@ impl ColorPickerContext {
     /// Reads text into the picker. Returns whether it was a colour at all, so a text field can
     /// show that it was not.
     pub fn set_text(&self, text: &str) -> bool {
-        let Some(rgba) = Rgba::parse(text) else {
+        let Some(rgba) = parse_color(text) else {
             return false;
         };
 
@@ -64,8 +72,14 @@ impl ColorPickerContext {
 
     /// Takes a colour in, keeping the hue the picker already has when the new one cannot supply
     /// its own — black and grey have no hue, and losing it would move the rail for no reason.
+    ///
+    /// The guard reads the colour **untracked**, and that is not an optimisation. This runs inside
+    /// the effect that watches the caller's text signal, so a tracked read here would subscribe
+    /// that effect to the picker's own state: the next drag would write a colour, wake the effect
+    /// with the caller's text still one step behind, and have the old colour written straight back
+    /// over the gesture. See the note on the two effects in [`ColorPickerRoot`].
     pub fn set_rgba(&self, rgba: Rgba) {
-        if self.rgba() == rgba {
+        if self.hsva.with_untracked(|hsva| Rgba::from(*hsva)) == rgba {
             return;
         }
 
@@ -93,6 +107,152 @@ impl ColorPickerContext {
 
     pub fn set_alpha(&self, alpha: f64) {
         self.hsva.update(|hsva| hsva.a = alpha.clamp(0.0, 1.0));
+    }
+
+    /// The numeric fields the current format is edited as, in order — the format's own, plus an
+    /// alpha when the picker has one to offer. Empty for hex, which is one string rather than a
+    /// row of boxes.
+    pub fn channels(&self) -> Vec<ColorChannel> {
+        let mut channels = self.format.get().channels().to_vec();
+
+        if self.with_alpha && !channels.is_empty() {
+            channels.push(ALPHA_CHANNEL);
+        }
+
+        channels
+    }
+
+    /// What one channel currently reads.
+    ///
+    /// The two hue channels come off the stored HSVA rather than out of a round trip, because a
+    /// grey has no hue to convert back: read through RGB, the field would say 0 for every
+    /// unsaturated colour and take the rail with it the moment anyone typed into it.
+    pub fn channel(&self, channel: ColorChannel) -> f64 {
+        let hsva = self.hsva.get();
+
+        match channel.kind {
+            ChannelKind::Red => f64::from(self.rgba().r),
+            ChannelKind::Green => f64::from(self.rgba().g),
+            ChannelKind::Blue => f64::from(self.rgba().b),
+            ChannelKind::Hue => hsva.h,
+            ChannelKind::HslSaturation => Hsla::from(self.rgba()).s * 100.0,
+            ChannelKind::Lightness => Hsla::from(self.rgba()).l * 100.0,
+            ChannelKind::HsvSaturation => hsva.s * 100.0,
+            ChannelKind::Value => hsva.v * 100.0,
+            ChannelKind::OklchLightness => Oklch::from(self.rgba()).l,
+            ChannelKind::Chroma => Oklch::from(self.rgba()).c,
+            ChannelKind::OklchHue => Oklch::from(self.rgba()).h,
+            ChannelKind::Alpha => hsva.a * 100.0,
+        }
+    }
+
+    /// Writes one channel, leaving the others where they are.
+    ///
+    /// HSV's three go straight into the store, which is the whole reason the picker holds HSVA:
+    /// no conversion, so nothing else drifts. The others are a round trip through RGB, which is
+    /// lossy in the last digit and unavoidable — HSL's lightness and OKLCH's chroma are not
+    /// independent of anything the store keeps.
+    pub fn set_channel(&self, channel: ColorChannel, value: f64) {
+        let value = value.clamp(channel.min, channel.max);
+
+        match channel.kind {
+            ChannelKind::Hue => self.set_hue(value),
+            ChannelKind::HsvSaturation => {
+                self.hsva.update(|hsva| hsva.s = value / 100.0);
+            }
+            ChannelKind::Value => {
+                self.hsva.update(|hsva| hsva.v = value / 100.0);
+            }
+            ChannelKind::Alpha => self.set_alpha(value / 100.0),
+            ChannelKind::Red => self.set_rgba(Rgba {
+                r: value as u8,
+                ..self.rgba()
+            }),
+            ChannelKind::Green => self.set_rgba(Rgba {
+                g: value as u8,
+                ..self.rgba()
+            }),
+            ChannelKind::Blue => self.set_rgba(Rgba {
+                b: value as u8,
+                ..self.rgba()
+            }),
+            ChannelKind::HslSaturation => {
+                let hsla = Hsla {
+                    s: value / 100.0,
+                    ..self.hsla()
+                };
+                self.set_rgba(Rgba::from(hsla));
+            }
+            ChannelKind::Lightness => {
+                let hsla = Hsla {
+                    l: value / 100.0,
+                    ..self.hsla()
+                };
+                self.set_rgba(Rgba::from(hsla));
+            }
+            ChannelKind::OklchLightness => {
+                let oklch = Oklch {
+                    l: value,
+                    ..self.oklch()
+                };
+                self.set_rgba(Rgba::from(oklch));
+            }
+            ChannelKind::Chroma => {
+                let oklch = Oklch {
+                    c: value,
+                    ..self.oklch()
+                };
+                self.set_rgba(Rgba::from(oklch));
+            }
+            ChannelKind::OklchHue => {
+                let oklch = Oklch {
+                    h: value,
+                    ..self.oklch()
+                };
+                self.set_rgba(Rgba::from(oklch));
+            }
+        }
+    }
+
+    /// The colour as HSL, with the hue taken from the store rather than the round trip — same
+    /// reason as [`ColorPickerContext::channel`].
+    fn hsla(&self) -> Hsla {
+        Hsla {
+            h: self.hsva.with(|hsva| hsva.h),
+            ..Hsla::from(self.rgba())
+        }
+    }
+
+    fn oklch(&self) -> Oklch {
+        Oklch::from(self.rgba())
+    }
+
+    /// The format as the string a select binds to, kept in step in both directions.
+    ///
+    /// Minted per call and owned by whoever calls it, so call it once per picker. It exists
+    /// because a `Select` speaks `RwSignal<Option<String>>` and the picker speaks `ColorFormat`,
+    /// and the two effects that bridge them are wiring rather than styling — which puts them
+    /// here rather than in the component that renders the select.
+    pub fn format_selection(&self) -> RwSignal<Option<String>> {
+        let format = self.format;
+        let selection = RwSignal::new(Some(format.get_untracked().as_str().to_string()));
+
+        Effect::new(move |_| {
+            let name = format.get().as_str();
+            if selection.with_untracked(|current| current.as_deref() != Some(name)) {
+                selection.set(Some(name.to_string()));
+            }
+        });
+
+        Effect::new(move |_| {
+            if let Some(chosen) = selection.get().as_deref().and_then(ColorFormat::from_name)
+                && format.get_untracked() != chosen
+            {
+                format.set(chosen);
+            }
+        });
+
+        selection
     }
 
     /// Moves to the next format, which is what a picker's format button does.
@@ -124,7 +284,7 @@ pub fn ColorPickerRoot(
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
-    let opening = Rgba::parse(&value.get_untracked()).unwrap_or(Rgba::new(0, 0, 0));
+    let opening = parse_color(&value.get_untracked()).unwrap_or(Rgba::new(0, 0, 0));
 
     let ctx = ColorPickerContext {
         hsva: RwSignal::new(Hsva::from(opening)),
@@ -140,22 +300,26 @@ pub fn ColorPickerRoot(
         }
     });
 
-    // And in. The guard inside `set_rgba` is what keeps this from being a loop: our own output,
-    // read back, is the colour we already have, so nothing happens.
+    // And in. This one must depend on `value` and nothing else — `set_rgba` reads the colour
+    // untracked for that reason.
+    //
+    // The two effects are a loop with one exit: writing text out is lossy (two decimals of alpha,
+    // three of oklch's lightness), so what comes back is rarely bit-for-bit what went out, and the
+    // guard inside `set_rgba` catches the case where it is. What used to break was the ordering.
+    // Once a round trip revised the colour — which is every drag on an alpha rail, and every drag
+    // on anything in oklch — this effect had been woken by that revision and ran *ahead* of the
+    // one above, so each pointer move was read back as a stale caller write and undone before it
+    // was ever published. The rail took the press and then went dead for the rest of the gesture.
     Effect::new(move |_| {
         let text = value.get();
-        if let Some(rgba) = Rgba::parse(&text) {
+        if let Some(rgba) = parse_color(&text) {
             ctx.set_rgba(rgba);
         }
     });
 
     view! {
         <Provider value=ctx>
-            <div
-                data-slot="color-picker"
-                data-format=move || ctx.format.get().as_str()
-                class=class
-            >
+            <div data-slot="color-picker" data-format=move || ctx.format.get().as_str() class=class>
                 {children()}
             </div>
         </Provider>
@@ -315,9 +479,7 @@ pub fn ColorPickerRailRoot(
                 ColorPickerRail::Alpha => ctx.hsva.with(|hsva| (hsva.a * 100.0).round()),
             }
             aria-valuetext=move || match rail {
-                ColorPickerRail::Hue => {
-                    format!("{} degrees", ctx.hsva.with(|hsva| hsva.h.round()))
-                }
+                ColorPickerRail::Hue => format!("{} degrees", ctx.hsva.with(|hsva| hsva.h.round())),
                 ColorPickerRail::Alpha => {
                     format!("{}% opaque", ctx.hsva.with(|hsva| (hsva.a * 100.0).round()))
                 }
@@ -328,17 +490,17 @@ pub fn ColorPickerRailRoot(
             style=move || {
                 let background = match rail {
                     // Every hue, in order. Written out rather than generated so it is one string.
-                    ColorPickerRail::Hue => "linear-gradient(to right, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%)".to_string(),
+                    ColorPickerRail::Hue => {
+                        "linear-gradient(to right, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%)"
+                            .to_string()
+                    }
                     // Transparent to the colour itself, over whatever chequer the styled layer
                     // put behind it.
                     ColorPickerRail::Alpha => {
                         let Rgba { r, g, b, .. } = ctx.rgba();
-                        format!(
-                            "linear-gradient(to right, rgb({r} {g} {b} / 0), rgb({r} {g} {b}))",
-                        )
+                        format!("linear-gradient(to right, rgb({r} {g} {b} / 0), rgb({r} {g} {b}))")
                     }
                 };
-
                 format!("background-image: {background}; touch-action: none;")
             }
             class=class
@@ -415,6 +577,96 @@ pub fn ColorPickerInputRoot(#[prop(optional, into)] class: Signal<String>) -> im
     }
 }
 
+/// One channel's numeric field.
+///
+/// Commits on every keystroke that reads as a number, unlike the text field beside it: a channel
+/// is one number, so there is no half-typed state that means something else, and a picker whose
+/// square does not move while you type into R is a picker that feels broken. What the draft is
+/// for is the states that are not numbers yet — an empty box, a lone minus, `0.` on the way to
+/// `0.5` — which must be allowed to sit there rather than being snapped to zero.
+///
+/// Arrow keys step by the channel's own step, shift by ten of them, which is what the rails and
+/// every slider in the library already do.
+#[component]
+pub fn ColorPickerChannelRoot(
+    channel: ColorChannel,
+    #[prop(optional, into)] class: Signal<String>,
+) -> impl IntoView {
+    let ctx = use_color_picker();
+
+    let written = move || format!("{:.*}", channel.decimals, ctx.channel(channel));
+    let draft = RwSignal::new(written());
+    // While the box has focus its own text wins: rewriting it under the caret would renumber
+    // what is being typed, and `0.5` would become `0.500` between the point and the five.
+    let editing = RwSignal::new(false);
+
+    Effect::new(move |_| {
+        let text = written();
+        if !editing.get_untracked() {
+            draft.set(text);
+        }
+    });
+
+    let step_by = move |steps: f64| {
+        let next = ctx.channel(channel) + steps * channel.step;
+        ctx.set_channel(channel, next);
+        draft.set(format!("{:.*}", channel.decimals, ctx.channel(channel)));
+    };
+
+    view! {
+        <input
+            data-slot="color-picker-channel"
+            data-channel=channel.name
+            type="text"
+            inputmode="decimal"
+            autocomplete="off"
+            spellcheck="false"
+            aria-label=channel.name
+            role="spinbutton"
+            aria-valuemin=channel.min
+            aria-valuemax=channel.max
+            aria-valuenow=move || ctx.channel(channel)
+            prop:value=move || draft.get()
+            on:focus=move |_| editing.set(true)
+            on:input=move |e| {
+                let text = event_target_value(&e);
+
+                match text.trim().parse::<f64>() {
+                    // Out of range is not half-typed, it is wrong: the colour clamps, and a box
+                    // still reading 999 next to a swatch that went to 255 is the field lying
+                    // about what it did. Anything inside the range keeps the text as typed, so
+                    // `0.` on the way to `0.5` survives.
+                    Ok(value) if value < channel.min || value > channel.max => {
+                        ctx.set_channel(channel, value);
+                        draft.set(written());
+                    }
+                    Ok(value) => {
+                        ctx.set_channel(channel, value);
+                        draft.set(text);
+                    }
+                    Err(_) => draft.set(text),
+                }
+            }
+            on:keydown=move |e| {
+                let multiplier = if e.shift_key() { 10.0 } else { 1.0 };
+                match e.key().as_str() {
+                    "ArrowUp" => step_by(multiplier),
+                    "ArrowDown" => step_by(-multiplier),
+                    "Enter" => {}
+                    _ => return,
+                }
+                e.prevent_default();
+                draft.set(format!("{:.*}", channel.decimals, ctx.channel(channel)));
+            }
+            on:blur=move |_| {
+                editing.set(false);
+                draft.set(format!("{:.*}", channel.decimals, ctx.channel(channel)));
+            }
+            class=class
+        />
+    }
+}
+
 /// Cycles the format the text field is written in.
 #[component]
 pub fn ColorPickerFormatRoot(
@@ -433,9 +685,7 @@ pub fn ColorPickerFormatRoot(
         >
             {match children {
                 Some(children) => leptos::either::Either::Left(children()),
-                None => {
-                    leptos::either::Either::Right(view! { {move || ctx.format.get().as_str()} })
-                }
+                None => leptos::either::Either::Right(view! { {move || ctx.format.get().as_str()} }),
             }}
         </button>
     }
@@ -451,7 +701,7 @@ pub fn ColorPickerPresetRoot(
     let value = StoredValue::new(value);
 
     let selected =
-        Signal::derive(move || value.with_value(|value| Rgba::parse(value)) == Some(ctx.rgba()));
+        Signal::derive(move || value.with_value(|value| parse_color(value)) == Some(ctx.rgba()));
 
     view! {
         <button
