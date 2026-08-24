@@ -10,8 +10,8 @@
 //! about. Everything else is built on them, so stepping over a month end or a leap day is never a
 //! special case.
 
-/// Month names, and the abbreviations for a weekday header. English only: rendering these through
-/// `Intl` would drag in a locale API for two arrays.
+/// Month names, and the abbreviations for a weekday header. The fallback [`DateNames`] resolves
+/// to, and what every `Date` method that writes a name uses when it is not handed a locale.
 pub const MONTH_NAMES: [&str; 12] = [
     "January",
     "February",
@@ -221,6 +221,216 @@ pub fn month_grid(month: Date, week_starts_on: u32) -> Vec<Date> {
     (0..42).map(|day| start.add_days(day)).collect()
 }
 
+/// The month and weekday names a calendar writes, in one locale.
+///
+/// English is two consts and no work; anything else is `Intl.DateTimeFormat`, which the browser
+/// already carries. Resolving it once and keeping the strings is the point: a month grid reads a
+/// weekday name 42 times, and a formatter call each time would be 42 trips into JS.
+///
+/// Where there is no `Intl` to ask — a unit test, a native build — every constructor resolves to
+/// English. That is a fallback rather than a claim, and [`DateNames::is_localized`] says which of
+/// the two happened.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct DateNames {
+    /// The BCP 47 tag these came from, or `None` when they are the English consts. Also what the
+    /// caption methods format through, since the *order* of the parts is part of a locale.
+    locale: Option<String>,
+    months: [String; 12],
+    weekdays: [String; 7],
+    weekday_abbreviations: [String; 7],
+}
+
+impl Default for DateNames {
+    fn default() -> Self {
+        Self::english()
+    }
+}
+
+impl DateNames {
+    /// The consts, wrapped. No `Intl` and no formatter.
+    pub fn english() -> Self {
+        Self {
+            locale: None,
+            months: MONTH_NAMES.map(String::from),
+            weekdays: WEEKDAY_NAMES.map(String::from),
+            weekday_abbreviations: WEEKDAY_ABBREVIATIONS.map(String::from),
+        }
+    }
+
+    /// Names as `locale` writes them — `"fr"`, `"pt-BR"`, `"ja-JP"` — falling back to English for
+    /// an empty tag, a malformed one, or a platform with no `Intl`.
+    ///
+    /// The abbreviations are `Intl`'s `short` weekday rather than the two letters the English
+    /// const uses: there is no locale-independent way to cut a name to two characters, and a
+    /// script that does not separate into letters is made nonsense by trying.
+    pub fn new(locale: &str) -> Self {
+        let locale = locale.trim();
+
+        // A tag `Intl` cannot read is a `RangeError`, and the stable binding does not catch — it
+        // would reach wasm as a trap. So the shape is checked here rather than caught there.
+        if !is_language_tag(locale) {
+            return Self::english();
+        }
+
+        localized(locale).unwrap_or_else(Self::english)
+    }
+
+    /// Whether these are a locale's names or the English fallback.
+    pub fn is_localized(&self) -> bool {
+        self.locale.is_some()
+    }
+
+    /// 1–12, like [`Date::month`].
+    pub fn month(&self, month: u32) -> &str {
+        &self.months[(month.max(1) as usize - 1).min(11)]
+    }
+
+    /// 0 is Sunday, like [`Date::weekday`].
+    pub fn weekday(&self, weekday: u32) -> &str {
+        &self.weekdays[(weekday as usize).min(6)]
+    }
+
+    /// What a weekday column is labelled.
+    pub fn weekday_abbreviation(&self, weekday: u32) -> &str {
+        &self.weekday_abbreviations[(weekday as usize).min(6)]
+    }
+
+    /// "August 2026" — [`Date::month_caption`] in this locale.
+    ///
+    /// Formatted rather than assembled from the arrays, because the order of the parts belongs to
+    /// the locale too: `août 2026`, but `2026年8月`.
+    pub fn month_caption(&self, date: Date) -> String {
+        self.format(date, &[("year", "numeric"), ("month", "long")])
+            .unwrap_or_else(|| date.month_caption())
+    }
+
+    /// "21 August 2026" — [`Date::day_month_year`] in this locale.
+    pub fn day_month_year(&self, date: Date) -> String {
+        self.format(
+            date,
+            &[("year", "numeric"), ("month", "long"), ("day", "numeric")],
+        )
+        .unwrap_or_else(|| date.day_month_year())
+    }
+
+    /// "Friday, 21 August 2026" — [`Date::long_form`] in this locale.
+    pub fn long_form(&self, date: Date) -> String {
+        self.format(
+            date,
+            &[
+                ("weekday", "long"),
+                ("year", "numeric"),
+                ("month", "long"),
+                ("day", "numeric"),
+            ],
+        )
+        .unwrap_or_else(|| date.long_form())
+    }
+
+    fn format(&self, date: Date, options: &[(&str, &str)]) -> Option<String> {
+        let locale = self.locale.as_deref()?;
+
+        // JS reads a two-digit year as 19xx, so the years it cannot say plainly are the ones this
+        // hands back to the English fallback rather than getting wrong by nineteen centuries.
+        (date.year >= 100).then_some(())?;
+
+        intl_format(locale, options, date)
+    }
+}
+
+/// A BCP 47 tag as far as this has to care: hyphen-joined subtags of letters and digits. Enough to
+/// keep a typo out of `Intl`, which answers a malformed tag with a `RangeError`.
+fn is_language_tag(tag: &str) -> bool {
+    !tag.is_empty()
+        && tag
+            .split('-')
+            .all(|subtag| !subtag.is_empty() && subtag.bytes().all(|b| b.is_ascii_alphanumeric()))
+}
+
+/// Collects `N` formatter answers, or `None` the moment one of them fails.
+#[cfg(target_arch = "wasm32")]
+fn try_array<const N: usize>(mut of: impl FnMut(usize) -> Option<String>) -> Option<[String; N]> {
+    let mut names = Vec::with_capacity(N);
+    for index in 0..N {
+        names.push(of(index)?);
+    }
+
+    names.try_into().ok()
+}
+
+#[cfg(target_arch = "wasm32")]
+fn localized(locale: &str) -> Option<DateNames> {
+    // Any ordinary year will do to read names off, and 31 January 2021 was a Sunday — so seven
+    // days from there is one of each weekday, in the order [`Date::weekday`] numbers them.
+    let sunday = Date::new(2021, 1, 31);
+
+    Some(DateNames {
+        locale: Some(locale.to_string()),
+        months: try_array(|month| {
+            intl_format(
+                locale,
+                &[("month", "long")],
+                Date::new(2021, month as u32 + 1, 1),
+            )
+        })?,
+        weekdays: try_array(|weekday| {
+            intl_format(
+                locale,
+                &[("weekday", "long")],
+                sunday.add_days(weekday as i64),
+            )
+        })?,
+        weekday_abbreviations: try_array(|weekday| {
+            intl_format(
+                locale,
+                &[("weekday", "short")],
+                sunday.add_days(weekday as i64),
+            )
+        })?,
+    })
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn localized(_locale: &str) -> Option<DateNames> {
+    None
+}
+
+/// One `Intl.DateTimeFormat` call. The date goes in as local midnight and comes out formatted in
+/// the browser's own zone, so the two agree and 1 August is never read back as 31 July.
+#[cfg(target_arch = "wasm32")]
+fn intl_format(locale: &str, options: &[(&str, &str)], date: Date) -> Option<String> {
+    use leptos::wasm_bindgen::JsValue;
+
+    let settings = js_sys::Object::new();
+    for (key, value) in options {
+        js_sys::Reflect::set(
+            &settings,
+            &JsValue::from_str(key),
+            &JsValue::from_str(value),
+        )
+        .ok()?;
+    }
+
+    let locales = js_sys::Array::of1(&JsValue::from_str(locale));
+    let formatter = js_sys::Intl::DateTimeFormat::new(&locales, &settings);
+    let stamp = js_sys::Date::new_with_year_month_day(
+        date.year as u32,
+        date.month as i32 - 1,
+        date.day as i32,
+    );
+
+    formatter
+        .format()
+        .call1(&formatter, &stamp)
+        .ok()?
+        .as_string()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn intl_format(_locale: &str, _options: &[(&str, &str)], _date: Date) -> Option<String> {
+    None
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -273,6 +483,49 @@ mod tests {
         assert_eq!(Date::parse_iso("2026-13-01"), None);
         assert_eq!(Date::parse_iso("2026-08"), None);
         assert_eq!(Date::parse_iso("2026-08-21-01"), None);
+    }
+
+    #[test]
+    fn falls_back_to_english_off_the_web() {
+        // Every one of these resolves to the consts here, since there is no `Intl` in a unit test
+        // — what is being checked is that asking for a locale is never an error, only a fallback.
+        let names = DateNames::new("pt-BR");
+        assert!(!names.is_localized());
+        assert_eq!(names.month(8), "August");
+        assert_eq!(names.weekday(0), "Sunday");
+        assert_eq!(names.weekday_abbreviation(6), "Sa");
+        assert_eq!(names.month_caption(Date::new(2026, 8, 1)), "August 2026");
+        assert_eq!(
+            names.long_form(Date::new(2026, 8, 21)),
+            "Friday, 21 August 2026"
+        );
+    }
+
+    #[test]
+    fn clamps_a_name_lookup_rather_than_panicking() {
+        let names = DateNames::english();
+        assert_eq!(names.month(0), "January");
+        assert_eq!(names.month(13), "December");
+        assert_eq!(names.weekday(99), "Saturday");
+    }
+
+    #[test]
+    fn keeps_a_malformed_tag_away_from_intl() {
+        assert!(is_language_tag("en"));
+        assert!(is_language_tag("pt-BR"));
+        assert!(is_language_tag("zh-Hans-CN"));
+
+        assert!(!is_language_tag(""));
+        assert!(!is_language_tag("en-"));
+        assert!(!is_language_tag("en_GB"));
+        assert!(!is_language_tag("en GB"));
+        assert!(!is_language_tag("../evil"));
+    }
+
+    #[test]
+    fn the_weekday_names_are_read_off_a_real_sunday() {
+        // `localized` reads seven consecutive days from here and trusts them to be Sunday-first.
+        assert_eq!(Date::new(2021, 1, 31).weekday(), 0);
     }
 
     #[test]

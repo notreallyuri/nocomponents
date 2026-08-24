@@ -11,7 +11,7 @@
 //! in-between days derived rather than stored.
 
 use crate::utils::{
-    date::{Date, month_grid},
+    date::{Date, DateNames, month_grid},
     next_id,
 };
 use leptos::{context::Provider, ev, prelude::*, wasm_bindgen::JsCast};
@@ -78,6 +78,10 @@ pub struct CalendarContext {
 
     pub grid_ref: AnyNodeRef,
     pub label_id: RwSignal<String>,
+    /// The month and weekday names, resolved once for the whole grid rather than once per cell —
+    /// each one is an `Intl` call, and a month grid reads a weekday name 42 times. A signal
+    /// rather than a `StoredValue` so that changing the locale re-renders what shows the names.
+    pub names: RwSignal<DateNames>,
 }
 
 impl CalendarContext {
@@ -234,6 +238,10 @@ pub fn CalendarRoot(
     /// Anything else that cannot be picked.
     #[prop(default = None, into)]
     disabled: Option<Callback<Date, bool>>,
+    /// A BCP 47 tag — `"pt-BR"`, `"ja"` — for the month caption, the weekday headers and every
+    /// day's accessible name. Empty is English, and so is anything the browser cannot read.
+    #[prop(optional, into)]
+    locale: Signal<String>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
@@ -254,7 +262,18 @@ pub fn CalendarRoot(
         preview: RwSignal::new(None),
         grid_ref: AnyNodeRef::new(),
         label_id: RwSignal::new(next_id("calendar-label")),
+        names: RwSignal::new(DateNames::new(&locale.get_untracked())),
     };
+
+    // Resolving is a dozen trips into `Intl`, so it happens when the tag changes and not when
+    // anything else about the calendar does.
+    Effect::new(move |previous: Option<String>| {
+        let locale = locale.get();
+        if previous.as_deref() != Some(locale.as_str()) {
+            ctx.names.set(DateNames::new(&locale));
+        }
+        locale
+    });
 
     view! {
         <Provider value=ctx>
@@ -285,7 +304,7 @@ pub fn CalendarCaptionRoot(#[prop(optional, into)] class: Signal<String>) -> imp
             aria-live="polite"
             class=class
         >
-            {move || ctx.month.get().month_caption()}
+            {move || ctx.names.with(|names| names.month_caption(ctx.month.get()))}
         </div>
     }
 }
@@ -400,10 +419,17 @@ pub fn CalendarGridRoot(
                                 view! {
                                     <th
                                         scope="col"
-                                        abbr=crate::utils::date::WEEKDAY_NAMES[weekday as usize]
+                                        abbr=move || {
+                                            ctx.names.with(|names| names.weekday(weekday).to_string())
+                                        }
                                         class=move || head_cell_class.get()
                                     >
-                                        {crate::utils::date::WEEKDAY_ABBREVIATIONS[weekday as usize]}
+                                        {move || {
+                                            ctx.names
+                                                .with(|names| {
+                                                    names.weekday_abbreviation(weekday).to_string()
+                                                })
+                                        }}
                                     </th>
                                 }
                             })
@@ -418,7 +444,9 @@ pub fn CalendarGridRoot(
                         .map(|week| {
                             let week = week.to_vec();
                             view! {
-                                <tr class=move || row_class.get()>
+                                <tr class=move || {
+                                    row_class.get()
+                                }>
                                     {week
                                         .iter()
                                         .map(|date| {
@@ -463,7 +491,7 @@ pub fn CalendarDayRoot(date: Date, #[prop(optional, into)] class: Signal<String>
             data-range=move || {
                 (ctx.mode == CalendarMode::Range).then(|| ctx.range_position(date).as_str())
             }
-            aria-label=date.long_form()
+            aria-label=move || ctx.names.with(|names| names.long_form(date))
             aria-selected=move || selected.get().to_string()
             aria-disabled=move || disabled.get().then_some("true")
             disabled=move || disabled.get()

@@ -9,19 +9,16 @@ use crate::{
 };
 use leptos::prelude::*;
 
-/// A month grid. One component rather than a set of parts: the header, the grid and the cells
-/// only ever go together, and the parts are in `primitives::calendar` for anyone who disagrees.
 #[component]
 pub fn Calendar(
     #[prop(optional)] mode: CalendarMode,
     #[prop(optional, into)] selected: RwSignal<Vec<Date>>,
     #[prop(default = None, into)] month: Option<RwSignal<Date>>,
-    /// 0 is Sunday, 1 Monday.
-    #[prop(default = 0)]
-    week_starts_on: u32,
+    #[prop(default = 0)] week_starts_on: u32,
     #[prop(default = None, into)] min: Option<Date>,
     #[prop(default = None, into)] max: Option<Date>,
     #[prop(default = None, into)] disabled: Option<Callback<Date, bool>>,
+    #[prop(optional, into)] locale: Signal<String>,
     #[prop(optional, into)] class: Signal<String>,
 ) -> impl IntoView {
     view! {
@@ -33,6 +30,7 @@ pub fn Calendar(
             min=min
             max=max
             disabled=disabled
+            locale=locale
             class=move || {
                 cn!("w-fit rounded-lg border bg-background p-3 text-foreground", class.get())
             }
@@ -63,8 +61,6 @@ pub fn Calendar(
 
 const NAV_CLASS: &str = "inline-flex size-7 items-center justify-center rounded-md border bg-background text-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50";
 
-/// One day. Every state it can be in is a data attribute on the primitive, so this is only ever
-/// a list of classes — including the range, whose ends are rounded and whose middle is not.
 #[component]
 pub fn CalendarDay(date: Date, #[prop(optional, into)] class: Signal<String>) -> impl IntoView {
     view! {

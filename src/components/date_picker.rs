@@ -11,29 +11,23 @@ use crate::{
         popover::{PopoverContentRoot, PopoverPortalRoot, use_popover},
     },
     utils::{
-        date::Date,
+        date::{Date, DateNames},
         types::{Align, Side, SideOffset},
     },
 };
 use leptos::{ev, prelude::*};
 
-/// A button that opens a calendar and comes back with a date.
-///
-/// Composition rather than machinery, the way `AlertDialog` is: a popover holding a `Calendar`,
-/// plus the one rule that makes it a picker — the layer closes once the selection is finished,
-/// which for a range means when its second end lands.
 #[component]
 pub fn DatePicker(
     #[prop(optional)] mode: CalendarMode,
-    /// The selected dates, in the shape the mode implies.
-    #[prop(optional, into)]
-    selected: RwSignal<Vec<Date>>,
+    #[prop(optional, into)] selected: RwSignal<Vec<Date>>,
     #[prop(optional, into)] placeholder: Signal<String>,
     #[prop(default = None, into)] month: Option<RwSignal<Date>>,
     #[prop(default = 0)] week_starts_on: u32,
     #[prop(default = None, into)] min: Option<Date>,
     #[prop(default = None, into)] max: Option<Date>,
     #[prop(default = None, into)] disabled: Option<Callback<Date, bool>>,
+    #[prop(optional, into)] locale: Signal<String>,
     #[prop(optional)] side: Side,
     #[prop(optional)] align: Align,
     #[prop(optional)] side_offset: SideOffset,
@@ -51,6 +45,7 @@ pub fn DatePicker(
                 mode=mode
                 selected=selected
                 placeholder=placeholder
+                locale=locale
                 class=class
             />
             <DatePickerContent
@@ -61,6 +56,7 @@ pub fn DatePicker(
                 min=min
                 max=max
                 disabled=disabled
+                locale=locale
                 side=side
                 align=align
                 side_offset=side_offset
@@ -69,8 +65,7 @@ pub fn DatePicker(
     }
 }
 
-/// What the button reads: the date, the range, or the placeholder.
-fn label(mode: CalendarMode, selected: &[Date], placeholder: &str) -> String {
+fn label(mode: CalendarMode, selected: &[Date], placeholder: &str, names: &DateNames) -> String {
     let placeholder = if placeholder.is_empty() {
         "Pick a date"
     } else {
@@ -80,13 +75,17 @@ fn label(mode: CalendarMode, selected: &[Date], placeholder: &str) -> String {
     match (mode, selected) {
         (_, []) => placeholder.to_string(),
         (CalendarMode::Range, [start, end]) => {
-            format!("{} – {}", start.day_month_year(), end.day_month_year())
+            format!(
+                "{} – {}",
+                names.day_month_year(*start),
+                names.day_month_year(*end)
+            )
         }
-        (CalendarMode::Range, [start]) => format!("{} – …", start.day_month_year()),
+        (CalendarMode::Range, [start]) => format!("{} – …", names.day_month_year(*start)),
         (CalendarMode::Multiple, dates) if dates.len() > 1 => {
             format!("{} dates", dates.len())
         }
-        (_, [date, ..]) => date.day_month_year(),
+        (_, [date, ..]) => names.day_month_year(*date),
     }
 }
 
@@ -95,9 +94,13 @@ fn DatePickerTrigger(
     mode: CalendarMode,
     selected: RwSignal<Vec<Date>>,
     placeholder: Signal<String>,
+    locale: Signal<String>,
     class: Signal<String>,
 ) -> impl IntoView {
     let ctx = use_popover();
+    // The calendar inside resolves its own; this is the trigger's, and a memo so that changing
+    // the selection does not re-ask `Intl` for twenty-six names.
+    let names = Memo::new(move |_| DateNames::new(&locale.get()));
 
     view! {
         <Button
@@ -115,7 +118,11 @@ fn DatePickerTrigger(
             <CalendarIcon class="text-muted-foreground" />
             <span class="truncate">
                 {move || {
-                    selected.with(|selected| label(mode, selected, &placeholder.get()))
+                    names
+                        .with(|names| {
+                            selected
+                                .with(|selected| label(mode, selected, &placeholder.get(), names))
+                        })
                 }}
             </span>
         </Button>
@@ -131,6 +138,7 @@ fn DatePickerContent(
     min: Option<Date>,
     max: Option<Date>,
     disabled: Option<Callback<Date, bool>>,
+    locale: Signal<String>,
     side: Side,
     align: Align,
     side_offset: SideOffset,
@@ -170,6 +178,7 @@ fn DatePickerContent(
                     min=min
                     max=max
                     disabled=disabled
+                    locale=locale
                     class="border-0 bg-transparent"
                 />
             </PopoverContentRoot>
