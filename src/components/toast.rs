@@ -2,8 +2,8 @@ use crate::utils::types::AsClass;
 pub use crate::{
     cn,
     primitives::toast::{
-        ToastContext, ToastData, ToastPosition, ToastProviderRoot, ToastRoot, ToastSize,
-        ToastVariant, use_toast,
+        ToastAction, ToastContext, ToastData, ToastPosition, ToastProviderRoot, ToastRoot,
+        ToastSize, ToastVariant, use_toast,
     },
 };
 use leptos::prelude::*;
@@ -299,7 +299,7 @@ fn ToastItem(
                 }
             }
         >
-            <div node_ref=node_ref>
+            <div node_ref=node_ref class="min-w-0 flex-1">
                 <div class="grid gap-1">
                     <div class="text-sm font-medium">{toast.title.clone()}</div>
                     {toast
@@ -319,6 +319,39 @@ fn ToastItem(
                         })}
                 </div>
             </div>
+
+            {toast
+                .action
+                .clone()
+                .map(|action| {
+                    let id = toast.id;
+                    view! {
+                        <button
+                            type="button"
+                            // The toast under it is a drag handle, and a press that does not
+                            // move is not a drag — so this needs no guard of its own.
+                            on:click=move |_| {
+                                (action.on_press)();
+                                ctx.dismiss(id);
+                            }
+                            class=move || {
+                                cn!(
+                                    "shrink-0 rounded-md px-2.5 py-1 text-xs font-medium ring-1 transition-colors focus-visible:outline-none focus-visible:ring-2",
+                                    match toast.variant {
+                                        ToastVariant::Default => {
+                                            "ring-border hover:bg-accent hover:text-accent-foreground"
+                                        }
+                                        ToastVariant::Destructive => {
+                                            "ring-destructive-foreground/40 hover:bg-destructive-foreground/10"
+                                        }
+                                    },
+                                )
+                            }
+                        >
+                            {action.label}
+                        </button>
+                    }
+                })}
         </ToastRoot>
     }
 }

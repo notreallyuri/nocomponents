@@ -1,5 +1,5 @@
 use leptos::{ev, prelude::*, wasm_bindgen::JsCast};
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 use web_sys::Element;
 
 #[derive(Copy, Clone, PartialEq, Default)]
@@ -44,6 +44,21 @@ pub struct ToastDefaults {
     pub duration: f64,
 }
 
+/// The one thing a toast can be pressed for: "deleted · undo", "saved · view". A toast that
+/// announces something the user may want back is only half of the errand without it.
+#[derive(Clone)]
+pub struct ToastAction {
+    pub label: String,
+    /// Run when the action is pressed; the toast dismisses itself afterwards either way, since
+    /// the thing it was announcing has just been answered.
+    ///
+    /// A plain `Arc` rather than a [`Callback`], because of what fires a toast with an action in
+    /// it: something that is on its way out. `rows.remove(index)` disposes the reactive owner the
+    /// row's own click handler is running under, and a `Callback` — arena-allocated under
+    /// whichever owner made it — would go down with it, taking the undo with it.
+    pub on_press: Arc<dyn Fn() + Send + Sync>,
+}
+
 #[derive(Clone)]
 pub struct ToastData {
     pub id: usize,
@@ -55,6 +70,7 @@ pub struct ToastData {
     pub is_open: RwSignal<bool>,
     pub height: RwSignal<f64>,
     pub duration: f64,
+    pub action: Option<ToastAction>,
 }
 
 #[derive(Copy, Clone)]
@@ -62,6 +78,11 @@ pub struct ToastContext {
     pub toasts: RwSignal<Vec<ToastData>>,
     pub next_id: RwSignal<usize>,
     pub defaults: ToastDefaults,
+    /// The provider's own reactive owner, and the reason a toast can outlive what fired it. A
+    /// toast is very often raised by something on its way out — the row being deleted, the dialog
+    /// being closed — and [`ToastBuilder::show`] mints signals. Minted under the caller's owner
+    /// they would be disposed in the same breath, which is a panic rather than a missing toast.
+    pub owner: StoredValue<Option<Owner>>,
 }
 
 impl ToastContext {
@@ -74,6 +95,7 @@ impl ToastContext {
             size: None,
             position: None,
             duration: None,
+            action: None,
         }
     }
 
@@ -102,6 +124,7 @@ pub struct ToastBuilder {
     size: Option<ToastSize>,
     position: Option<ToastPosition>,
     duration: Option<f64>,
+    action: Option<ToastAction>,
 }
 
 impl ToastBuilder {
@@ -130,7 +153,32 @@ impl ToastBuilder {
         self
     }
 
+    /// A button in the toast: the label, and what pressing it does. Pressing it also dismisses
+    /// the toast — "undo" that leaves the toast offering to undo again is a second undo waiting
+    /// to happen.
+    pub fn action(
+        mut self,
+        label: impl Into<String>,
+        on_press: impl Fn() + Send + Sync + 'static,
+    ) -> Self {
+        self.action = Some(ToastAction {
+            label: label.into(),
+            on_press: Arc::new(on_press),
+        });
+        self
+    }
+
+    /// Raises the toast. Its signals belong to the provider rather than to whatever called this,
+    /// so a caller may dispose itself in the same handler — deleting the row it is announcing,
+    /// closing the dialog it was raised from — and still have a toast afterwards.
     pub fn show(self) {
+        match self.ctx.owner.get_value() {
+            Some(owner) => owner.clone().with(|| self.push()),
+            None => self.push(),
+        }
+    }
+
+    fn push(self) {
         let id = self.ctx.next_id.get_untracked();
         self.ctx.next_id.update(|n| *n += 1);
 
@@ -147,6 +195,7 @@ impl ToastBuilder {
             duration: self.duration.unwrap_or(self.ctx.defaults.duration),
             is_open,
             height,
+            action: self.action,
         };
 
         self.ctx.toasts.update(|t| t.push(toast));
@@ -178,6 +227,7 @@ pub fn ToastProviderRoot(
         toasts,
         next_id,
         defaults,
+        owner: StoredValue::new(Owner::current()),
     });
 
     view! { {children()} }
