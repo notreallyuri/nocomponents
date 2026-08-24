@@ -8,12 +8,26 @@
 //! The image's *natural* size is read off its `load` event, because that is what an aspect ratio
 //! has to be judged against: a square crop is only square once both axes are back in pixels.
 //!
-//! Exporting a still goes through the canvas in [`crate::utils::image`]. An animated GIF cannot —
-//! a canvas sees one frame — so keep the original bytes and use [`crate::utils::gif::crop_gif`].
+//! Two modifiers change what a drag means, the way they do in an image editor. On a handle,
+//! **shift** holds the shape the rectangle had when it was grabbed, and **alt** holds it about
+//! the middle — the centre stays put and both sides move, which is the gesture for framing
+//! something that is already centred. On the rectangle itself there is no shape to keep, so
+//! shift does the other thing it does everywhere and holds the drag to one of eight directions.
+//!
+//! Both are read off each move rather than off the press that began the gesture, so either can be
+//! taken up or let go mid-drag and the rest of the drag obeys it — which is the only behaviour
+//! that is any use, since nobody decides to constrain a drag before starting one.
+//!
+//! Exporting goes through [`ImageCropperContext::crop`], which takes the bytes the image came
+//! from when the caller kept them: a canvas sees one frame, so those bytes are the only place an
+//! animated GIF still exists. Without them — or for anything that is not a GIF — it is the canvas
+//! in [`crate::utils::image`], and the caller writes the same line either way.
 
 use crate::{
     primitives::drag::{DragPoint, use_drag},
-    utils::image::{Crop, CropError, CropHandle, crop_to_data_url, normalised_aspect},
+    utils::image::{
+        Crop, CropError, CropHandle, Cropped, crop_image, normalised_aspect, snapped_to_axis,
+    },
 };
 use leptos::{context::Provider, ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
@@ -59,19 +73,59 @@ impl ImageCropperContext {
         (rect.width() > 0.0 && rect.height() > 0.0).then_some((rect.width(), rect.height()))
     }
 
-    /// Applies a drag, in pixels, to the rectangle the gesture started from.
-    fn apply(&self, from: Crop, handle: Option<CropHandle>, dx: f64, dy: f64) {
+    /// Applies a drag to the rectangle the gesture started from.
+    ///
+    /// Two modifiers change what a drag means, the way they do in an image editor. Both are read
+    /// off the move rather than off the press, so taking or releasing either partway through a
+    /// gesture takes effect there and then.
+    ///
+    /// Dragging a **handle**:
+    ///
+    /// - **Shift** keeps the shape the rectangle had when it was grabbed. The ratio comes from
+    ///   `from`, not from wherever the drag has got to, so the rectangle scales rather than
+    ///   creeping towards square. With an `aspect` already held it changes nothing, that ratio
+    ///   being a promise the component keeps whether or not a key is down.
+    /// - **Alt** does the same about the middle: the centre stays where it is and both sides
+    ///   move, so the rectangle grows out of itself instead of away from the far corner. It is
+    ///   the gesture for framing something already in the middle of the frame, which is most of
+    ///   what a crop is for.
+    ///
+    /// Dragging the **rectangle itself** there is no shape to keep, so shift means the other
+    /// thing it means everywhere: hold the gesture to a direction. One of eight —
+    /// [`snapped_to_axis`] — the four axes and the four diagonals, since a diagonal is a
+    /// direction people drag in. Which one is a question about the pointer on the screen, so it
+    /// is fed pixels rather than the crop's own fractions; the two disagree whenever the frame is
+    /// not square.
+    fn apply(&self, from: Crop, handle: Option<CropHandle>, point: DragPoint) {
         let Some((width, height)) = self.frame_size() else {
             return;
         };
 
-        let (dx, dy) = (dx / width, dy / height);
-
-        let next = match handle {
-            Some(handle) => from.resized(handle, dx, dy, self.min_size, self.normalised_aspect()),
-            None => from.moved_by(dx, dy),
+        let (dx, dy) = match handle {
+            None if point.shift => snapped_to_axis(point.dx, point.dy),
+            _ => (point.dx, point.dy),
         };
 
+        let (dx, dy) = (dx / width, dy / height);
+
+        let Some(handle) = handle else {
+            return self.commit(from.moved_by(dx, dy));
+        };
+
+        // A held `aspect` wins: there is nothing for a modifier to preserve that is not already
+        // being preserved. Alt keeps the shape too, so either key is enough to ask for it.
+        let aspect = self.normalised_aspect().or_else(|| {
+            ((point.shift || point.alt) && from.height > 0.0).then(|| from.width / from.height)
+        });
+
+        self.commit(match point.alt {
+            true => from.resized_about_center(handle, dx, dy, self.min_size, aspect),
+            false => from.resized(handle, dx, dy, self.min_size, aspect),
+        });
+    }
+
+    /// Writes a rectangle back, if it is not the one already showing.
+    fn commit(&self, next: Crop) {
         if next != self.crop.get_untracked() {
             self.crop.set(next);
         }
@@ -99,22 +153,49 @@ impl ImageCropperContext {
         }
     }
 
-    /// The crop as a still image, at the source's natural resolution.
+    /// The crop as a file, at the source's natural resolution.
     ///
-    /// One frame of an animated GIF, since that is all a canvas can see; for those, keep the
-    /// bytes and use [`crate::utils::gif::crop_gif`].
+    /// `source` is the bytes the image was decoded from, if the caller still has them; that is
+    /// what decides whether an animated GIF comes out still animated, and it is decided here
+    /// rather than at the call site. See [`crop_image`] for what the two levels are.
+    pub fn crop(
+        &self,
+        source: Option<&[u8]>,
+        mime: &str,
+        quality: f64,
+    ) -> Result<Cropped, CropError> {
+        crop_image(
+            &self.image()?,
+            source,
+            self.crop.get_untracked(),
+            mime,
+            quality,
+        )
+    }
+
+    /// The crop as a data URL, ready for an `<img src>`.
+    ///
+    /// The still path only — an animated source loses its animation here, because a canvas sees
+    /// one frame. [`Self::crop`] is the one to reach for when the caller has the bytes.
     pub fn to_data_url(&self, mime: &str, quality: f64) -> Result<String, CropError> {
-        let image = self
-            .image_ref
+        crate::utils::image::crop_to_data_url(
+            &self.image()?,
+            self.crop.get_untracked(),
+            mime,
+            quality,
+        )
+    }
+
+    /// The `<img>` being cropped, once it is there.
+    fn image(&self) -> Result<HtmlImageElement, CropError> {
+        self.image_ref
             .get_untracked()
             .and_then(|element| element.dyn_into::<HtmlImageElement>().ok())
-            .ok_or(CropError::Empty)?;
-
-        crop_to_data_url(&image, self.crop.get_untracked(), mime, quality)
+            .ok_or(CropError::Empty)
     }
 
     /// The crop in the source's own pixels: `(x, y, width, height)`, rounded, for a caller doing
-    /// the cutting somewhere else — on a server, or through `crop_gif`.
+    /// the cutting somewhere else — on a server, or in a worker.
     pub fn to_pixels(&self) -> (f64, f64, f64, f64) {
         let (width, height) = self.natural.get();
         let (x, y, w, h) = self.crop.get().to_pixels(width, height);
@@ -229,7 +310,7 @@ pub fn ImageCropperWindowRoot(
     let from = StoredValue::new(Crop::full());
 
     let drag = use_drag(move |point: DragPoint| {
-        ctx.apply(from.get_value(), None, point.dx, point.dy);
+        ctx.apply(from.get_value(), None, point);
     })
     .on_end(move |_| ctx.dragging.set(None));
 
@@ -293,7 +374,7 @@ pub fn ImageCropperHandleRoot(
     let from = StoredValue::new(Crop::full());
 
     let drag = use_drag(move |point: DragPoint| {
-        ctx.apply(from.get_value(), Some(handle), point.dx, point.dy);
+        ctx.apply(from.get_value(), Some(handle), point);
     })
     .on_end(move |_| ctx.dragging.set(None));
 

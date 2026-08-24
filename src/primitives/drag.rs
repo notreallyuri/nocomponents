@@ -28,6 +28,14 @@ pub struct DragPoint {
     /// measured live, so a page that scrolls mid-drag does not shift the frame under the gesture.
     pub fraction_x: f64,
     pub fraction_y: f64,
+    /// The modifiers held for *this* move, not for the press that began the gesture — every
+    /// pointer event carries its own, so taking or releasing a key partway through changes what
+    /// the rest of the drag means without the caller listening for keys itself.
+    ///
+    /// Only the two a caller has wanted so far. `ctrl` and `meta` go here when something needs
+    /// them; there is nothing to work out, only a line to add.
+    pub shift: bool,
+    pub alt: bool,
 }
 
 /// The release, and how the pointer was travelling when it came.
@@ -128,7 +136,8 @@ impl Drag {
         }
     }
 
-    fn point(&self, client_x: f64, client_y: f64) -> DragPoint {
+    fn point(&self, event: &ev::PointerEvent) -> DragPoint {
+        let (client_x, client_y) = (event.client_x() as f64, event.client_y() as f64);
         let (origin_x, origin_y) = self.gesture.with_value(|gesture| gesture.origin);
 
         let (fraction_x, fraction_y) = match self.reference_rect() {
@@ -146,6 +155,8 @@ impl Drag {
             dy: client_y - origin_y,
             fraction_x,
             fraction_y,
+            shift: event.shift_key(),
+            alt: event.alt_key(),
         }
     }
 
@@ -171,7 +182,7 @@ impl Drag {
         self.active.set(true);
 
         if let Some(on_start) = self.on_start {
-            on_start.run(self.point(client_x, client_y));
+            on_start.run(self.point(event));
         }
 
         let drag = *self;
@@ -206,11 +217,11 @@ impl Drag {
             gesture.sample = (client_x, client_y, time);
         });
 
-        self.on_move.run(self.point(client_x, client_y));
+        self.on_move.run(self.point(event));
     }
 
     fn finish(&self, event: &ev::PointerEvent) {
-        let point = self.point(event.client_x() as f64, event.client_y() as f64);
+        let point = self.point(event);
         let (velocity_x, velocity_y, idle) = self.gesture.with_value(|gesture| {
             let (velocity_x, velocity_y) = gesture.velocity;
             (velocity_x, velocity_y, now() - gesture.sample.2)
