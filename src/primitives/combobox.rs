@@ -12,6 +12,7 @@
 use crate::{
     primitives::{
         command::{CommandItemRoot, CommandRoot},
+        field::field_control_for_trigger,
         floating::{ArrowOpen, FloatingContext, FloatingRoot, FloatingTrigger, TriggerAria},
     },
     utils::{
@@ -75,9 +76,12 @@ pub fn ComboboxTriggerRoot(
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     let ctx = use_combobox();
+    // The same wiring a select's trigger gets: in a field, the label names this trigger rather
+    // than an id nothing wears.
+    let field = field_control_for_trigger(ctx.trigger_id, ctx.trigger_ref, disabled);
 
     view! {
-        <FloatingTrigger context=ctx class=class disabled=disabled render=as_child>
+        <FloatingTrigger context=ctx class=class disabled=field.disabled render=as_child>
             {match children {
                 Some(children) => Either::Left(children()),
                 None => Either::Right(""),
@@ -217,6 +221,18 @@ pub fn ComboboxItemRoot(
     /// Whether choosing the item again clears the selection, as a filter chip does.
     #[prop(default = true)]
     deselectable: bool,
+    /// What makes this item look chosen, when the combobox's own value is not the answer — a
+    /// multi-select keeps a list of its own, and several items are ticked at once.
+    ///
+    /// Given, the item stops writing `value` and `display_value`: a caller that says what
+    /// "chosen" means owns where it is kept, so choosing the item runs `on_select` and nothing
+    /// else.
+    #[prop(default = None, into)]
+    selected: Option<Signal<bool>>,
+    /// Whether choosing an item closes the layer. False for a list several things are picked
+    /// from, where closing after the first is the bug.
+    #[prop(default = true)]
+    close_on_select: bool,
     #[prop(optional, into)] class: Signal<String>,
     children: ChildrenFn,
 ) -> impl IntoView {
@@ -224,25 +240,32 @@ pub fn ComboboxItemRoot(
 
     let item_value = StoredValue::new(value.clone());
 
-    let is_selected = Signal::derive(move || {
-        item_value.with_value(|value| ctx.value.with(|chosen| chosen.as_deref() == Some(value)))
+    let is_selected = Signal::derive(move || match selected {
+        Some(selected) => selected.get(),
+        None => {
+            item_value.with_value(|value| ctx.value.with(|chosen| chosen.as_deref() == Some(value)))
+        }
     });
 
     let select = Callback::new(move |value: String| {
-        if deselectable && is_selected.get_untracked() {
-            ctx.value.set(None);
-            ctx.display_value.set(None);
-        } else {
-            let label = label.get_untracked();
-            ctx.display_value.set(Some(if label.is_empty() {
-                value.clone()
+        if selected.is_none() {
+            if deselectable && is_selected.get_untracked() {
+                ctx.value.set(None);
+                ctx.display_value.set(None);
             } else {
-                label
-            }));
-            ctx.value.set(Some(value.clone()));
+                let label = label.get_untracked();
+                ctx.display_value.set(Some(if label.is_empty() {
+                    value.clone()
+                } else {
+                    label
+                }));
+                ctx.value.set(Some(value.clone()));
+            }
         }
 
-        ctx.close();
+        if close_on_select {
+            ctx.close();
+        }
 
         if let Some(on_select) = on_select {
             on_select.run(value);

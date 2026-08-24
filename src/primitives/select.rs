@@ -1,5 +1,6 @@
 use crate::{
     primitives::{
+        field::field_control_for_trigger,
         floating::{ArrowOpen, FloatingContext, FloatingRoot, FloatingTrigger, TriggerAria},
         roving_focus::use_roving_focus,
         typeahead::Typeahead,
@@ -56,8 +57,10 @@ pub fn SelectTriggerRoot(
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     let ctx = use_select();
+    let field = field_control_for_trigger(ctx.trigger_id, ctx.trigger_ref, disabled);
+
     view! {
-        <FloatingTrigger context=ctx class=class disabled=disabled render=as_child>
+        <FloatingTrigger context=ctx class=class disabled=field.disabled render=as_child>
             {match children {
                 Some(child) => Either::Left(child()),
                 None => Either::Right(""),

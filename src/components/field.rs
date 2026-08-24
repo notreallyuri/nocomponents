@@ -1,11 +1,9 @@
-//! A labelled control with its description and error.
-//!
-//! Styling only; the ids and the wiring are `src/primitives/field.rs`'s. What is decided here is
-//! the layout of the two orientations.
-
 use crate::{
     cn,
-    primitives::field::{FieldDescriptionRoot, FieldErrorRoot, FieldLabelRoot, FieldRoot},
+    primitives::field::{
+        FieldDescriptionRoot, FieldErrorRoot, FieldLabelRoot, FieldLegendRoot, FieldRoot,
+        FieldSetRoot,
+    },
     utils::types::Orientation,
 };
 use leptos::prelude::*;
@@ -64,7 +62,6 @@ pub fn FieldDescription(
     }
 }
 
-/// Shown only while the field is invalid; see `FieldErrorRoot`.
 #[component]
 pub fn FieldError(
     #[prop(optional, into)] class: Signal<String>,
@@ -77,8 +74,6 @@ pub fn FieldError(
     }
 }
 
-/// Stacks fields into a form. Style-only and contextless: unrelated fields should not pretend to
-/// be a `<fieldset>`.
 #[component]
 pub fn FieldGroup(
     #[prop(optional, into)] class: Signal<String>,
@@ -88,5 +83,47 @@ pub fn FieldGroup(
         <div data-slot="field-group" class=move || cn!("flex w-full flex-col gap-6", class.get())>
             {children()}
         </div>
+    }
+}
+
+#[component]
+pub fn FieldSet(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] invalid: Signal<bool>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <FieldSetRoot
+            invalid=invalid
+            disabled=disabled
+            class=move || {
+                cn!(
+                    // `min-w-0` because a fieldset's own `min-inline-size: min-content` otherwise
+                    // refuses to shrink, and a group of them in a flex row overflows.
+                    "group flex w-full min-w-0 flex-col gap-4 data-[disabled=true]:opacity-60",
+                    class.get()
+                )
+            }
+        >
+            {children()}
+        </FieldSetRoot>
+    }
+}
+
+#[component]
+pub fn FieldLegend(
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <FieldLegendRoot class=move || {
+            cn!(
+                // A bottom margin rather than the gap the fieldset sets: a legend is taken out of
+                // its parent's flow, so the flex gap around it does not apply.
+                "mb-1 flex items-center gap-2 text-sm leading-none font-medium select-none data-[invalid=true]:text-destructive data-[disabled=true]:opacity-50",
+                class.get()
+            )
+        }>{children()}</FieldLegendRoot>
     }
 }

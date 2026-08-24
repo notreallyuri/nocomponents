@@ -5,6 +5,7 @@ use crate::{
     primitives::combobox::{
         ComboboxContentRoot, ComboboxItemRoot, ComboboxPortalRoot, ComboboxRoot, use_combobox,
     },
+    primitives::field::field_control_for_trigger,
     utils::types::{Align, Side, SideOffset},
 };
 use leptos::{either::Either, ev, prelude::*};
@@ -41,6 +42,10 @@ pub fn ComboboxTrigger(
 ) -> impl IntoView {
     let ctx = use_combobox();
     let on_click = Callback::new(move |_: ev::MouseEvent| ctx.toggle());
+    // This trigger renders its own `Button` rather than going through `ComboboxTriggerRoot`, so
+    // the field wiring — the label's `for`, `aria-describedby`, `aria-invalid` — is asked for
+    // here as well. Outside a field it does nothing.
+    let field = field_control_for_trigger(ctx.trigger_id, ctx.trigger_ref, disabled);
 
     match render {
         Some(render) => Either::Left(render.run((ctx.trigger_ref, on_click))),
@@ -50,7 +55,7 @@ pub fn ComboboxTrigger(
                 variant=variant
                 node_ref=ctx.trigger_ref
                 on_click=on_click
-                attr:disabled=disabled
+                attr:disabled=field.disabled
                 class=move || cn!("w-56 justify-between font-normal", class.get())
             >
                 {
@@ -66,7 +71,6 @@ pub fn ComboboxTrigger(
     }
 }
 
-/// What the trigger reads when something is chosen, and the placeholder when nothing is.
 #[component]
 pub fn ComboboxValue(
     #[prop(optional, into)] placeholder: Signal<String>,
@@ -138,6 +142,8 @@ pub fn ComboboxItem(
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(default = None, into)] on_select: Option<Callback<String>>,
     #[prop(default = true)] deselectable: bool,
+    #[prop(default = None, into)] selected: Option<Signal<bool>>,
+    #[prop(default = true)] close_on_select: bool,
     #[prop(optional, into)] class: Signal<String>,
     children: ChildrenFn,
 ) -> impl IntoView {
@@ -149,6 +155,8 @@ pub fn ComboboxItem(
             disabled=disabled
             on_select=on_select
             deselectable=deselectable
+            selected=selected
+            close_on_select=close_on_select
             class=move || {
                 cn!(
                     "group/combobox-item relative flex cursor-default items-center gap-2 rounded-sm py-1.5 pr-2 pl-8 text-sm outline-none select-none data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0",

@@ -3,7 +3,13 @@
 //! One tab stop: Tab reaches the checked radio, the arrows move between them, and — unlike a menu
 //! — moving is choosing, as the radio pattern and a native group both have it.
 
-use crate::{primitives::roving_focus::use_roving_focus, utils::types::Orientation};
+use crate::{
+    primitives::{
+        field::{FieldControl, FieldSetControl},
+        roving_focus::use_roving_focus,
+    },
+    utils::types::Orientation,
+};
 use leptos::{context::Provider, ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
 use web_sys::HtmlElement;
@@ -41,7 +47,13 @@ pub fn RadioGroupRoot(
     children: Children,
 ) -> impl IntoView {
     let value = value.unwrap_or_else(|| RwSignal::new(None));
-    let context = RadioGroupContext { value, disabled };
+    // A radiogroup is what a `<fieldset>`'s legend names: there is no one control for `for` to
+    // point at, so the group points back. Outside a fieldset these read empty.
+    let group = FieldSetControl::new(disabled);
+    let context = RadioGroupContext {
+        value,
+        disabled: group.disabled,
+    };
 
     let group_ref = AnyNodeRef::new();
     let roving = use_roving_focus(group_ref, orientation);
@@ -61,6 +73,10 @@ pub fn RadioGroupRoot(
                 data-slot="radio-group"
                 data-orientation=orientation_str
                 aria-orientation=orientation_str
+                aria-labelledby=move || group.labelled_by.get()
+                aria-describedby=move || group.described_by.get()
+                aria-invalid=move || group.invalid.get().then_some("true")
+                data-disabled=move || group.disabled.get().then_some("true")
                 on:keydown=move |e: ev::KeyboardEvent| {
                     if roving.on_keydown(&e.key()) {
                         e.prevent_default();
@@ -91,19 +107,25 @@ pub fn RadioGroupItemRoot(
 ) -> impl IntoView {
     let ctx = use_radio_group();
 
+    // A radio inside its own `Field` wears the id that field's label points `for` at — the same
+    // wiring the checkbox and the switch have. A radio *group* is labelled by a fieldset instead,
+    // which is a different question with a different answer: see `FieldSetControl`.
+    let field = FieldControl::new(id, disabled);
+
     let item = value.clone();
     let is_checked = Memo::new(move |_| ctx.is_checked(&item));
-    let is_disabled = Signal::derive(move || disabled.get() || ctx.disabled.get());
+    let is_disabled = Signal::derive(move || field.disabled.get() || ctx.disabled.get());
 
     view! {
         <button
             type="button"
-            id=id
+            id=move || field.id.get()
             role="radio"
             tabindex="-1"
             data-roving-item=""
             data-slot="radio-group-item"
             aria-checked=move || if is_checked.get() { "true" } else { "false" }
+            aria-describedby=move || field.described_by.get()
             data-state=move || if is_checked.get() { "checked" } else { "unchecked" }
             disabled=is_disabled
             on:click=move |_| {
