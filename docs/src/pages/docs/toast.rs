@@ -111,6 +111,25 @@ const STACKING: &str = r#"<Button on:click=move |_| {
         .show();
 }>"Stack 3 toasts"</Button>"#;
 
+const ACTION: &str = r#"let present = RwSignal::new(true);
+
+// The toast is often raised by something on its way out — the row being
+// deleted, the dialog being closed — so its signals belong to the provider
+// rather than to whoever called show(). Pressing the action dismisses it:
+// one still offering to undo would undo twice.
+view! {
+    <Button on:click=move |_| {
+        present.set(false);
+        toast
+            .toast("Deleted 'Q3 forecast'")
+            .description("Undo puts it back where it was.")
+            .action("Undo", move || present.set(true))
+            .show();
+    }>"Delete something"</Button>
+
+    <span>{move || if present.get() { "Present" } else { "Deleted" }}</span>
+}"#;
+
 const API: &[ApiEntry] = &[ApiEntry {
     name: "ToastProvider",
     description: "Owns the queue and renders it. Wrap the app in one; toasts are pushed with `use_toast()`.",
@@ -145,6 +164,7 @@ const API: &[ApiEntry] = &[ApiEntry {
 #[component]
 pub fn Page() -> impl IntoView {
     let toast = use_toast();
+    let present = RwSignal::new(true);
 
     view! {
         <DocLayout
@@ -247,6 +267,38 @@ pub fn Page() -> impl IntoView {
                         >
                             "Bottom right"
                         </Button>
+                    </div>
+                </DemoSection>
+
+                <DemoSection
+                    title="An action"
+                    description="action() takes a label and a closure — the button in the toast, and what it does. Pressing it runs the closure and dismisses the toast, since the thing being announced has just been answered."
+                    code=ACTION
+                >
+                    <div class="flex flex-wrap items-center gap-3">
+                        <Button
+                            variant=ButtonVariant::Outline
+                            attr:disabled=Signal::derive(move || !present.get())
+                            on:click=move |_| {
+                                present.set(false);
+                                toast
+                                    .toast("Deleted 'Q3 forecast'")
+                                    .description("Undo puts it back where it was.")
+                                    .action("Undo", move || present.set(true))
+                                    .show();
+                            }
+                        >
+                            "Delete something"
+                        </Button>
+                        <span class="text-sm text-muted-foreground">
+                            {move || {
+                                if present.get() {
+                                    "'Q3 forecast' is present."
+                                } else {
+                                    "'Q3 forecast' is deleted — until the toast goes."
+                                }
+                            }}
+                        </span>
                     </div>
                 </DemoSection>
 

@@ -3,20 +3,11 @@ use leptos::prelude::*;
 use leptos_router::{components::*, path};
 use nocomponents::{components::toast::ToastProvider, utils::theme::ThemeProvider};
 
-/// Where the site is served from, for a project page that lives under a repository name rather
-/// than at the root. Set at build time and passed to Trunk's `--public-url` as well, so the
-/// router and the asset URLs agree; empty for `trunk serve`.
 const BASE_PATH: &str = match option_env!("BASE_PATH") {
     Some(base) => base,
     None => "",
 };
 
-/// An internal link, prefixed with [`BASE_PATH`].
-///
-/// The router's `base` is used for *matching* the location, not for resolving links —
-/// `use_resolved_path` passes an absolute href straight through — so a bare `/docs/button` under a
-/// project page navigates out of the site. Every internal href goes through here, and comparisons
-/// against `location.pathname` have to as well, since that carries the base.
 pub fn href(path: &str) -> String {
     format!("{BASE_PATH}{path}")
 }
@@ -30,8 +21,6 @@ pub fn App() -> impl IntoView {
                     <Routes fallback=|| "Not Found.">
                         <Route path=path!("/") view=Home />
                         <Route path=path!("/docs") view=docs::index::Page />
-                        // One route for every component's blocks page: the page looks its
-                        // component up rather than there being sixty near-empty files.
                         <Route path=path!("/docs/:component/blocks") view=docs::blocks::Page />
                         <Route path=path!("/docs/avatar") view=docs::avatar::Page />
                         <Route path=path!("/docs/badge") view=docs::badge::Page />
@@ -70,6 +59,8 @@ pub fn App() -> impl IntoView {
                         <Route path=path!("/docs/table") view=docs::table::Page />
                         <Route path=path!("/docs/empty") view=docs::empty::Page />
                         <Route path=path!("/docs/field") view=docs::field::Page />
+                        <Route path=path!("/docs/form") view=docs::form::Page />
+                        <Route path=path!("/docs/theme") view=docs::theme::Page />
                         <Route path=path!("/docs/item") view=docs::item::Page />
                         <Route path=path!("/docs/accordion") view=docs::accordion::Page />
                         <Route path=path!("/docs/collapsible") view=docs::collapsible::Page />

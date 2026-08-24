@@ -108,6 +108,12 @@ const API: &[ApiEntry] = &[ApiEntry {
             description: "Distance from the button, in pixels.",
         },
         Prop {
+            name: "locale",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "A BCP 47 tag, passed to the calendar inside and used for the button's own label. Empty is English.",
+        },
+        Prop {
             name: "class",
             ty: "Signal<String>",
             default: "\"\"",
@@ -185,9 +191,7 @@ pub fn Page() -> impl IntoView {
                             min=Date::today()
                             disabled=Callback::new(|date: Date| matches!(date.weekday(), 0 | 6))
                         />
-                        <FieldDescription>
-                            "Weekdays only, from today onwards."
-                        </FieldDescription>
+                        <FieldDescription>"Weekdays only, from today onwards."</FieldDescription>
                     </Field>
                 </DemoSection>
 

@@ -1,17 +1,33 @@
 //! Blocks: the compositions, one page per component.
 //!
 //! A component's own page answers "what does this part do", and grows a demo per prop. That is the
-//! wrong place for "here is a colour picker inside a popover inside a form" — the interesting part
-//! of a block is the *seam* between components, and putting those on the component pages would
-//! bury the API under scenery and duplicate every block across the three components it touches.
+//! wrong place for "here is a colour picker inside a popover inside a dialog" — the interesting
+//! part of a block is the *seam* between components, and putting those on the component pages
+//! would bury the API under scenery and duplicate every block across the three components it
+//! touches.
 //!
-//! So blocks live at `/docs/<component>/blocks`, and there is exactly one file for all of them.
-//! The route is parameterised and the page looks its component up, so a new component gets a
-//! blocks page by existing — there is no per-component file to forget, which is the same problem
-//! the `NAV`/`COMPONENTS` pair already has and not one worth having twice.
+//! So blocks live at `/docs/<component>/blocks`, off one parameterised route: [`Page`] looks its
+//! component up in [`REGISTRY`], so a component gets a blocks page by existing and there is no
+//! per-component route, nav entry or index line to forget. Everything not listed shows the empty
+//! state.
 //!
-//! Writing one is a single entry in [`BLOCKS`], keyed by the `/docs/<slug>` its component lives
-//! at. Everything not listed shows the empty state, which for now is everything.
+//! The blocks themselves are a file per component, since a worked example runs to a hundred lines
+//! of markup and a snippet beside it — one file for all of them was pleasant at nought and
+//! unreadable at four. Each exposes `pub const BLOCKS: &[Block]`; adding a component means a
+//! module here and a line in [`REGISTRY`], and adding a block to one that already has a file means
+//! touching nothing else at all.
+
+mod chart;
+mod color_picker;
+mod combobox;
+mod command;
+mod data_table;
+mod dialog;
+mod field;
+mod image_cropper;
+mod sidebar;
+mod table;
+mod toast;
 
 use crate::{
     app::href,
@@ -36,10 +52,20 @@ pub struct Block {
 }
 
 /// Blocks by component slug — the last segment of the `/docs/<slug>` its component's page lives
-/// at. Add an entry here and the page appears; nothing else needs touching.
-///
-/// Empty on purpose: the shape is in place, the examples are not written yet.
-const BLOCKS: &[(&str, &[Block])] = &[];
+/// at. Add an entry here and the page fills in; nothing else needs touching.
+const REGISTRY: &[(&str, &[Block])] = &[
+    ("chart", chart::BLOCKS),
+    ("color-picker", color_picker::BLOCKS),
+    ("combobox", combobox::BLOCKS),
+    ("command", command::BLOCKS),
+    ("data-table", data_table::BLOCKS),
+    ("dialog", dialog::BLOCKS),
+    ("field", field::BLOCKS),
+    ("image-cropper", image_cropper::BLOCKS),
+    ("sidebar", sidebar::BLOCKS),
+    ("table", table::BLOCKS),
+    ("toast", toast::BLOCKS),
+];
 
 /// The component this page belongs to, as it is spelled in `NAV`.
 fn label_for(slug: &str) -> Option<&'static str> {
@@ -52,7 +78,7 @@ fn label_for(slug: &str) -> Option<&'static str> {
 }
 
 fn blocks_for(slug: &str) -> &'static [Block] {
-    BLOCKS
+    REGISTRY
         .iter()
         .find(|(component, _)| *component == slug)
         .map(|(_, blocks)| *blocks)
@@ -95,8 +121,7 @@ pub fn Page() -> impl IntoView {
                 {move || {
                     let blocks = blocks_for(&slug.get());
                     if blocks.is_empty() {
-                        return
-                        view! {
+                        return view! {
                             <Empty class="py-16">
                                 <EmptyHeader>
                                     <EmptyMedia variant=EmptyMediaVariant::Icon>
@@ -105,9 +130,10 @@ pub fn Page() -> impl IntoView {
                                     <EmptyTitle>"No blocks yet"</EmptyTitle>
                                     <EmptyDescription>
                                         "This is where compositions will go — a picker inside a
-                                        popover, a cropper inside a dialog, either of them inside a
-                                        form. The page exists for every component already; the
-                                        examples are still to be written."
+                                        popover, a cropper inside a dialog, a table that pages,
+                                        a sidebar that is the whole frame of an app. The page
+                                        exists for every component already; seven of them have
+                                        examples so far."
                                     </EmptyDescription>
                                 </EmptyHeader>
                             </Empty>
@@ -117,7 +143,6 @@ pub fn Page() -> impl IntoView {
                     blocks
                         .iter()
                         .map(|block| {
-
                             view! {
                                 <DemoSection
                                     title=block.title

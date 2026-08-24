@@ -31,6 +31,11 @@ const OKLCH: &str = r#"// The theme's own tokens are written in oklch, and some 
 // sRGB — reading one back lands on the nearest colour a screen can show.
 <ColorPicker value=RwSignal::new("oklch(0.646 0.222 41.116)".to_string()) format=ColorFormat::Oklch />"#;
 
+const CHANNELS: &str = r#"// The row under the rails is one InputGroup: a Select for the format, and
+// then either the hex string or that format's channels — three of them,
+// four when `with_alpha` adds an opacity.
+<ColorPicker value=value with_alpha=true format=ColorFormat::Hsv />"#;
+
 const PRESETS: &[&str] = &[
     "#ef4444", "#f97316", "#eab308", "#22c55e", "#14b8a6", "#3b82f6", "#a855f7", "#ec4899",
     "#78716c", "#0a0a0a",
@@ -39,7 +44,7 @@ const PRESETS: &[&str] = &[
 const API: &[ApiEntry] = &[
     ApiEntry {
         name: "ColorPicker",
-        description: "A saturation/brightness square, a hue rail, a text field, and optionally opacity and presets. One component rather than a set of parts; `primitives::color_picker` has them apart.",
+        description: "A saturation/brightness square, a hue rail, the colour as numbers, and optionally opacity and presets. One component rather than a set of parts; `primitives::color_picker` has them apart.",
         props: &[
             Prop {
                 name: "value",
@@ -51,7 +56,7 @@ const API: &[ApiEntry] = &[
                 name: "format",
                 ty: "ColorFormat",
                 default: "Hex",
-                description: "Which format the field reads and writes to start with. The button beside it cycles through all four.",
+                description: "Which format the fields read and write to start with. The select beside them changes it: HEX, RGB, HSL, HSV, OKLCH.",
             },
             Prop {
                 name: "with_alpha",
@@ -87,7 +92,19 @@ const API: &[ApiEntry] = &[
                 name: "Rgba::parse",
                 ty: "fn(&str) -> Option<Rgba>",
                 default: "",
-                description: "Reads `#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa`, `rgb()`, `hsl()` and `oklch()`, in modern or comma syntax, with percentages and an alpha after a slash or in a fourth slot. Colour names are not read.",
+                description: "Reads anything CSS would: `#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa`, `rgb()`, `hsl()`, `oklch()` and all 148 colour names, in modern or comma syntax, with an alpha after a slash or in a fourth slot.",
+            },
+            Prop {
+                name: "parse_color",
+                ty: "fn(&str) -> Option<Rgba>",
+                default: "",
+                description: "What the picker reads with: `Rgba::parse` plus `hsv()`, which is the picker's own space and not a CSS colour function. `Rgba::parse` stays strictly what a browser would accept.",
+            },
+            Prop {
+                name: "ColorFormat::channels",
+                ty: "fn() -> &'static [ColorChannel]",
+                default: "",
+                description: "The numeric fields a format is edited as, each carrying its label, range, arrow-key step and how many decimals to write. Empty for hex, which is one string.",
             },
             Prop {
                 name: "ColorFormat::format",
@@ -110,11 +127,12 @@ pub fn Page() -> impl IntoView {
     let simple = RwSignal::new("#3b82f6".to_string());
     let translucent = RwSignal::new("rgb(34 197 94 / 0.6)".to_string());
     let token = RwSignal::new("oklch(0.646 0.222 41.116)".to_string());
+    let channels = RwSignal::new("hsv(280 60% 90% / 0.8)".to_string());
 
     view! {
         <DocLayout
             title="Color Picker"
-            description="A saturation square, a hue rail and a text field."
+            description="A saturation square, a hue rail, and the colour as numbers you can edit."
         >
             <div class="flex flex-col gap-8">
                 <DemoSection
@@ -155,8 +173,32 @@ pub fn Page() -> impl IntoView {
                                 {move || translucent.get()}
                             </code>
                             <p class="max-w-48 text-xs text-muted-foreground">
-                                "The format button cycles hex → rgb → hsl → oklch. The field takes any
-                                of them, and any of the older comma syntaxes too."
+                                "In hex the field takes any of the formats, any of the older comma
+                                syntaxes, and the 148 CSS colour names — type "
+                                <code class="font-mono">"rebeccapurple"</code>
+                                " into it. It is the one field anything can be pasted into, which
+                                is the trade for the channels being channels."
+                            </p>
+                        </div>
+                    </div>
+                </DemoSection>
+
+                <DemoSection
+                    title="Formats and channels"
+                    description="Change the format and the row under the rails changes with it — three boxes, or four when there is an opacity to carry. Type into one, or focus it and use the arrows; shift steps by ten. HSV is the space the picker actually stores, so it is the only format where editing one channel moves nothing else. It is also the only one that is not CSS."
+                    code=CHANNELS
+                >
+                    <div class="flex flex-wrap items-start gap-6">
+                        <ColorPicker value=channels with_alpha=true format=ColorFormat::Hsv />
+                        <div class="flex flex-col gap-2">
+                            <Label>"Value"</Label>
+                            <code class="rounded-md bg-muted px-2 py-1 font-mono text-sm">
+                                {move || channels.get()}
+                            </code>
+                            <p class="max-w-56 text-xs text-muted-foreground">
+                                "Every format but hex has three channels, and `with_alpha` adds a
+                                fourth. Hex keeps a single field, because three boxes of two hex
+                                digits would be a worse field than the string already is."
                             </p>
                         </div>
                     </div>

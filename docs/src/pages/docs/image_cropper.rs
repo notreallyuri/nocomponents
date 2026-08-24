@@ -12,10 +12,7 @@ use nocomponents::{
         image_cropper::ImageCropper,
     },
     primitives::image_cropper::use_image_cropper,
-    utils::{
-        gif::crop_gif,
-        image::{Crop, revoke_object_url, sniff_mime, to_object_url},
-    },
+    utils::image::{Crop, revoke_object_url, sniff_mime, to_object_url},
 };
 
 const AVATAR: &[u8] = include_bytes!("../../../assets/avatar.jpg");
@@ -35,17 +32,25 @@ const ASPECT: &str = r#"// A pixel ratio, not a normalised one — the component
 // and `circular` rounds the preview off without changing what is cut.
 <ImageCropper src=src crop=crop aspect=Some(1.0) circular=true>
     // Inside the cropper, so it can reach `use_image_cropper()`.
-    <ExportButton onto=picture />
+    <ExportButton source=Some(AVATAR) onto=picture />
 </ImageCropper>
 
 // …and the button itself:
 let ctx = use_image_cropper();
-let url = ctx.to_data_url("image/png", 0.92)?;"#;
+let cut = ctx.crop(source, "image/png", 0.92)?;
+let url = cut.to_object_url();"#;
 
-const EXPORT: &str = r#"// A canvas sees one frame of a GIF, so this goes through the bytes:
-// every frame cropped at the palette-index level, nothing decoded to pixels.
-let animation = crop_gif(SAMPLE, crop.get())?;
-let url = to_object_url(&animation, "image/gif");
+const EXPORT: &str = r#"// The same button as the demo above, and the same call inside it. What
+// differs is the bytes it is handed: `crop` checks whether it has any, then
+// whether they are a GIF, and routes to `crop_gif` — every frame cropped at
+// the palette-index level, nothing decoded to pixels — or to the canvas.
+<ImageCropper src=src crop=crop cross_origin=false>
+    <ExportButton source=Some(SAMPLE) onto=animation label="Crop the GIF" />
+</ImageCropper>
+
+// `cut.mime` is read off what came out, not off what was asked for: this one
+// reports `image/gif` while the photograph above reports `image/png`.
+let cut = ctx.crop(source, "image/png", 0.92)?;
 
 // The source is carried in the binary and served as a blob, which is
 // same-origin — so nothing here depends on a third party's CORS policy.
@@ -54,7 +59,7 @@ const SAMPLE: &[u8] = include_bytes!("../../../assets/sample.gif");"#;
 const API: &[ApiEntry] = &[
     ApiEntry {
         name: "ImageCropper",
-        description: "An image with a crop rectangle over it. Drag the rectangle to move it, its handles to resize; the arrows move it too, with shift for larger steps.",
+        description: "An image with a crop rectangle over it. Drag the rectangle to move it, its handles to resize — hold shift while resizing to keep the shape it had when you grabbed it, alt to keep that shape about the middle instead of the far corner. Shift while moving holds the drag to one of eight directions. The arrows move it too, with shift for larger steps.",
         props: &[
             Prop {
                 name: "src",
@@ -123,16 +128,22 @@ const API: &[ApiEntry] = &[
                 description: "The image's natural size, read off its load event. What a pixel aspect ratio is judged against.",
             },
             Prop {
+                name: "crop(source, mime, quality)",
+                ty: "fn -> Result<Cropped, CropError>",
+                default: "",
+                description: "The crop as a file, at the source's natural resolution. `source` is the bytes the image was decoded from, when the caller still has them — that is what decides whether an animated GIF stays animated, so an app taking either kind of upload writes this one call instead of sniffing the type and branching. `None` asks for a still whatever the source is. `mime` and `quality` describe the still path only.",
+            },
+            Prop {
                 name: "to_data_url(mime, quality)",
                 ty: "fn -> Result<String, CropError>",
                 default: "",
-                description: "The crop as a still, at the source's natural resolution. `CropError::Tainted` is the cross-origin case.",
+                description: "The crop as a data URL, for an `<img src>`. The still path only — a canvas sees one frame, so an animated source loses its animation here. `CropError::Tainted` is the cross-origin case.",
             },
             Prop {
                 name: "to_pixels()",
                 ty: "fn -> (f64, f64, f64, f64)",
                 default: "",
-                description: "The crop in the source's own pixels, for cutting it somewhere else — on a server, or through `crop_gif`.",
+                description: "The crop in the source's own pixels, for cutting it somewhere else — on a server, or in a worker.",
             },
             Prop {
                 name: "reset()",
@@ -144,7 +155,7 @@ const API: &[ApiEntry] = &[
     },
     ApiEntry {
         name: "utils::gif::crop_gif",
-        description: "Crops every frame of an animated GIF and returns a new one. A canvas cannot do this — `drawImage` sees one frame and `toDataURL(\"image/gif\")` is not implemented anywhere — so this works on the original bytes instead.",
+        description: "Crops every frame of an animated GIF and returns a new one. A canvas cannot do this — `drawImage` sees one frame and `toDataURL(\"image/gif\")` is not implemented anywhere — so this works on the original bytes instead. `crop(source, …)` above calls it for you when the bytes turn out to be a GIF; reach for it directly only when there is no cropper in the picture.",
         props: &[
             Prop {
                 name: "bytes",
@@ -168,8 +179,18 @@ const API: &[ApiEntry] = &[
     },
 ];
 
+/// One button for both demos, which is the point: the still and the animation differ by what is
+/// handed to `source`, not by which function gets called.
 #[component]
-fn ExportButton(onto: RwSignal<Option<String>>) -> impl IntoView {
+fn ExportButton(
+    /// The bytes the image was decoded from. `Some` is what lets an animated source stay
+    /// animated; `None` asks for a still whatever it is.
+    #[prop(default = None)]
+    source: Option<&'static [u8]>,
+    onto: RwSignal<Option<String>>,
+    #[prop(default = None)] note: Option<RwSignal<Option<String>>>,
+    #[prop(default = "Cut it out")] label: &'static str,
+) -> impl IntoView {
     let ctx = use_image_cropper();
 
     view! {
@@ -177,12 +198,26 @@ fn ExportButton(onto: RwSignal<Option<String>>) -> impl IntoView {
             variant=ButtonVariant::Outline
             size=ButtonSize::Sm
             on:click=move |_| {
-                if let Ok(url) = ctx.to_data_url("image/png", 0.92) {
-                    onto.set(Some(url));
+                match ctx.crop(source, "image/png", 0.92) {
+                    Ok(cut) => {
+                        // Both paths end at an object URL, so both are handed back the same way.
+                        if let Some(previous) = onto.get_untracked() {
+                            revoke_object_url(&previous);
+                        }
+                        if let Some(note) = note {
+                            note.set(Some(format!("{} bytes of {}", cut.bytes.len(), cut.mime)));
+                        }
+                        onto.set(cut.to_object_url());
+                    }
+                    Err(error) => {
+                        if let Some(note) = note {
+                            note.set(Some(format!("{error:?}")));
+                        }
+                    }
                 }
             }
         >
-            "Cut it out"
+            {label}
         </Button>
     }
 }
@@ -195,36 +230,27 @@ pub fn Page() -> impl IntoView {
     let animated = StoredValue::new(
         to_object_url(SAMPLE, sniff_mime(SAMPLE).unwrap_or("image/gif")).unwrap_or_default(),
     );
+    let picture = RwSignal::new(None::<String>);
+    let animation = RwSignal::new(None::<String>);
+
     on_cleanup(move || {
         revoke_object_url(&photo.get_value());
         revoke_object_url(&animated.get_value());
+
+        // The cuts are object URLs too, whichever path made them.
+        for url in [picture.get_untracked(), animation.get_untracked()]
+            .into_iter()
+            .flatten()
+        {
+            revoke_object_url(&url);
+        }
     });
 
     let free = RwSignal::new(Crop::new(0.15, 0.15, 0.6, 0.6));
     let square = RwSignal::new(Crop::new(0.15, 0.15, 0.7, 0.7));
     let cutting = RwSignal::new(Crop::new(0.2, 0.1, 0.5, 0.7));
 
-    let picture = RwSignal::new(None::<String>);
-    let animation = RwSignal::new(None::<String>);
     let cut_size = RwSignal::new(None::<String>);
-
-    let cut = move |_| {
-        let crop = cutting.get_untracked();
-
-        match crop_gif(SAMPLE, crop) {
-            Ok(bytes) => {
-                if let Some(previous) = animation.get_untracked() {
-                    revoke_object_url(&previous);
-                }
-                cut_size.set(Some(format!("{} bytes", bytes.len())));
-                animation.set(to_object_url(&bytes, "image/gif"));
-            }
-            Err(error) => {
-                cut_size.set(Some(format!("{error:?}")));
-                animation.set(None);
-            }
-        }
-    };
 
     view! {
         <DocLayout
@@ -234,7 +260,7 @@ pub fn Page() -> impl IntoView {
             <div class="flex flex-col gap-8">
                 <DemoSection
                     title="Default"
-                    description="The rectangle is in fractions of the image, never pixels, so it means the same thing whatever size the image is drawn at. Drag it to move, take a handle to resize; focus it and the arrows move it, shift for larger steps."
+                    description="The rectangle is in fractions of the image, never pixels, so it means the same thing whatever size the image is drawn at. Drag it to move, take a handle to resize. Hold **shift** while resizing and it keeps the shape it had when you grabbed it — the ratio comes from where the drag started, so it scales instead of creeping towards square, and the corner across from your pointer stays put. Hold **alt** and it keeps that shape about the *middle*: the centre stays where it is and both sides move, so the rectangle grows out of itself rather than away from the far corner, which is the gesture you want for something already framed in the centre. Pulling a corner out by a tenth widens it by two, so it meets the edge of the image in half the distance and gives way there. Moving the whole rectangle there is no shape to keep, so **shift** does the other thing it does everywhere and holds the drag to one of eight directions — the four axes and the four diagonals; push the pointer off the line it picked and nothing happens rather than sliding along it. All of it is read as you drag, so you can take or release a key halfway through. Focus it and the arrows move it, shift for larger steps."
                     code=DEFAULT
                 >
                     <div class="flex flex-wrap items-start gap-6">
@@ -277,7 +303,7 @@ pub fn Page() -> impl IntoView {
                                 cross_origin=false
                             >
                                 <div class="mt-3">
-                                    <ExportButton onto=picture />
+                                    <ExportButton source=Some(AVATAR) onto=picture />
                                 </div>
                             </ImageCropper>
                         </div>
@@ -307,7 +333,7 @@ pub fn Page() -> impl IntoView {
 
                 <DemoSection
                     title="Cutting a GIF"
-                    description="This is the reason there is a `utils::gif` at all. A canvas can only ever hand back one frame — `drawImage` copies whatever the image is showing, and `toDataURL(\"image/gif\")` quietly returns a PNG. So an animated GIF is cropped through its bytes instead: every frame clipped at the palette-index level, which keeps the palettes, the delays and the loop exactly as they were. Crop it, then watch the result — it is still moving."
+                    description="This is the reason there is a `utils::gif` at all. A canvas can only ever hand back one frame — `drawImage` copies whatever the image is showing, and `toDataURL(\"image/gif\") quietly returns a PNG. So an animated GIF is cropped through its bytes instead: every frame clipped at the palette-index level, which keeps the palettes, the delays and the loop exactly as they were. The button is the same one as the demo above and the call inside it is the same call — `crop` is handed the bytes, sees a GIF, and takes that route on its own. Crop it, then watch the result: still moving, and it reports `image/gif` rather than the `image/png` that was asked for."
                     code=EXPORT
                 >
                     <div class="flex flex-wrap items-start gap-6">
@@ -317,14 +343,19 @@ pub fn Page() -> impl IntoView {
                                 alt="A bouncing ball, animated"
                                 crop=cutting
                                 cross_origin=false
-                            />
+                            >
+                                <div class="mt-3">
+                                    <ExportButton
+                                        source=Some(SAMPLE)
+                                        onto=animation
+                                        note=Some(cut_size)
+                                        label="Crop the GIF"
+                                    />
+                                </div>
+                            </ImageCropper>
                         </div>
 
                         <div class="flex flex-col gap-3">
-                            <Button variant=ButtonVariant::Outline size=ButtonSize::Sm on:click=cut>
-                                "Crop the GIF"
-                            </Button>
-
                             <p class="font-mono text-xs text-muted-foreground">
                                 {move || {
                                     cut_size.get().unwrap_or_else(|| "Not cut yet.".to_string())

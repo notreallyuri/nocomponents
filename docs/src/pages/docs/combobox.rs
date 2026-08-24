@@ -225,7 +225,7 @@ const API: &[ApiEntry] = &[
     },
     ApiEntry {
         name: "ComboboxItem",
-        description: "One option. A command item that writes the combobox's value and closes the list, and shows a check while it is the chosen one.",
+        description: "One option. A command item that writes the combobox's value and closes the list, and shows a check while it is the chosen one — `selected` and `close_on_select` hand both of those to the caller, which is what a multi-select needs.",
         props: &[
             Prop {
                 name: "value",
@@ -262,6 +262,18 @@ const API: &[ApiEntry] = &[
                 ty: "bool",
                 default: "true",
                 description: "Whether choosing the item again clears the selection, as a filter chip does.",
+            },
+            Prop {
+                name: "selected",
+                ty: "Option<Signal<bool>>",
+                default: "None",
+                description: "What makes this item look chosen, when the combobox's own value is not the answer — a multi-select keeps a list of its own and ticks several at once. Given, the item stops writing `value` and `display_value`: choosing it runs `on_select` and nothing else.",
+            },
+            Prop {
+                name: "close_on_select",
+                ty: "bool",
+                default: "true",
+                description: "Whether choosing an item closes the layer. False for a list several things are picked from, where closing after the first is the bug.",
             },
             Prop {
                 name: "class",

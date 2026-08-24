@@ -5,5 +5,5 @@ tailwindcss = "4.3.0"
 watch = ["src", "../src"]
 
 [serve]
-address = "0.0.0.0"
+addresses = ["0.0.0.0"]
 port = 3000

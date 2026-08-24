@@ -13,13 +13,8 @@ use nocomponents::{
 
 const INSTALL: &str = r#"[dependencies.nocomponents]
 git = "https://github.com/notreallyuri/nocomponents"
-features = ["full"]"#;
+features = ["components", "all-elements"]"#;
 
-/// The specimens under the pitch: real components, wired to real signals.
-///
-/// The point of the page is that it is the library rather than a picture of it, so these have to
-/// be the ones with something to say when they are touched — a switch that moves, a listbox that
-/// opens, a thumb that drags.
 #[component]
 fn Specimens() -> impl IntoView {
     let notifications = RwSignal::new(true);
@@ -80,8 +75,6 @@ pub fn Home() -> impl IntoView {
             </header>
 
             <main class="flex flex-1 flex-col items-center justify-center gap-16 px-6 py-16">
-                // The window is the whole idea: the library introduces itself as one of its own
-                // surfaces, and what is inside the frame is running rather than drawn.
                 <div class="flex w-full max-w-2xl flex-col border border-border">
                     <div class="flex h-8 w-full items-center bg-border px-2">
                         <div class="flex items-center gap-2 select-none">

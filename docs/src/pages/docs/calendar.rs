@@ -7,8 +7,20 @@ use crate::{
 };
 use leptos::prelude::*;
 use nocomponents::{
-    components::calendar::Calendar, primitives::calendar::CalendarMode, utils::date::Date,
+    components::{calendar::Calendar, native_select::NativeSelect},
+    primitives::calendar::CalendarMode,
+    utils::date::Date,
 };
+
+/// A few tags with visibly different answers: a Latin script that renames the months, one that
+/// writes the year first, and one that does not separate its weekday names into letters at all.
+const LOCALES: [(&str, &str); 5] = [
+    ("pt-BR", "Português (Brasil)"),
+    ("fr-FR", "Français"),
+    ("de-DE", "Deutsch"),
+    ("ja-JP", "日本語"),
+    ("", "English (default)"),
+];
 
 const DEFAULT: &str = r#"{
     let selected = RwSignal::new(vec![Date::today()]);
@@ -21,6 +33,13 @@ const DEFAULT: &str = r#"{
 
 const RANGE: &str = r#"// Two clicks make a range; the days between them fill in as the pointer moves.
 <Calendar mode=CalendarMode::Range selected=selected week_starts_on=1 />"#;
+
+const LOCALE: &str = r#"let locale = RwSignal::new("pt-BR".to_string());
+
+view! {
+    // Month names, weekday headers and each day's aria-label follow the tag.
+    <Calendar locale=locale week_starts_on=1 />
+}"#;
 
 const BOUNDS: &str = r#"// `min` and `max` fence the grid — and disable the paging buttons at the ends.
 // `disabled` rules out anything else: here, weekends.
@@ -80,6 +99,12 @@ const API: &[ApiEntry] = &[
                 description: "Anything else that cannot be picked — weekends, days already taken. Called for each of the 42 cells on show.",
             },
             Prop {
+                name: "locale",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "A BCP 47 tag — \"pt-BR\", \"ja\" — for the month caption, the weekday headers and every day's accessible name, resolved once through `Intl.DateTimeFormat`. Empty is English, and so is a tag the browser cannot read.",
+            },
+            Prop {
                 name: "class",
                 ty: "Signal<String>",
                 default: "\"\"",
@@ -112,6 +137,7 @@ pub fn Page() -> impl IntoView {
     let single = RwSignal::new(vec![Date::today()]);
     let range = RwSignal::new(Vec::<Date>::new());
     let multiple = RwSignal::new(Vec::<Date>::new());
+    let locale = RwSignal::new("pt-BR".to_string());
 
     view! {
         <DocLayout title="Calendar" description="A month grid you can pick dates in.">
@@ -180,6 +206,26 @@ pub fn Page() -> impl IntoView {
                                 }
                             }}
                         </p>
+                    </div>
+                </DemoSection>
+
+                <DemoSection
+                    title="Locale"
+                    description="One tag decides the month caption, the weekday headers and every day's accessible name — the caption is formatted rather than assembled, so its parts come out in the order the locale writes them. Nothing else in the library asks for Intl, and a tag it cannot read falls back to English rather than failing."
+                    code=LOCALE
+                >
+                    <div class="flex flex-col items-center gap-3">
+                        <div class="w-56">
+                            <NativeSelect model=locale>
+                                {LOCALES
+                                    .iter()
+                                    .map(|(tag, label)| {
+                                        view! { <option value=*tag>{*label}</option> }
+                                    })
+                                    .collect_view()}
+                            </NativeSelect>
+                        </div>
+                        <Calendar locale=locale week_starts_on=1 />
                     </div>
                 </DemoSection>
 

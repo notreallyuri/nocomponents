@@ -1,6 +1,6 @@
 use crate::{
     app::href,
-    components::{doc_search::DocSearch, theme_switcher::ThemeSwitcher},
+    components::{doc_search::DocSearch, theme_switcher::ThemeSwitcherPopover},
 };
 use leptos::prelude::*;
 use leptos_router::{components::A, hooks::use_location};
@@ -22,8 +22,6 @@ pub struct NavItem {
     pub href: &'static str,
 }
 
-/// Every page in the docs, in the order the sidebar renders them. Also what the ⌘K palette
-/// searches, so the two cannot disagree about what exists.
 pub const NAV: &[NavGroup] = &[
     NavGroup {
         label: "Sections",
@@ -40,7 +38,22 @@ pub const NAV: &[NavGroup] = &[
                 label: "Installation",
                 href: "/docs/installation",
             },
+            NavItem {
+                label: "Theme",
+                href: "/docs/theme",
+            },
+            NavItem {
+                label: "Utility",
+                href: "/docs/utility",
+            },
         ],
+    },
+    NavGroup {
+        label: "Forms",
+        items: &[NavItem {
+            label: "Form State",
+            href: "/docs/form",
+        }],
     },
     NavGroup {
         label: "Components",
@@ -403,7 +416,6 @@ pub fn DocLayout(
                         <SidebarTrigger />
                         <div class="flex min-w-0 flex-col">
                             <h1 class="truncate text-sm leading-none font-semibold">{title}</h1>
-                            // Two lines on a phone, one on anything wider: the room is there.
                             <p class="mt-1 line-clamp-2 text-xs text-muted-foreground sm:truncate">
                                 {description}
                             </p>
@@ -423,7 +435,7 @@ pub fn DocLayout(
                                         </A>
                                     }
                                 })
-                        }} <DocSearch /> <ThemeSwitcher />
+                        }} <DocSearch /> <ThemeSwitcherPopover />
                     </div>
                 </header>
 

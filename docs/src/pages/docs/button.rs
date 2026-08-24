@@ -6,7 +6,10 @@ use crate::{
     layout::doc_layout::DocLayout,
 };
 use leptos::prelude::*;
-use nocomponents::components::button::{Button, ButtonSize, ButtonVariant};
+use nocomponents::{
+    components::button::{Button, ButtonSize, ButtonVariant},
+    icons::x::X,
+};
 
 const VARIANTS: &str = r#"<Button variant=ButtonVariant::Default>"Default"</Button>
 <Button variant=ButtonVariant::Secondary>"Secondary"</Button>
@@ -125,10 +128,18 @@ pub fn Page() -> impl IntoView {
                     code=ICON_SIZES
                 >
                     <div class="flex flex-wrap items-center gap-3">
-                        <Button size=ButtonSize::IconXs>"×"</Button>
-                        <Button size=ButtonSize::IconSm>"×"</Button>
-                        <Button size=ButtonSize::Icon>"×"</Button>
-                        <Button size=ButtonSize::IconLg>"×"</Button>
+                        <Button size=ButtonSize::IconXs>
+                            <X />
+                        </Button>
+                        <Button size=ButtonSize::IconSm>
+                            <X />
+                        </Button>
+                        <Button size=ButtonSize::Icon>
+                            <X />
+                        </Button>
+                        <Button size=ButtonSize::IconLg>
+                            <X />
+                        </Button>
                     </div>
                 </DemoSection>
 

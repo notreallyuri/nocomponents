@@ -94,6 +94,12 @@ const API: &[ApiEntry] = &[ApiEntry {
             description: "Overridden by an enclosing `Field`, which mints its own.",
         },
         Prop {
+            name: "on_blur",
+            ty: "Option<Callback<FocusEvent>>",
+            default: "None",
+            description: "Run when the control loses focus. A prop rather than your own `on:blur` because the chevron needs a positioned wrapper around the `<select>`, and that wrapper is what a handler written at the call site attaches to — where it never fires, since `blur` does not bubble. An enclosing `Field` needs none of this: it listens for `focusout`, which does.",
+        },
+        Prop {
             name: "children",
             ty: "Children",
             default: "",
