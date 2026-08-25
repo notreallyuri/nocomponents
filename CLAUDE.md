@@ -126,7 +126,15 @@ line, rewritten, and printed back:
 
 An `add` never overwrites a file that is already there — the point of installing is that the file is
 the project's to edit, and pulling in one component must not quietly undo changes to another it
-happens to be built on. `--force` overwrites. Components built on other components (`sidebar` on
+happens to be built on. `--force` overwrites.
+
+`cli/src/lock.rs` is what makes that judgement possible rather than blanket: `nocomponents.lock`
+records an FNV-1a hash of each file as installed, so `add` can say "edited here" where it used to
+say only "already here", and `remove` can refuse to delete the project's own work. `remove` refuses
+a second time for a component another installed one is built on, found by searching the installed
+files for the rewritten import (`<module_path>::<name>::`) rather than from a list. The generated
+`mod.rs` is written only between `// nocli:begin` and `// nocli:end`, and skips a module the project
+declared for itself outside them. Components built on other components (`sidebar` on
 `sheet`, `drawer` on `sheet`) pull those in too, read out of the source just downloaded rather than
 from a list that could drift.
 

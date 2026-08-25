@@ -1,4 +1,4 @@
-e TODO
+# TODO
 
 Working list for `nocomponents`. Status reflects the tree as of 2026-08-25; check items off as they
 land and add new ones rather than keeping a parallel list elsewhere. Closed items are one line —
@@ -371,11 +371,20 @@ rather than general UI, so they are the easiest to defer or skip.
 - [ ] The CLI is not published, and `cargo add nocomponents` inside it assumes the library is. Until
       both are on crates.io the only working path is `--from <checkout>`, which is also how the CLI
       is tested.
-- [ ] `cargo nocli` has no `remove`, and no way to tell an installed component that has been edited
-      from one that has not — `--force` is all-or-nothing. A hash of what was installed, written
-      beside the config, would let `add` say which files it would clobber.
-- [ ] The installed `mod.rs` is rewritten from the directory on every `add`, so anything a project
-      adds to it by hand is lost. It is the one generated file in a tree that is otherwise theirs.
+- [x] `nocomponents.lock` beside the config records a hash of each file as installed, so `add` now
+      says *which* kind of file it left alone — "edited here" against "unchanged, --force refreshes
+      it" — and `--force` names what of yours it overwrote. FNV-1a, not a cryptographic hash: the
+      question is only whether a file is byte-for-byte what we wrote, and `\r` is skipped so a
+      checkout on Windows does not read as edited.
+- [x] `components remove`, which refuses twice — once for a component another installed one is
+      built on (found by searching the installed files for the rewritten import, so there is no
+      list to keep in step), and once for a file the project has edited. `--force` overrides both,
+      and doing so is what broke the scratch project during testing, which is the argument for the
+      refusal.
+- [x] The installed `mod.rs` is written between `// nocli:begin` and `// nocli:end`; anything
+      outside them survives. A module the project declares itself out there is skipped inside the
+      block rather than declared twice — the block lists every `.rs` in the directory, their own
+      files included.
 - [ ] `init` installs the whole of `globals.css`, which is four palettes and fourteen accents —
       most of a consumer's stylesheet, for tokens they mostly will not use. Worth splitting the
       base tokens from the palettes so a project takes one and opts into the rest.

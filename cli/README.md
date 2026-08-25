@@ -37,8 +37,28 @@ built on — `sidebar` brings `sheet`, `skeleton`, `tooltip`, `separator` and `i
 turns on the matching Cargo features. `components list` shows everything available, marking what is
 already installed.
 
-An `add` never overwrites a file that is already there; it says which ones it left alone. Pass
-`--force` when you do want them replaced.
+An `add` never overwrites a file that is already there, and it says *which* kind of file it left
+alone — a component still exactly as it was installed reads differently from one you have edited:
+
+```
+  kept      src/components/nc/button.rs (edited here)
+  kept      src/components/nc/input.rs (unchanged, --force refreshes it)
+```
+
+It can tell them apart because `nocomponents.lock`, written beside the config, records a hash of
+each file as it was installed. That file is generated — check it in if you want the distinction to
+survive a fresh clone, and delete it if you would rather every installed component read as yours.
+
+Pass `--force` when you do want files replaced. It names anything of yours it overwrote.
+
+```bash
+cargo nocli components remove button
+```
+
+`remove` deletes installed components and refuses twice before it does: once for a component
+another installed one is built on, which would leave the project not compiling, and once for a file
+you have edited. `--force` overrides both. Cargo features are left alone, since the feature also
+switches on the primitive underneath, which something else may still be using.
 
 ## Configuration
 
@@ -53,8 +73,22 @@ components = "src/components/nc"
 ```
 
 `paths.components` has to be under `src/` — an installed component that is built on another one
-needs to be able to name it, and only a directory under `src/` has a module path. The `mod.rs` in
-there is rewritten from the directory on every `add`; the components beside it are yours.
+needs to be able to name it, and only a directory under `src/` has a module path.
+
+The `mod.rs` in there is written from the directory on every `add` and `remove`, but only between
+its two markers:
+
+```rust
+// nocli:begin
+pub mod button;
+// nocli:end
+
+pub mod our_own;   // anything out here is left alone
+```
+
+Every `.rs` beside it is declared inside the block, your own files included — so a module you
+declare yourself outside it is not declared twice. The components are yours to edit; the list
+between the markers is not.
 
 ## What gets rewritten
 

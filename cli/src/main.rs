@@ -6,6 +6,7 @@ use std::path::PathBuf;
 mod config;
 mod init;
 mod install;
+mod lock;
 mod manifest;
 mod remote;
 mod rewrite;
@@ -49,6 +50,13 @@ enum Components {
         #[arg(long)]
         force: bool,
     },
+    /// Remove installed components.
+    Remove {
+        names: Vec<String>,
+        /// Remove even a component that has been edited, or that another one is built on.
+        #[arg(long)]
+        force: bool,
+    },
     /// Show every component, marking the ones already installed.
     List,
 }
@@ -75,6 +83,10 @@ async fn run(cli: Nocli) -> Result<()> {
                 )
             }
             Components::Add { names, force } => install::add(&source, &names, force).await,
+            Components::Remove { names, .. } if names.is_empty() => {
+                anyhow::bail!("name at least one component to remove")
+            }
+            Components::Remove { names, force } => install::remove(&names, force),
             Components::List => install::list(&source).await,
         },
     }
