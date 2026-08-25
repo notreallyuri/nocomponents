@@ -88,11 +88,15 @@ When adding a component, put behavior in the primitive and only classes in the c
 yourself writing `if is_open` styling logic in `src/components/`, it belongs in a `data-*` attribute
 on the primitive instead.
 
-`src/components/` carries **no doc comments** — no `//!` header, no `///` on a part or a prop. That
-prose is the docs site's prop tables (`ApiReference` on every component page), and a description
-kept in two places drifts. Ordinary `//` comments stay: they explain why a class is what it is,
-which no table ever says. `src/primitives/` and `src/utils/` keep their doc comments, being
-documented nowhere else yet.
+`src/components/` carries **no comments at all** — no `//!` header, no `///` on a part or a prop,
+and no ordinary `//` either. The styled layer is classes and composition, its prose is the docs
+site's prop tables (`ApiReference` on every component page), and a description kept in two places
+drifts. If a class needs explaining, the explanation belongs on the page that documents the
+component, not beside the string.
+
+`src/primitives/` and `src/utils/` keep their doc comments, and this rule does not reach them: the
+site has no primitive pages at all, and `/docs/utility` is an overview rather than an API
+reference, so those comments are the only documentation either layer has.
 
 ## How consumers get this: `cargo nocli`
 
@@ -184,9 +188,21 @@ expose `as_str()` for rendering into `data-*` attributes.
 `@custom-variant`s declared in `docs/styles/globals.css`.
 
 **Polymorphic children (`asChild`)**: components that may render as something else take an optional
-`render` / `as_child: Callback<(AnyNodeRef, Callback<MouseEvent>), AnyView>` and branch with
-`Either::Left/Right`. The node ref (`leptos_node_ref::AnyNodeRef`) must be forwarded so floating
-positioning can measure the trigger.
+`render` / `as_child` callback. The node ref (`leptos_node_ref::AnyNodeRef`) must be forwarded so
+floating positioning can measure the trigger, and so the ARIA and `data-slot` the root writes onto
+the node land somewhere.
+
+The floating triggers pass a **`TriggerRender`** struct (`primitives/floating.rs`) — `node_ref`,
+`on_click`, and the `disabled` already resolved against any `Field` around it. A struct rather than
+a tuple because this shape has had to grow once already: a tuple must be re-broken every time it
+gains an element, a struct takes a field and leaves callers alone. Two older shapes survive
+elsewhere — `(Signal<String>, AnyNodeRef)` on `Button` and `SidebarMenuButton`, a bare `AnyNodeRef`
+on the tooltip and hover card — and should converge on the struct.
+
+**A styled trigger must render its `*Root`, never wrap `ctx.trigger_ref` itself.** Three of the four
+did the latter, and the cost is invisible until you look: the root is what writes `data-slot`, the
+ARIA and the field wiring onto the node, so a trigger that goes around it silently gets none of
+them. The styled `Button` belongs in the `render` the root already takes.
 
 **Prop conventions**: `#[prop(optional, into)] class: Signal<String>`, `#[prop(optional, into)] disabled: Signal<bool>`,
 `children: Option<ChildrenFn>` when children may be re-rendered inside a `Portal` or `Either` branch.
@@ -240,11 +256,22 @@ resolves `Theme::System` via `prefers-color-scheme`, and toggles the `dark` clas
 
 ## Docs site
 
-`docs/src/app.rs` wraps everything in `ThemeProvider` → `ToastProvider` → `Router`. Adding a docs
-page means touching five places: the new `docs/src/pages/docs/<name>.rs` (a `Page` component
+`docs/src/app.rs` wraps everything in `ThemeProvider` → `ToastProvider` → `Router`. Every docs page
+is a child of one `ParentRoute` at `/docs` whose view is `DocShell` — the sidebar and the
+`SidebarInset` it sits beside — so navigating swaps only the `Outlet`. That is what keeps the
+sidebar's scroll position: the element is never rebuilt. `DocLayout` is the other half, the header
+and the `<main>`, and stays per-page because the title and description are its props.
+
+Adding a docs page means touching five places: the new `docs/src/pages/docs/<name>.rs` (a `Page` component
 using `DocLayout` + `DemoSection`), `pages/docs/mod.rs`, the route in `app.rs`, the `NAV` const in
 `docs/src/layout/doc_layout.rs`, and the `COMPONENTS` const in `pages/docs/index.rs`. The header's
 ⌘K palette (`docs/src/components/doc_search.rs`) reads `NAV`, so it is not a sixth place.
+
+`PageNav` (`docs/src/components/page_nav.rs`) is the "On this page" rail, and needs nothing from a
+page: it reads the headings marked `data-toc` out of its own `<main>` — `DemoSection` marks its
+title, `ApiReference` marks its heading and every part — and hides itself below three of them. It is
+scoped to the `<main>` node ref rather than the document because leaving a page mounts the next one
+before unmounting this one, so for a moment there are two.
 
 `DemoSection` takes an optional `code` prop that renders the snippet below the demo. **Put snippets in
 module-level consts, never inline in `view!`** — leptosfmt reformats raw strings inside the macro,

@@ -1,6 +1,6 @@
 e TODO
 
-Working list for `nocomponents`. Status reflects the tree as of 2026-08-22; check items off as they
+Working list for `nocomponents`. Status reflects the tree as of 2026-08-25; check items off as they
 land and add new ones rather than keeping a parallel list elsewhere. Closed items are one line —
 the reasoning is in the commit that closed them, and anything still to do about one is its own open
 item rather than a sentence buried in a closed one.
@@ -37,32 +37,56 @@ item rather than a sentence buried in a closed one.
 - [x] A `FieldLabel` beside a `Combobox` pointed `for` at an id nothing wore. The wiring the select
       already had is now `field_control_for_trigger`, shared by both.
 
+- [x] The ⌘K palette navigated to `/base/base/docs/…` on the Pages build: `use_navigate` resolves
+      against the router's base and was handed a path `href()` had already prefixed. `A` is the
+      other way round, which is why only the palette broke — and why `trunk serve` never showed it.
+- [x] Switching pages reset the sidebar's scroll to the top. Every page rendered its own
+      `DocLayout`, so navigating rebuilt the whole sidebar; the chrome is now `DocShell` on a
+      `ParentRoute` at `/docs` and only the `Outlet` swaps.
 - [ ] The sidebar still hand-rolls `match_media` rather than using `utils::use_media_query`. Its
       adoption turns `SidebarContext::is_mobile` from an `RwSignal` into a `Signal` — a public
       field, so a deliberate change rather than a tidy-up. The theme is no longer a candidate:
       `use_media_query` re-reads on `resize`, which a colour-scheme change does not fire, so
       `theme.rs` listens to the query itself.
-- [ ] A floating trigger overwrites a caller's own `id`: `FloatingRoot` writes `trigger_id` onto the
-      node unconditionally, so `<SelectTrigger attr:id="email">` silently becomes `nc-trigger-4`. It
-      should keep an id the caller set and adopt it as `trigger_id`, so `aria-controls` still points
-      somewhere real.
-- [ ] A menu item cannot be disabled. `DropdownMenuItemRoot` — which the context menu and the
-      menubar reuse whole — takes no `disabled` and never writes `data-disabled`, while the styled
-      classes (`data-disabled:opacity-50`), the roving focus and the "focus the first item" query
-      all key off exactly that attribute. So the styling and the skipping are written for a state
-      nothing can put an item into.
+- [x] A floating trigger overwrote a caller's own `id`. It now adopts an id already on the node as
+      `trigger_id` instead, so a `<label for>` still names the trigger and everything downstream —
+      the field's `control_id`, the content's `aria-labelledby` — follows the caller's id rather
+      than a minted one. A trigger with no id of its own still gets one.
+- [x] A menu item can be disabled. `DropdownMenuItemRoot` takes `disabled`, writes `data-disabled`
+      and `aria-disabled`, and refuses the click in the handler rather than trusting the styled
+      layer's `pointer-events-none` — so an item styled by someone else refuses it too. One root, so
+      the dropdown, the context menu and the menubar all got it; `DropdownMenuItem` and
+      `MenubarItem` pass it through.
 - [ ] `NativeSelect`'s wrapper swallows everything a caller writes on it — `attr:id`, `attr:name`,
       any event. `on_blur` is a prop because that one was needed; the general fix is for the
       `<select>` to be the component's own root, which means drawing the chevron without a
       positioned sibling, which means a background image and a colour that is not a token. Worth a
       decision, not a patch.
-- [ ] `ComboboxTrigger` is the one styled trigger that does not render its own `*Root` — it builds
-      a `Button` around `ctx.trigger_ref` directly, which is why the field wiring has to be asked
-      for twice. `SelectTrigger` shows the shape it should have.
-- [ ] `dropdown_menu` carries no `data-slot` on any of its parts, alone among the components.
-      Nothing keys off it today, so nothing is broken, but it is the convention everything else
-      follows and the thing anyone styling the unstyled layer reaches for — and its absence reads
-      as a broken menu when a selector quietly matches nothing.
+- [x] `DropdownMenuTrigger` and `PopoverTrigger` build their `Button` as the `render` the root
+      already takes, instead of around `ctx.trigger_ref` behind the root's back. They were doing
+      what `ComboboxTrigger` does — it was never the only one, and `SelectTrigger` was the only one
+      doing it right. Found by the `data-slot` work: a trigger that skips its root gets nothing the
+      root writes onto the node.
+- [x] `ComboboxTrigger` goes through its root too, and the duplicated `field_control_for_trigger`
+      is gone with it — the root does the field wiring once and hands the resolved `disabled` back.
+      What made that possible: the trigger callback is a **`TriggerRender` struct** now, not a
+      tuple. `(AnyNodeRef, Callback<MouseEvent>)` had to grow a third element, and a tuple has to
+      be re-broken every time it does; a struct takes a new field and leaves every caller alone.
+      Verified where it matters — a combobox inside a `<Field disabled=true>` still comes out
+      disabled, which is exactly what routing it through the root would otherwise have dropped.
+- [x] `FloatingTrigger` takes a `data_slot`, written onto the node rather than into the markup —
+      the trigger is its own `<button>` in one place and whatever `render` returned in another, and
+      the node ref is all the shapes have in common, so one path covers both. `dropdown_menu` and
+      `select`, which had no `data-slot` anywhere, now carry one on every part they own: the
+      trigger, the content, the item, and the submenu's trigger and panel.
+- [ ] The remaining `data-slot` gaps are whatever an audit turns up: all four floating triggers
+      carry one now, but the convention was applied unevenly enough that `select` had none at all
+      until this pass, so the rest of the catalogue is worth a sweep rather than a guess.
+- [ ] The render callback still has three shapes across the library: `TriggerRender` on the
+      floating triggers, `(Signal<String>, AnyNodeRef)` on `SidebarMenuButton` and `Button`, and a
+      bare `AnyNodeRef` on the tooltip and hover card. The struct is the shape the other two should
+      converge on, for the reason it exists — but they carry different things, so it is a rename
+      and a merge rather than a substitution.
 
 ## Accessibility & keyboard
 
@@ -272,6 +296,12 @@ rather than general UI, so they are the easiest to defer or skip.
       needed library work first, and two of those turned up bugs — which is the argument for
       writing them.
 
+- [x] `/docs/utility`, filling the second dead nav link: `cn!`, the common types, `next_id`,
+      `use_media_query`, `get_placement`, and the arithmetic modules — dates, colour, crops, GIFs,
+      the tokenizer — each with the reasoning the module's own `//!` header carries.
+- [x] An "On this page" rail (`docs/src/components/page_nav.rs`) on every page wide enough for it.
+      It reads headings marked `data-toc` out of its own `<main>`, so `DemoSection` and
+      `ApiReference` opt in once and no page has to list anything.
 - [ ] Blocks for the rest, in rough order of what would teach the most: **select** — a dependent
       pair where the second is filtered by the first; **resizable** — a two-pane layout that
       remembers its split; **menubar** — an application menu with the keyboard doing the work;
@@ -311,9 +341,10 @@ rather than general UI, so they are the easiest to defer or skip.
       treatment at `/docs/<slug>/primitives`, as the third view of the switch above, rather than a
       second tree in the nav: nobody looks up `DialogContentRoot` except while reading about
       `Dialog`.
-- [ ] A `/docs/types` page under Sections: the shared types the prop tables keep naming —
-      `Signal<String>`, `ChildrenFn`, the `render` callback shape, `Side` / `Align` / `Orientation`
-      / `SideOffset` — described once, so a table can point at them instead of re-explaining them.
+- [ ] The Leptos-shaped types the prop tables keep naming — `Signal<String>`, `ChildrenFn`, the
+      `render` callback shape — still have nowhere to be described once. `Side` / `Align` /
+      `Orientation` / `SideOffset` are on `/docs/utility` now, so this is the other half of that
+      page rather than a `/docs/types` of its own.
 - [ ] Generate the prop-table rows at build time rather than keeping 199 hand-pasted tables in step:
       an `xtask` or a build script over the `#[component]` signatures, emitting the same `ApiEntry`
       shape. It could drive `NAV` and `COMPONENTS` too, closing the five-files item above.
@@ -329,10 +360,14 @@ rather than general UI, so they are the easiest to defer or skip.
       from the imports and fails if `Cargo.toml` has drifted — the failure it prevents is silent,
       since `--features full` builds either way.
 
-- [ ] `Cargo.toml` has no `description`, `license`, `repository`, `keywords` or `categories` —
-      `cargo publish` will reject it as-is. `cli/Cargo.toml` has a `description` and needs the rest.
-- [ ] No LICENSE file, though the README credits shadcn/ui and Radix (both MIT).
-- [ ] `leptos` is pinned to `features = ["csr"]`, which forces CSR on every consumer.
+- [x] Both manifests carry `description`, `license`, `repository`, `homepage`, `keywords` and
+      `categories`; `cargo publish --dry-run` is clean for each.
+- [x] Apache-2.0, with the shadcn/ui and Radix MIT notices reproduced in `NOTICE` as their licence
+      requires. `LICENSE` is also copied into `cli/`, which is packaged separately.
+- [x] `leptos` no longer carries `features = ["csr"]`, so the consumer picks the mode. Checked
+      against `ssr`, `hydrate` and `csr` from a scratch crate — all three compile. Compiling is not
+      running: nothing here has been *exercised* under hydration, and the primitives call
+      `document()` directly, so an SSR consumer is unexplored rather than supported.
 - [ ] The CLI is not published, and `cargo add nocomponents` inside it assumes the library is. Until
       both are on crates.io the only working path is `--from <checkout>`, which is also how the CLI
       is tested.
