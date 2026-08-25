@@ -4,6 +4,7 @@
 //! markup on purpose: this is the shape an extractor over `#[component]` signatures would emit,
 //! so the tables can stop being written by hand without the pages changing.
 
+use crate::components::page_nav::slug;
 use leptos::prelude::*;
 use nocomponents::components::{
     code::Code,
@@ -34,7 +35,11 @@ pub fn ApiReference(entries: &'static [ApiEntry]) -> impl IntoView {
         // another demo in the list.
         <section class="mt-4 flex flex-col gap-5 border-t border-border/60 pt-8">
             <div class="flex flex-col gap-1">
-                <h2 class="text-lg font-semibold tracking-tight text-foreground">
+                <h2
+                    id="api-reference"
+                    data-toc="section"
+                    class="text-lg font-semibold tracking-tight text-foreground"
+                >
                     "API reference"
                 </h2>
                 <p class="text-sm text-muted-foreground">
@@ -52,7 +57,11 @@ pub fn ApiReference(entries: &'static [ApiEntry]) -> impl IntoView {
                             // reference and not as a dozen sections.
                             <div class="flex flex-col gap-2 [&:not(:first-child)]:border-t [&:not(:first-child)]:border-border/60 [&:not(:first-child)]:pt-6">
                                 <div class="flex flex-col gap-0.5">
-                                    <h3 class="font-mono text-sm font-medium text-foreground">
+                                    <h3
+                                        id=slug(entry.name)
+                                        data-toc="item"
+                                        class="font-mono text-sm font-medium text-foreground"
+                                    >
                                         {entry.name}
                                     </h3>
                                     <p class="text-xs text-muted-foreground">{entry.description}</p>

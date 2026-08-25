@@ -1,3 +1,4 @@
+use crate::components::page_nav::slug;
 use leptos::prelude::*;
 use nocomponents::{
     components::{
@@ -17,7 +18,9 @@ pub fn DemoSection(
     view! {
         <section class="flex flex-col gap-3">
             <div class="flex flex-col gap-0.5">
-                <h2 class="text-sm font-semibold text-foreground">{title}</h2>
+                <h2 id=slug(title) data-toc="section" class="text-sm font-semibold text-foreground">
+                    {title}
+                </h2>
                 {description.map(|d| view! { <p class="text-xs text-muted-foreground">{d}</p> })}
             </div>
 

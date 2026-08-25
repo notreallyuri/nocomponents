@@ -1,9 +1,12 @@
 use crate::{
     app::href,
-    components::{doc_search::DocSearch, theme_switcher::ThemeSwitcherPopover},
+    components::{doc_search::DocSearch, page_nav::PageNav, theme_switcher::ThemeSwitcherPopover},
 };
-use leptos::prelude::*;
-use leptos_router::{components::A, hooks::use_location};
+use leptos::{html::Main, prelude::*};
+use leptos_router::{
+    components::{A, Outlet},
+    hooks::use_location,
+};
 use nocomponents::components::sidebar::{
     Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader,
     SidebarInset, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarRail,
@@ -43,7 +46,7 @@ pub const NAV: &[NavGroup] = &[
                 href: "/docs/theme",
             },
             NavItem {
-                label: "Utility",
+                label: "Utilities",
                 href: "/docs/utility",
             },
         ],
@@ -299,31 +302,14 @@ pub const NAV: &[NavGroup] = &[
 ];
 
 #[component]
-pub fn DocLayout(
-    title: &'static str,
-    description: &'static str,
-    children: Children,
-) -> impl IntoView {
+pub fn DocShell() -> impl IntoView {
     // The docs nav is the library's own sidebar, dogfooded: the collapse, the rail and the
     // stored preference are the real ones.
+    //
+    // It hangs off the `/docs` parent route rather than off each page, so moving between pages
+    // swaps only what is inside `SidebarInset`. The sidebar element itself is never rebuilt,
+    // which is what keeps its scroll position.
     let location = use_location();
-
-    // Every component page has a blocks page beside it and the other way round, so the link
-    // between them is worked out from the path rather than passed in by each of the sixty pages.
-    // The pathname already carries `BASE_PATH`, so it is appended to rather than resolved again.
-    let companion = Signal::derive(move || {
-        let path = location.pathname.get();
-        let docs = href("/docs");
-
-        if !path.starts_with(&docs) || path == docs {
-            return None;
-        }
-
-        Some(match path.strip_suffix("/blocks") {
-            Some(component) => (component.to_string(), "Overview"),
-            None => (format!("{path}/blocks"), "Blocks"),
-        })
-    });
 
     view! {
         <SidebarProvider class="bg-background font-sans text-foreground">
@@ -407,40 +393,82 @@ pub fn DocLayout(
 
                 <SidebarRail />
             </Sidebar>
-
             <SidebarInset class="min-w-0">
-                // `min-h`, not `h`: a long description wraps on a narrow screen, and a fixed
-                // height spills it out under the border instead of growing.
-                <header class="sticky top-0 z-40 flex min-h-14 shrink-0 items-center justify-between gap-3 border-b bg-background/95 px-4 py-2 backdrop-blur sm:px-6 supports-backdrop-filter:bg-background/60">
-                    <div class="flex min-w-0 items-center gap-3">
-                        <SidebarTrigger />
-                        <div class="flex min-w-0 flex-col">
-                            <h1 class="truncate text-sm leading-none font-semibold">{title}</h1>
-                            <p class="mt-1 line-clamp-2 text-xs text-muted-foreground sm:truncate">
-                                {description}
-                            </p>
-                        </div>
-                    </div>
-                    <div class="flex shrink-0 items-center gap-2">
-                        {move || {
-                            companion
-                                .get()
-                                .map(|(target, label)| {
-                                    view! {
-                                        <A
-                                            href=target
-                                            attr:class="hidden h-8 items-center rounded-lg border px-2.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground sm:inline-flex"
-                                        >
-                                            {label}
-                                        </A>
-                                    }
-                                })
-                        }} <DocSearch /> <ThemeSwitcherPopover />
-                    </div>
-                </header>
-
-                <main class="mx-auto w-full max-w-4xl flex-1 px-4 py-8 sm:px-6">{children()}</main>
+                <Outlet />
             </SidebarInset>
         </SidebarProvider>
+    }
+}
+
+#[component]
+pub fn DocLayout(
+    title: &'static str,
+    description: &'static str,
+    children: Children,
+) -> impl IntoView {
+    let location = use_location();
+    let content = NodeRef::<Main>::new();
+
+    // Every component page has a blocks page beside it and the other way round, so the link
+    // between them is worked out from the path rather than passed in by each of the sixty pages.
+    // The pathname already carries `BASE_PATH`, so it is appended to rather than resolved again.
+    let companion = Signal::derive(move || {
+        let path = location.pathname.get();
+        let component = path.strip_suffix("/blocks").unwrap_or(&path);
+
+        // Only a component has one. The section pages are under `/docs` too, and would otherwise
+        // offer a link to a blocks page with nothing on it.
+        NAV.iter()
+            .find(|group| group.label == "Components")?
+            .items
+            .iter()
+            .find(|item| href(item.href) == component)?;
+
+        Some(match path.strip_suffix("/blocks") {
+            Some(component) => (component.to_string(), "Overview"),
+            None => (format!("{path}/blocks"), "Blocks"),
+        })
+    });
+
+    view! {
+        // `min-h`, not `h`: a long description wraps on a narrow screen, and a fixed
+        // height spills it out under the border instead of growing.
+        <header class="sticky top-0 z-40 flex min-h-14 shrink-0 items-center justify-between gap-3 border-b bg-background/95 px-4 py-2 backdrop-blur sm:px-6 supports-backdrop-filter:bg-background/60">
+            <div class="flex min-w-0 items-center gap-3">
+                <SidebarTrigger />
+                <div class="flex min-w-0 flex-col">
+                    <h1 class="truncate text-sm leading-none font-semibold">{title}</h1>
+                    <p class="mt-1 line-clamp-2 text-xs text-muted-foreground sm:truncate">
+                        {description}
+                    </p>
+                </div>
+            </div>
+            <div class="flex shrink-0 items-center gap-2">
+                {move || {
+                    companion
+                        .get()
+                        .map(|(target, label)| {
+                            view! {
+                                <A
+                                    href=target
+                                    attr:class="hidden h-8 items-center rounded-lg border px-2.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground sm:inline-flex"
+                                >
+                                    {label}
+                                </A>
+                            }
+                        })
+                }} <DocSearch /> <ThemeSwitcherPopover />
+            </div>
+        </header>
+
+        // The rail is a third column, so the content stops being what is centred in the inset and
+        // starts being what is centred in the pair. Below `xl` the rail is gone and `mx-auto` on
+        // the main column puts it back where it was.
+        <div class="mx-auto flex w-full max-w-7xl flex-1 gap-10 px-4 sm:px-6">
+            <main node_ref=content class="mx-auto w-full min-w-0 max-w-4xl flex-1 py-8">
+                {children()}
+            </main>
+            <PageNav content=content />
+        </div>
     }
 }
