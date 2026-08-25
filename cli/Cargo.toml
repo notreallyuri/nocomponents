@@ -3,6 +3,12 @@ name = "nocomponents-cli"
 version = "0.1.0"
 edition = "2024"
 description = "Adds nocomponents' styled layer to a Leptos project as source you own"
+repository = "https://github.com/notreallyuri/nocomponents"
+homepage = "https://notreallyuri.github.io/nocomponents/"
+license = "Apache-2.0"
+readme = "README.md"
+keywords = ["leptos", "ui", "components", "cli", "cargo-subcommand"]
+categories = ["command-line-utilities", "development-tools::cargo-plugins"]
 
 # `cargo nocli …` finds a binary called `cargo-nocli` on PATH and hands it `nocli` as argv[1].
 [[bin]]
