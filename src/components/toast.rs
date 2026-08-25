@@ -8,10 +8,6 @@ pub use crate::{
 use leptos::prelude::*;
 use leptos_node_ref::AnyNodeRef;
 
-// A free function rather than `impl AsClass for ToastVariant`. The variant belongs to the
-// primitive — it is what `data-variant` gets written from — while the classes for it belong here,
-// and this file is installed into other people's crates, where a foreign trait on a foreign type
-// is an orphan-rule error. Variants declared in this layer keep the `AsClass` idiom.
 fn variant_class(variant: ToastVariant) -> &'static str {
     match variant {
         ToastVariant::Default => "bg-popover text-foreground",
@@ -329,8 +325,6 @@ fn ToastItem(
                     view! {
                         <button
                             type="button"
-                            // The toast under it is a drag handle, and a press that does not
-                            // move is not a drag — so this needs no guard of its own.
                             on:click=move |_| {
                                 (action.on_press)();
                                 ctx.dismiss(id);

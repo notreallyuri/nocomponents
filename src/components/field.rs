@@ -23,8 +23,6 @@ pub fn Field(
             disabled=disabled
             class=move || {
                 cn!(
-                    // `group` so `Label` keeps working inside a field and the parts can key off
-                    // the field's disabled state.
                     "group flex w-full gap-2 data-[orientation=vertical]:flex-col data-[orientation=horizontal]:flex-row data-[orientation=horizontal]:items-center data-[orientation=horizontal]:gap-3 data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-60",
                     class.get()
                 )
@@ -99,8 +97,6 @@ pub fn FieldSet(
             disabled=disabled
             class=move || {
                 cn!(
-                    // `min-w-0` because a fieldset's own `min-inline-size: min-content` otherwise
-                    // refuses to shrink, and a group of them in a flex row overflows.
                     "group flex w-full min-w-0 flex-col gap-4 data-[disabled=true]:opacity-60",
                     class.get()
                 )
@@ -119,8 +115,6 @@ pub fn FieldLegend(
     view! {
         <FieldLegendRoot class=move || {
             cn!(
-                // A bottom margin rather than the gap the fieldset sets: a legend is taken out of
-                // its parent's flow, so the flex gap around it does not apply.
                 "mb-1 flex items-center gap-2 text-sm leading-none font-medium select-none data-[invalid=true]:text-destructive data-[disabled=true]:opacity-50",
                 class.get()
             )

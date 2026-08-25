@@ -62,8 +62,6 @@ pub fn ResizableHandle(
             class=move || {
                 cn!(
                     "group/resize-handle relative flex w-px items-center justify-center bg-border outline-none select-none",
-                    // The divider is a hairline, but what you can grab is wider than what you can
-                    // see: the pseudo-element widens the target without moving the line.
                     "after:absolute after:inset-y-0 after:left-1/2 after:w-1 after:-translate-x-1/2",
                     "focus-visible:ring-3 focus-visible:ring-ring/50 data-dragging:bg-ring",
                     "data-[orientation=vertical]:h-px data-[orientation=vertical]:w-full data-[orientation=vertical]:after:inset-x-0 data-[orientation=vertical]:after:top-1/2 data-[orientation=vertical]:after:h-1 data-[orientation=vertical]:after:w-full data-[orientation=vertical]:after:-translate-y-1/2 data-[orientation=vertical]:after:translate-x-0",
@@ -75,8 +73,6 @@ pub fn ResizableHandle(
             {with_handle
                 .then(|| {
                     view! {
-                        // The variant is on the handle, so the grip reads it through the group rather
-                        // than looking for an orientation it does not carry itself.
                         <div class="z-10 flex h-4 w-3 items-center justify-center rounded-xs border bg-border group-data-[orientation=vertical]/resize-handle:h-3 group-data-[orientation=vertical]/resize-handle:w-4">
                             <div class="flex gap-0.5 group-data-[orientation=vertical]/resize-handle:flex-col">
                                 <div class="size-0.5 rounded-full bg-foreground/50" />

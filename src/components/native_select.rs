@@ -25,18 +25,12 @@ pub fn NativeSelect(
     #[prop(optional, into)] value: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] id: Signal<String>,
-    /// Run when the control loses focus. The chevron needs a positioned wrapper around the
-    /// `<select>`, and that wrapper is what an `on:blur` at the call site would attach to — where
-    /// it would never fire, since `blur` does not bubble. This reaches the control itself.
-    #[prop(default = None, into)]
-    on_blur: Option<Callback<ev::FocusEvent>>,
+    #[prop(default = None, into)] on_blur: Option<Callback<ev::FocusEvent>>,
     children: Children,
 ) -> impl IntoView {
     let size_class = size.as_class();
 
     view! {
-        // The chevron is ours because `appearance-none` takes the platform one away; it sits over
-        // the control and lets clicks through to it.
         <div class="relative inline-flex w-full items-center">
             <NativeSelectRoot
                 id=id

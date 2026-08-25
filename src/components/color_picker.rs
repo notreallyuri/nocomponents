@@ -16,24 +16,16 @@ use leptos::{either::Either, prelude::*};
 
 const CHEQUER: &str = "background-image: linear-gradient(45deg, var(--color-border) 25%, transparent 25%, transparent 75%, var(--color-border) 75%), linear-gradient(45deg, var(--color-border) 25%, transparent 25%, transparent 75%, var(--color-border) 75%); background-size: 8px 8px; background-position: 0 0, 4px 4px;";
 
-/// The row under the rails: which format, and the colour written in it.
-///
-/// Its own component rather than markup inside [`ColorPicker`] because `use_color_picker` only
-/// answers inside the root, and this is the part that has to ask.
 #[component]
 fn ColorPickerFields() -> impl IntoView {
     let ctx = use_color_picker();
     let selection = ctx.format_selection();
 
     view! {
-        // `flex-nowrap`: the group wraps by default, and four channels plus the select is
-        // exactly the width where that starts happening.
         <InputGroup class="h-9 flex-nowrap gap-1 px-1.5">
             <InputGroupAddon>
                 <Select value=selection class="w-auto">
                     <SelectTrigger class="h-7 w-19 gap-1 border-0 bg-transparent px-1.5 font-mono text-xs uppercase focus:ring-0 focus:ring-offset-0">
-                        // Not `SelectValue`: that shows the stored name, and what belongs on a
-                        // format button is `OKLCH` rather than `oklch`.
                         <span class="truncate">{move || ctx.format.get().label()}</span>
                     </SelectTrigger>
                     <SelectPortal>
@@ -60,7 +52,6 @@ fn ColorPickerFields() -> impl IntoView {
                 if channels.is_empty() {
                     Either::Left(
 
-                        // Hex is one string and stays one field; every other format is its channels.
                         view! {
                             <ColorPickerInputRoot class="h-7 w-full min-w-0 flex-1 bg-transparent font-mono text-xs outline-none data-invalid:text-destructive" />
                         },
@@ -124,8 +115,6 @@ pub fn ColorPicker(
             />
 
             <div class="flex items-center gap-3">
-                // The swatch sits over the chequer, so a transparent colour reads as transparent
-                // rather than as the panel's own background.
                 <div class="size-9 shrink-0 overflow-hidden rounded-md border" style=CHEQUER>
                     <ColorPickerSwatchRoot class="size-full" />
                 </div>

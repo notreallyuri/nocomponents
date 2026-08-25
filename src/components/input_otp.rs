@@ -43,7 +43,6 @@ pub fn InputOtpGroup(
     view! {
         <InputOtpGroupRoot class=move || {
             cn!(
-                // The seam treatment is the button group's: one welded control, not six boxes.
                 "flex items-center [&>*:not(:first-child)]:rounded-l-none [&>*:not(:first-child)]:border-l-0 [&>*:not(:last-child)]:rounded-r-none",
                 class.get()
             )
@@ -63,8 +62,6 @@ pub fn InputOtpSlot(
                 cn!(
                     "relative flex h-10 w-10 items-center justify-center border border-input text-sm font-medium tabular-nums transition-all first:rounded-l-lg last:rounded-r-lg",
                     "data-[active=true]:z-10 data-[active=true]:border-ring data-[active=true]:ring-3 data-[active=true]:ring-ring/50",
-                    // Drawn, not real: the input's caret is transparent, and there is one of
-                    // it for six boxes.
                     "data-[active=true]:after:absolute data-[active=true]:after:h-4 data-[active=true]:after:w-px data-[active=true]:after:animate-caret-blink data-[active=true]:after:bg-foreground",
                     "data-[filled=true]:after:hidden",
                     class.get()

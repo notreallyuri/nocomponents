@@ -7,9 +7,6 @@ use crate::{
 };
 use leptos::prelude::*;
 
-// A free function rather than an inherent impl, for the reason `toast` gives: the variant is the
-// primitive's, this file is installed into other crates, and an inherent impl on a foreign type
-// does not compile there.
 fn list_variant_class(variant: TabsListVariants) -> &'static str {
     match variant {
         TabsListVariants::Default => "bg-muted",

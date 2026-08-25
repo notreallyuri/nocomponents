@@ -46,8 +46,6 @@ pub fn NavigationMenuItem(
     children: Children,
 ) -> impl IntoView {
     view! {
-        // No positioning of its own: the panels anchor to the menu, not to the item they belong
-        // to, so that every one of them opens in the same place.
         <NavigationMenuItemRoot value=value class=class>
             {children()}
         </NavigationMenuItemRoot>

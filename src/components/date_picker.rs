@@ -98,8 +98,6 @@ fn DatePickerTrigger(
     class: Signal<String>,
 ) -> impl IntoView {
     let ctx = use_popover();
-    // The calendar inside resolves its own; this is the trigger's, and a memo so that changing
-    // the selection does not re-ask `Intl` for twenty-six names.
     let names = Memo::new(move |_| DateNames::new(&locale.get()));
 
     view! {
@@ -145,8 +143,6 @@ fn DatePickerContent(
 ) -> impl IntoView {
     let ctx = use_popover();
 
-    // Closing is the picker's whole contribution: a finished selection means the layer has done
-    // its job. `Multiple` never finishes, so it stays open until dismissed.
     Effect::new(move |previous: Option<usize>| {
         let count = selected.with(|selected| selected.len());
         let finished = match mode {

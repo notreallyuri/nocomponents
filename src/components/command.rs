@@ -69,9 +69,6 @@ pub fn CommandList(
     children: Children,
 ) -> impl IntoView {
     view! {
-        // No `overflow-x-hidden` beside it: `tw_merge` treats the two axes as one group and drops
-        // whichever comes first, so nothing in here may be wider than the list — which is why the
-        // separator does not pull itself out past the edges the way a menu's does.
         <CommandListRoot class=move || {
             cn!("max-h-80 scroll-py-1 overflow-y-auto", class.get())
         }>{children()}</CommandListRoot>
@@ -176,8 +173,6 @@ pub fn CommandDialog(
         use_command_shortcut(shortcut, is_open);
     }
 
-    // Cleared on close rather than on open: a palette that reopens showing the last search, then
-    // blanks it a frame later, reads as a glitch.
     Effect::new(move |_| {
         if !is_open.get() {
             search.set(String::new());

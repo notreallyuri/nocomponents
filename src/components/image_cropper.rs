@@ -25,8 +25,6 @@ pub fn ImageCropper(
             crop=crop
             aspect=aspect
             circular=circular
-            // A group, so the parts below can follow `data-circular` without each being told
-            // about it.
             class=move || cn!("group/cropper w-full select-none", class.get())
         >
             <ImageCropperImageRoot
@@ -69,8 +67,6 @@ fn Shade() -> impl IntoView {
 
 #[component]
 fn Window(aspect: Option<f64>, grid: bool) -> impl IntoView {
-    // With a ratio held, an edge handle would have to move a side the pointer is not on, so only
-    // the corners are offered.
     let handles = if aspect.is_some() {
         CropHandle::CORNERS.as_slice()
     } else {
@@ -82,11 +78,6 @@ fn Window(aspect: Option<f64>, grid: bool) -> impl IntoView {
             {grid
                 .then(|| {
                     view! {
-                        // Four hairlines rather than gradient stops. A stop pair at 33.33% and
-                        // 33.5% is 0.17% of the crop's width — half a pixel on a wide one and a
-                        // fifth of a pixel on a narrow one, which is why the thirds used to fade
-                        // out and come back as the cropper was resized or the page zoomed. `w-px`
-                        // is one pixel at any size.
                         <ImageCropperGridRoot class="pointer-events-none absolute inset-0 overflow-hidden group-data-circular/cropper:rounded-full">
                             <span class="absolute inset-y-0 left-1/3 w-px bg-white/35" />
                             <span class="absolute inset-y-0 left-2/3 w-px bg-white/35" />
@@ -104,8 +95,6 @@ fn Window(aspect: Option<f64>, grid: bool) -> impl IntoView {
                             handle=*handle
                             class=cn!(
                                 "absolute bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.35)]",
-                                // Corners are square blocks at the corners; edges are bars along
-                                // the middle of their own side.
                                 "data-corner:size-3 data-corner:rounded-xs",
                                 "data-[handle=top-left]:-top-1.5 data-[handle=top-left]:-left-1.5 data-[handle=top-left]:cursor-nwse-resize",
                                 "data-[handle=top-right]:-top-1.5 data-[handle=top-right]:-right-1.5 data-[handle=top-right]:cursor-nesw-resize",

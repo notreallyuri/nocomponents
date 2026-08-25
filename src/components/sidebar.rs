@@ -105,7 +105,6 @@ pub fn Sidebar(
     let ctx = use_sidebar();
     let stored_children = StoredValue::new(children);
 
-    // The same tree either way; only the box around it changes.
     let panel = move || {
         view! {
             <div
@@ -138,14 +137,10 @@ pub fn Sidebar(
 
     move || {
         if ctx.is_mobile.get() {
-            // As a sheet it inherits the layer stack, the focus trap and the dismissal. Its own
-            // close button is hidden, since the sidebar already has a trigger.
             Either::Left(view! {
                 <Sheet open=ctx.open_mobile>
                     <SheetContent
                         side=ctx.side
-                        // Portalled to `<body>`, above the wrapper that defines the widths, so
-                        // this needs its own fallback; override it on `:root`.
                         class="w-[var(--sidebar-width-mobile,18rem)] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
                     >
                         <SheetTitle class="sr-only">"Sidebar"</SheetTitle>
@@ -163,23 +158,17 @@ pub fn Sidebar(
                     class=move || {
                         cn!(
                             "group peer hidden text-sidebar-foreground md:block",
-                            // The reserved box is in the flow: without this a right-hand
-                            // panel keeps a left-hand gap and squeezes the content from both
-                            // sides.
                             "data-[side=right]:order-last",
                             class.get(),
                         )
                     }
                 >
-                    // Reserves the width in the flow; nothing is drawn in it.
                     <div class=cn!(
                         "relative w-[var(--sidebar-width)] bg-transparent transition-[width] duration-200 ease-linear",
                         "group-data-[collapsible=offcanvas]:w-0 group-data-[side=right]:rotate-180",
                         gap_class,
                     ) />
                     <div class=cn!(
-                        // `inset-y-0` rather than a viewport height, so a transformed
-                        // ancestor can hold the sidebar instead of it escaping to the window.
                         "fixed inset-y-0 z-10 hidden w-[var(--sidebar-width)] transition-[left,right,width] duration-200 ease-linear md:flex",
                         edge_class,
                         fixed_class,
@@ -201,7 +190,6 @@ pub fn SidebarInset(
             class=move || {
                 cn!(
                     "relative flex w-full flex-1 flex-col bg-background",
-                    // The inset variant floats the content instead of the panel.
                     "md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm",
                     "md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2",
                     class.get(),
@@ -352,8 +340,6 @@ pub fn SidebarGroupLabel(
             class=move || {
                 cn!(
                     "flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70 outline-none ring-sidebar-ring transition-[margin,opacity] duration-200 ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
-                    // Pulled up under the group above rather than hidden, so the icons keep
-                    // their rhythm when the label goes.
                     "group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0",
                     class.get(),
                 )
@@ -376,8 +362,6 @@ pub fn SidebarGroupAction(
             class=move || {
                 cn!(
                     "absolute top-3.5 right-3 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-sidebar-foreground outline-none ring-sidebar-ring transition-transform hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
-                    // 20px is fine for a mouse and small for a thumb, so touch gets a wider
-                    // hit area.
                     "after:absolute after:-inset-2 md:after:hidden",
                     "group-data-[collapsible=icon]:hidden",
                     class.get(),
@@ -445,8 +429,6 @@ pub fn SidebarMenuButton(
     let ctx = use_sidebar();
     let size_class = size.as_class();
     let stored_children = StoredValue::new(children);
-    // Resolved here so the primitive is always handed one: `optional` on an `Option<T>` makes
-    // the setter take the `T`, so the `None` cannot be forwarded as it stands.
     let node_ref = node_ref.unwrap_or_default();
 
     let button = move || {
@@ -463,9 +445,7 @@ pub fn SidebarMenuButton(
                         "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50",
                         "data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground",
                         "data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground",
-                        // Leave room for an action beside it.
                         "group-has-data-[slot=sidebar-menu-action]/menu-item:pr-8",
-                        // Collapsed, the row is one icon.
                         "group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-2",
                         "[&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0",
                         size_class,
@@ -479,7 +459,6 @@ pub fn SidebarMenuButton(
     };
 
     move || match tooltip {
-        // Only while the label is missing; expanded or on a phone the row says what it is.
         Some(tooltip) if ctx.state() == "collapsed" && !ctx.is_mobile.get() => {
             Either::Left(view! {
                 <Tooltip>
@@ -506,7 +485,6 @@ pub fn SidebarMenuAction(
                 cn!(
                     "absolute top-1.5 right-1 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-sidebar-foreground outline-none ring-sidebar-ring transition-transform hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 peer-hover/menu-button:text-sidebar-accent-foreground [&>svg]:size-4 [&>svg]:shrink-0",
                     "after:absolute after:-inset-2 md:after:hidden",
-                    // Line up with whichever row height the button asked for.
                     "peer-data-[size=sm]/menu-button:top-1 peer-data-[size=default]/menu-button:top-1.5 peer-data-[size=lg]/menu-button:top-2.5",
                     "group-data-[collapsible=icon]:hidden",
                     if show_on_hover {

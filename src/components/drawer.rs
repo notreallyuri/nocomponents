@@ -18,8 +18,6 @@ struct DrawerSide(Side);
 
 impl AsClass for DrawerSide {
     fn as_class(&self) -> &'static str {
-        // Flush to the edge on a phone, where a gap only wastes room; inset and fully rounded
-        // from `sm` up. An edge-to-edge drawer rounds only the corners anyone can see.
         match self.0 {
             Side::Bottom => {
                 "inset-x-0 bottom-0 max-h-[85vh] rounded-t-2xl border-t sm:inset-x-4 sm:bottom-4 sm:rounded-2xl sm:border"
@@ -60,8 +58,6 @@ pub fn DrawerContent(
     let ctx = use_dialog();
     let modal = ctx.modal;
     let stored_children = StoredValue::new(children);
-    // The edge comes from the root, like modality: it decides the drag axis as well as the
-    // corners, so the two halves cannot disagree.
     let side_class = DrawerSide(use_drawer().side).as_class();
 
     view! {
@@ -81,13 +77,10 @@ pub fn DrawerContent(
                 <DrawerContentRoot class=move || {
                     cn!(
                         "fixed z-50 flex flex-col gap-4 bg-popover p-4 text-sm text-popover-foreground shadow-lg outline-none",
-                        // The transform is the drag's, so only the resting position animates.
                         "transition-transform duration-300 data-[dragging=true]:transition-none",
                         "data-[state=closed]:pointer-events-none",
                         "data-[side=bottom]:data-[state=closed]:translate-y-full data-[side=top]:data-[state=closed]:-translate-y-full",
                         "data-[side=right]:data-[state=closed]:translate-x-full data-[side=left]:data-[state=closed]:-translate-x-full",
-                        // Once inset, the panel has to clear the gap as well as its own length,
-                        // or a sliver stays on screen while it leaves.
                         "sm:data-[side=bottom]:data-[state=closed]:translate-y-[calc(100%+1rem)] sm:data-[side=top]:data-[state=closed]:-translate-y-[calc(100%+1rem)]",
                         "sm:data-[side=right]:data-[state=closed]:translate-x-[calc(100%+1rem)] sm:data-[side=left]:data-[state=closed]:-translate-x-[calc(100%+1rem)]",
                         side_class,
@@ -115,10 +108,7 @@ pub fn DrawerHandle(#[prop(optional, into)] class: Signal<String>) -> impl IntoV
         <DrawerHandleRoot class=move || {
             cn!(
                 "shrink-0 rounded-full bg-muted-foreground/40",
-                // A bottom drawer's handle sits at the top of the column and belongs in the flow.
                 "data-[side=bottom]:mx-auto data-[side=bottom]:h-1.5 data-[side=bottom]:w-12",
-                // The other three leave the flow: an auto margin on a flex item eats the free
-                // space rather than centring the item, which moves everything else.
                 "data-[side=top]:absolute data-[side=top]:bottom-2 data-[side=top]:left-1/2 data-[side=top]:-translate-x-1/2 data-[side=top]:h-1.5 data-[side=top]:w-12",
                 "data-[side=right]:absolute data-[side=right]:left-2 data-[side=right]:top-1/2 data-[side=right]:-translate-y-1/2 data-[side=right]:h-12 data-[side=right]:w-1.5",
                 "data-[side=left]:absolute data-[side=left]:right-2 data-[side=left]:top-1/2 data-[side=left]:-translate-y-1/2 data-[side=left]:h-12 data-[side=left]:w-1.5",

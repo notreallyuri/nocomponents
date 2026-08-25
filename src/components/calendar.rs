@@ -71,8 +71,6 @@ pub fn CalendarDay(date: Date, #[prop(optional, into)] class: Signal<String>) ->
                     "relative flex size-9 items-center justify-center rounded-md text-sm font-normal transition-colors",
                     "hover:bg-accent hover:text-accent-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
                     "data-outside:text-muted-foreground/50 data-disabled:pointer-events-none data-disabled:opacity-40",
-                    // Today is marked whether or not it is selected, so it is a dot rather than a
-                    // background it would have to fight the selection for.
                     "data-today:font-semibold data-today:after:absolute data-today:after:bottom-1 data-today:after:size-1 data-today:after:rounded-full data-today:after:bg-current",
                     "data-selected:bg-primary data-selected:text-primary-foreground data-selected:hover:bg-primary/90",
                     "data-[range=middle]:rounded-none data-[range=middle]:bg-accent data-[range=middle]:text-accent-foreground data-[range=middle]:hover:bg-accent",

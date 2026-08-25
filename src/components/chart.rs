@@ -23,8 +23,6 @@ pub fn Chart(
             kind=kind
             class=move || cn!("flex w-full flex-col gap-2", class.get())
         >
-            // `relative`, because the tooltip is an HTML card positioned across the plot rather
-            // than anything inside the SVG.
             <div class="relative w-full">
                 <ChartPlotRoot
                     grid=grid

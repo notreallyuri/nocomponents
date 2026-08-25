@@ -16,7 +16,6 @@ pub fn Slider(
     #[prop(default = None, into)] value: Option<RwSignal<Vec<f64>>>,
     #[prop(optional)] default_value: Option<Vec<f64>>,
 ) -> impl IntoView {
-    // One thumb unless told otherwise; a controlled slider's own length wins.
     let default_value = default_value.unwrap_or_else(|| vec![min]);
     let thumb_count = value.map_or(default_value.len(), |v| v.with_untracked(|v| v.len()));
 

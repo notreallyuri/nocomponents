@@ -51,15 +51,11 @@ pub fn DataTable<T>(
     #[prop(optional, into)] class: Signal<String>,
 ) -> impl IntoView
 where
-    // `PartialEq` so the sorted copy can be a `Memo` and the table only re-renders when the rows
-    // actually differ — the same bound a `<For>` over these rows would want anyway.
     T: Clone + PartialEq + Send + Sync + 'static,
 {
     let sort = sort.unwrap_or_default();
     let columns = StoredValue::new(columns);
 
-    // Sorted for display only. `compare` gives the ascending order and descending is its reverse,
-    // so a column needs one comparator rather than two.
     let sorted = Memo::new(move |_| {
         let mut rows = rows.get();
         let Some(column) = sort.column.get() else {
@@ -84,8 +80,6 @@ where
         rows
     });
 
-    // The ids on show, which is what a select-all acts on: it must not reach rows that a filter
-    // or a page has taken away.
     let page_ids = Memo::new(move |_| match row_id {
         Some(row_id) => sorted
             .get()
@@ -97,8 +91,6 @@ where
 
     let selecting = row_id.is_some() && selection.is_some();
 
-    // The body needs the cells' callbacks per row, and a borrow of the stored columns cannot
-    // escape the closure it was taken in. Both halves are `Copy`, so a flat list is free.
     let cells = StoredValue::new(columns.with_value(|columns| {
         columns
             .iter()
@@ -116,9 +108,6 @@ where
                                 let selection = selection.expect("checked by `selecting`");
                                 let all = RwSignal::new(false);
 
-                                // The header box follows the page rather than owning anything:
-                                // an effect keeps it in step with how much of the page is picked,
-                                // and clicking it writes back through `set_all`.
                                 Effect::new(move |_| {
                                     let state = selection.state(&page_ids.get());
                                     let checked = state == SelectionState::All;

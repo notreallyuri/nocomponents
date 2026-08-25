@@ -37,8 +37,6 @@ pub fn CarouselContent(
     view! {
         <CarouselContentRoot class=move || {
             cn!(
-                // The scroll container *is* the strip: snapping, smooth scrolling and the hidden
-                // scrollbar are what make it read as a carousel rather than a scroller.
                 "flex snap-x snap-mandatory scroll-smooth overflow-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
                 "data-[orientation=vertical]:snap-y data-[orientation=vertical]:flex-col",
                 class.get()

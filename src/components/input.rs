@@ -32,8 +32,6 @@ pub fn Input(
     #[prop(optional, into)] id: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
 ) -> impl IntoView {
-    // Picks up the id and the description when there is a `Field` around it, and resolves to the
-    // caller's own props when there is not.
     let field = FieldControl::new(id, disabled);
 
     view! {

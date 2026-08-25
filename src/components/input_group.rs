@@ -120,7 +120,6 @@ pub fn InputGroupButton(
     #[prop(optional, into)] class: Signal<String>,
     children: ChildrenFn,
 ) -> impl IntoView {
-    // `Button`'s builder wants a `Callback`, so an absent handler becomes a no-op one.
     let on_click = Callback::new(move |e: ev::MouseEvent| {
         if let Some(cb) = on_click {
             cb.run(e);
