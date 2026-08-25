@@ -188,10 +188,13 @@ rather than general UI, so they are the easiest to defer or skip.
       without telling anybody. The card in hand is skipped while counting, or the index it came
       from reads one too far down. A card let go where it started reports nothing.
 
-      The card stays in place and fades rather than being lifted out: pulling it from the list
-      would reflow every column under the pointer mid-gesture. The line showing where it will land
-      is a `KanbanSlot` the caller renders between its own cards, because only the caller knows
-      where "between" is.
+      The card lifts and follows the pointer, by `transform` rather than by leaving the list: the
+      gap it came from stays open, so no column reflows mid-gesture and the slot under the pointer
+      does not shift as the card moves. It goes `pointer-events: none` while it travels, so what
+      is under the cursor is whatever it is over rather than itself. The transform is never
+      transitioned — easing a thing that is following a cursor makes it lag by the duration. The
+      line showing where it will land is a `KanbanSlot` the caller renders between its own cards,
+      because only the caller knows where "between" is.
 - [ ] Floating Menu — a draggable menu that can be moved around the screen. It is a `use_drag` target, so it can be moved
       around in a larger layout; it is a `use_drag` source, so it can be moved within or between
       columns; It may also support fixed positioning, so it can be anchored to a specific point

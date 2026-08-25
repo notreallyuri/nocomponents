@@ -98,7 +98,7 @@ const API: &[ApiEntry] = &[
     },
     ApiEntry {
         name: "KanbanCard",
-        description: "A drag source. Wears data-dragging while it is in hand, and stays where it is rather than being pulled out of the list.",
+        description: "A drag source. Follows the pointer while it is in hand, without leaving the list — so the gap it came from stays open and no column reflows underneath.",
         props: &[
             Prop {
                 name: "id",
@@ -186,7 +186,7 @@ pub fn Page() -> impl IntoView {
             <div class="flex flex-col gap-8">
                 <DemoSection
                     title="Default"
-                    description="Press a card and move it. The card stays where it is and fades rather than being pulled out of the list, so nothing reflows under the pointer; the line shows where it would land. Letting go where it started reports nothing."
+                    description="Press a card and move it: it lifts and follows the pointer, and the line shows where it would land. It follows by transform rather than by leaving the list, so the gap it came from stays open and no column reflows under the gesture. Letting go where it started reports nothing."
                     code=DEFAULT
                 >
                     <div class="flex w-full flex-col gap-3">

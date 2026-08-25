@@ -77,11 +77,13 @@ pub fn KanbanCard(
             disabled=disabled
             class=move || {
                 cn!(
-                    "touch-none rounded-md border bg-card p-2.5 text-sm shadow-sm transition-[opacity,box-shadow] select-none",
-                    "hover:shadow-md",
-                    // The card stays where it is and fades: a board that pulled it out of the
-                    // list would reflow every column under the pointer mid-gesture.
-                    "data-[dragging=true]:opacity-40 data-[dragging=true]:shadow-none",
+                    "touch-none rounded-md border bg-card p-2.5 text-sm shadow-sm select-none",
+                    // Never `transition-transform`: the card is following a pointer, and easing
+                    // it would have it lag behind the cursor by the duration.
+                    "transition-[box-shadow,scale] hover:shadow-md",
+                    // Lifted, not faded — the card is the thing in hand, so it reads as picked
+                    // up rather than as a hole in the list. `relative` is what lets `z-50` win.
+                    "data-[dragging=true]:relative data-[dragging=true]:z-50 data-[dragging=true]:scale-[1.02] data-[dragging=true]:cursor-grabbing data-[dragging=true]:shadow-lg data-[dragging=true]:ring-2 data-[dragging=true]:ring-primary/40",
                     class.get(),
                 )
             }

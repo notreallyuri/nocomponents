@@ -178,7 +178,14 @@ pub fn KanbanCardRoot(
     let card = StoredValue::new(id.clone());
     let from = StoredValue::new(column);
 
+    // How far the card has come since the press. It follows the pointer by transform rather than
+    // by leaving the list: the gap it came from stays open, so no column reflows under the
+    // gesture and the slot the pointer is over does not shift as the card moves.
+    let offset = RwSignal::new((0.0f64, 0.0f64));
+
     let track = move |point: DragPoint| {
+        offset.set((point.dx, point.dy));
+
         let Some(board) = ctx.board_ref.get_untracked() else {
             return;
         };
@@ -193,6 +200,7 @@ pub fn KanbanCardRoot(
 
     let drag = use_drag(track)
         .on_start(move |_| {
+            offset.set((0.0, 0.0));
             ctx.dragging.set(Some(KanbanDrag {
                 card: card.get_value(),
                 from: from.get_value(),
@@ -202,6 +210,7 @@ pub fn KanbanCardRoot(
         .on_end(move |_| {
             let landed = ctx.dragging.get_untracked();
             ctx.dragging.set(None);
+            offset.set((0.0, 0.0));
 
             let Some(KanbanDrag {
                 card,
@@ -235,6 +244,17 @@ pub fn KanbanCardRoot(
             data-kanban-card=attribute
             data-dragging=move || dragging().then_some("true")
             aria-grabbed=move || dragging().then_some("true")
+            style=move || {
+                if !dragging() {
+                    return String::new();
+                }
+                let (dx, dy) = offset.get();
+                // `pointer-events: none` so the card under the cursor is whatever it is over,
+                // not itself — the gesture's own listeners are on the window and do not care.
+                format!(
+                    "transform: translate3d({dx}px, {dy}px, 0); pointer-events: none; will-change: transform;",
+                )
+            }
             on:pointerdown=move |e: ev::PointerEvent| {
                 // The primary button only, and never from a control inside the card: a menu in a
                 // card's corner is there to be pressed, not to pick the card up.
