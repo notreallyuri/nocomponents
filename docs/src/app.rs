@@ -36,6 +36,7 @@ pub fn App() -> impl IntoView {
                             <Route path=path!("/code") view=docs::code::Page />
                             <Route path=path!("/dialog") view=docs::dialog::Page />
                             <Route path=path!("/drawer") view=docs::drawer::Page />
+                            <Route path=path!("/dropzone") view=docs::dropzone::Page />
                             <Route path=path!("/dropdown-menu") view=docs::dropdown_menu::Page />
                             <Route path=path!("/input") view=docs::input::Page />
                             <Route path=path!("/installation") view=docs::installation::Page />

@@ -135,6 +135,10 @@ pub const NAV: &[NavGroup] = &[
                 href: "/docs/drawer",
             },
             NavItem {
+                label: "Dropzone",
+                href: "/docs/dropzone",
+            },
+            NavItem {
                 label: "Dropdown Menu",
                 href: "/docs/dropdown-menu",
             },

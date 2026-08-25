@@ -48,6 +48,8 @@ pub mod dialog;
 pub mod drawer;
 #[cfg(feature = "dropdown_menu")]
 pub mod dropdown_menu;
+#[cfg(feature = "dropzone")]
+pub mod dropzone;
 #[cfg(feature = "empty")]
 pub mod empty;
 #[cfg(feature = "field")]
@@ -170,6 +172,8 @@ pub mod prelude {
     pub use super::drawer::*;
     #[cfg(feature = "dropdown_menu")]
     pub use super::dropdown_menu::*;
+    #[cfg(feature = "dropzone")]
+    pub use super::dropzone::*;
     #[cfg(feature = "empty")]
     pub use super::empty::*;
     #[cfg(feature = "field")]

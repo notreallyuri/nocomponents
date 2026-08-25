@@ -61,6 +61,7 @@ all-elements = [
     "dismiss",
     "drag",
     "drawer",
+    "dropzone",
     "dropdown_menu",
     "empty",
     "field",
@@ -126,6 +127,7 @@ date_picker = ["button", "calendar", "floating", "popover"]
 dialog = ["button", "dismiss"]
 dismiss = []
 drag = []
+dropzone = []
 drawer = ["dialog", "drag", "sheet"]
 dropdown_menu = ["button", "floating", "roving_focus", "typeahead"]
 empty = []
@@ -203,6 +205,9 @@ features = [
   "Url",
   "File",
   "FileList",
+  # The dropzone: a drop is a `DragEvent`, and the files ride on its `DataTransfer`.
+  "DragEvent",
+  "DataTransfer",
 ]
 
 [dev-dependencies]

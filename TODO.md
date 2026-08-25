@@ -185,8 +185,21 @@ rather than general UI, so they are the easiest to defer or skip.
       on the screen, controlled and uncontrolled.
 - [ ] Timeline — Vertical/Horizontal events
 - [ ] Form — A context that holds form state, made to work with `noform`
-- [ ] Dropzone - A component that allows users to drag and drop files onto it, with support for multiple
-      files and file type validation.
+- [x] `dropzone` — a drop target and the picker behind it, arriving as one `Vec<File>` either way;
+      a caller who had to tell them apart would be a caller writing two paths for one thing.
+      `accept` uses the attribute's own grammar and is applied *twice*: the browser filters the
+      picker, but a drop never goes through the picker, so the zone checks again and hands back
+      what it turned away on `on_rejected`. The matcher is pure and has five tests, including the
+      case that motivates it — a dropped file often carries no MIME type at all, so `.pdf` has to
+      match on the name.
+
+      Two things the browser makes you know: `dragover` must be prevented or the drop is refused
+      *silently*, and `dragleave` fires when the pointer crosses onto a child — so leaving is a
+      counter reaching zero rather than one event, or a zone with a label in it flickers.
+
+      It also turned up the only `use web_sys::` in the styled layer, which would have broken an
+      install: `src/components/` may name leptos and `deps`, nothing else. `leptos::web_sys::File`
+      instead.
 - [x] `tree` — its own element rather than a mode on the sidebar, because a tree is not a sidebar
       feature: it is a thing a sidebar can contain, and a file picker or a settings pane wants the
       same one. `role="tree"`, one tab stop, `aria-level` per depth, and `aria-expanded` only on

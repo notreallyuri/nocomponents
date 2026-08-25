@@ -34,6 +34,8 @@ pub mod drag;
 pub mod drawer;
 #[cfg(feature = "dropdown_menu")]
 pub mod dropdown_menu;
+#[cfg(feature = "dropzone")]
+pub mod dropzone;
 #[cfg(feature = "field")]
 pub mod field;
 #[cfg(feature = "floating")]
@@ -130,6 +132,8 @@ pub mod prelude {
     pub use super::drawer::*;
     #[cfg(feature = "dropdown_menu")]
     pub use super::dropdown_menu::*;
+    #[cfg(feature = "dropzone")]
+    pub use super::dropzone::*;
     #[cfg(feature = "field")]
     pub use super::field::*;
     #[cfg(feature = "floating")]
