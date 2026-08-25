@@ -282,13 +282,16 @@ rather than general UI, so they are the easiest to defer or skip.
       class="flex gap-3">`). Worth a pass to trim the ones where it adds nothing.
 - [ ] Dead nav link in `docs/src/layout/doc_layout.rs`: `/docs/introduction` has no route and falls
       through to "Not Found." `/docs/installation` is a page now.
-- [ ] The form-state page is off main. `docs` depended on `noform` by path — `../../noform`, a
-      sibling clone that exists on one machine — and cargo will not load a workspace whose member
-      has an unreadable manifest, so *every* CI job died inside `cargo metadata`, `cargo fmt --all`
-      first among them. Nothing local can catch that: the path resolves where it was written. It
-      comes back with a revert of the commit that removed it, plus
-      `noform = { git = "…" }`, once `noform` has a remote. Until then a path dependency outside
-      this repo must not land on main.
+- [x] The form-state page is back, on a **git** dependency. It came off main because `docs` named
+      `noform` by path (`../../noform`, a sibling clone that exists on one machine): cargo will not
+      load a workspace whose member has an unreadable manifest, so every CI job died inside
+      `cargo metadata` — `cargo fmt --all` first among them — before a compiler ran. Marking the
+      dependency optional does not help; the manifest is read either way. Nothing local catches it
+      either, since the path resolves where it was written; the check that does is a copy of the
+      tree somewhere without the sibling.
+
+      **A path dependency outside this repo must not land on main.** To work against a local
+      `noform`, override it in an untracked `.cargo/config.toml`, not by editing `docs/Cargo.toml`.
 - [x] `/docs/theme`: the three axes, what each lands on `<html>` read back live, the tokens and
       the radius scale in a row of its own, and the CSS a consumer writes to define a palette or
       an accent.

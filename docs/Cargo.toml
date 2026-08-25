@@ -5,6 +5,15 @@ edition = "2024"
 
 [dependencies]
 nocomponents = { path = "..", features = ["full"] }
+# The docs site is where the two crates meet. `nocomponents` itself does not know `noform` exists
+# and must not: the contract between them is `RwSignal<T>` and `Signal<bool>`, nothing more.
+#
+# A git dependency rather than a path one, and not by preference: cargo will not load a workspace
+# whose member has an unreadable manifest, so `path = "../../noform"` took down every CI job in
+# `cargo metadata` — `cargo fmt --all` included — on a runner that has no sibling clone. Marking it
+# optional does not help; the manifest is read either way. To work against a local noform, override
+# it in `.cargo/config.toml` (untracked) rather than editing this line.
+noform = { git = "https://github.com/notreallyuri/noform" }
 leptos = { version = "0.8.19", features = ["csr"] }
 leptos_meta = "0.8.6"
 leptos_router = "0.8.13"
