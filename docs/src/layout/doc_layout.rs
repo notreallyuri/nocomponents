@@ -291,6 +291,10 @@ pub const NAV: &[NavGroup] = &[
                 href: "/docs/tooltip",
             },
             NavItem {
+                label: "Tree",
+                href: "/docs/tree",
+            },
+            NavItem {
                 label: "Toggle",
                 href: "/docs/toggle",
             },

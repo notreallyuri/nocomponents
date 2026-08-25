@@ -88,6 +88,8 @@ pub mod toggle;
 pub mod toggle_group;
 #[cfg(feature = "tooltip")]
 pub mod tooltip;
+#[cfg(feature = "tree")]
+pub mod tree;
 #[cfg(feature = "typeahead")]
 pub mod typeahead;
 
@@ -182,6 +184,8 @@ pub mod prelude {
     pub use super::toggle_group::*;
     #[cfg(feature = "tooltip")]
     pub use super::tooltip::*;
+    #[cfg(feature = "tree")]
+    pub use super::tree::*;
     #[cfg(feature = "typeahead")]
     pub use super::typeahead::*;
 }

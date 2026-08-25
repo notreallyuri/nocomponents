@@ -108,7 +108,8 @@ impl RovingFocus {
         }
     }
 
-    fn focus_offset(&self, offset: isize) {
+    /// Moves focus by `offset` items, wrapping if the group wraps.
+    pub fn focus_offset(&self, offset: isize) {
         let items = self.items();
         if items.is_empty() {
             return;

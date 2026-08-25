@@ -98,6 +98,7 @@ all-elements = [
     "toggle",
     "toggle_group",
     "tooltip",
+    "tree",
     "typeahead",
 ]
 accordion = ["collapsible", "roving_focus"]
@@ -151,7 +152,7 @@ scroll_area = ["drag"]
 select = ["field", "floating", "roving_focus", "typeahead"]
 separator = []
 sheet = ["button", "dialog"]
-sidebar = ["input", "separator", "sheet", "skeleton", "tooltip"]
+sidebar = ["input", "separator", "sheet", "skeleton", "tooltip", "tree"]
 skeleton = []
 slider = ["drag"]
 spinner = []
@@ -163,6 +164,7 @@ toast = []
 toggle = []
 toggle_group = ["roving_focus", "toggle"]
 tooltip = ["floating"]
+tree = ["roving_focus"]
 typeahead = []
 
 [dependencies]

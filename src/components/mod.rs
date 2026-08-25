@@ -116,6 +116,8 @@ pub mod toggle;
 pub mod toggle_group;
 #[cfg(feature = "tooltip")]
 pub mod tooltip;
+#[cfg(feature = "tree")]
+pub mod tree;
 
 pub mod prelude {
     #[cfg(feature = "accordion")]
@@ -236,4 +238,6 @@ pub mod prelude {
     pub use super::toggle_group::*;
     #[cfg(feature = "tooltip")]
     pub use super::tooltip::*;
+    #[cfg(feature = "tree")]
+    pub use super::tree::*;
 }

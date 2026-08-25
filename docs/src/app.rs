@@ -59,6 +59,7 @@ pub fn App() -> impl IntoView {
                             <Route path=path!("/separator") view=docs::separator::Page />
                             <Route path=path!("/spinner") view=docs::spinner::Page />
                             <Route path=path!("/toggle") view=docs::toggle::Page />
+                            <Route path=path!("/tree") view=docs::tree::Page />
                             <Route path=path!("/toggle-group") view=docs::toggle_group::Page />
                             <Route path=path!("/button-group") view=docs::button_group::Page />
                             <Route path=path!("/radio-group") view=docs::radio_group::Page />
