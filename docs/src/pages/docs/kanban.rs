@@ -107,6 +107,12 @@ const API: &[ApiEntry] = &[
                 description: "What a move reports as card. Unique across the board.",
             },
             Prop {
+                name: "on_select",
+                ty: "Option<Callback<()>>",
+                default: "None",
+                description: "The card was pressed and let go without travelling. Use this rather than your own on:click — a card that is following the pointer has pointer-events: none, so a click never reaches it. Only the gesture knows whether the pointer moved.",
+            },
+            Prop {
                 name: "disabled",
                 ty: "Signal<bool>",
                 default: "false",
@@ -165,6 +171,7 @@ pub fn Page() -> impl IntoView {
         ("Done".to_string(), vec!["Apache-2.0".to_string()]),
     ]);
     let last = RwSignal::new(None::<KanbanMove>);
+    let clicked = RwSignal::new(None::<String>);
 
     let apply = move |moved: KanbanMove| {
         columns.update(|columns| {
@@ -186,7 +193,7 @@ pub fn Page() -> impl IntoView {
             <div class="flex flex-col gap-8">
                 <DemoSection
                     title="Default"
-                    description="Press a card and move it: it lifts and follows the pointer, and the line shows where it would land. It follows by transform rather than by leaving the list, so the gap it came from stays open and no column reflows under the gesture. Letting go where it started reports nothing."
+                    description="Press a card and move it: it lifts and follows the pointer, and the line shows where it would land. It follows by transform rather than by leaving the list, so the gap it came from stays open and no column reflows under the gesture. Letting go where it started reports nothing, and a press that never travels is a click rather than a drag — which is what on_select is for."
                     code=DEFAULT
                 >
                     <div class="flex w-full flex-col gap-3">
@@ -212,8 +219,16 @@ pub fn Page() -> impl IntoView {
                                                     .into_iter()
                                                     .enumerate()
                                                     .map(|(i, card)| {
+                                                        let name = card.clone();
                                                         view! {
-                                                            <KanbanCard id=card.clone()>{card.clone()}</KanbanCard>
+                                                            <KanbanCard
+                                                                id=card.clone()
+                                                                on_select=Callback::new(move |_| {
+                                                                    clicked.set(Some(name.clone()))
+                                                                })
+                                                            >
+                                                                {card.clone()}
+                                                            </KanbanCard>
                                                             <KanbanSlot index=i + 1 />
                                                         }
                                                     })
@@ -226,6 +241,10 @@ pub fn Page() -> impl IntoView {
                         </KanbanBoard>
 
                         <p class="text-xs text-muted-foreground">
+                            {move || match clicked.get() {
+                                Some(card) => format!("Clicked {card} · "),
+                                None => String::new(),
+                            }}
                             {move || match last.get() {
                                 None => "No move yet.".to_string(),
                                 Some(moved) => {

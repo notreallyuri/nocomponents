@@ -69,12 +69,14 @@ pub fn KanbanCard(
     #[prop(into)] id: String,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(default = None, into)] on_select: Option<Callback<()>>,
     children: Children,
 ) -> impl IntoView {
     view! {
         <KanbanCardRoot
             id=id
             disabled=disabled
+            on_select=on_select
             class=move || {
                 cn!(
                     "touch-none rounded-md border bg-card p-2.5 text-sm shadow-sm select-none",

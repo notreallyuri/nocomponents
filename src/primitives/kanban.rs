@@ -21,6 +21,9 @@ use leptos_node_ref::AnyNodeRef;
 use web_sys::Element;
 
 const COLUMN_ATTR: &str = "data-kanban-column";
+/// How far the pointer has to travel before a press becomes a drag. Below it the press is a
+/// click, and a click has to survive the shake of pressing a mouse button.
+const MOVE_THRESHOLD: f64 = 4.0;
 const CARD_ATTR: &str = "data-kanban-card";
 
 /// Where a card would land: which column, and how many cards down.
@@ -169,6 +172,13 @@ pub fn KanbanCardRoot(
     #[prop(into)] id: String,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
+    /// The card was pressed and let go without travelling. What opens a card's own dialog.
+    ///
+    /// A prop rather than the caller's own `on:click`, because a card cannot receive one: the
+    /// moment it starts following the pointer it goes `pointer-events: none`, so the release
+    /// lands on whatever is underneath. Only the gesture knows whether the pointer moved.
+    #[prop(default = None, into)]
+    on_select: Option<Callback<()>>,
     children: Children,
 ) -> impl IntoView {
     let ctx = use_kanban();
@@ -184,6 +194,20 @@ pub fn KanbanCardRoot(
     let offset = RwSignal::new((0.0f64, 0.0f64));
 
     let track = move |point: DragPoint| {
+        // A drag begins on the first move past the threshold, not on the press. Announcing it any
+        // earlier would light a column up under a click and — because the card goes
+        // `pointer-events: none` to follow the pointer — swallow the click that never happened.
+        if ctx.dragging.get_untracked().is_none() {
+            if point.dx.abs().max(point.dy.abs()) < MOVE_THRESHOLD {
+                return;
+            }
+            ctx.dragging.set(Some(KanbanDrag {
+                card: card.get_value(),
+                from: from.get_value(),
+                over: None,
+            }));
+        }
+
         offset.set((point.dx, point.dy));
 
         let Some(board) = ctx.board_ref.get_untracked() else {
@@ -199,24 +223,25 @@ pub fn KanbanCardRoot(
     };
 
     let drag = use_drag(track)
-        .on_start(move |_| {
-            offset.set((0.0, 0.0));
-            ctx.dragging.set(Some(KanbanDrag {
-                card: card.get_value(),
-                from: from.get_value(),
-                over: None,
-            }));
-        })
+        .on_start(move |_| offset.set((0.0, 0.0)))
         .on_end(move |_| {
             let landed = ctx.dragging.get_untracked();
             ctx.dragging.set(None);
             offset.set((0.0, 0.0));
 
-            let Some(KanbanDrag {
+            // Nothing was ever dragged, so the press was a click.
+            let Some(landed) = landed else {
+                if let Some(on_select) = on_select {
+                    on_select.run(());
+                }
+                return;
+            };
+
+            let KanbanDrag {
                 card,
                 from,
                 over: Some(slot),
-            }) = landed
+            } = landed
             else {
                 return;
             };
