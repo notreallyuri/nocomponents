@@ -43,6 +43,10 @@ pub const NAV: &[NavGroup] = &[
                 href: "/blocks",
             },
             NavItem {
+                label: "Primitives",
+                href: "/primitives",
+            },
+            NavItem {
                 label: "Installation",
                 href: "/docs/installation",
             },

@@ -126,17 +126,15 @@ pub fn Home() -> impl IntoView {
                                     "Several of them doing a job together."
                                 </span>
                             </A>
-                            <div
-                                aria-disabled="true"
-                                class="flex cursor-not-allowed flex-col gap-1 rounded-lg border border-dashed p-3 opacity-60"
+                            <A
+                                href=crate::app::href("/primitives")
+                                attr:class="flex flex-col gap-1 rounded-lg border p-3 transition-colors hover:bg-accent/40"
                             >
-                                <span class="text-sm font-medium text-foreground">
-                                    "Primitives"
-                                </span>
+                                <span class="text-sm font-medium text-foreground">"Primitives"</span>
                                 <span class="text-xs text-muted-foreground">
-                                    "The behaviour layer. Not written yet."
+                                    "The behaviour layer, with no classes on it."
                                 </span>
-                            </div>
+                            </A>
                         </nav>
 
                         <div class="flex flex-wrap items-center gap-2">

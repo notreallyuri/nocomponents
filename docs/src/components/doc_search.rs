@@ -1,6 +1,9 @@
 //! The ⌘K palette, over the same `NAV` the sidebar is built from.
 
-use crate::{layout::doc_layout::NAV, pages::docs::blocks};
+use crate::{
+    layout::doc_layout::NAV,
+    pages::{docs::blocks, primitives},
+};
 use leptos::prelude::*;
 use leptos_router::hooks::use_navigate;
 use nocomponents::{
@@ -101,6 +104,29 @@ pub fn DocSearch() -> impl IntoView {
                                     })
                                 >
                                     {block.title}
+                                </CommandItem>
+                            }
+                        })
+                        .collect_view()}
+                </CommandGroup>
+
+                <CommandGroup heading="Primitives">
+                    {primitives::all()
+                        .map(|primitive| {
+                            let navigate = use_navigate();
+                            let target = primitive.slug;
+                            view! {
+                                <CommandItem
+                                    value=primitive.name
+                                    on_select=Callback::new(move |_| {
+                                        open.set(false);
+                                        navigate(
+                                            &format!("/primitives/{target}"),
+                                            Default::default(),
+                                        );
+                                    })
+                                >
+                                    {primitive.name}
                                 </CommandItem>
                             }
                         })

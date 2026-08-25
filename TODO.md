@@ -502,11 +502,25 @@ rather than general UI, so they are the easiest to defer or skip.
       it is preserved, which is the common case; one shell over both would mean a parent route at
       the root, and the home page does not want a sidebar.
 
-- [ ] The primitives have no docs pages at all: every page documents the styled layer, and the
-      behaviour layer — the half a Radix-style library is sold on — is undocumented. The same table
-      treatment at `/docs/<slug>/primitives`, as the third view of the switch above, rather than a
-      second tree in the nav: nobody looks up `DialogContentRoot` except while reading about
-      `Dialog`.
+- [x] `/primitives`, a section of its own with one line in the sidebar — fifty nav entries would
+      double a sidebar nobody would then read. The five with **no styled layer** are done first
+      because they had nowhere else they could ever have gone: a scheme that hung primitives off
+      their component's page could not house `use_drag`, which is what seven components are built
+      on. Each page carries what a prop table cannot — the context, the `data-*` it writes, the
+      keys it binds — and a demo built from plain classes rather than the styled layer, which is
+      the claim the layer exists to make.
+
+      The index searches over `used_by` as well as the prose, so "which primitive does the slider
+      use" is answerable from either end.
+- [ ] The other 45 primitives, the ones that do have a styled layer. 157 parts, and the component
+      page should gain a switch — Overview · Primitives · Blocks — since nobody looks up
+      `DialogContentRoot` except while reading about `Dialog`.
+
+      **Generate these rather than writing them.** 199 styled prop tables are already hand-pasted
+      and drift; 157 more doubles a debt that is already the largest in the docs. An `xtask` over
+      the `#[component]` signatures would emit both sides from one source and close the five-files
+      item too. It does not help the five above — four of them contain no `#[component]` at all —
+      which is why they went first.
 - [ ] The Leptos-shaped types the prop tables keep naming — `Signal<String>`, `ChildrenFn`, the
       `render` callback shape — still have nowhere to be described once. `Side` / `Align` /
       `Orientation` / `SideOffset` are on `/docs/utility` now, so this is the other half of that

@@ -1,6 +1,6 @@
 use crate::{
     layout::doc_layout::DocShell,
-    pages::{docs, home::Home},
+    pages::{docs, home::Home, primitives},
 };
 use leptos::prelude::*;
 use leptos_router::{components::*, path};
@@ -105,6 +105,13 @@ pub fn App() -> impl IntoView {
                         <ParentRoute path=path!("/blocks") view=DocShell>
                             <Route path=path!("") view=docs::blocks::Index />
                             <Route path=path!("/:slug") view=docs::blocks::Page />
+                        </ParentRoute>
+
+                        // And the behaviour layer, the same way. One sidebar line for fifty
+                        // things, rather than fifty lines nobody reads.
+                        <ParentRoute path=path!("/primitives") view=DocShell>
+                            <Route path=path!("") view=primitives::Index />
+                            <Route path=path!("/:slug") view=primitives::Page />
                         </ParentRoute>
                     </Routes>
                 </Router>

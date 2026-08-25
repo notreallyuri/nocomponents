@@ -277,6 +277,12 @@ using `DocLayout` + `DemoSection`), `pages/docs/mod.rs`, the route in `app.rs`, 
 `docs/src/layout/doc_layout.rs`, and the `COMPONENTS` const in `pages/docs/index.rs`. The header's
 ⌘K palette (`docs/src/components/doc_search.rs`) reads `NAV`, so it is not a sixth place.
 
+**`/primitives` is a third section**, one sidebar line for what will be fifty pages. The five with
+no styled layer (`drag`, `floating`, `roving_focus`, `dismiss`, `typeahead`) are written; the other
+45 are not, and should be generated rather than typed. A primitive page carries what a prop table
+cannot — the context it publishes, the `data-*` it writes, the keys it binds — and its demo is built
+from plain classes, not the styled layer, since that is the claim the layer makes.
+
 **Blocks are their own section, not a leaf of a component.** Each composes between three and ten
 components, so `/docs/<component>/blocks` had to pick one owner and hid the block from the other
 nine. `Block` now carries `slug` and `uses`, the registry is a flat list, and `/blocks` is a
