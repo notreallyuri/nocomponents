@@ -84,6 +84,29 @@ item rather than a sentence buried in a closed one.
       button, checkbox, data_table, date_picker, input, label, progress, spinner, switch, textarea,
       toast — which was most of the ones people reach for first. The rule: the primitive writes it
       where there is one, the styled layer writes it for the style-only components.
+- [ ] The colour picker's alpha thumb is clipped top and bottom. The thumb is `size-4` centred on
+      an `h-3` rail, so 2px of it stands proud at each end — and the rail sits inside
+      `<div class="overflow-hidden rounded-full">`, which is there to round the chequerboard behind
+      it. The hue rail above has the same thumb and no such wrapper, which is why only alpha shows
+      it. Either the chequer gets its rounding some way that does not clip (a pseudo-element, or
+      the radius on the gradient layer itself) or the thumb moves out of the clipped box.
+
+- [ ] The carousel's Next stays enabled past the last reachable slide when more than one is on
+      screen. `can_scroll_next` is `index + 1 < count`, which counts *slides* rather than scroll
+      positions — with `basis-1/3` and seven items three are visible, so index 4 is the last one
+      that moves anything and 5 and 6 are dead. That is exactly the two extra clicks the sizes demo
+      takes. The bound wants the track's scroll extent (`scroll_width - client_width`, which
+      `scroll_to` already works in) rather than the item count; `can_scroll_prev` is right as it
+      stands, the first position always being index 0.
+
+- [ ] A dragged kanban card drifts from the cursor if anything scrolls that the board did not
+      scroll itself. `KanbanContext::scrolled` accumulates only the board's *own* auto-scroll steps,
+      so the compensation is blind to the reader scrolling the page or flicking the board sideways
+      with a wheel — the card rides in the scroller, its layout position moves, and `dx`/`dy` are
+      client-based and never hear about it. Recording the board's `scroll_left` and the window's
+      scroll offset at the press and taking the *difference* on every move would cover every cause
+      at once, ours included, and replaces the accumulator rather than adding to it.
+
 - [ ] `primitives::button::ButtonRoot` is rendered by nothing, `Button` included — the styled one
       writes its own `<button>`. Found because a `data-slot` put on the root never appeared. It is
       the same shape as the trigger bypass, and the same question: make `Button` render it, or
