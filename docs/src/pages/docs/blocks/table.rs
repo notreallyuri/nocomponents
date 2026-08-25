@@ -72,7 +72,9 @@ view! {
 }"##;
 
 pub const BLOCKS: &[Block] = &[Block {
+    slug: "right-click-a-row",
     title: "Right-click a row",
+    uses: &["badge", "context-menu", "table"],
     description: "One menu for the whole table rather than one per row, and not to save memory: a \
                   context menu brings a wrapper element of its own, and a `<div>` sitting between \
                   `<tbody>` and `<tr>` is not something the HTML parser will keep — it hoists the \

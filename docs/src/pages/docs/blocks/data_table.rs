@@ -84,7 +84,9 @@ const INVOICES: &[Invoice] = &[
 ];
 
 pub const BLOCKS: &[Block] = &[Block {
+    slug: "a-page-at-a-time",
     title: "A page at a time",
+    uses: &["badge", "data-table", "pagination"],
     description: "`DataTable` shows what it is handed, so paging is the caller's: sort the whole \
                   set, take a slice of it, hand that over. Doing it the other way round — page \
                   first, sort second — orders each page against itself, which looks like sorting \

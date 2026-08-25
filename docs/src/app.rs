@@ -27,7 +27,6 @@ pub fn App() -> impl IntoView {
                         // `Outlet` and leaves the sidebar — and its scroll position — mounted.
                         <ParentRoute path=path!("/docs") view=DocShell>
                             <Route path=path!("") view=docs::index::Page />
-                            <Route path=path!("/:component/blocks") view=docs::blocks::Page />
                             <Route path=path!("/avatar") view=docs::avatar::Page />
                             <Route path=path!("/badge") view=docs::badge::Page />
                             <Route path=path!("/button") view=docs::button::Page />
@@ -98,6 +97,14 @@ pub fn App() -> impl IntoView {
                                 view=docs::navigation_menu::Page
                             />
                             <Route path=path!("/menubar") view=docs::menubar::Page />
+                        </ParentRoute>
+
+                        // Its own section rather than a leaf of `/docs`: a block is built out of
+                        // several components and belongs to all of them, so filing it under one
+                        // hid it from the rest. Same shell, so the sidebar and the rail come with.
+                        <ParentRoute path=path!("/blocks") view=DocShell>
+                            <Route path=path!("") view=docs::blocks::Index />
+                            <Route path=path!("/:slug") view=docs::blocks::Page />
                         </ParentRoute>
                     </Routes>
                 </Router>

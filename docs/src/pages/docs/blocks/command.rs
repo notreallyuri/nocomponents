@@ -75,7 +75,9 @@ view! {
 }"#;
 
 pub const BLOCKS: &[Block] = &[Block {
+    slug: "a-palette-that-acts",
     title: "A palette that acts",
+    uses: &["alert-dialog", "button", "command"],
     description: "Not a jump list — every item here does something, which is the other half of \
                   what a palette is for. Two seams. `shortcut=None`, because this page already \
                   binds ⌘K for its own search and a chord that opens two palettes is a bug the \

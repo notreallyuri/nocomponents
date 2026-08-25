@@ -490,6 +490,18 @@ rather than general UI, so they are the easiest to defer or skip.
 - [ ] Adding a component means editing five files, two of which (`NAV`, `COMPONENTS`) are
       hand-maintained copies of the same list — which is how `/docs` came to be missing progress,
       skeleton and textarea. Drive routes, nav and the index from one const.
+- [x] Blocks moved out of `/docs/<component>/blocks` and into their own `/blocks` section. Filing a
+      block under one component was always a fiction — each composes three to ten of them — so the
+      owner was whichever file it lived in and the rest could not reach it. Each block now carries
+      the components it uses, the index searches over those as well as the prose, and a component
+      page hands the reader `/blocks?uses=<slug>`: `dialog` surfaces eight where it used to show
+      one. The palette lists blocks by name, and the home page has a way in to each section.
+
+      One cost, taken deliberately: `/docs` and `/blocks` are two `ParentRoute`s sharing `DocShell`,
+      so crossing between the sections remounts the sidebar and loses its scroll. Within a section
+      it is preserved, which is the common case; one shell over both would mean a parent route at
+      the root, and the home page does not want a sidebar.
+
 - [ ] The primitives have no docs pages at all: every page documents the styled layer, and the
       behaviour layer — the half a Radix-style library is sold on — is undocumented. The same table
       treatment at `/docs/<slug>/primitives`, as the third view of the switch above, rather than a

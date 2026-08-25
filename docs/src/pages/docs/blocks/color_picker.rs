@@ -41,7 +41,9 @@ const SWATCHES: &[&str] = &[
 ];
 
 pub const BLOCKS: &[Block] = &[Block {
+    slug: "a-swatch-that-opens-a-picker",
     title: "A swatch that opens a picker",
+    uses: &["button", "color-picker", "popover"],
     description: "The trigger is the colour: a swatch and the value it currently holds, which is \
                   what a colour field looks like everywhere else. The seam is the drag — press \
                   inside the saturation square, keep going past the edge of the popover and let go \

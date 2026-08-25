@@ -62,7 +62,9 @@ view! {
 }"#;
 
 pub const BLOCKS: &[Block] = &[Block {
+    slug: "a-dialog-that-becomes-a-drawer",
     title: "A dialog that becomes a drawer",
+    uses: &["button", "dialog", "drawer", "field", "input"],
     description: "Narrow the window past 640px and the same edit lands as a sheet from the \
                   bottom instead of a box in the middle. The seam is that this is a change of \
                   *component*, not of class: a drawer is dragged shut, a dialog is not, and no \

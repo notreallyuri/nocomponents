@@ -586,7 +586,17 @@ fn detail_board() -> AnyView {
 
 pub const BLOCKS: &[Block] = &[
     Block {
+        slug: "a-board-you-can-build",
         title: "A board you can build",
+        uses: &[
+            "badge",
+            "button",
+            "context-menu",
+            "dialog",
+            "input",
+            "kanban",
+            "tooltip",
+        ],
         description: "Columns you add, cards you add, and two ways to move one: drag it, or right-click \
                   it and pick a column. Both end in the same closure — `on_move` hands back a \
                   `KanbanMove`, and the context menu builds one by hand — so the two cannot come to \
@@ -598,7 +608,17 @@ pub const BLOCKS: &[Block] = &[
         view: board,
     },
     Block {
+        slug: "a-card-with-more-on-it-than-fits",
         title: "A card with more on it than fits",
+        uses: &[
+            "badge",
+            "button",
+            "context-menu",
+            "dialog",
+            "input",
+            "kanban",
+            "tooltip",
+        ],
         description: "Trello's answer to a card that has a description, a checklist, five comments and \
                   two attachments: put a bar, a title and three counts on the face, and everything \
                   else behind a dialog. Every part of that is the caller's markup — the component \

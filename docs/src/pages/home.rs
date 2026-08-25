@@ -100,6 +100,45 @@ pub fn Home() -> impl IntoView {
                             </p>
                         </div>
 
+                        // Three ways in, because there are three kinds of thing to read: what a
+                        // part does, what several of them do together, and — once it is written —
+                        // the behaviour layer underneath. The last is deliberately here and
+                        // disabled rather than absent: a nav that grows a new entry later is one
+                        // nobody knew to look for.
+                        <nav aria-label="Sections" class="grid gap-2 sm:grid-cols-3">
+                            <A
+                                href=crate::app::href("/docs")
+                                attr:class="flex flex-col gap-1 rounded-lg border p-3 transition-colors hover:bg-accent/40"
+                            >
+                                <span class="text-sm font-medium text-foreground">
+                                    "Components"
+                                </span>
+                                <span class="text-xs text-muted-foreground">
+                                    "Every part, its props and its behaviour."
+                                </span>
+                            </A>
+                            <A
+                                href=crate::app::href("/blocks")
+                                attr:class="flex flex-col gap-1 rounded-lg border p-3 transition-colors hover:bg-accent/40"
+                            >
+                                <span class="text-sm font-medium text-foreground">"Blocks"</span>
+                                <span class="text-xs text-muted-foreground">
+                                    "Several of them doing a job together."
+                                </span>
+                            </A>
+                            <div
+                                aria-disabled="true"
+                                class="flex cursor-not-allowed flex-col gap-1 rounded-lg border border-dashed p-3 opacity-60"
+                            >
+                                <span class="text-sm font-medium text-foreground">
+                                    "Primitives"
+                                </span>
+                                <span class="text-xs text-muted-foreground">
+                                    "The behaviour layer. Not written yet."
+                                </span>
+                            </div>
+                        </nav>
+
                         <div class="flex flex-wrap items-center gap-2">
                             <Button
                                 size=ButtonSize::Lg

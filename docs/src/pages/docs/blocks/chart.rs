@@ -127,7 +127,9 @@ view! {
 }"##;
 
 pub const BLOCKS: &[Block] = &[Block {
+    slug: "a-range-over-one-set-of-numbers",
     title: "A range over one set of numbers",
+    uses: &["card", "chart", "toggle", "toggle-group"],
     description: "A dashboard card, and the seam is what the range control does *not* do: it \
                   fetches nothing and rebuilds nothing. Twelve weeks of daily numbers sit in one \
                   const, and the range decides how much of it is read and how many days go into a \

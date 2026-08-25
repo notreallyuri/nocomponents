@@ -39,6 +39,10 @@ pub const NAV: &[NavGroup] = &[
                 href: "/docs",
             },
             NavItem {
+                label: "Blocks",
+                href: "/blocks",
+            },
+            NavItem {
                 label: "Installation",
                 href: "/docs/installation",
             },
@@ -429,22 +433,22 @@ pub fn DocLayout(
     // Every component page has a blocks page beside it and the other way round, so the link
     // between them is worked out from the path rather than passed in by each of the sixty pages.
     // The pathname already carries `BASE_PATH`, so it is appended to rather than resolved again.
+    // A component page offers the blocks that use it — the index filtered rather than a page of
+    // its own, since a block belongs to every component in it and not just to this one.
     let companion = Signal::derive(move || {
         let path = location.pathname.get();
-        let component = path.strip_suffix("/blocks").unwrap_or(&path);
 
-        // Only a component has one. The section pages are under `/docs` too, and would otherwise
-        // offer a link to a blocks page with nothing on it.
-        NAV.iter()
+        let slug = NAV
+            .iter()
             .find(|group| group.label == "Components")?
             .items
             .iter()
-            .find(|item| href(item.href) == component)?;
+            .find(|item| href(item.href) == path)?
+            .href
+            .rsplit('/')
+            .next()?;
 
-        Some(match path.strip_suffix("/blocks") {
-            Some(component) => (component.to_string(), "Overview"),
-            None => (format!("{path}/blocks"), "Blocks"),
-        })
+        Some((format!("{}?uses={slug}", href("/blocks")), "Blocks"))
     });
 
     view! {

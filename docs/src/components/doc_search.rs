@@ -1,6 +1,6 @@
 //! The ⌘K palette, over the same `NAV` the sidebar is built from.
 
-use crate::layout::doc_layout::NAV;
+use crate::{layout::doc_layout::NAV, pages::docs::blocks};
 use leptos::prelude::*;
 use leptos_router::hooks::use_navigate;
 use nocomponents::{
@@ -84,6 +84,28 @@ pub fn DocSearch() -> impl IntoView {
                         }
                     })
                     .collect_view()}
+
+                // The blocks too, and by name rather than by the component they used to hang off:
+                // that is the whole point of them having moved.
+                <CommandGroup heading="Blocks">
+                    {blocks::all()
+                        .map(|block| {
+                            let navigate = use_navigate();
+                            let target = block.slug;
+                            view! {
+                                <CommandItem
+                                    value=block.title
+                                    on_select=Callback::new(move |_| {
+                                        open.set(false);
+                                        navigate(&format!("/blocks/{target}"), Default::default());
+                                    })
+                                >
+                                    {block.title}
+                                </CommandItem>
+                            }
+                        })
+                        .collect_view()}
+                </CommandGroup>
             </CommandList>
         </CommandDialog>
     }

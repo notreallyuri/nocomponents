@@ -265,8 +265,9 @@ resolves `Theme::System` via `prefers-color-scheme`, and toggles the `dark` clas
 
 ## Docs site
 
-`docs/src/app.rs` wraps everything in `ThemeProvider` → `ToastProvider` → `Router`. Every docs page
-is a child of one `ParentRoute` at `/docs` whose view is `DocShell` — the sidebar and the
+`docs/src/app.rs` wraps everything in `ThemeProvider` → `ToastProvider` → `Router`. There are two
+sections under the same shell: `/docs` (a page per component) and `/blocks` (the compositions).
+Each is a `ParentRoute` whose view is `DocShell` — the sidebar and the
 `SidebarInset` it sits beside — so navigating swaps only the `Outlet`. That is what keeps the
 sidebar's scroll position: the element is never rebuilt. `DocLayout` is the other half, the header
 and the `<main>`, and stays per-page because the title and description are its props.
@@ -275,6 +276,13 @@ Adding a docs page means touching five places: the new `docs/src/pages/docs/<nam
 using `DocLayout` + `DemoSection`), `pages/docs/mod.rs`, the route in `app.rs`, the `NAV` const in
 `docs/src/layout/doc_layout.rs`, and the `COMPONENTS` const in `pages/docs/index.rs`. The header's
 ⌘K palette (`docs/src/components/doc_search.rs`) reads `NAV`, so it is not a sixth place.
+
+**Blocks are their own section, not a leaf of a component.** Each composes between three and ten
+components, so `/docs/<component>/blocks` had to pick one owner and hid the block from the other
+nine. `Block` now carries `slug` and `uses`, the registry is a flat list, and `/blocks` is a
+searchable index — over the component names as well as the prose, so "which blocks use a drawer" is
+answerable. A component page's header links to `/blocks?uses=<slug>`, which seeds the index's search
+box: `dialog` surfaces eight blocks where the old filing showed one.
 
 `PageNav` (`docs/src/components/page_nav.rs`) is the "On this page" rail, and needs nothing from a
 page: it reads the headings marked `data-toc` out of its own `<main>` — `DemoSection` marks its

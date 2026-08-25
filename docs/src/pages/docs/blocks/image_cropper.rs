@@ -89,7 +89,9 @@ let cut = source.with_value(|bytes| ctx.crop(Some(bytes), "image/png", 0.92))?;
 let url = cut.to_object_url();"#;
 
 pub const BLOCKS: &[Block] = &[Block {
+    slug: "choosing-an-avatar",
     title: "Choosing an avatar",
+    uses: &["avatar", "button", "dialog", "image-cropper"],
     description: "Pick an image of your own — an animated GIF included — and it takes over the \
                   cropper. Nothing is uploaded or stored: the file is read once, in the browser, \
                   and what comes out is handed back on `on_cleanup`, so the picture lasts exactly \

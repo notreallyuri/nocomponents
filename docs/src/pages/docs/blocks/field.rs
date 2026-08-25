@@ -104,7 +104,11 @@ view! {
 }"#;
 
 pub const BLOCKS: &[Block] = &[Block {
+    slug: "a-form-that-waits-before-it-complains",
     title: "A form that waits before it complains",
+    uses: &[
+        "button", "checkbox", "field", "input", "select", "spinner", "textarea",
+    ],
     description: "Four controls, one submit, and the seam is *when* the form is allowed to say \
                   no. The errors are derived from the values and so are always up to date, but \
                   they are gated behind a submit having been attempted — a form that turns red \

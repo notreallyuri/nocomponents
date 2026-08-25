@@ -102,7 +102,9 @@ view! {
 }"##;
 
 pub const BLOCKS: &[Block] = &[Block {
+    slug: "picking-several-people-at-once",
     title: "Picking several people at once",
+    uses: &["avatar", "badge", "combobox", "command", "field"],
     description: "A combobox comes back with *one* value — that is what its `value` is, an \
                   `Option<String>` — so a multi-select is not a mode it has, it is a list the \
                   caller keeps and two things the items are told: what makes them look chosen, \

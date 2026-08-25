@@ -78,7 +78,9 @@ view! {
 }"##;
 
 pub const BLOCKS: &[Block] = &[Block {
+    slug: "a-delete-you-can-take-back",
     title: "A delete you can take back",
+    uses: &["button", "empty", "item", "toast"],
     description: "The row goes the moment it is pressed. That is the whole point of the pattern: \
                   an undo is not a confirmation, and a list that stops to ask whether you meant \
                   it is a dialog wearing a toast's clothes — slower for the ninety-nine deletions \

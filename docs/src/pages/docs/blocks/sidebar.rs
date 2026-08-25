@@ -316,7 +316,20 @@ view! {
 
 pub const BLOCKS: &[Block] = &[
     Block {
+        slug: "an-application-shell",
         title: "An application shell",
+        uses: &[
+            "avatar",
+            "breadcrumb",
+            "button",
+            "calendar",
+            "dialog",
+            "dropdown-menu",
+            "field",
+            "separator",
+            "sidebar",
+            "switch",
+        ],
         description: "The whole frame of an app in one composition, and the seam is that there is no \
                   seam: the sidebar does not sit *beside* the page, it holds the state the page is \
                   drawn from. One list of pages feeds the menu, the breadcrumb and the body, so \
@@ -331,7 +344,20 @@ pub const BLOCKS: &[Block] = &[
         view: || view! { <AppShell /> }.into_any(),
     },
     Block {
+        slug: "settings-with-the-sidebar-inside-the-dialog",
         title: "Settings, with the sidebar inside the dialog",
+        uses: &[
+            "avatar",
+            "breadcrumb",
+            "button",
+            "calendar",
+            "dialog",
+            "dropdown-menu",
+            "field",
+            "separator",
+            "sidebar",
+            "switch",
+        ],
         description: "The same panel, doing a smaller job: a sidebar is not page-level navigation, \
                   it is a panel over the state something else is drawn from — so it fits inside a \
                   dialog on a page that already has one of its own. Two things make that work. The \
