@@ -1,8 +1,11 @@
 use crate::{
     cn,
+    primitives::button::ButtonRoot,
     utils::types::{AsClass, StyledRender},
 };
-use leptos::{either::Either, ev, prelude::*};
+
+pub use crate::primitives::button::ButtonType;
+use leptos::{ev, prelude::*};
 use leptos_node_ref::AnyNodeRef;
 
 #[derive(Default, Clone, Copy, PartialEq)]
@@ -85,44 +88,29 @@ pub fn Button(
     #[prop(optional)] variant: ButtonVariant,
     #[prop(optional)] size: ButtonSize,
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional)] r#type: ButtonType,
     #[prop(default = None, into)] render: Option<Callback<StyledRender, AnyView>>,
     #[prop(optional)] children: Option<ChildrenFn>,
 ) -> impl IntoView {
-    let node_ref = node_ref.unwrap_or_default();
-
     let merged_classes = Signal::derive(move || {
         cn!(
-            "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+            "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
             variant.as_class(),
             size.as_class(),
             class.get()
         )
     });
 
-    match render {
-        Some(render_fn) => Either::Left(render_fn.run(StyledRender {
-            class: merged_classes,
-            node_ref,
-        })),
-        None => Either::Right(view! {
-            <button
-                data-slot="button"
-                node_ref=node_ref
-                on:click=move |e| {
-                    if let Some(cb) = on_click {
-                        cb.run(e);
-                    }
-                }
-                class=merged_classes
-            >
-                {
-                    let children = children.clone();
-                    move || match &children {
-                        Some(child) => Either::Left(child()),
-                        None => Either::Right(view! { "" }.into_any()),
-                    }
-                }
-            </button>
-        }),
+    view! {
+        <ButtonRoot
+            node_ref=node_ref
+            on_click=on_click
+            class=merged_classes
+            disabled=disabled
+            r#type=r#type
+            render=render
+            children=children
+        />
     }
 }

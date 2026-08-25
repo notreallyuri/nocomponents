@@ -12,7 +12,7 @@ use crate::{
 use leptos::prelude::*;
 use nocomponents::{
     components::{
-        button::{Button, ButtonVariant},
+        button::{Button, ButtonType, ButtonVariant},
         checkbox::Checkbox,
         field::{Field, FieldDescription, FieldError, FieldGroup, FieldLabel},
         input::Input,
@@ -89,7 +89,7 @@ view! {
             <FieldError>{move || form.email.message.get()}</FieldError>
         </Field>
 
-        <Button attr:r#type="submit">"Create account"</Button>
+        <Button r#type=ButtonType::Submit>"Create account"</Button>
     </form>
 }"##;
 
@@ -137,7 +137,7 @@ let submit = move |_| {
 
 const DIRTY: &str = r##"// `is_dirty` is measured against the values the form was built with, so a
 // round trip back to them is not dirty.
-<Button disabled=Signal::derive(move || !form.is_dirty().get()) attr:r#type="submit">
+<Button disabled=Signal::derive(move || !form.is_dirty().get()) r#type=ButtonType::Submit>
     "Save"
 </Button>
 
@@ -268,8 +268,7 @@ pub fn Page() -> impl IntoView {
                     " takes as its model, and "
                     <code class="rounded bg-muted px-1 py-0.5 text-xs">"Signal<bool>"</code>
                     " for whether to say something, which is what "
-                    <code class="rounded bg-muted px-1 py-0.5 text-xs">"Field"</code>
-                    " takes as "
+                    <code class="rounded bg-muted px-1 py-0.5 text-xs">"Field"</code> " takes as "
                     <code class="rounded bg-muted px-1 py-0.5 text-xs">"invalid"</code>
                     ". Every demo below works the same against a bare "
                     <code class="rounded bg-muted px-1 py-0.5 text-xs">"<input>"</code> "."
@@ -311,10 +310,7 @@ fn WholeForm() -> impl IntoView {
                     <FieldGroup>
                         <Field invalid=form.email.invalid>
                             <FieldLabel>"Email"</FieldLabel>
-                            <Input
-                                model=form.email.value
-                                on:blur=move |_| form.email.blur()
-                            />
+                            <Input model=form.email.value on:blur=move |_| form.email.blur() />
                             <FieldError>{move || form.email.message.get()}</FieldError>
                         </Field>
 
@@ -348,10 +344,9 @@ fn WholeForm() -> impl IntoView {
                         </Field>
 
                         <div class="flex items-center gap-2">
-                            <Button attr:r#type="submit">"Create account"</Button>
+                            <Button r#type=ButtonType::Submit>"Create account"</Button>
                             <Button
                                 variant=ButtonVariant::Outline
-                                attr:r#type="button"
                                 on_click=Callback::new(move |_| {
                                     form.reset();
                                     submitted.set(None);
@@ -369,7 +364,8 @@ fn WholeForm() -> impl IntoView {
                         .map(|values| {
                             view! {
                                 <p class="mt-4 rounded-lg border border-dashed px-3 py-2 text-xs text-muted-foreground">
-                                    "Submitted: " <span class="font-medium text-foreground">
+                                    "Submitted: "
+                                    <span class="font-medium text-foreground">
                                         {format!("{} on the {} plan", values.email, values.plan)}
                                     </span>
                                 </p>
@@ -519,22 +515,17 @@ fn ServerErrors() -> impl IntoView {
                         <FieldError>{move || form.email.message.get()}</FieldError>
                     </Field>
 
-                    <Button
-                        on_click=Callback::new(move |_| {
-                            if let Some(values) = form.try_submit()
-                                && values.email == "ada@example.com"
-                            {
-                                let unplaced = form
-                                    .core()
-                                    .set_field_errors([
-                                        ("email", "That address is already registered"),
-                                    ]);
-                                debug_assert!(unplaced.is_empty(), "every name was a field");
-                            }
-                        })
-                    >
-                        "Save"
-                    </Button>
+                    <Button on_click=Callback::new(move |_| {
+                        if let Some(values) = form.try_submit() && values.email == "ada@example.com"
+                        {
+                            let unplaced = form
+                                .core()
+                                .set_field_errors([
+                                    ("email", "That address is already registered"),
+                                ]);
+                            debug_assert!(unplaced.is_empty(), "every name was a field");
+                        }
+                    })>"Save"</Button>
                 </FieldGroup>
             </div>
         </DemoSection>
@@ -581,15 +572,14 @@ fn DirtyAndReset() -> impl IntoView {
 
                         <div class="flex items-center gap-2">
                             <Button
-                                attr:r#type="submit"
-                                attr:disabled=move || !form.is_dirty().get()
+                                r#type=ButtonType::Submit
+                                disabled=move || !form.is_dirty().get()
                             >
                                 "Save"
                             </Button>
                             <Button
                                 variant=ButtonVariant::Outline
-                                attr:r#type="button"
-                                attr:disabled=move || !form.is_dirty().get()
+                                disabled=move || !form.is_dirty().get()
                                 on_click=Callback::new(move |_| form.reset())
                             >
                                 "Discard"

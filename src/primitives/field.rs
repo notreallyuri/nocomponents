@@ -98,6 +98,27 @@ impl FieldControl {
     }
 }
 
+/// The `disabled` a part wears inside a field or a fieldset: its own, or the one around it.
+///
+/// [`FieldControl`] is the whole set — the id the label points at, `aria-describedby`,
+/// `aria-invalid` — and is what a *control* wants. Not everything inside a field is one: a button
+/// is not the thing the label names and is not the thing that goes invalid, and the only state it
+/// has any business inheriting is being switched off with the rest of the field.
+///
+/// The fieldset is in here too even though `<fieldset disabled>` already stops the controls
+/// inside it: a part that renders as something else — a `<button>` that is really an `<a>` — is
+/// not one of the controls the browser disables, and has to be told.
+pub fn field_disabled(disabled: Signal<bool>) -> Signal<bool> {
+    let field = use_field_optional();
+    let set = use_field_set_optional();
+
+    Signal::derive(move || {
+        disabled.get()
+            || field.is_some_and(|field| field.disabled.get())
+            || set.is_some_and(|set| set.disabled.get())
+    })
+}
+
 /// The [`FieldControl`] for a trigger that already has an id of its own — a select's, a
 /// combobox's. Two of them cannot be wired the way an `<input>` is.
 ///

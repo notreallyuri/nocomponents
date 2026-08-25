@@ -19,11 +19,11 @@ const SIZES: &str = r#"<Spinner size=SpinnerSize::Xs />
 <Spinner />
 <Spinner size=SpinnerSize::Lg />"#;
 
-const IN_A_BUTTON: &str = r#"<Button attr:disabled=true>
+const IN_A_BUTTON: &str = r#"<Button disabled=true>
     <Spinner />
     "Saving"
 </Button>
-<Button variant=ButtonVariant::Outline attr:disabled=true>
+<Button variant=ButtonVariant::Outline disabled=true>
     <Spinner variant=SpinnerVariant::Lined />
     "Loading"
 </Button>"#;
@@ -88,11 +88,11 @@ pub fn Page() -> impl IntoView {
                     code=IN_A_BUTTON
                 >
                     <div class="flex flex-wrap items-center gap-3">
-                        <Button attr:disabled=true>
+                        <Button disabled=true>
                             <Spinner />
                             "Saving"
                         </Button>
-                        <Button variant=ButtonVariant::Outline attr:disabled=true>
+                        <Button variant=ButtonVariant::Outline disabled=true>
                             <Spinner variant=SpinnerVariant::Lined />
                             "Loading"
                         </Button>

@@ -35,7 +35,7 @@ pub fn DropdownMenuTrigger(
                 variant=variant
                 node_ref=trigger.node_ref
                 on_click=trigger.on_click
-                attr:disabled=trigger.disabled
+                disabled=trigger.disabled
                 class=class
             >
                 {move || {

@@ -4,7 +4,7 @@ use super::Block;
 use leptos::prelude::*;
 use nocomponents::{
     components::{
-        button::{Button, ButtonVariant},
+        button::{Button, ButtonType, ButtonVariant},
         checkbox::Checkbox,
         field::{Field, FieldDescription, FieldError, FieldGroup, FieldLabel},
         input::{Input, InputType},
@@ -98,7 +98,7 @@ view! {
                 <FieldLabel>"This is blocking my work"</FieldLabel>
             </Field>
 
-            <Button attr:r#type="submit" attr:disabled=sending>"Send report"</Button>
+            <Button r#type=ButtonType::Submit disabled=sending>"Send report"</Button>
         </FieldGroup>
     </form>
 }"#;
@@ -241,7 +241,7 @@ fn BugReport() -> impl IntoView {
                 </Field>
 
                 <div class="flex items-center gap-3">
-                    <Button attr:r#type="submit" attr:disabled=sending>
+                    <Button r#type=ButtonType::Submit disabled=sending>
                         {move || match sending.get() {
                             true => {
                                 view! {
@@ -255,7 +255,6 @@ fn BugReport() -> impl IntoView {
                     </Button>
                     <Button
                         variant=ButtonVariant::Ghost
-                        attr:r#type="button"
                         on_click=Callback::new(move |_| {
                             submitted.set(false);
                             name.set(String::new());

@@ -47,7 +47,7 @@ pub fn ComboboxTrigger(
                 variant=variant
                 node_ref=trigger.node_ref
                 on_click=trigger.on_click
-                attr:disabled=trigger.disabled
+                disabled=trigger.disabled
                 class=move || cn!("w-56 justify-between font-normal", class.get())
             >
                 {move || {

@@ -278,7 +278,7 @@ pub fn Page() -> impl IntoView {
                     <div class="flex flex-wrap items-center gap-3">
                         <Button
                             variant=ButtonVariant::Outline
-                            attr:disabled=Signal::derive(move || !present.get())
+                            disabled=Signal::derive(move || !present.get())
                             on:click=move |_| {
                                 present.set(false);
                                 toast

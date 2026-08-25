@@ -35,7 +35,7 @@ pub fn AlertDialogTrigger(
                 size=size
                 variant=variant
                 class=class
-                attr:disabled=disabled
+                disabled=disabled
                 on:click=move |e| on_click.run(e)
             >
                 {

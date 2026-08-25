@@ -107,10 +107,22 @@ item rather than a sentence buried in a closed one.
       scroll offset at the press and taking the *difference* on every move would cover every cause
       at once, ours included, and replaces the accumulator rather than adding to it.
 
-- [ ] `primitives::button::ButtonRoot` is rendered by nothing, `Button` included — the styled one
-      writes its own `<button>`. Found because a `data-slot` put on the root never appeared. It is
-      the same shape as the trigger bypass, and the same question: make `Button` render it, or
-      admit the primitive is dead and delete it.
+- [x] `Button` renders `ButtonRoot`, which was rendered by nothing. Filling it rather than
+      deleting it, because there turned out to be behaviour for it to hold and every one of these
+      was missing: `Button` had **no `disabled` prop at all**, so every caller wrote
+      `attr:disabled` and a button inside a disabled `<Field>` stayed live — the bypass again, one
+      layer down. The root resolves `disabled` through the new `field::field_disabled` (the field
+      *and* the fieldset, since a `<fieldset disabled>` does not reach a row that renders as an
+      `<a>`), refuses the click in the handler rather than trusting `disabled:pointer-events-none`,
+      and takes `type` as a prop defaulting to `ButtonType::Button` — HTML's default is `submit`,
+      which is why three demos were carrying `attr:r#type="button"` to undo it.
+
+      `render` moved onto the root too, so both shapes go through one place, and `StyledRender`
+      grew a third field: the resolved `disabled`. That is what the struct was for — every caller
+      written against the two it had kept compiling. It matters because `disabled` is a
+      `<button>`'s attribute and means nothing on an `<a>`: the root writes `aria-disabled` and
+      `data-disabled` onto the node for that shape, and the styled layer grew the matching
+      `aria-disabled:` classes, which `SidebarMenuButton`'s were already written against.
 - [x] All three render callbacks are named structs: `TriggerRender` for the floating triggers,
       `StyledRender` (class + node ref) for `Button` and `SidebarMenuButton`, `AnchorRender` (node
       ref alone) for the tooltip and hover card. Kept separate rather than merged into one: a

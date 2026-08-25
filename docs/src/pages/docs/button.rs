@@ -7,8 +7,12 @@ use crate::{
 };
 use leptos::prelude::*;
 use nocomponents::{
-    components::button::{Button, ButtonSize, ButtonVariant},
+    components::{
+        button::{Button, ButtonSize, ButtonVariant},
+        field::Field,
+    },
     icons::x::X,
+    utils::types::StyledRender,
 };
 
 const VARIANTS: &str = r#"<Button variant=ButtonVariant::Default>"Default"</Button>
@@ -28,16 +32,37 @@ const ICON_SIZES: &str = r#"<Button size=ButtonSize::IconXs>"×"</Button>
 <Button size=ButtonSize::Icon>"×"</Button>
 <Button size=ButtonSize::IconLg>"×"</Button>"#;
 
-const DISABLED: &str = r#"<Button attr:disabled=true>"Default"</Button>
-<Button variant=ButtonVariant::Secondary attr:disabled=true>
+const DISABLED: &str = r#"<Button disabled=true>"Default"</Button>
+<Button variant=ButtonVariant::Secondary disabled=true>
     "Secondary"
 </Button>
-<Button variant=ButtonVariant::Outline attr:disabled=true>
+<Button variant=ButtonVariant::Outline disabled=true>
     "Outline"
 </Button>
-<Button variant=ButtonVariant::Destructive attr:disabled=true>
+<Button variant=ButtonVariant::Destructive disabled=true>
     "Destructive"
 </Button>"#;
+
+const IN_A_FIELD: &str = r#"<Field disabled=true class="max-w-sm">
+    <span class="text-sm font-medium">"Notifications"</span>
+    <Button variant=ButtonVariant::Outline>"Send a test"</Button>
+</Field>"#;
+
+const AS_A_LINK: &str = r##"<Button render=Callback::new(move |styled: StyledRender| {
+    view! {
+        // An `<a>` has no `disabled` attribute, so the root writes `aria-disabled`
+        // onto the node instead — the class and the node ref are all that has to
+        // be forwarded. What the link does about it is this callback's to decide.
+        <a
+            href=move || (!styled.disabled.get()).then_some("/docs/button")
+            class=styled.class
+            node_ref=styled.node_ref
+        >
+            "Read the docs"
+        </a>
+    }
+        .into_any()
+}) />"##;
 
 /// Read off the `#[component]` signature in `src/components/button.rs`, in declaration order.
 const API: &[ApiEntry] = &[ApiEntry {
@@ -63,6 +88,18 @@ const API: &[ApiEntry] = &[ApiEntry {
             description: "Merged over the variant and size classes, so the caller's wins.",
         },
         Prop {
+            name: "disabled",
+            ty: "Signal<bool>",
+            default: "false",
+            description: "Resolved against any Field or FieldSet around the button, so a disabled field disables it without being told. The click is refused here rather than only painted away, so a button restyled by the caller refuses it too.",
+        },
+        Prop {
+            name: "type",
+            ty: "ButtonType",
+            default: "Button",
+            description: "Button, Submit or Reset. Written as `r#type`. Not HTML's default: a button that means nothing in particular does not submit the form it happens to be inside.",
+        },
+        Prop {
             name: "on_click",
             ty: "Option<Callback<MouseEvent>>",
             default: "None",
@@ -76,9 +113,9 @@ const API: &[ApiEntry] = &[ApiEntry {
         },
         Prop {
             name: "render",
-            ty: "Option<Callback<(Signal<String>, AnyNodeRef), AnyView>>",
+            ty: "Option<Callback<StyledRender, AnyView>>",
             default: "None",
-            description: "Render as something else — a link, usually. Handed the merged class and the node ref, both of which must reach the element.",
+            description: "Render as something else — a link, usually. Handed the merged class, the node ref and the resolved disabled; the class and the node ref must both reach the element, or the state attributes have nowhere to land.",
         },
         Prop {
             name: "children",
@@ -149,16 +186,68 @@ pub fn Page() -> impl IntoView {
                     code=DISABLED
                 >
                     <div class="flex flex-wrap gap-3">
-                        <Button attr:disabled=true>"Default"</Button>
-                        <Button variant=ButtonVariant::Secondary attr:disabled=true>
+                        <Button disabled=true>"Default"</Button>
+                        <Button variant=ButtonVariant::Secondary disabled=true>
                             "Secondary"
                         </Button>
-                        <Button variant=ButtonVariant::Outline attr:disabled=true>
+                        <Button variant=ButtonVariant::Outline disabled=true>
                             "Outline"
                         </Button>
-                        <Button variant=ButtonVariant::Destructive attr:disabled=true>
+                        <Button variant=ButtonVariant::Destructive disabled=true>
                             "Destructive"
                         </Button>
+                    </div>
+                </DemoSection>
+
+                <DemoSection
+                    title="Inside a field"
+                    description="A field that is disabled disables the buttons in it. Nothing is passed down by the caller — the button resolves its own `disabled` against the field it finds itself in, the way every other control does."
+                    code=IN_A_FIELD
+                >
+                    <Field disabled=true class="max-w-sm">
+                        <span class="text-sm font-medium">"Notifications"</span>
+                        <Button variant=ButtonVariant::Outline>"Send a test"</Button>
+                    </Field>
+                </DemoSection>
+
+                <DemoSection
+                    title="As a link"
+                    description="`render` swaps the element for whatever the callback returns, usually an `<a>` so middle-click and copy-address keep working. It is handed the merged class, the node ref, and the resolved `disabled`."
+                    code=AS_A_LINK
+                >
+                    <div class="flex flex-wrap items-center gap-3">
+                        <Button render=Callback::new(move |styled: StyledRender| {
+                            view! {
+                                <a
+                                    href="https://github.com/notreallyuri/nocomponents"
+                                    class=styled.class
+                                    node_ref=styled.node_ref
+                                    rel="noreferrer"
+                                    target="_blank"
+                                >
+                                    "Source"
+                                </a>
+                            }
+                                .into_any()
+                        }) />
+                        <Button
+                            variant=ButtonVariant::Outline
+                            disabled=true
+                            render=Callback::new(move |styled: StyledRender| {
+                                view! {
+                                    <a
+                                        href=move || {
+                                            (!styled.disabled.get()).then_some("/docs/button")
+                                        }
+                                        class=styled.class
+                                        node_ref=styled.node_ref
+                                    >
+                                        "Read the docs"
+                                    </a>
+                                }
+                                    .into_any()
+                            })
+                        />
                     </div>
                 </DemoSection>
 

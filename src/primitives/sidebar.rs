@@ -314,6 +314,17 @@ pub fn SidebarMenuButtonRoot(
             };
             let _ = el.set_attribute("data-slot", "sidebar-menu-button");
             let _ = el.set_attribute("data-size", &size.get());
+
+            // A row rendered as a link is not something `disabled` reaches, the attribute being
+            // the `<button>`'s alone, so the state is announced rather than worn.
+            if disabled.get() {
+                let _ = el.set_attribute("aria-disabled", "true");
+                let _ = el.set_attribute("data-disabled", "true");
+            } else {
+                let _ = el.remove_attribute("aria-disabled");
+                let _ = el.remove_attribute("data-disabled");
+            }
+
             if active.get() {
                 let _ = el.set_attribute("data-active", "true");
                 let _ = el.set_attribute("aria-current", "page");
@@ -325,9 +336,11 @@ pub fn SidebarMenuButtonRoot(
     }
 
     match render {
-        Some(render_fn) => {
-            leptos::either::Either::Left(render_fn.run(StyledRender { class, node_ref }))
-        }
+        Some(render_fn) => leptos::either::Either::Left(render_fn.run(StyledRender {
+            class,
+            node_ref,
+            disabled,
+        })),
         None => leptos::either::Either::Right(view! {
             <button
                 type="button"

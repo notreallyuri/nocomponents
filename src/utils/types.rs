@@ -140,13 +140,18 @@ impl Language {
 /// classes the part would have rendered, and the node ref its state attributes go on.
 ///
 /// A struct for the reason [`crate::primitives::floating::TriggerRender`] is one — that shape had
-/// to grow, and a tuple has to be re-broken every time it does. These two are separate rather than
-/// merged because they carry different things: a trigger is clicked and can be disabled, a styled
-/// row is neither.
+/// to grow, and a tuple has to be re-broken every time it does. It has since grown a `disabled`,
+/// and every caller written against the two fields kept compiling, which is the whole argument.
+/// The two are still separate rather than merged: a trigger is handed a click to run, and a
+/// styled row has none.
 #[derive(Copy, Clone)]
 pub struct StyledRender {
     pub class: Signal<String>,
     pub node_ref: AnyNodeRef,
+    /// Whatever the part resolved it to — `Button` folds in the field around it. Worth reading
+    /// rather than ignoring: the element is the caller's, and on an `<a>`, which is what `render`
+    /// mostly returns, the `disabled` attribute means nothing at all.
+    pub disabled: Signal<bool>,
 }
 
 /// What a layer that opens on hover hands its `render`.
