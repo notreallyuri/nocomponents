@@ -25,6 +25,7 @@ mod data_table;
 mod dialog;
 mod field;
 mod image_cropper;
+mod kanban;
 mod sidebar;
 mod table;
 mod toast;
@@ -62,6 +63,7 @@ const REGISTRY: &[(&str, &[Block])] = &[
     ("dialog", dialog::BLOCKS),
     ("field", field::BLOCKS),
     ("image-cropper", image_cropper::BLOCKS),
+    ("kanban", kanban::BLOCKS),
     ("sidebar", sidebar::BLOCKS),
     ("table", table::BLOCKS),
     ("toast", toast::BLOCKS),

@@ -373,6 +373,12 @@ rather than general UI, so they are the easiest to defer or skip.
 - [x] An "On this page" rail (`docs/src/components/page_nav.rs`) on every page wide enough for it.
       It reads headings marked `data-toc` out of its own `<main>`, so `DemoSection` and
       `ApiReference` opt in once and no page has to list anything.
+- [x] A kanban block: columns you add, cards you add, and two ways to move one — drag it, or
+      right-click and pick a column. Both end in the same closure, `on_move` handing back a
+      `KanbanMove` and the menu building one by hand, so the two cannot come to disagree about what
+      moving means. The card is the context menu's trigger, which works only because the drag
+      guards on the primary button. Cards are keyed by an id rather than by their title: two cards
+      called the same thing would be one card that teleports.
 - [ ] Blocks for the rest, in rough order of what would teach the most: **select** — a dependent
       pair where the second is filtered by the first; **resizable** — a two-pane layout that
       remembers its split; **menubar** — an application menu with the keyboard doing the work;
