@@ -66,6 +66,8 @@ pub mod input_group;
 pub mod input_otp;
 #[cfg(feature = "item")]
 pub mod item;
+#[cfg(feature = "kanban")]
+pub mod kanban;
 #[cfg(feature = "kbd")]
 pub mod kbd;
 #[cfg(feature = "label")]
@@ -190,6 +192,8 @@ pub mod prelude {
     pub use super::input_otp::*;
     #[cfg(feature = "item")]
     pub use super::item::*;
+    #[cfg(feature = "kanban")]
+    pub use super::kanban::*;
     #[cfg(feature = "kbd")]
     pub use super::kbd::*;
     #[cfg(feature = "label")]

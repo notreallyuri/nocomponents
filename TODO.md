@@ -174,11 +174,24 @@ rather than general UI, so they are the easiest to defer or skip.
       over a pure hue; the two rails are one component twice.
 - [x] Image Cropper — a still through the canvas, an animated GIF through `crop_gif` and still
       animating afterwards: 16 frames in, 16 frames out, checked with Chrome's own decoder.
-- [ ] Kanban Board — consists of 3 components: a `Board` that lays out columns, a `Column` that lays out cards, and a `Card` that
-      is a draggable item. The board is a `use_drag` target, so the whole thing can be moved around
-      in a larger layout; the column is a `use_drag` target, so cards can be moved between columns;
-      and the card is a `use_drag` source, so it can be moved within or between columns. The board
-      and column are both `use_drag` targets, so they can be moved around in a larger layout.
+- [x] `kanban` — a board of columns of cards, on `use_drag` like every other gesture here, so it
+      ends on `pointercancel` and no card is left stuck to the cursor when the browser takes the
+      pointer away.
+
+      **The board does not own the cards.** It reports `on_move` — the card, the column it left,
+      the column and index it landed at — and the caller applies that to their own list. Same
+      stance as `DataTable` sorting what it is handed: a board that reordered a list it did not own
+      would disagree with the caller's the moment anything else touched it.
+
+      Where a card would land is read out of the DOM (`data-kanban-column`, `data-kanban-card`)
+      rather than from a registry the parts keep in step, so columns and cards can come and go
+      without telling anybody. The card in hand is skipped while counting, or the index it came
+      from reads one too far down. A card let go where it started reports nothing.
+
+      The card stays in place and fades rather than being lifted out: pulling it from the list
+      would reflow every column under the pointer mid-gesture. The line showing where it will land
+      is a `KanbanSlot` the caller renders between its own cards, because only the caller knows
+      where "between" is.
 - [ ] Floating Menu — a draggable menu that can be moved around the screen. It is a `use_drag` target, so it can be moved
       around in a larger layout; it is a `use_drag` source, so it can be moved within or between
       columns; It may also support fixed positioning, so it can be anchored to a specific point
@@ -302,6 +315,19 @@ rather than general UI, so they are the easiest to defer or skip.
   - 4 for hsla
   - 4 for hsva
   - 4 for oklch
+- [ ] `ButtonSize` cannot size the icons inside the button, and the rules that were meant to are
+      dead code. Every size writes `[&_svg:not([class*='size-'])]:size-3` or similar, and the base
+      writes `size-4` — but **every icon in this library renders with `size-4` already**
+      (`IconRoot` is `cn!("size-4", class.get())`), so `:not([class*='size-'])` never matches and
+      an icon in an `Xs` button stays 16px in a 24px button. The rules are inherited from shadcn,
+      where a lucide icon carries no default size and the guard does bite.
+
+      Dropping the guard is not the fix: `[&_svg]:size-3` is a descendant rule and would outrank a
+      caller's own `size-6` on the icon. Dropping the icons' default leaves a bare icon with no
+      size at all. The shape that works is a variable — the button sets `--icon-size` per size,
+      `IconRoot` defaults to `size-(--icon-size,1rem)` — so the button decides, and a caller who
+      writes a size on the icon still wins on the icon's own class.
+
 - [ ] `highlight` is still a lexer per language: a new one is a new scanner beside `tokenize_rust`,
       and the six that exist share only their helpers. Fine at six; worth a second look at ten.
 - [ ] `navigation_menu` has no shared viewport: each panel is absolutely positioned against the

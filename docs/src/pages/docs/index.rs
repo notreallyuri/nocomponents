@@ -32,6 +32,7 @@ const COMPONENTS: &[(&str, &str)] = &[
     ("Input Group", "/docs/input-group"),
     ("Input OTP", "/docs/input-otp"),
     ("Item", "/docs/item"),
+    ("Kanban", "/docs/kanban"),
     ("Kbd", "/docs/kbd"),
     ("Label", "/docs/label"),
     ("Menubar", "/docs/menubar"),

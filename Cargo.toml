@@ -72,6 +72,7 @@ all-elements = [
     "input_group",
     "input_otp",
     "item",
+    "kanban",
     "kbd",
     "label",
     "menubar",
@@ -139,6 +140,7 @@ input = ["field"]
 input_group = ["button", "input", "textarea"]
 input_otp = []
 item = ["separator"]
+kanban = ["drag"]
 kbd = []
 label = []
 menubar = ["dropdown_menu", "floating", "roving_focus"]

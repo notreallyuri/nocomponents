@@ -48,6 +48,8 @@ pub mod image_cropper;
 pub mod input_group;
 #[cfg(feature = "input_otp")]
 pub mod input_otp;
+#[cfg(feature = "kanban")]
+pub mod kanban;
 #[cfg(feature = "menubar")]
 pub mod menubar;
 #[cfg(feature = "native_select")]
@@ -146,6 +148,8 @@ pub mod prelude {
     pub use super::input_group::*;
     #[cfg(feature = "input_otp")]
     pub use super::input_otp::*;
+    #[cfg(feature = "kanban")]
+    pub use super::kanban::*;
     #[cfg(feature = "menubar")]
     pub use super::menubar::*;
     #[cfg(feature = "native_select")]

@@ -171,6 +171,10 @@ pub const NAV: &[NavGroup] = &[
                 href: "/docs/item",
             },
             NavItem {
+                label: "Kanban",
+                href: "/docs/kanban",
+            },
+            NavItem {
                 label: "Kbd",
                 href: "/docs/kbd",
             },

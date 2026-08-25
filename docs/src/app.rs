@@ -55,6 +55,7 @@ pub fn App() -> impl IntoView {
                             <Route path=path!("/alert") view=docs::alert::Page />
                             <Route path=path!("/alert-dialog") view=docs::alert_dialog::Page />
                             <Route path=path!("/aspect-ratio") view=docs::aspect_ratio::Page />
+                            <Route path=path!("/kanban") view=docs::kanban::Page />
                             <Route path=path!("/kbd") view=docs::kbd::Page />
                             <Route path=path!("/label") view=docs::label::Page />
                             <Route path=path!("/separator") view=docs::separator::Page />
