@@ -545,7 +545,6 @@ dependencies = [
  "leptos_meta",
  "leptos_router",
  "nocomponents",
- "noform",
  "tw_merge",
 ]
 
@@ -1602,23 +1601,6 @@ dependencies = [
  "serde",
  "tokio",
  "toml",
-]
-
-[[package]]
-name = "noform"
-version = "0.1.0"
-dependencies = [
- "leptos",
- "noform-macros",
-]
-
-[[package]]
-name = "noform-macros"
-version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.117",
 ]
 
 [[package]]

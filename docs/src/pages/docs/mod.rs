@@ -26,7 +26,6 @@ pub mod drawer;
 pub mod dropdown_menu;
 pub mod empty;
 pub mod field;
-pub mod form;
 pub mod hover_card;
 pub mod image_cropper;
 pub mod index;

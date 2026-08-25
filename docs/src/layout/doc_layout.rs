@@ -49,13 +49,6 @@ pub const NAV: &[NavGroup] = &[
         ],
     },
     NavGroup {
-        label: "Forms",
-        items: &[NavItem {
-            label: "Form State",
-            href: "/docs/form",
-        }],
-    },
-    NavGroup {
         label: "Components",
         items: &[
             NavItem {

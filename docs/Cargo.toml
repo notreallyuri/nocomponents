@@ -5,9 +5,6 @@ edition = "2024"
 
 [dependencies]
 nocomponents = { path = "..", features = ["full"] }
-# The docs site is where the two crates meet. `nocomponents` itself does not know `noform` exists
-# and must not: the contract between them is `RwSignal<T>` and `Signal<bool>`, nothing more.
-noform = { path = "../../noform" }
 leptos = { version = "0.8.19", features = ["csr"] }
 leptos_meta = "0.8.6"
 leptos_router = "0.8.13"
