@@ -12,7 +12,8 @@ use nocomponents::{
         SidebarGroupLabel, SidebarHeader, SidebarInput, SidebarInset, SidebarMenu,
         SidebarMenuAction, SidebarMenuBadge, SidebarMenuButton, SidebarMenuItem,
         SidebarMenuSkeleton, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem,
-        SidebarProvider, SidebarRail, SidebarSeparator, SidebarTrigger, SidebarVariant,
+        SidebarProvider, SidebarRail, SidebarSeparator, SidebarTree, SidebarTreeGroup,
+        SidebarTreeItem, SidebarTreeRow, SidebarTrigger, SidebarVariant,
     },
     icons::{copy::Copy, ellipsis::Ellipsis, search::Search},
     primitives::sidebar::SidebarCollapsible,
@@ -184,6 +185,32 @@ fn Body(#[prop(default = "Overview")] title: &'static str) -> impl IntoView {
         </SidebarInset>
     }
 }
+
+const TREE: &str = r#"// The tree element, wearing the sidebar's rows. One behaviour, two sets
+// of classes.
+<SidebarGroup>
+    <SidebarGroupLabel>"Files"</SidebarGroupLabel>
+    <SidebarGroupContent>
+        <SidebarTree label="Files">
+            <SidebarTreeItem default_open=true>
+                <SidebarTreeRow>"src"</SidebarTreeRow>
+                <SidebarTreeGroup>
+                    <SidebarTreeItem>
+                        <SidebarTreeRow>"components"</SidebarTreeRow>
+                        <SidebarTreeGroup>
+                            <SidebarTreeItem>
+                                <SidebarTreeRow>"button.rs"</SidebarTreeRow>
+                            </SidebarTreeItem>
+                        </SidebarTreeGroup>
+                    </SidebarTreeItem>
+                    <SidebarTreeItem>
+                        <SidebarTreeRow active=true>"lib.rs"</SidebarTreeRow>
+                    </SidebarTreeItem>
+                </SidebarTreeGroup>
+            </SidebarTreeItem>
+        </SidebarTree>
+    </SidebarGroupContent>
+</SidebarGroup>"#;
 
 const API: &[ApiEntry] = &[
     ApiEntry {
@@ -706,6 +733,7 @@ pub fn Page() -> impl IntoView {
     let default_open = RwSignal::new(true);
     let icon_open = RwSignal::new(true);
     let right_open = RwSignal::new(true);
+    let tree_open = RwSignal::new(true);
     let floating_open = RwSignal::new(true);
     let inset_open = RwSignal::new(true);
     let menu_open = RwSignal::new(true);
@@ -761,6 +789,52 @@ pub fn Page() -> impl IntoView {
                                 <SidebarRail />
                             </Sidebar>
                             <Body title="Icons" />
+                        </SidebarProvider>
+                    </Frame>
+                </DemoSection>
+
+                <DemoSection
+                    title="A tree of rows"
+                    description="The same tree element the Tree page documents, wearing the sidebar's rows instead of its own — one behaviour, two sets of classes. It folds away with the rest when the sidebar collapses to icons, since a tree of labels has nothing to show at that width."
+                    code=TREE
+                >
+                    <Frame>
+                        <SidebarProvider open=tree_open class="min-h-full">
+                            <Sidebar>
+                                <SidebarContent>
+                                    <SidebarGroup>
+                                        <SidebarGroupLabel>"Files"</SidebarGroupLabel>
+                                        <SidebarGroupContent>
+                                            <SidebarTree label="Files">
+                                                <SidebarTreeItem default_open=true>
+                                                    <SidebarTreeRow>"src"</SidebarTreeRow>
+                                                    <SidebarTreeGroup>
+                                                        <SidebarTreeItem>
+                                                            <SidebarTreeRow>"components"</SidebarTreeRow>
+                                                            <SidebarTreeGroup>
+                                                                <SidebarTreeItem>
+                                                                    <SidebarTreeRow>"button.rs"</SidebarTreeRow>
+                                                                </SidebarTreeItem>
+                                                                <SidebarTreeItem>
+                                                                    <SidebarTreeRow>"tree.rs"</SidebarTreeRow>
+                                                                </SidebarTreeItem>
+                                                            </SidebarTreeGroup>
+                                                        </SidebarTreeItem>
+                                                        <SidebarTreeItem>
+                                                            <SidebarTreeRow active=true>"lib.rs"</SidebarTreeRow>
+                                                        </SidebarTreeItem>
+                                                    </SidebarTreeGroup>
+                                                </SidebarTreeItem>
+                                                <SidebarTreeItem>
+                                                    <SidebarTreeRow>"Cargo.toml"</SidebarTreeRow>
+                                                </SidebarTreeItem>
+                                            </SidebarTree>
+                                        </SidebarGroupContent>
+                                    </SidebarGroup>
+                                </SidebarContent>
+                                <SidebarRail />
+                            </Sidebar>
+                            <Body title="Files" />
                         </SidebarProvider>
                     </Frame>
                 </DemoSection>

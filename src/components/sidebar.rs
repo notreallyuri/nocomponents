@@ -7,14 +7,17 @@ use crate::{
         skeleton::Skeleton,
         tooltip::{Tooltip, TooltipContent, TooltipTrigger},
     },
-    icons::panel::PanelLeft,
-    primitives::sidebar::{
-        SidebarCollapsible, SidebarMenuButtonRoot, SidebarProviderRoot, SidebarRailRoot,
-        SidebarRoot, SidebarTriggerRoot, use_sidebar,
+    icons::{chevron::ChevronRight, panel::PanelLeft},
+    primitives::{
+        sidebar::{
+            SidebarCollapsible, SidebarMenuButtonRoot, SidebarProviderRoot, SidebarRailRoot,
+            SidebarRoot, SidebarTriggerRoot, use_sidebar,
+        },
+        tree::{TreeGroupRoot, TreeItemRoot, TreeRoot, TreeRowRoot, use_tree_item},
     },
     utils::types::{AsClass, Side, StyledRender},
 };
-use leptos::{either::Either, prelude::*};
+use leptos::{either::Either, ev, prelude::*};
 use leptos_node_ref::AnyNodeRef;
 
 #[derive(Default, Clone, Copy, PartialEq)]
@@ -294,9 +297,7 @@ pub fn SidebarContent(
 
 #[component]
 pub fn SidebarSeparator(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
-    view! {
-        <Separator class=move || cn!("mx-2 w-auto bg-sidebar-border", class.get()) />
-    }
+    view! { <Separator class=move || cn!("mx-2 w-auto bg-sidebar-border", class.get()) /> }
 }
 
 #[component]
@@ -541,6 +542,92 @@ pub fn SidebarMenuSkeleton(
                 attr:style=format!("--skeleton-width: {width}%")
             />
         </div>
+    }
+}
+
+#[component]
+pub fn SidebarTree(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] label: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <TreeRoot
+            label=label
+            class=move || {
+                cn!(
+                    "flex w-full min-w-0 flex-col gap-1", "group-data-[collapsible=icon]:hidden", class.get()
+                )
+            }
+        >
+            {children()}
+        </TreeRoot>
+    }
+}
+
+#[component]
+pub fn SidebarTreeItem(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional)] default_open: bool,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <TreeItemRoot
+            default_open=default_open
+            class=move || cn!("flex min-w-0 flex-col gap-1 outline-none", class.get())
+        >
+            {children()}
+        </TreeItemRoot>
+    }
+}
+
+#[component]
+pub fn SidebarTreeRow(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] active: Signal<bool>,
+    #[prop(default = None, into)] on_select: Option<Callback<ev::MouseEvent>>,
+    children: Children,
+) -> impl IntoView {
+    let item = use_tree_item();
+    let has_group = move || item.is_some_and(|item| item.has_group.get());
+
+    view! {
+        <TreeRowRoot
+            on_select=on_select
+            class=move || {
+                cn!(
+                    "group/tree-row flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding]",
+                    "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground active:bg-sidebar-accent active:text-sidebar-accent-foreground",
+                    "data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground",
+                    "[[data-slot=tree-item]:focus-visible>&]:ring-2",
+                    "[&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0",
+                    class.get(),
+                )
+            }
+            attr:data-active=move || active.get().then_some("true")
+        >
+            <span class="flex size-4 shrink-0 items-center justify-center">
+                <Show when=has_group>
+                    <ChevronRight class="size-3.5 text-sidebar-foreground/70 transition-transform group-data-[state=open]/tree-row:rotate-90" />
+                </Show>
+            </span>
+            <span class="truncate">{children()}</span>
+        </TreeRowRoot>
+    }
+}
+
+#[component]
+pub fn SidebarTreeGroup(
+    #[prop(optional, into)] class: Signal<String>,
+    children: ChildrenFn,
+) -> impl IntoView {
+    view! {
+        <TreeGroupRoot class=move || {
+            cn!(
+                "mx-3.5 flex min-w-0 translate-x-px flex-col gap-1 border-l border-sidebar-border px-2.5 py-0.5",
+                class.get(),
+            )
+        }>{children()}</TreeGroupRoot>
     }
 }
 

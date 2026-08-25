@@ -187,8 +187,33 @@ rather than general UI, so they are the easiest to defer or skip.
 - [ ] Form — A context that holds form state, made to work with `noform`
 - [ ] Dropzone - A component that allows users to drag and drop files onto it, with support for multiple
       files and file type validation.
-- [ ] Add a `tree-view-mode` to `sidebar`, allowing for a tree view of the sidebar items, with support for expanding
-      and collapsing items, and keyboard navigation.
+- [x] `tree` — its own element rather than a mode on the sidebar, because a tree is not a sidebar
+      feature: it is a thing a sidebar can contain, and a file picker or a settings pane wants the
+      same one. `role="tree"`, one tab stop, `aria-level` per depth, and `aria-expanded` only on
+      the items that have children — which is not knowable until the children have rendered, so
+      `TreeGroupRoot` is what tells its item it is a branch. A closed group renders nothing rather
+      than hiding, so "the next visible item" is just the next one in the DOM and the roving focus
+      needs no notion of visibility. Enter and Space are routed through the row's own click, so the
+      pointer and the keyboard take one path.
+
+      Four things it shipped wrong first, all invisible to the compiler: the keys were on the row,
+      which is a *child* of the focused item and so never saw them; `attr:aria-level` on a native
+      element renders nothing, so every item was depthless; nothing called `sync_tab_stop`, so the
+      tree could not be tabbed into at all; and — the one a reader spotted before I did — **a
+      named Tailwind group matches any ancestor that carries it**, so `group/tree-item` on an item
+      that nests inside another item lit up every descendant. The chevron of a closed folder inside
+      an open one was permanently rotated, and a focused branch ringed every row beneath it.
+      Both now key off the row, which does not nest, and the focus ring is a direct-child variant
+      (`[[data-slot=tree-item]:focus-visible>&]`) rather than a group at all.
+
+      **Nesting a component inside itself makes `group/name` unusable for its own state.** Worth
+      remembering for the kanban board and anything else recursive.
+- [x] The sidebar half: `SidebarTree` / `SidebarTreeItem` / `SidebarTreeRow` / `SidebarTreeGroup`,
+      the same primitives with the sidebar's classes rather than the tree's own — one behaviour,
+      two styled layers, which is the split the library is built on. The rows take
+      `SidebarMenuButton`'s look and the group takes `SidebarMenuSub`'s rule, and the whole thing
+      folds away with `group-data-[collapsible=icon]:hidden`, a tree of labels having nothing to
+      show at that width. `sidebar` gained `tree` as a feature edge.
 - [ ] Video player - A component that allows users to play videos, with support for multiple video formats and playback controls.
   - [ ] View Modes:
     - [ ] Full: All components are visible and inline
