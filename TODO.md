@@ -352,6 +352,14 @@ rather than general UI, so they are the easiest to defer or skip.
       would rather say `rebeccapurple`. A sorted table of packed `u32`s, searched only once the
       shapes with punctuation in them are ruled out; `transparent` is matched ahead of it, being
       the one keyword with an alpha.
+- [ ] `ColorPicker` in more shapes than the square-and-rail. A **triangular** picker (saturation
+      and value on the corners of a triangle, hue on the ring around it) and a **wheel** are the two
+      people ask for; both are the same `Hsva` underneath, so what is new is the geometry — a point
+      inside a triangle or a disc mapped to two channels, and back. That is arithmetic with a unit
+      test, and the picker already keeps HSVA rather than RGB precisely so a shape like this cannot
+      lose the hue in a corner. The rails stay: a shape is a way to pick, not the only way, and the
+      text field is what makes any of them exact.
+
 - [ ] `ColorPicker` should use a `Select` instead of a button to switch colors, and instead of
       a unified input, using a divided input (with `InputGroup`) with a `Select` to switch formats
   - 3 for rgb
@@ -378,6 +386,19 @@ rather than general UI, so they are the easiest to defer or skip.
 - [ ] `navigation_menu` has no shared viewport: each panel is absolutely positioned against the
       menu, so they all open in the same place, but the box does not slide or resize between them.
       That needs the active panel measured and the size animated.
+- [ ] `chart` needs more of each mode, not only more modes. How a series gets from one point to the
+      next is its own choice and is currently always a straight line: an area or a line should be
+      able to be **curved** (a monotone spline, which does not overshoot into values the data never
+      had) or **stepped** (blocky — which is the honest shape for anything that holds a value until
+      it changes, a price or a setting), as well as the sharp one it draws now. That is an
+      interpolation prop over the existing path arithmetic rather than a new kind of chart.
+
+- [ ] `chart` needs the shapes that are not a cartesian plot at all: **pie**, **radial** (a bar
+      chart bent round a circle) and **radar**. They share an angular scale and a centre instead of
+      an x and a y, so they want their own primitive beside `primitives/chart.rs`'s rather than a
+      mode inside it — and all three are arithmetic, which means they can be unit-tested the way
+      `utils::color` is rather than only eyeballed.
+
 - [ ] `chart` is line, area and bar over a categorical x axis. No stacking, no second axis, no time
       scale, no pie — each is more arithmetic in `primitives/chart.rs`, not new machinery.
 - [ ] `chart` draws every label it is handed, and the tooltip reads that same list, so a long series
