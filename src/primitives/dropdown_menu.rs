@@ -2,6 +2,7 @@ use crate::{
     primitives::{
         floating::{
             ArrowOpen, FloatingContext, FloatingRoot, FloatingTrigger, OpenFocus, TriggerAria,
+            TriggerRender,
         },
         roving_focus::{RovingFocus, use_roving_focus},
         typeahead::Typeahead,
@@ -58,15 +59,19 @@ pub fn DropdownMenuRoot(
 pub fn DropdownMenuTriggerRoot(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
-    #[prop(default = None, into)] render: Option<
-        Callback<(AnyNodeRef, Callback<ev::MouseEvent>), AnyView>,
-    >,
+    #[prop(default = None, into)] render: Option<Callback<TriggerRender, AnyView>>,
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     let ctx = use_dropdown();
 
     view! {
-        <FloatingTrigger context=ctx class=class disabled=disabled render=render>
+        <FloatingTrigger
+            context=ctx
+            class=class
+            disabled=disabled
+            data_slot="dropdown-menu-trigger"
+            render=render
+        >
             {match children {
                 Some(child) => Either::Left(child()),
                 None => Either::Right(""),
@@ -237,6 +242,7 @@ pub fn DropdownMenuContentRoot(
         >
             <div
                 node_ref=menu_ref
+                data-slot="dropdown-menu-content"
                 id=move || ctx.content_id.get()
                 role="menu"
                 aria-labelledby=move || ctx.trigger_id.get()
@@ -273,6 +279,7 @@ pub fn DropdownMenuContentRoot(
 #[component]
 pub fn DropdownMenuItemRoot(
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(default = None, into)] on_click: Option<Callback<ev::MouseEvent>>,
     children: Children,
 ) -> impl IntoView {
@@ -281,6 +288,13 @@ pub fn DropdownMenuItemRoot(
     let menu_root = use_context::<MenuRoot>();
 
     let handle_click = move |e: ev::MouseEvent| {
+        // The styled layer's `data-disabled:pointer-events-none` is a courtesy, not the rule: an
+        // item styled by someone else still has to refuse the click rather than run it and close
+        // the menu underneath the caller.
+        if disabled.get_untracked() {
+            return;
+        }
+
         if let Some(cb) = on_click {
             cb.run(e);
         }
@@ -291,7 +305,19 @@ pub fn DropdownMenuItemRoot(
     };
 
     view! {
-        <div role="menuitem" tabindex="-1" data-roving-item="" on:click=handle_click class=class>
+        // `data-disabled` is what the styling, the roving focus and the "focus the first item"
+        // query all read; `aria-disabled` is what says so out loud. The item keeps its
+        // `data-roving-item` either way — it is skipped by being disabled, not by being invisible.
+        <div
+            data-slot="dropdown-menu-item"
+            role="menuitem"
+            tabindex="-1"
+            data-roving-item=""
+            data-disabled=move || disabled.get().then_some("true")
+            aria-disabled=move || disabled.get().then_some("true")
+            on:click=handle_click
+            class=class
+        >
             {children()}
         </div>
     }
@@ -321,6 +347,7 @@ pub fn DropdownMenuSubTriggerRoot(
     view! {
         <button
             type="button"
+            data-slot="dropdown-menu-sub-trigger"
             role="menuitem"
             aria-haspopup="menu"
             aria-expanded=move || ctx.is_open.get().to_string()
@@ -429,6 +456,7 @@ pub fn DropdownMenuSubContentRoot(
         >
             <div
                 node_ref=menu_ref
+                data-slot="dropdown-menu-sub-content"
                 id=move || ctx.content_id.get()
                 role="menu"
                 aria-labelledby=move || ctx.trigger_id.get()

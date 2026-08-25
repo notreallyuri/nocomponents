@@ -25,7 +25,7 @@ const DEFAULT: &str = r#"<DropdownMenu>
             <DropdownMenuSeparator />
             <DropdownMenuItem>"Profile"</DropdownMenuItem>
             <DropdownMenuItem>"Settings"</DropdownMenuItem>
-            <DropdownMenuItem>"Billing"</DropdownMenuItem>
+            <DropdownMenuItem disabled=true>"Billing"</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem class="text-destructive hover:bg-destructive/10 hover:text-destructive">
                 "Log out"
@@ -166,6 +166,12 @@ const API: &[ApiEntry] = &[
                 description: "Merged over the item's classes.",
             },
             Prop {
+                name: "disabled",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Refuses the click and leaves the menu open. The arrow keys and typeahead skip it.",
+            },
+            Prop {
                 name: "on_click",
                 ty: "Option<Callback<ev::MouseEvent>>",
                 default: "None",
@@ -258,7 +264,7 @@ pub fn Page() -> impl IntoView {
             <div class="flex flex-col gap-8">
                 <DemoSection
                     title="Default"
-                    description="Labels, separators and items compose the menu; the content is portalled and positioned against the trigger."
+                    description="Labels, separators and items compose the menu; the content is portalled and positioned against the trigger. A disabled item is skipped by the arrows and the typeahead as well as by the pointer."
                     code=DEFAULT
                 >
                     <DropdownMenu>
@@ -271,7 +277,7 @@ pub fn Page() -> impl IntoView {
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem>"Profile"</DropdownMenuItem>
                                 <DropdownMenuItem>"Settings"</DropdownMenuItem>
-                                <DropdownMenuItem>"Billing"</DropdownMenuItem>
+                                <DropdownMenuItem disabled=true>"Billing"</DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem class="text-destructive hover:bg-destructive/10 hover:text-destructive">
                                     "Log out"

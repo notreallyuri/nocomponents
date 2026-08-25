@@ -114,6 +114,23 @@ pub enum TriggerAria {
     Describes,
 }
 
+/// What a trigger's `render` is handed.
+///
+/// A struct rather than a tuple because this is the one shape that has had to grow: it was
+/// `(AnyNodeRef, Callback<MouseEvent>)` until a combobox inside a disabled `Field` needed the
+/// resolved `disabled` as well. Every future addition is a new field, which no caller has to be
+/// rewritten for — destructuring a tuple breaks the moment the tuple gains an element.
+#[derive(Copy, Clone)]
+pub struct TriggerRender {
+    /// Must be attached to whatever is rendered, or the floating layer has nothing to measure
+    /// against and the ARIA has no node to be written onto.
+    pub node_ref: AnyNodeRef,
+    pub on_click: Callback<MouseEvent>,
+    /// The trigger's own `disabled`, already resolved against the `Field` it may sit in — which is
+    /// not the same as the `disabled` the caller passed.
+    pub disabled: Signal<bool>,
+}
+
 /// Whether focus currently sits inside this layer's content.
 fn focus_is_inside_content(context: FloatingContext) -> bool {
     let Some(active) = document().active_element() else {
@@ -132,15 +149,34 @@ pub fn FloatingTrigger(
     context: FloatingContext,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
-    #[prop(default = None, into)] render: Option<
-        Callback<(AnyNodeRef, Callback<MouseEvent>), AnyView>,
-    >,
+    /// What `data-slot` this trigger wears — `"select-trigger"`, `"popover-trigger"`. Named by the
+    /// component that owns the trigger rather than by the caller: a slot is what a stylesheet
+    /// matches on, so it is part of the component's shape and not a decoration.
+    #[prop(default = None, into)]
+    data_slot: Option<&'static str>,
+    #[prop(default = None, into)] render: Option<Callback<TriggerRender, AnyView>>,
     children: Children,
 ) -> impl IntoView {
     let on_click = Callback::new(move |_: MouseEvent| context.toggle());
 
+    // Onto the node rather than into the markup, for the reason the ARIA above is: the trigger is
+    // this `<button>` in one place and whatever `render` returned in another, and the node ref is
+    // all the shapes have in common. One path, so the slot cannot be there for a plain trigger and
+    // missing for an `as_child` one.
+    if let Some(slot) = data_slot {
+        Effect::new(move |_| {
+            if let Some(trigger) = context.trigger_ref.get() {
+                let _ = trigger.set_attribute("data-slot", slot);
+            }
+        });
+    }
+
     match render {
-        Some(render_fn) => Either::Left(render_fn.run((context.trigger_ref, on_click))),
+        Some(render_fn) => Either::Left(render_fn.run(TriggerRender {
+            node_ref: context.trigger_ref,
+            on_click,
+            disabled,
+        })),
         None => Either::Right(view! {
             <button
                 type="button"
@@ -188,8 +224,19 @@ pub fn FloatingRoot(
             return;
         };
         let is_open = context.is_open.get();
+        let minted = context.trigger_id.get();
+        let existing = trigger.id();
 
-        let _ = trigger.set_attribute("id", &context.trigger_id.get());
+        // An id the caller wrote is theirs, and something may already be pointing at it — a
+        // `<label for>`, an `aria-labelledby` elsewhere on the page. So it is adopted as the
+        // trigger id rather than overwritten, and everything downstream (the field's label, the
+        // content's `aria-labelledby`) follows it. Only a trigger with no id of its own is given
+        // the minted one.
+        if existing.is_empty() {
+            let _ = trigger.set_attribute("id", &minted);
+        } else if existing != minted {
+            context.trigger_id.set(existing);
+        }
 
         match trigger_aria {
             TriggerAria::None => {}

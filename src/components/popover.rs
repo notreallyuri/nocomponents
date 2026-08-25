@@ -1,11 +1,11 @@
 use crate::{
     cn,
     components::button::{Button, ButtonSize, ButtonVariant},
-    primitives::popover::{PopoverContentRoot, PopoverPortalRoot, PopoverRoot, use_popover},
+    primitives::floating::TriggerRender,
+    primitives::popover::{PopoverContentRoot, PopoverPortalRoot, PopoverRoot, PopoverTriggerRoot},
     utils::types::{Align, Side, SideOffset},
 };
-use leptos::{either::Either, ev, prelude::*};
-use leptos_node_ref::AnyNodeRef;
+use leptos::{either::Either, prelude::*};
 
 #[component]
 pub fn Popover(children: ChildrenFn) -> impl IntoView {
@@ -18,35 +18,34 @@ pub fn PopoverTrigger(
     #[prop(optional)] variant: ButtonVariant,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
-    #[prop(optional, into)] as_child: Option<
-        Callback<(AnyNodeRef, Callback<ev::MouseEvent>), AnyView>,
-    >,
+    #[prop(optional, into)] as_child: Option<Callback<TriggerRender, AnyView>>,
     #[prop(optional)] children: Option<ChildrenFn>,
 ) -> impl IntoView {
-    let ctx = use_popover();
-    let on_click = Callback::new(move |_: ev::MouseEvent| ctx.toggle());
+    let children = StoredValue::new(children);
 
-    match as_child {
-        Some(render_fn) => Either::Left(render_fn.run((ctx.trigger_ref, on_click))),
-        None => Either::Right(view! {
+    let styled = Callback::new(move |trigger: TriggerRender| {
+        view! {
             <Button
                 size=size
                 variant=variant
-                attr:disabled=disabled
+                node_ref=trigger.node_ref
+                on_click=trigger.on_click
+                attr:disabled=trigger.disabled
                 class=class
-                node_ref=ctx.trigger_ref
-                on_click=on_click
             >
-                {
-                    let children = children.clone();
-                    move || match &children {
-                        Some(child) => Either::Left(child()),
-                        None => Either::Right(view! { "" }.into_any()),
-                    }
-                }
+                {move || {
+                    children
+                        .with_value(|children| match children {
+                            Some(child) => Either::Left(child()),
+                            None => Either::Right(view! { "" }.into_any()),
+                        })
+                }}
             </Button>
-        }),
-    }
+        }
+        .into_any()
+    });
+
+    view! { <PopoverTriggerRoot disabled=disabled as_child=as_child.unwrap_or(styled) /> }
 }
 
 #[component]

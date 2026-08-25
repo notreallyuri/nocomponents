@@ -86,8 +86,6 @@ pub fn MenubarContent(
             side=side
             align=align
             side_offset=side_offset
-            // Left and Right belong to the bar even from inside a menu: they walk to the menu
-            // beside this one and open it, the way a desktop menubar does.
             on_arrow_horizontal=Callback::new(move |direction| bar.step(direction))
             class=move || {
                 cn!(
@@ -106,11 +104,13 @@ pub fn MenubarContent(
 #[component]
 pub fn MenubarItem(
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(default = None, into)] on_click: Option<Callback<ev::MouseEvent>>,
     children: Children,
 ) -> impl IntoView {
     view! {
         <DropdownMenuItemRoot
+            disabled=disabled
             on_click=on_click
             class=move || {
                 cn!(

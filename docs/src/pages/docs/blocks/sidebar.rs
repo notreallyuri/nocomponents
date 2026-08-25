@@ -25,6 +25,7 @@ use nocomponents::{
     icons::{
         calendar::Calendar, chevron::ChevronDown, copy::Copy, ellipsis::Ellipsis, search::Search,
     },
+    primitives::floating::TriggerRender,
     primitives::sidebar::{SidebarCollapsible, use_sidebar},
     utils::types::{Align, Orientation, Side},
 };
@@ -162,11 +163,11 @@ view! {
                             // the menu to measure what it hangs off, the row to carry its own
                             // state — and leptos allows one `node_ref` per element, so the one
                             // the trigger hands over goes into the row.
-                            <DropdownMenuTrigger render=Callback::new(|(node, click)| {
+                            <DropdownMenuTrigger render=Callback::new(|trigger: TriggerRender| {
                                 view! {
                                     <SidebarMenuButton
-                                        node_ref=node
-                                        on:click=move |e| click.run(e)
+                                        node_ref=trigger.node_ref
+                                        on:click=move |e| trigger.on_click.run(e)
                                     >
                                         <Avatar class="size-6">
                                             <AvatarFallback>"YO"</AvatarFallback>
@@ -412,12 +413,12 @@ fn AccountMenu() -> impl IntoView {
         <SidebarMenu>
             <SidebarMenuItem>
                 <DropdownMenu>
-                    <DropdownMenuTrigger render=Callback::new(|(node, click): (_, Callback<_>)| {
+                    <DropdownMenuTrigger render=Callback::new(|trigger: TriggerRender| {
                         view! {
                             <SidebarMenuButton
-                                node_ref=node
+                                node_ref=trigger.node_ref
                                 tooltip=Signal::derive(|| "Yuri".to_string())
-                                on:click=move |e| click.run(e)
+                                on:click=move |e| trigger.on_click.run(e)
                             >
                                 <Avatar class="size-6">
                                     <AvatarFallback class="text-[10px]">"YO"</AvatarFallback>

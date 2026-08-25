@@ -1,7 +1,9 @@
 use crate::{
     primitives::{
         field::field_control_for_trigger,
-        floating::{ArrowOpen, FloatingContext, FloatingRoot, FloatingTrigger, TriggerAria},
+        floating::{
+            ArrowOpen, FloatingContext, FloatingRoot, FloatingTrigger, TriggerAria, TriggerRender,
+        },
         roving_focus::use_roving_focus,
         typeahead::Typeahead,
     },
@@ -51,16 +53,20 @@ pub fn SelectRoot(
 pub fn SelectTriggerRoot(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
-    #[prop(default = None, into)] as_child: Option<
-        Callback<(AnyNodeRef, Callback<ev::MouseEvent>), AnyView>,
-    >,
+    #[prop(default = None, into)] as_child: Option<Callback<TriggerRender, AnyView>>,
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     let ctx = use_select();
     let field = field_control_for_trigger(ctx.trigger_id, ctx.trigger_ref, disabled);
 
     view! {
-        <FloatingTrigger context=ctx class=class disabled=field.disabled render=as_child>
+        <FloatingTrigger
+            context=ctx
+            class=class
+            disabled=field.disabled
+            data_slot="select-trigger"
+            render=as_child
+        >
             {match children {
                 Some(child) => Either::Left(child()),
                 None => Either::Right(""),
@@ -76,9 +82,7 @@ pub fn SelectPortalRoot(children: ChildrenFn) -> impl IntoView {
 
     view! {
         <Portal>
-            <Show when=move || ctx.is_mounted.get()>
-                {stored_children.with_value(|c| c())}
-            </Show>
+            <Show when=move || ctx.is_mounted.get()>{stored_children.with_value(|c| c())}</Show>
         </Portal>
     }
 }
@@ -145,6 +149,7 @@ pub fn SelectContentRoot(
         >
             <div
                 node_ref=listbox_ref
+                data-slot="select-content"
                 id=move || ctx.content_id.get()
                 role="listbox"
                 aria-labelledby=move || ctx.trigger_id.get()
@@ -209,6 +214,7 @@ pub fn SelectItemRoot(
 
     view! {
         <div
+            data-slot="select-item"
             role="option"
             tabindex="-1"
             data-roving-item=""

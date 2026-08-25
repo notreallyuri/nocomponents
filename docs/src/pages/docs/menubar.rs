@@ -184,6 +184,12 @@ const API: &[ApiEntry] = &[
                 description: "Merged over the item's classes.",
             },
             Prop {
+                name: "disabled",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Refuses the click and leaves the menu open. The arrow keys and typeahead skip it.",
+            },
+            Prop {
                 name: "on_click",
                 ty: "Option<Callback<MouseEvent>>",
                 default: "None",

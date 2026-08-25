@@ -13,7 +13,9 @@ use crate::{
     primitives::{
         command::{CommandItemRoot, CommandRoot},
         field::field_control_for_trigger,
-        floating::{ArrowOpen, FloatingContext, FloatingRoot, FloatingTrigger, TriggerAria},
+        floating::{
+            ArrowOpen, FloatingContext, FloatingRoot, FloatingTrigger, TriggerAria, TriggerRender,
+        },
     },
     utils::{
         get_placement,
@@ -24,8 +26,7 @@ use floating_ui_leptos::{
     Flip, FlipOptions, MiddlewareVec, Offset, OffsetOptions, Placement, Shift, ShiftOptions,
     Strategy, UseFloatingOptions, UseFloatingReturn, use_floating,
 };
-use leptos::{either::Either, ev, portal::Portal, prelude::*, wasm_bindgen::JsCast};
-use leptos_node_ref::AnyNodeRef;
+use leptos::{either::Either, portal::Portal, prelude::*, wasm_bindgen::JsCast};
 use send_wrapper::SendWrapper;
 use web_sys::HtmlElement;
 
@@ -70,9 +71,7 @@ pub fn ComboboxRoot(
 pub fn ComboboxTriggerRoot(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
-    #[prop(default = None, into)] as_child: Option<
-        Callback<(AnyNodeRef, Callback<ev::MouseEvent>), AnyView>,
-    >,
+    #[prop(default = None, into)] as_child: Option<Callback<TriggerRender, AnyView>>,
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     let ctx = use_combobox();
@@ -81,7 +80,13 @@ pub fn ComboboxTriggerRoot(
     let field = field_control_for_trigger(ctx.trigger_id, ctx.trigger_ref, disabled);
 
     view! {
-        <FloatingTrigger context=ctx class=class disabled=field.disabled render=as_child>
+        <FloatingTrigger
+            context=ctx
+            class=class
+            disabled=field.disabled
+            data_slot="combobox-trigger"
+            render=as_child
+        >
             {match children {
                 Some(children) => Either::Left(children()),
                 None => Either::Right(""),

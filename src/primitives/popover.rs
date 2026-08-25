@@ -1,5 +1,7 @@
 use crate::{
-    primitives::floating::{FloatingContext, FloatingRoot, FloatingTrigger, TriggerAria},
+    primitives::floating::{
+        FloatingContext, FloatingRoot, FloatingTrigger, TriggerAria, TriggerRender,
+    },
     utils::{
         get_placement,
         types::{Align, Side, SideOffset},
@@ -9,8 +11,7 @@ use floating_ui_leptos::{
     Flip, FlipOptions, MiddlewareVec, Offset, OffsetOptions, Placement, Shift, ShiftOptions,
     Strategy, UseFloatingOptions, UseFloatingReturn, use_floating,
 };
-use leptos::{either::Either, ev, portal::Portal, prelude::*};
-use leptos_node_ref::AnyNodeRef;
+use leptos::{either::Either, portal::Portal, prelude::*};
 use send_wrapper::SendWrapper;
 
 pub type PopoverContext = FloatingContext;
@@ -24,21 +25,29 @@ pub fn PopoverRoot(
     #[prop(optional, into)] class: Signal<String>,
     children: ChildrenFn,
 ) -> impl IntoView {
-    view! { <FloatingRoot class=class trigger_aria=TriggerAria::Popup("dialog")>{children()}</FloatingRoot> }
+    view! {
+        <FloatingRoot class=class trigger_aria=TriggerAria::Popup("dialog")>
+            {children()}
+        </FloatingRoot>
+    }
 }
 
 #[component]
 pub fn PopoverTriggerRoot(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
-    #[prop(default = None, into)] as_child: Option<
-        Callback<(AnyNodeRef, Callback<ev::MouseEvent>), AnyView>,
-    >,
+    #[prop(default = None, into)] as_child: Option<Callback<TriggerRender, AnyView>>,
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     let ctx = use_popover();
     view! {
-        <FloatingTrigger context=ctx class=class disabled=disabled render=as_child>
+        <FloatingTrigger
+            context=ctx
+            class=class
+            disabled=disabled
+            data_slot="popover-trigger"
+            render=as_child
+        >
             {match children {
                 Some(child) => Either::Left(child()),
                 None => Either::Right(""),
@@ -54,9 +63,7 @@ pub fn PopoverPortalRoot(children: ChildrenFn) -> impl IntoView {
 
     view! {
         <Portal>
-            <Show when=move || ctx.is_mounted.get()>
-                {stored_children.with_value(|c| c())}
-            </Show>
+            <Show when=move || ctx.is_mounted.get()>{stored_children.with_value(|c| c())}</Show>
         </Portal>
     }
 }

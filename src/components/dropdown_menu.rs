@@ -4,12 +4,13 @@ use crate::{
     icons::chevron::ChevronRight,
     primitives::dropdown_menu::{
         DropdownMenuContentRoot, DropdownMenuItemRoot, DropdownMenuPortalRoot, DropdownMenuRoot,
-        DropdownMenuSubContentRoot, DropdownMenuSubRoot, DropdownMenuSubTriggerRoot, use_dropdown,
+        DropdownMenuSubContentRoot, DropdownMenuSubRoot, DropdownMenuSubTriggerRoot,
+        DropdownMenuTriggerRoot,
     },
+    primitives::floating::TriggerRender,
     utils::types::{Align, Side, SideOffset},
 };
 use leptos::{either::Either, ev, portal::Portal, prelude::*};
-use leptos_node_ref::AnyNodeRef;
 
 #[component]
 pub fn DropdownMenu(children: ChildrenFn) -> impl IntoView {
@@ -22,35 +23,34 @@ pub fn DropdownMenuTrigger(
     #[prop(optional)] variant: ButtonVariant,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
-    #[prop(optional, into)] render: Option<
-        Callback<(AnyNodeRef, Callback<ev::MouseEvent>), AnyView>,
-    >,
+    #[prop(optional, into)] render: Option<Callback<TriggerRender, AnyView>>,
     #[prop(optional)] children: Option<ChildrenFn>,
 ) -> impl IntoView {
-    let ctx = use_dropdown();
-    let on_click = Callback::new(move |_: ev::MouseEvent| ctx.toggle());
+    let children = StoredValue::new(children);
 
-    match render {
-        Some(render_fn) => Either::Left(render_fn.run((ctx.trigger_ref, on_click))),
-        None => Either::Right(view! {
+    let styled = Callback::new(move |trigger: TriggerRender| {
+        view! {
             <Button
                 size=size
-                node_ref=ctx.trigger_ref
-                on_click=on_click
                 variant=variant
-                attr:disabled=disabled
+                node_ref=trigger.node_ref
+                on_click=trigger.on_click
+                attr:disabled=trigger.disabled
                 class=class
             >
-                {
-                    let children = children.clone();
-                    move || match &children {
-                        Some(child) => Either::Left(child()),
-                        None => Either::Right(view! { "" }.into_any()),
-                    }
-                }
+                {move || {
+                    children
+                        .with_value(|children| match children {
+                            Some(child) => Either::Left(child()),
+                            None => Either::Right(view! { "" }.into_any()),
+                        })
+                }}
             </Button>
-        }),
-    }
+        }
+        .into_any()
+    });
+
+    view! { <DropdownMenuTriggerRoot disabled=disabled render=render.unwrap_or(styled) /> }
 }
 
 #[component]
@@ -90,11 +90,13 @@ pub fn DropdownMenuContent(
 #[component]
 pub fn DropdownMenuItem(
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] on_click: Option<Callback<ev::MouseEvent>>,
     children: Children,
 ) -> impl IntoView {
     view! {
         <DropdownMenuItemRoot
+            disabled=disabled
             on_click=on_click
             class=move || {
                 cn!(

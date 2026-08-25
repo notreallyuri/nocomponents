@@ -3,13 +3,13 @@ use crate::{
     components::button::{Button, ButtonSize, ButtonVariant},
     icons::{check::Check, chevron::ChevronDown},
     primitives::combobox::{
-        ComboboxContentRoot, ComboboxItemRoot, ComboboxPortalRoot, ComboboxRoot, use_combobox,
+        ComboboxContentRoot, ComboboxItemRoot, ComboboxPortalRoot, ComboboxRoot,
+        ComboboxTriggerRoot, use_combobox,
     },
-    primitives::field::field_control_for_trigger,
+    primitives::floating::TriggerRender,
     utils::types::{Align, Side, SideOffset},
 };
-use leptos::{either::Either, ev, prelude::*};
-use leptos_node_ref::AnyNodeRef;
+use leptos::{either::Either, prelude::*};
 
 #[component]
 pub fn Combobox(
@@ -35,40 +35,35 @@ pub fn ComboboxTrigger(
     #[prop(default = ButtonVariant::Outline)] variant: ButtonVariant,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
-    #[prop(default = None, into)] render: Option<
-        Callback<(AnyNodeRef, Callback<ev::MouseEvent>), AnyView>,
-    >,
+    #[prop(default = None, into)] render: Option<Callback<TriggerRender, AnyView>>,
     #[prop(optional)] children: Option<ChildrenFn>,
 ) -> impl IntoView {
-    let ctx = use_combobox();
-    let on_click = Callback::new(move |_: ev::MouseEvent| ctx.toggle());
-    // This trigger renders its own `Button` rather than going through `ComboboxTriggerRoot`, so
-    // the field wiring — the label's `for`, `aria-describedby`, `aria-invalid` — is asked for
-    // here as well. Outside a field it does nothing.
-    let field = field_control_for_trigger(ctx.trigger_id, ctx.trigger_ref, disabled);
+    let children = StoredValue::new(children);
 
-    match render {
-        Some(render) => Either::Left(render.run((ctx.trigger_ref, on_click))),
-        None => Either::Right(view! {
+    let styled = Callback::new(move |trigger: TriggerRender| {
+        view! {
             <Button
                 size=size
                 variant=variant
-                node_ref=ctx.trigger_ref
-                on_click=on_click
-                attr:disabled=field.disabled
+                node_ref=trigger.node_ref
+                on_click=trigger.on_click
+                attr:disabled=trigger.disabled
                 class=move || cn!("w-56 justify-between font-normal", class.get())
             >
-                {
-                    let children = children.clone();
-                    move || match &children {
-                        Some(children) => Either::Left(children()),
-                        None => Either::Right(view! { <ComboboxValue /> }),
-                    }
-                }
+                {move || {
+                    children
+                        .with_value(|children| match children {
+                            Some(children) => Either::Left(children()),
+                            None => Either::Right(view! { <ComboboxValue /> }),
+                        })
+                }}
                 <ChevronDown class="ml-2 shrink-0 text-muted-foreground" />
             </Button>
-        }),
-    }
+        }
+        .into_any()
+    });
+
+    view! { <ComboboxTriggerRoot disabled=disabled as_child=render.unwrap_or(styled) /> }
 }
 
 #[component]
@@ -117,10 +112,6 @@ pub fn ComboboxContent(
                 should_filter=should_filter
                 class=move || {
                     cn!(
-                        // `animation-duration-100`, not `duration-100`: the latter sets `transition-duration`
-                        // as well, and since `transition-property` defaults to `all`, the shell's
-                        // `visibility: hidden` then takes 100ms to lift — long enough that focusing the
-                        // search box inside it does nothing.
                         "flex flex-col overflow-hidden rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-none animation-duration-100 pointer-events-auto data-[state=closed]:pointer-events-none",
                         "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
                         "data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
