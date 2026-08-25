@@ -66,6 +66,7 @@ all-elements = [
     "empty",
     "field",
     "floating",
+    "floating_menu",
     "hover_card",
     "image_cropper",
     "input",
@@ -134,6 +135,7 @@ dropdown_menu = ["button", "floating", "roving_focus", "typeahead"]
 empty = []
 field = []
 floating = ["dismiss"]
+floating_menu = ["drag"]
 hover_card = ["floating"]
 image_cropper = ["drag"]
 input = ["field"]

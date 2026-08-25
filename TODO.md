@@ -212,10 +212,23 @@ rather than general UI, so they are the easiest to defer or skip.
       width, so scrolling to the live maximum runs past the real end and snaps back the moment the
       card is let go; the range is measured once at the press, while nothing is translated, and
       the scroll clamped to that.
-- [ ] Floating Menu — a draggable menu that can be moved around the screen. It is a `use_drag` target, so it can be moved
-      around in a larger layout; it is a `use_drag` source, so it can be moved within or between
-      columns; It may also support fixed positioning, so it can be anchored to a specific point
-      on the screen, controlled and uncontrolled.
+- [x] `floating_menu` — a panel the reader can pick up and put somewhere else. Fixed to the
+      viewport rather than placed in the flow, because that is what "move it out of the way" means:
+      it stays where it was put while the page scrolls under it. Everything else follows — the
+      position is client coordinates, and the clamp is against the window.
+
+      **Dragged by a handle, not by the whole panel.** A panel with buttons in it that also moves
+      when you press a button is a panel you cannot use; a caller who does want the whole thing to
+      move puts the handle around everything, which is their decision and not this one's.
+
+      The clamp keeps 32px reachable off either side and off the bottom, but never lets the panel
+      above the top: there is nothing above the top edge to grab it back by. It is a pure function
+      taking the viewport as an argument — `window()` *panics* off-wasm rather than returning zero,
+      so a clamp that read it directly could not be tested at all. Five tests on the rules, and the
+      window read in one place beside them.
+
+      The position is a plain `RwSignal` the caller may pass in, which is as useful for reading
+      where the reader left it as for driving it.
 - [ ] Timeline — Vertical/Horizontal events
 - [ ] Form — A context that holds form state, made to work with `noform`
 - [x] `dropzone` — a drop target and the picker behind it, arriving as one `Vec<File>` either way;

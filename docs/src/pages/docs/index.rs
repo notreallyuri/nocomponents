@@ -27,6 +27,7 @@ const COMPONENTS: &[(&str, &str)] = &[
     ("Dropdown Menu", "/docs/dropdown-menu"),
     ("Empty", "/docs/empty"),
     ("Field", "/docs/field"),
+    ("Floating Menu", "/docs/floating-menu"),
     ("Hover Card", "/docs/hover-card"),
     ("Input", "/docs/input"),
     ("Input Group", "/docs/input-group"),

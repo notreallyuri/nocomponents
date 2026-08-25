@@ -69,6 +69,7 @@ pub fn App() -> impl IntoView {
                             <Route path=path!("/table") view=docs::table::Page />
                             <Route path=path!("/empty") view=docs::empty::Page />
                             <Route path=path!("/field") view=docs::field::Page />
+                            <Route path=path!("/floating-menu") view=docs::floating_menu::Page />
                             <Route path=path!("/form") view=docs::form::Page />
                             <Route path=path!("/theme") view=docs::theme::Page />
                             <Route path=path!("/utility") view=docs::utility::Page />

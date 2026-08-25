@@ -40,6 +40,8 @@ pub mod dropzone;
 pub mod field;
 #[cfg(feature = "floating")]
 pub mod floating;
+#[cfg(feature = "floating_menu")]
+pub mod floating_menu;
 #[cfg(feature = "hover_card")]
 pub mod hover_card;
 #[cfg(feature = "image_cropper")]
@@ -140,6 +142,8 @@ pub mod prelude {
     pub use super::field::*;
     #[cfg(feature = "floating")]
     pub use super::floating::*;
+    #[cfg(feature = "floating_menu")]
+    pub use super::floating_menu::*;
     #[cfg(feature = "hover_card")]
     pub use super::hover_card::*;
     #[cfg(feature = "image_cropper")]

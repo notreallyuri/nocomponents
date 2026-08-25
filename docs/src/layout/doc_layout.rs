@@ -151,6 +151,10 @@ pub const NAV: &[NavGroup] = &[
                 href: "/docs/field",
             },
             NavItem {
+                label: "Floating Menu",
+                href: "/docs/floating-menu",
+            },
+            NavItem {
                 label: "Hover Card",
                 href: "/docs/hover-card",
             },
