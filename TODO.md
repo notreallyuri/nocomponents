@@ -386,6 +386,17 @@ rather than general UI, so they are the easiest to defer or skip.
 - [x] An "On this page" rail (`docs/src/components/page_nav.rs`) on every page wide enough for it.
       It reads headings marked `data-toc` out of its own `<main>`, so `DemoSection` and
       `ApiReference` opt in once and no page has to list anything.
+- [x] A second kanban block, the Trello-shaped card: a priority bar with a tooltip, the counts as
+      icons rather than three more lines of text, and everything else behind a dialog the card
+      opens with `on_select`. All of it is the caller's markup — the component owes it `children`
+      and the guarantee that a control inside a card does not start a drag. The bar is a `Tooltip`
+      trigger rendered `as_child`, so the tooltip hangs off the bar and not off a wrapper.
+
+      Cost two icons (`paperclip`, `message`) and one lesson: deriving the dialog's `open` from
+      "is a ticket selected" and clearing the ticket when it closes **hangs the page**. `set`
+      notifies whether or not the value changed, so the two effects write to each other for ever.
+      Two plain signals — the dialog owns whether it shows, the block owns what it shows — and
+      nothing needs clearing, because nothing reads the ticket while the dialog is closed.
 - [x] A kanban block: columns you add, cards you add, and two ways to move one — drag it, or
       right-click and pick a column. Both end in the same closure, `on_move` handing back a
       `KanbanMove` and the menu building one by hand, so the two cannot come to disagree about what

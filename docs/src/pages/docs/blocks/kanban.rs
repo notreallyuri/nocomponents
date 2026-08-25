@@ -11,10 +11,14 @@ use nocomponents::{
             ContextMenuSeparator, ContextMenuSub, ContextMenuSubContent, ContextMenuSubTrigger,
             ContextMenuTrigger,
         },
+        dialog::{Dialog, DialogDescription, DialogHeader, DialogPortal, DialogTitle},
         input::Input,
         kanban::{KanbanBoard, KanbanCard, KanbanColumn, KanbanColumnHeader, KanbanSlot},
+        tooltip::{Tooltip, TooltipContent, TooltipTrigger},
     },
+    icons::{check::Check, message::MessageSquare, paperclip::Paperclip},
     primitives::kanban::KanbanMove,
+    utils::types::AnchorRender,
 };
 
 const BOARD: &str = r##"// One list, and every gesture is a function over it. The board reports a
@@ -314,15 +318,297 @@ fn board() -> AnyView {
     .into_any()
 }
 
-pub const BLOCKS: &[Block] = &[Block {
-    title: "A board you can build",
-    description: "Columns you add, cards you add, and two ways to move one: drag it, or right-click \
+const DETAIL: &str = r##"// Everything below the title is markup the caller arranges — a colour bar,
+// a count, a label. The component owes it two things only: `children`, and
+// not starting a drag when a control inside the card is pressed.
+#[derive(Clone, Copy, PartialEq)]
+enum Priority { Low, Medium, High }
+
+// The face: a bar you can hover, a title, and the counts as icons rather
+// than as three more lines of text.
+<KanbanCard
+    id=ticket.id
+    // Not `on:click` — a card following the pointer is `pointer-events: none`,
+    // so the click never reaches it. `on_select` fires only when the press
+    // never travelled, which is the one thing the caller cannot work out.
+    on_select=Callback::new(move |_| { open.set(Some(ticket)); visible.set(true); })
+>
+    <div class="flex flex-col gap-2">
+        <Tooltip>
+            <TooltipTrigger render=Callback::new(move |anchor: AnchorRender| view! {
+                <div node_ref=anchor.node_ref class=priority.bar() />
+            }.into_any()) />
+            <TooltipContent>{priority.label()}</TooltipContent>
+        </Tooltip>
+
+        <span>{ticket.title}</span>
+
+        <div class="flex items-center gap-3 text-muted-foreground">
+            <MessageSquare /> {ticket.comments}
+            <Paperclip />     {ticket.attachments}
+            <Check />         {format!("{}/{}", ticket.done, ticket.steps)}
+        </div>
+    </div>
+</KanbanCard>
+
+// And the detail is a dialog over the board, opened by the same signal.
+<Dialog open=visible>
+    <DialogPortal>
+        <DialogHeader>
+            <DialogTitle>{…}</DialogTitle>
+            <DialogDescription>{…}</DialogDescription>
+        </DialogHeader>
+        {…}
+    </DialogPortal>
+</Dialog>"##;
+
+#[derive(Clone, Copy, PartialEq)]
+enum Priority {
+    Low,
+    Medium,
+    High,
+}
+
+impl Priority {
+    /// A literal per arm: Tailwind reads the source for class names and cannot follow one that is
+    /// assembled at runtime.
+    fn bar(self) -> &'static str {
+        match self {
+            Priority::Low => "h-1.5 w-10 rounded-full bg-emerald-500",
+            Priority::Medium => "h-1.5 w-10 rounded-full bg-amber-500",
+            Priority::High => "h-1.5 w-10 rounded-full bg-rose-500",
+        }
+    }
+
+    fn label(self) -> &'static str {
+        match self {
+            Priority::Low => "Low priority",
+            Priority::Medium => "Medium priority",
+            Priority::High => "High priority",
+        }
+    }
+}
+
+#[derive(Clone, Copy, PartialEq)]
+struct Ticket {
+    id: &'static str,
+    column: &'static str,
+    title: &'static str,
+    priority: Priority,
+    comments: usize,
+    attachments: usize,
+    done: usize,
+    steps: usize,
+    detail: &'static str,
+}
+
+#[rustfmt::skip]
+const TICKETS: &[Ticket] = &[
+    Ticket { id: "nc-41", column: "Backlog", title: "Split globals.css", priority: Priority::Medium,
+             comments: 3, attachments: 1, done: 1, steps: 4,
+             detail: "Four palettes and fourteen accents is most of a consumer's stylesheet, for tokens they mostly will not use. Separate the base tokens so a project takes one and opts into the rest." },
+    Ticket { id: "nc-52", column: "Backlog", title: "Re-encode the avatar", priority: Priority::Low,
+             comments: 0, attachments: 2, done: 0, steps: 2,
+             detail: "docs/assets/avatar.jpg is a 6.9MB PNG with a .jpg name, and it is include_bytes!d — so all of it lands in the wasm binary." },
+    Ticket { id: "nc-60", column: "In progress", title: "Board auto-scroll", priority: Priority::High,
+             comments: 5, attachments: 0, done: 2, steps: 6,
+             detail: "A board wider than the viewport can only be crossed by letting go and scrolling. Needs the board's rect and the live pointer, a rate curve, and a stop on release." },
+    Ticket { id: "nc-33", column: "Done", title: "Tree", priority: Priority::Medium,
+             comments: 2, attachments: 0, done: 5, steps: 5,
+             detail: "role=tree, one tab stop, aria-level per depth, and aria-expanded only on the items that have children." },
+];
+
+fn detail_board() -> AnyView {
+    let tickets = RwSignal::new(TICKETS.to_vec());
+    // Two signals rather than one derived from the other: the dialog owns whether it is showing,
+    // and this owns what it is showing. Deriving `visible` from `open` and clearing `open` when it
+    // goes false is the obvious shape and it hangs the page — `set` notifies whether or not the
+    // value changed, so the two effects write to each other for ever. Nothing needs to read the
+    // ticket while the dialog is closed, so nothing has to clear it.
+    let open = RwSignal::new(None::<Ticket>);
+    let visible = RwSignal::new(false);
+
+    let apply = move |moved: KanbanMove| {
+        tickets.update(|tickets| {
+            if let Some(ticket) = tickets.iter_mut().find(|t| t.id == moved.card) {
+                // The columns are a fixed set here, so a move is one field.
+                ticket.column = match moved.to.as_str() {
+                    "Backlog" => "Backlog",
+                    "In progress" => "In progress",
+                    _ => "Done",
+                };
+            }
+        });
+    };
+
+    view! {
+        <div class="flex w-full flex-col gap-3">
+            <KanbanBoard on_move=Callback::new(apply)>
+                {move || {
+                    ["Backlog", "In progress", "Done"]
+                        .into_iter()
+                        .map(|column| {
+                            let here: Vec<Ticket> = tickets
+                                .get()
+                                .into_iter()
+                                .filter(|t| t.column == column)
+                                .collect();
+                            let count = here.len();
+
+                            view! {
+                                <KanbanColumn id=column.to_string()>
+                                    <KanbanColumnHeader>
+                                        <span>{column}</span>
+                                        <Badge variant=BadgeVariant::Secondary>
+                                            {count.to_string()}
+                                        </Badge>
+                                    </KanbanColumnHeader>
+
+                                    <KanbanSlot index=0 />
+                                    {here
+                                        .into_iter()
+                                        .enumerate()
+                                        .map(|(i, ticket)| {
+                                            view! {
+                                                <KanbanCard
+                                                    id=ticket.id.to_string()
+                                                    on_select=Callback::new(move |_| {
+                                                        open.set(Some(ticket));
+                                                        visible.set(true);
+                                                    })
+                                                >
+                                                    <div class="flex flex-col gap-2">
+                                                        <Tooltip>
+                                                            <TooltipTrigger render=Callback::new(move |
+                                                                anchor: AnchorRender|
+                                                            {
+                                                                view! {
+                                                                    <div
+                                                                        node_ref=anchor.node_ref
+                                                                        class=ticket.priority.bar()
+                                                                    />
+                                                                }
+                                                                    .into_any()
+                                                            }) />
+                                                            <TooltipContent>
+                                                                {ticket.priority.label()}
+                                                            </TooltipContent>
+                                                        </Tooltip>
+
+                                                        <span class="leading-snug">{ticket.title}</span>
+
+                                                        <div class="flex items-center gap-3 text-xs text-muted-foreground">
+                                                            <span class="flex items-center gap-1">
+                                                                <MessageSquare class="size-3.5" />
+                                                                {ticket.comments.to_string()}
+                                                            </span>
+                                                            <span class="flex items-center gap-1">
+                                                                <Paperclip class="size-3.5" />
+                                                                {ticket.attachments.to_string()}
+                                                            </span>
+                                                            <span class="flex items-center gap-1">
+                                                                <Check class="size-3.5" />
+                                                                {format!("{}/{}", ticket.done, ticket.steps)}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </KanbanCard>
+                                                <KanbanSlot index=i + 1 />
+                                            }
+                                        })
+                                        .collect_view()}
+                                </KanbanColumn>
+                            }
+                        })
+                        .collect_view()
+                }}
+            </KanbanBoard>
+
+            <p class="text-xs text-muted-foreground">
+                "Click a card to open it. Drag one to move it."
+            </p>
+
+            <Dialog open=visible>
+                <DialogPortal class="sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>
+                            {move || open.get().map(|t| t.title).unwrap_or_default()}
+                        </DialogTitle>
+                        <DialogDescription>
+                            {move || {
+                                open.get()
+                                    .map(|t| format!("{} · {}", t.id, t.column))
+                                    .unwrap_or_default()
+                            }}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {move || {
+                        open.get()
+                            .map(|ticket| {
+                                view! {
+                                    <div class="flex flex-col gap-4">
+                                        <div class="flex items-center gap-2">
+                                            <div class=ticket.priority.bar() />
+                                            <span class="text-xs text-muted-foreground">
+                                                {ticket.priority.label()}
+                                            </span>
+                                        </div>
+
+                                        <p class="text-sm leading-relaxed text-muted-foreground">
+                                            {ticket.detail}
+                                        </p>
+
+                                        <div class="flex items-center gap-4 border-t pt-3 text-xs text-muted-foreground">
+                                            <span class="flex items-center gap-1.5">
+                                                <MessageSquare class="size-3.5" />
+                                                {format!("{} comments", ticket.comments)}
+                                            </span>
+                                            <span class="flex items-center gap-1.5">
+                                                <Paperclip class="size-3.5" />
+                                                {format!("{} attachments", ticket.attachments)}
+                                            </span>
+                                            <span class="flex items-center gap-1.5">
+                                                <Check class="size-3.5" />
+                                                {format!("{} of {} done", ticket.done, ticket.steps)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                }
+                            })
+                    }}
+                </DialogPortal>
+            </Dialog>
+        </div>
+    }
+    .into_any()
+}
+
+pub const BLOCKS: &[Block] = &[
+    Block {
+        title: "A board you can build",
+        description: "Columns you add, cards you add, and two ways to move one: drag it, or right-click \
                   it and pick a column. Both end in the same closure — `on_move` hands back a \
                   `KanbanMove`, and the context menu builds one by hand — so the two cannot come to \
                   disagree about what moving means. The card is the context menu's trigger, which \
                   works because the drag guards on the primary button: a right-click was never \
                   going to start one. Cards are keyed by id rather than by title, since two cards \
                   called the same thing would be one card that teleports.",
-    code: BOARD,
-    view: board,
-}];
+        code: BOARD,
+        view: board,
+    },
+    Block {
+        title: "A card with more on it than fits",
+        description: "Trello's answer to a card that has a description, a checklist, five comments and \
+                  two attachments: put a bar, a title and three counts on the face, and everything \
+                  else behind a dialog. Every part of that is the caller's markup — the component \
+                  owes it `children` and one guarantee, which is that pressing a control inside a \
+                  card does not start a drag. What the component *does* owe is `on_select`: a card \
+                  that is following the pointer is `pointer-events: none`, so a click never reaches \
+                  it, and only the gesture knows whether the pointer travelled. The priority bar is \
+                  a `Tooltip` trigger rendered `as_child`, so the tooltip hangs off the bar rather \
+                  than off a wrapper around it.",
+        code: DETAIL,
+        view: detail_board,
+    },
+];
