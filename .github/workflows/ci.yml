@@ -27,10 +27,14 @@ jobs:
       # The library compiles almost nothing without features, so the flag is the point.
       - run: cargo clippy --features full -- -D warnings
 
+      - run: cargo clippy -p nocomponents-cli -- -D warnings
+
       - run: cargo check -p docs
 
       # Covers `tests/features.rs`, which checks the per-element feature table against the imports.
       - run: cargo test --features full
+
+      - run: cargo test -p nocomponents-cli
 
       # One narrow slice, because `--features full` builds whether or not the element features are
       # right and this is the shape a consumer actually asks for.
