@@ -201,10 +201,17 @@ rather than general UI, so they are the easiest to defer or skip.
       transitioned — easing a thing that is following a cursor makes it lag by the duration. The
       line showing where it will land is a `KanbanSlot` the caller renders between its own cards,
       because only the caller knows where "between" is.
-- [ ] The board does not scroll while a card is dragged near its edge, so a board wider than the
-      viewport can only be crossed by letting go and scrolling first. It needs the board's rect and
-      the live pointer, so it is the component's to do rather than a caller's — and it wants a rate
-      curve and a stop on release, which is enough to be its own pass.
+- [x] The board scrolls itself while a card is held near an edge, ramped from nothing at the outer
+      edge of a 72px zone to 16px a tick at the board's own edge. On a timer rather than on pointer
+      moves: a pointer held still at the edge sends no more events, and that is exactly when the
+      reader is waiting for the board to come to them.
+
+      Two things it needs that are not obvious. The card rides inside the scroller, so the board
+      scrolling out from under it slides it away from the cursor — the distance scrolled is added
+      back into its offset. And a card translated to the right *grows* the board's scrollable
+      width, so scrolling to the live maximum runs past the real end and snaps back the moment the
+      card is let go; the range is measured once at the press, while nothing is translated, and
+      the scroll clamped to that.
 - [ ] Floating Menu — a draggable menu that can be moved around the screen. It is a `use_drag` target, so it can be moved
       around in a larger layout; it is a `use_drag` source, so it can be moved within or between
       columns; It may also support fixed positioning, so it can be anchored to a specific point

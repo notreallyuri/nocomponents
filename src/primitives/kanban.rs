@@ -18,12 +18,18 @@
 use crate::primitives::drag::{DragPoint, use_drag};
 use leptos::{context::Provider, ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
+use std::time::Duration;
 use web_sys::Element;
 
 const COLUMN_ATTR: &str = "data-kanban-column";
 /// How far the pointer has to travel before a press becomes a drag. Below it the press is a
 /// click, and a click has to survive the shake of pressing a mouse button.
 const MOVE_THRESHOLD: f64 = 4.0;
+/// How near a board's edge a dragged card has to be before the board starts scrolling itself.
+const EDGE: f64 = 72.0;
+/// The most it scrolls in one tick, at the very edge. Ramped, not stepped: a board that lurches
+/// the moment you enter the zone is harder to aim than one that eases into it.
+const EDGE_SPEED: f64 = 16.0;
 const CARD_ATTR: &str = "data-kanban-card";
 
 /// Where a card would land: which column, and how many cards down.
@@ -54,6 +60,16 @@ pub struct KanbanDrag {
 #[derive(Copy, Clone)]
 pub struct KanbanContext {
     pub dragging: RwSignal<Option<KanbanDrag>>,
+    /// Where the pointer was at the last move. The board's own scrolling needs it between moves:
+    /// a pointer held still at the edge stops sending events but should not stop scrolling.
+    pointer: RwSignal<(f64, f64)>,
+    /// How far the board has scrolled itself since the press. Added to the card's offset, or the
+    /// card drifts out from under the cursor — it sits in the scroller, so scrolling moves it too.
+    scrolled: RwSignal<f64>,
+    /// The board's scroll range as it was before the press. A card held to the right is
+    /// translated past the content, which *grows* the scrollable width — so scrolling to the live
+    /// maximum runs past the real end and snaps back the moment the card is let go.
+    scroll_max: RwSignal<f64>,
     board_ref: AnyNodeRef,
     on_move: Callback<KanbanMove>,
 }
@@ -82,6 +98,25 @@ pub fn use_kanban() -> KanbanContext {
 #[derive(Clone)]
 pub struct KanbanColumnContext {
     pub id: String,
+}
+
+/// How far to scroll this tick, from where the pointer sits relative to the board's edges.
+///
+/// Ramped from nothing at the outer edge of the zone to [`EDGE_SPEED`] at the board's own edge,
+/// and signed: negative scrolls left.
+fn edge_step(board: &Element, x: f64) -> f64 {
+    let rect = board.get_bounding_client_rect();
+    if rect.width() <= 0.0 {
+        return 0.0;
+    }
+
+    if x < rect.left() + EDGE {
+        -((rect.left() + EDGE - x) / EDGE).clamp(0.0, 1.0) * EDGE_SPEED
+    } else if x > rect.right() - EDGE {
+        ((x - (rect.right() - EDGE)) / EDGE).clamp(0.0, 1.0) * EDGE_SPEED
+    } else {
+        0.0
+    }
 }
 
 fn attribute(element: &Element, name: &str) -> Option<String> {
@@ -133,9 +168,44 @@ pub fn KanbanBoardRoot(
     let board_ref = AnyNodeRef::new();
     let context = KanbanContext {
         dragging: RwSignal::new(None),
+        pointer: RwSignal::new((0.0, 0.0)),
+        scrolled: RwSignal::new(0.0),
+        scroll_max: RwSignal::new(0.0),
         board_ref,
         on_move,
     };
+
+    // The board scrolls itself while a card is held near an edge. On a timer rather than on
+    // pointer moves: a pointer held still at the edge sends no more events, and that is exactly
+    // when the reader is waiting for the board to come to them.
+    Effect::new(move |previous: Option<Option<IntervalHandle>>| {
+        if let Some(Some(handle)) = previous {
+            handle.clear();
+        }
+        context.dragging.get()?;
+        set_interval_with_handle(
+            move || {
+                let Some(board) = context.board_ref.get_untracked() else {
+                    return;
+                };
+                let (x, _) = context.pointer.get_untracked();
+                let step = edge_step(&board, x);
+                if step == 0.0 {
+                    return;
+                }
+                let before = board.scroll_left();
+                let target = (before as f64 + step).clamp(0.0, context.scroll_max.get_untracked());
+                board.set_scroll_left(target.round() as i32);
+                // What it actually scrolled, which at either end of the range is nothing.
+                let moved = (board.scroll_left() - before) as f64;
+                if moved != 0.0 {
+                    context.scrolled.update(|scrolled| *scrolled += moved);
+                }
+            },
+            Duration::from_millis(16),
+        )
+        .ok()
+    });
 
     view! {
         <div node_ref=board_ref data-slot="kanban-board" class=class>
@@ -194,6 +264,8 @@ pub fn KanbanCardRoot(
     let offset = RwSignal::new((0.0f64, 0.0f64));
 
     let track = move |point: DragPoint| {
+        ctx.pointer.set((point.client_x, point.client_y));
+
         // A drag begins on the first move past the threshold, not on the press. Announcing it any
         // earlier would light a column up under a click and — because the card goes
         // `pointer-events: none` to follow the pointer — swallow the click that never happened.
@@ -223,11 +295,20 @@ pub fn KanbanCardRoot(
     };
 
     let drag = use_drag(track)
-        .on_start(move |_| offset.set((0.0, 0.0)))
+        .on_start(move |_| {
+            offset.set((0.0, 0.0));
+            ctx.scrolled.set(0.0);
+            // Measured now, while nothing is translated and the width is the real one.
+            if let Some(board) = ctx.board_ref.get_untracked() {
+                let max = (board.scroll_width() - board.client_width()).max(0) as f64;
+                ctx.scroll_max.set(max);
+            }
+        })
         .on_end(move |_| {
             let landed = ctx.dragging.get_untracked();
             ctx.dragging.set(None);
             offset.set((0.0, 0.0));
+            ctx.scrolled.set(0.0);
 
             // Nothing was ever dragged, so the press was a click.
             let Some(landed) = landed else {
@@ -274,6 +355,10 @@ pub fn KanbanCardRoot(
                     return String::new();
                 }
                 let (dx, dy) = offset.get();
+                // The board may have scrolled itself out from under the card while it was held
+                // at an edge. The card rides in that scroller, so without this it slides away
+                // from the cursor by however far the board went.
+                let dx = dx + ctx.scrolled.get();
                 // `pointer-events: none` so the card under the cursor is whatever it is over,
                 // not itself — the gesture's own listeners are on the window and do not care.
                 format!(
