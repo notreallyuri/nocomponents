@@ -33,6 +33,7 @@ pub mod index;
 pub mod input;
 pub mod input_group;
 pub mod input_otp;
+pub mod installation;
 pub mod item;
 pub mod kbd;
 pub mod label;
