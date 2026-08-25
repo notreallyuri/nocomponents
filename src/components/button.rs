@@ -1,4 +1,7 @@
-use crate::{cn, utils::types::AsClass};
+use crate::{
+    cn,
+    utils::types::{AsClass, StyledRender},
+};
 use leptos::{either::Either, ev, prelude::*};
 use leptos_node_ref::AnyNodeRef;
 
@@ -82,7 +85,7 @@ pub fn Button(
     #[prop(optional)] variant: ButtonVariant,
     #[prop(optional)] size: ButtonSize,
     #[prop(optional, into)] class: Signal<String>,
-    #[prop(default = None, into)] render: Option<Callback<(Signal<String>, AnyNodeRef), AnyView>>,
+    #[prop(default = None, into)] render: Option<Callback<StyledRender, AnyView>>,
     #[prop(optional)] children: Option<ChildrenFn>,
 ) -> impl IntoView {
     let node_ref = node_ref.unwrap_or_default();
@@ -97,9 +100,13 @@ pub fn Button(
     });
 
     match render {
-        Some(render_fn) => Either::Left(render_fn.run((merged_classes, node_ref))),
+        Some(render_fn) => Either::Left(render_fn.run(StyledRender {
+            class: merged_classes,
+            node_ref,
+        })),
         None => Either::Right(view! {
             <button
+                data-slot="button"
                 node_ref=node_ref
                 on:click=move |e| {
                     if let Some(cb) = on_click {

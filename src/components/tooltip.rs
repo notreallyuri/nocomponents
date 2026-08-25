@@ -1,10 +1,9 @@
 use crate::{
     cn,
     primitives::tooltip::{TooltipContentRoot, TooltipPortalRoot, TooltipRoot, TooltipTriggerRoot},
-    utils::types::{Align, Side, SideOffset},
+    utils::types::{Align, AnchorRender, Side, SideOffset},
 };
 use leptos::prelude::*;
-use leptos_node_ref::AnyNodeRef;
 
 #[component]
 pub fn Tooltip(
@@ -28,7 +27,7 @@ pub fn Tooltip(
 pub fn TooltipTrigger(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
-    #[prop(default = None, into)] render: Option<Callback<AnyNodeRef, AnyView>>,
+    #[prop(default = None, into)] render: Option<Callback<AnchorRender, AnyView>>,
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     view! {

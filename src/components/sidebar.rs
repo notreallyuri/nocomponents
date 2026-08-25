@@ -12,7 +12,7 @@ use crate::{
         SidebarCollapsible, SidebarMenuButtonRoot, SidebarProviderRoot, SidebarRailRoot,
         SidebarRoot, SidebarTriggerRoot, use_sidebar,
     },
-    utils::types::{AsClass, Side},
+    utils::types::{AsClass, Side, StyledRender},
 };
 use leptos::{either::Either, prelude::*};
 use leptos_node_ref::AnyNodeRef;
@@ -422,7 +422,7 @@ pub fn SidebarMenuButton(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(default = None, into)] tooltip: Option<Signal<String>>,
-    #[prop(default = None, into)] render: Option<Callback<(Signal<String>, AnyNodeRef), AnyView>>,
+    #[prop(default = None, into)] render: Option<Callback<StyledRender, AnyView>>,
     #[prop(optional)] node_ref: Option<AnyNodeRef>,
     #[prop(optional)] children: Option<ChildrenFn>,
 ) -> impl IntoView {
@@ -586,7 +586,7 @@ pub fn SidebarMenuSubButton(
     #[prop(default = SidebarMenuSize::Default)] size: SidebarMenuSize,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
-    #[prop(default = None, into)] render: Option<Callback<(Signal<String>, AnyNodeRef), AnyView>>,
+    #[prop(default = None, into)] render: Option<Callback<StyledRender, AnyView>>,
     #[prop(optional)] children: Option<ChildrenFn>,
 ) -> impl IntoView {
     let size_class = match size {

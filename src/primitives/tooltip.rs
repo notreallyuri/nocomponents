@@ -10,7 +10,7 @@ use crate::{
     primitives::floating::{FloatingContext, FloatingRoot, TriggerAria},
     utils::{
         get_placement,
-        types::{Align, Side, SideOffset},
+        types::{Align, AnchorRender, Side, SideOffset},
     },
 };
 use floating_ui_leptos::{
@@ -18,7 +18,6 @@ use floating_ui_leptos::{
     Strategy, UseFloatingOptions, UseFloatingReturn, use_floating,
 };
 use leptos::{context::Provider, either::Either, ev, portal::Portal, prelude::*};
-use leptos_node_ref::AnyNodeRef;
 use send_wrapper::SendWrapper;
 use std::time::Duration;
 
@@ -67,7 +66,7 @@ pub fn TooltipTriggerRoot(
     /// Render the trigger as something else — usually a `Button`. The node ref must be forwarded,
     /// or the tooltip has nothing to anchor to.
     #[prop(default = None, into)]
-    render: Option<Callback<AnyNodeRef, AnyView>>,
+    render: Option<Callback<AnchorRender, AnyView>>,
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     let ctx = use_tooltip();
@@ -118,13 +117,19 @@ pub fn TooltipTriggerRoot(
             }
         >
             {match render {
-                Some(render) => Either::Left(render.run(ctx.trigger_ref)),
+                Some(render) => {
+                    Either::Left(
+                        render
+                            .run(AnchorRender {
+                                node_ref: ctx.trigger_ref,
+                            }),
+                    )
+                }
                 None => {
                     Either::Right(
                         view! {
-                            <span node_ref=ctx.trigger_ref>
-                                {children.map(|children| children())}
-                            </span>
+                            <span node_ref=ctx
+                                .trigger_ref>{children.map(|children| children())}</span>
                         },
                     )
                 }

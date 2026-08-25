@@ -12,6 +12,7 @@ use nocomponents::components::sidebar::{
     SidebarInset, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarRail,
     SidebarTrigger,
 };
+use nocomponents::utils::types::StyledRender;
 
 #[derive(Clone)]
 pub struct NavGroup {
@@ -360,7 +361,7 @@ pub fn DocShell() -> impl IntoView {
                                                                 // `A` takes no node ref, so the
                                                                 // state attribute goes on the
                                                                 // link itself.
-                                                                render=Callback::new(move |(class, _): (Signal<String>, _)| {
+                                                                render=Callback::new(move |styled: StyledRender| {
                                                                     view! {
                                                                         <A
                                                                             href=target.clone()
@@ -368,7 +369,7 @@ pub fn DocShell() -> impl IntoView {
                                                                             // reads as current
                                                                             // on every page.
                                                                             exact=true
-                                                                            attr:class=class
+                                                                            attr:class=styled.class
                                                                             attr:data-active=move || {
                                                                                 is_current.get().then_some("true")
                                                                             }

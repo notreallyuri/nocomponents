@@ -1,3 +1,6 @@
+use leptos::prelude::Signal;
+use leptos_node_ref::AnyNodeRef;
+
 #[derive(Default, Copy, Clone)]
 pub enum Direction {
     Left,
@@ -131,4 +134,26 @@ impl Language {
             Language::Plain => "plain",
         }
     }
+}
+
+/// What a styled part's `render` is handed when the caller draws the element themselves: the
+/// classes the part would have rendered, and the node ref its state attributes go on.
+///
+/// A struct for the reason [`crate::primitives::floating::TriggerRender`] is one — that shape had
+/// to grow, and a tuple has to be re-broken every time it does. These two are separate rather than
+/// merged because they carry different things: a trigger is clicked and can be disabled, a styled
+/// row is neither.
+#[derive(Copy, Clone)]
+pub struct StyledRender {
+    pub class: Signal<String>,
+    pub node_ref: AnyNodeRef,
+}
+
+/// What a layer that opens on hover hands its `render`.
+///
+/// Only the node ref, and that is the honest shape: nothing here is clicked, so there is no
+/// callback to hand over, and the trigger wears none of the layer's classes.
+#[derive(Copy, Clone)]
+pub struct AnchorRender {
+    pub node_ref: AnyNodeRef,
 }

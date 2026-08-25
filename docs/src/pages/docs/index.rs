@@ -2,6 +2,7 @@ use crate::layout::doc_layout::DocLayout;
 use leptos::prelude::*;
 use leptos_router::components::A;
 use nocomponents::components::button::{Button, ButtonSize, ButtonVariant};
+use nocomponents::utils::types::StyledRender;
 
 const COMPONENTS: &[(&str, &str)] = &[
     ("Alert", "/docs/alert"),
@@ -86,9 +87,9 @@ pub fn Page() -> impl IntoView {
                                 variant=ButtonVariant::Link
                                 size=ButtonSize::Lg
                                 class="text-left justify-start"
-                                render=Callback::new(move |(class, _node_ref)| {
+                                render=Callback::new(move |styled: StyledRender| {
                                     view! {
-                                        <A href=crate::app::href(href) attr:class=class>
+                                        <A href=crate::app::href(href) attr:class=styled.class>
                                             {label}
                                         </A>
                                     }

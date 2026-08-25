@@ -6,7 +6,10 @@
 //! The overlay itself is the styled layer's; this says how wide the sidebar is, which edge it is
 //! on and whether it is open.
 
-use crate::utils::types::Side;
+use crate::utils::{
+    types::{Side, StyledRender},
+    use_media_query,
+};
 use leptos::{context::Provider, ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
 use web_sys::HtmlElement;
@@ -55,7 +58,8 @@ pub struct SidebarContext {
     pub open: RwSignal<bool>,
     /// The narrow-viewport state, which is a fresh decision every time.
     pub open_mobile: RwSignal<bool>,
-    pub is_mobile: RwSignal<bool>,
+    /// Derived from the viewport, so it is read-only: nothing but the window decides it.
+    pub is_mobile: Signal<bool>,
     pub side: Side,
     pub collapsible: SidebarCollapsible,
     /// The panel, for the trigger's `aria-controls`. Minted here because the trigger is usually
@@ -118,15 +122,6 @@ fn stored_open() -> Option<bool> {
     Some(stored == "true")
 }
 
-fn matches_mobile() -> bool {
-    window()
-        .match_media(MOBILE_QUERY)
-        .ok()
-        .flatten()
-        .map(|query| query.matches())
-        .unwrap_or(false)
-}
-
 /// Provides the sidebar state to everything under it. Pass `open` to drive it from outside;
 /// left alone, the provider owns the signal and restores its last value from local storage.
 #[component]
@@ -149,7 +144,7 @@ pub fn SidebarProviderRoot(
     let context = SidebarContext {
         open,
         open_mobile: RwSignal::new(false),
-        is_mobile: RwSignal::new(matches_mobile()),
+        is_mobile: use_media_query(MOBILE_QUERY),
         side,
         collapsible,
         content_ref: AnyNodeRef::new(),
@@ -167,16 +162,15 @@ pub fn SidebarProviderRoot(
         });
     }
 
-    // `resize` rather than a `matchMedia` listener: the query is re-read on each event, so the
-    // two cannot disagree.
-    let resize = window_event_listener(ev::resize, move |_| {
-        let is_mobile = matches_mobile();
-        if context.is_mobile.get_untracked() != is_mobile {
-            context.is_mobile.set(is_mobile);
-            // Crossing the breakpoint would otherwise leave the overlay open behind the layout
-            // sidebar.
+    // Crossing the breakpoint closes the overlay, which would otherwise be left open behind the
+    // layout sidebar. On the *change* rather than on the value: an effect that ran on every read
+    // would close an overlay the user had just opened.
+    Effect::new(move |was: Option<bool>| {
+        let is_mobile = context.is_mobile.get();
+        if was.is_some_and(|was| was != is_mobile) {
             context.open_mobile.set(false);
         }
+        is_mobile
     });
 
     let shortcut = window_event_listener(ev::keydown, move |e| {
@@ -186,10 +180,7 @@ pub fn SidebarProviderRoot(
         }
     });
 
-    on_cleanup(move || {
-        resize.remove();
-        shortcut.remove();
-    });
+    on_cleanup(move || shortcut.remove());
 
     view! {
         <Provider value=context>
@@ -303,7 +294,7 @@ pub fn SidebarMenuButtonRoot(
     /// Render the row as something else — an `<a>`, almost always. Handed the class this would
     /// have rendered and the node ref the state attributes go on, as `Button` does.
     #[prop(default = None, into)]
-    render: Option<Callback<(Signal<String>, AnyNodeRef), AnyView>>,
+    render: Option<Callback<StyledRender, AnyView>>,
     /// Pass one in when something outside needs this element too — a dropdown that anchors its
     /// menu to the row it hangs off, say. Leptos allows a single `node_ref` per element, so two
     /// components that each want to reach the same one have to be handed the same one, the way
@@ -334,7 +325,9 @@ pub fn SidebarMenuButtonRoot(
     }
 
     match render {
-        Some(render_fn) => leptos::either::Either::Left(render_fn.run((class, node_ref))),
+        Some(render_fn) => {
+            leptos::either::Either::Left(render_fn.run(StyledRender { class, node_ref }))
+        }
         None => leptos::either::Either::Right(view! {
             <button
                 type="button"

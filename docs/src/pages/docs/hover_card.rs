@@ -6,6 +6,7 @@ use crate::{
     layout::doc_layout::DocLayout,
 };
 use leptos::prelude::*;
+use nocomponents::utils::types::AnchorRender;
 use nocomponents::{
     components::{
         avatar::{Avatar, AvatarFallback, AvatarImage},
@@ -191,10 +192,10 @@ pub fn Page() -> impl IntoView {
                 >
                     <div class="flex items-center gap-3">
                         <HoverCard>
-                            <HoverCardTrigger render=Callback::new(move |node_ref| {
+                            <HoverCardTrigger render=Callback::new(move |anchor: AnchorRender| {
                                 view! {
                                     <Button
-                                        node_ref=node_ref
+                                        node_ref=anchor.node_ref
                                         variant=ButtonVariant::Outline
                                         size=ButtonSize::Sm
                                     >
@@ -228,10 +229,10 @@ pub fn Page() -> impl IntoView {
                 >
                     <div class="flex flex-wrap gap-3">
                         <HoverCard>
-                            <HoverCardTrigger render=Callback::new(move |node_ref| {
+                            <HoverCardTrigger render=Callback::new(move |anchor: AnchorRender| {
                                 view! {
                                     <Button
-                                        node_ref=node_ref
+                                        node_ref=anchor.node_ref
                                         variant=ButtonVariant::Outline
                                         size=ButtonSize::Sm
                                     >
@@ -245,10 +246,10 @@ pub fn Page() -> impl IntoView {
                             </HoverCardContent>
                         </HoverCard>
                         <HoverCard>
-                            <HoverCardTrigger render=Callback::new(move |node_ref| {
+                            <HoverCardTrigger render=Callback::new(move |anchor: AnchorRender| {
                                 view! {
                                     <Button
-                                        node_ref=node_ref
+                                        node_ref=anchor.node_ref
                                         variant=ButtonVariant::Outline
                                         size=ButtonSize::Sm
                                     >

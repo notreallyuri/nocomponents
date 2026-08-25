@@ -1,6 +1,7 @@
 use crate::components::theme_switcher::ThemeSwitcher;
 use leptos::prelude::*;
 use leptos_router::components::A;
+use nocomponents::utils::types::StyledRender;
 use nocomponents::{
     components::prelude::{
         Badge, BadgeVariant, Button, ButtonSize, ButtonVariant, Checkbox, CodeBlock, Label, Select,
@@ -102,9 +103,9 @@ pub fn Home() -> impl IntoView {
                         <div class="flex flex-wrap items-center gap-2">
                             <Button
                                 size=ButtonSize::Lg
-                                render=Callback::new(move |(class, _node_ref)| {
+                                render=Callback::new(move |styled: StyledRender| {
                                     view! {
-                                        <A href=crate::app::href("/docs") attr:class=class>
+                                        <A href=crate::app::href("/docs") attr:class=styled.class>
                                             "Browse the components"
                                         </A>
                                     }
@@ -114,11 +115,11 @@ pub fn Home() -> impl IntoView {
                             <Button
                                 variant=ButtonVariant::Outline
                                 size=ButtonSize::Lg
-                                render=Callback::new(move |(class, _node_ref)| {
+                                render=Callback::new(move |styled: StyledRender| {
                                     view! {
                                         <a
                                             href="https://github.com/notreallyuri/nocomponents"
-                                            class=class
+                                            class=styled.class
                                             rel="noreferrer"
                                             target="_blank"
                                         >

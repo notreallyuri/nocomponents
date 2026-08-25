@@ -3,10 +3,9 @@ use crate::{
     primitives::hover_card::{
         HoverCardContentRoot, HoverCardPortalRoot, HoverCardRoot, HoverCardTriggerRoot,
     },
-    utils::types::{Align, Side, SideOffset},
+    utils::types::{Align, AnchorRender, Side, SideOffset},
 };
 use leptos::prelude::*;
-use leptos_node_ref::AnyNodeRef;
 
 #[component]
 pub fn HoverCard(
@@ -29,7 +28,7 @@ pub fn HoverCard(
 #[component]
 pub fn HoverCardTrigger(
     #[prop(optional, into)] class: Signal<String>,
-    #[prop(default = None, into)] render: Option<Callback<AnyNodeRef, AnyView>>,
+    #[prop(default = None, into)] render: Option<Callback<AnchorRender, AnyView>>,
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     view! {
