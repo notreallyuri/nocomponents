@@ -187,9 +187,10 @@ rather than general UI, so they are the easiest to defer or skip.
 - [ ] Form — A context that holds form state, made to work with `noform`
 - [x] `dropzone` — a drop target and the picker behind it, arriving as one `Vec<File>` either way;
       a caller who had to tell them apart would be a caller writing two paths for one thing.
-      `accept` uses the attribute's own grammar and is applied *twice*: the browser filters the
-      picker, but a drop never goes through the picker, so the zone checks again and hands back
-      what it turned away on `on_rejected`. The matcher is pure and has five tests, including the
+      `accept` uses the attribute's own grammar and is checked on **both** ways in, which is not
+      what it shipped as: the pick path trusted the file dialog, and a dialog's `accept` only
+      decides what it *offers* — "All files" walks a .md straight past it. A reader picked one and
+      it was taken. Both paths partition now, and both report on `on_rejected`. The matcher is pure and has five tests, including the
       case that motivates it — a dropped file often carries no MIME type at all, so `.pdf` has to
       match on the name.
 

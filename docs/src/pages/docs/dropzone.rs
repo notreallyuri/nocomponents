@@ -56,7 +56,7 @@ const API: &[ApiEntry] = &[
                 name: "on_rejected",
                 ty: "Option<Callback<Vec<File>>>",
                 default: "None",
-                description: "Files that were dropped and turned away by accept. A pick cannot be rejected — the picker already filtered it.",
+                description: "Files turned away by accept, whether dropped or picked. A file dialog's accept only decides what it offers — \"All files\" gets past it — so a pick is checked too.",
             },
             Prop {
                 name: "multiple",
@@ -168,7 +168,7 @@ pub fn Page() -> impl IntoView {
 
                 <DemoSection
                     title="Only some kinds"
-                    description="accept is a suggestion to the picker and a rule here: the browser filters what the picker offers, but a drop never goes through the picker, so the zone checks again and hands back what it turned away."
+                    description="accept is a suggestion everywhere else and a rule here. A file dialog only uses it to decide what to offer — every dialog has an \"All files\" escape — and a drop never consults it at all, so the zone checks both ways in and hands back what it turned away."
                     code=ACCEPT
                 >
                     <div class="flex w-full max-w-md flex-col gap-3">

@@ -4,6 +4,10 @@
 //! `<input type="file">` both arrive as the same `Vec<File>` on `on_files`. A caller who wanted to
 //! tell them apart would be a caller writing two code paths for one thing.
 //!
+//! **`accept` is checked here, on both ways in.** The attribute on a file input only decides what
+//! the dialog *offers* — every dialog has an "All files" escape — and a drop never consults it at
+//! all. Neither way in can be trusted to have filtered itself.
+//!
 //! **`dragover` must be prevented or nothing can be dropped.** The browser's default for a drag
 //! over an element is to refuse it, and the refusal is silent — the cursor says no and `drop`
 //! never fires. Preventing it on every `dragover` is what makes the element a target at all.
@@ -52,8 +56,9 @@ pub fn use_dropzone() -> DropzoneContext {
 /// second one: a comma-separated list of `.ext`, `type/subtype`, or `type/*`. An empty list
 /// accepts everything, which is what the attribute means by being absent.
 ///
-/// The browser applies this to the *picker*; a drop goes around the picker entirely, so it has to
-/// be applied again here or `accept` would be a suggestion rather than a rule.
+/// Applied to both ways in. The attribute decides what a file dialog *offers*, not what it hands
+/// back — the reader can switch it to "All files" — and a drop does not consult it at all.
+/// Checking here is what makes `accept` a rule rather than a suggestion.
 pub fn accepts(accept: &str, mime: &str, name: &str) -> bool {
     let accept = accept.trim();
     if accept.is_empty() {
@@ -145,6 +150,7 @@ pub fn DropzoneRoot(
                 context.is_over.set(true);
             }
             on:dragover=move |e: ev::DragEvent| {
+                // Without this the drop is refused, silently.
                 e.prevent_default();
             }
             on:dragleave=move |e: ev::DragEvent| {
@@ -162,6 +168,8 @@ pub fn DropzoneRoot(
                 if disabled.get_untracked() {
                     return;
                 }
+                // One read of the transfer, split in two: what `accept` takes and what it
+                // turned away.
                 let accept = accept.get_untracked();
                 let (taken, rejected): (Vec<_>, Vec<_>) = files_from(
                         e.data_transfer().and_then(|dt| dt.files()),
@@ -194,11 +202,16 @@ pub fn DropzoneRoot(
                     let Some(input) = input else {
                         return;
                     };
-                    let files = files_from(input.files(), "");
+                    let accept = accept.get_untracked();
+                    // `accept` on the input is a filter the dialog *offers*, not one it
+                    // enforces: every file dialog has an "All files" escape, and whatever the
+                    // reader picks arrives regardless. So a pick is checked exactly like a drop.
+                    let (taken, rejected): (Vec<_>, Vec<_>) = files_from(input.files(), "")
+                        .into_iter()
+                        .partition(|file| accepts(&accept, &file.type_(), &file.name()));
+                    // Or picking the same file twice running is one event, not two.
                     input.set_value("");
-                    if !files.is_empty() {
-                        on_files.run(files);
-                    }
+                    deliver(taken, rejected);
                 }
             />
             <Provider value=context>{children()}</Provider>
