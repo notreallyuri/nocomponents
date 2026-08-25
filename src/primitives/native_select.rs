@@ -15,10 +15,11 @@ pub fn NativeSelectRoot(
     #[prop(optional, into)] value: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] id: Signal<String>,
-    /// Run when the control loses focus. Here rather than left to the caller's own `on:blur`
-    /// because the styled layer wraps this in a positioned `<div>` for its chevron: an `on:blur`
-    /// written at the call site lands on that wrapper, and `blur` does not bubble, so it would
-    /// never fire. `focusout` does bubble, which is how a `Field` manages without this.
+    /// Run when the control loses focus. A convenience now rather than a necessity: the styled
+    /// layer used to wrap this in a positioned `<div>` for its chevron, where a caller's own
+    /// `on:blur` landed on the wrapper and never fired, `blur` not bubbling. The chevron is a
+    /// background image on the `<select>` itself these days, so an `on:blur` at the call site
+    /// reaches the control.
     #[prop(default = None, into)]
     on_blur: Option<Callback<ev::FocusEvent>>,
     /// `<option>` and `<optgroup>` elements, written out as they are.
