@@ -13,7 +13,7 @@
 //! The position is the caller's if they pass one. Uncontrolled it is still a signal, so a caller
 //! who only wants to *read* where the reader put it can pass one in and never write to it.
 
-use crate::primitives::drag::use_drag;
+use crate::{primitives::drag::use_drag, utils::types::Orientation};
 use leptos::{context::Provider, ev, prelude::*};
 use leptos_node_ref::AnyNodeRef;
 
@@ -22,6 +22,12 @@ const KEEP_VISIBLE: f64 = 32.0;
 
 #[derive(Copy, Clone)]
 pub struct FloatingMenuContext {
+    /// Which way the panel runs. A horizontal one is a toolbar, and its handle moves to the side
+    /// with it — a grip along the top of a strip is a grip nobody can hit.
+    pub orientation: Signal<Orientation>,
+    /// Whether the items should show their labels. Read by the parts rather than acted on here:
+    /// what a label does when there is no room for it is a styling decision.
+    pub compact: Signal<bool>,
     /// Top-left, in client coordinates.
     pub position: RwSignal<(f64, f64)>,
     /// Whether the panel is being moved right now.
@@ -71,12 +77,19 @@ pub fn FloatingMenuRoot(
     /// Where it starts when the position is not passed in.
     #[prop(default = (24.0, 24.0))]
     default_position: (f64, f64),
+    /// Horizontal by default, which is what this kind of menu usually is: a strip of actions
+    /// floating over the thing they act on. Vertical is the variation, and turns it into a panel.
+    #[prop(optional, into)]
+    orientation: Signal<Orientation>,
+    #[prop(optional, into)] compact: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] style: Signal<String>,
     children: Children,
 ) -> impl IntoView {
     let panel_ref = AnyNodeRef::new();
     let context = FloatingMenuContext {
+        orientation,
+        compact,
         position: position.unwrap_or_else(|| RwSignal::new(default_position)),
         dragging: RwSignal::new(false),
         panel_ref,
@@ -99,6 +112,8 @@ pub fn FloatingMenuRoot(
         <div
             node_ref=panel_ref
             data-slot="floating-menu"
+            data-orientation=move || context.orientation.get().as_str()
+            data-compact=move || context.compact.get().then_some("true")
             data-dragging=move || context.dragging.get().then_some("true")
             style=move || {
                 let (x, y) = context.position.get();
@@ -145,6 +160,7 @@ pub fn FloatingMenuHandleRoot(
     view! {
         <div
             data-slot="floating-menu-handle"
+            data-orientation=move || ctx.orientation.get().as_str()
             data-dragging=move || ctx.dragging.get().then_some("true")
             on:pointerdown=move |e: ev::PointerEvent| {
                 // The primary button, and never from a control the handle happens to wrap.

@@ -229,6 +229,18 @@ rather than general UI, so they are the easiest to defer or skip.
 
       The position is a plain `RwSignal` the caller may pass in, which is as useful for reading
       where the reader left it as for driving it.
+
+      Two shapes and two densities. **Horizontal by default** — a strip of actions floating over
+      the thing they act on is what this kind of menu usually is; vertical is the variation and
+      turns it into a panel. The handle moves to the start of whichever it is, a grip along the top
+      of a strip being a grip nobody can hit, and the separator turns across the flow with it.
+      `compact` drops the labels for the icons and gives each item a tooltip and an `aria-label`
+      instead, which is what the sidebar does when it collapses to a rail — a label taken away
+      still has to be readable somehow.
+
+      `FloatingMenuItem` renders its own `<button>` rather than a `Button`: `ButtonSize` is a value
+      and not a signal, so a menu that changes density while it is on screen could not change the
+      size of its items with it.
 - [ ] Timeline — Vertical/Horizontal events
 - [ ] Form — A context that holds form state, made to work with `noform`
 - [x] `dropzone` — a drop target and the picker behind it, arriving as one `Vec<File>` either way;
