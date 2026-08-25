@@ -200,12 +200,13 @@ expose `as_str()` for rendering into `data-*` attributes.
 floating positioning can measure the trigger, and so the ARIA and `data-slot` the root writes onto
 the node land somewhere.
 
-The floating triggers pass a **`TriggerRender`** struct (`primitives/floating.rs`) — `node_ref`,
-`on_click`, and the `disabled` already resolved against any `Field` around it. A struct rather than
-a tuple because this shape has had to grow once already: a tuple must be re-broken every time it
-gains an element, a struct takes a field and leaves callers alone. Two older shapes survive
-elsewhere — `(Signal<String>, AnyNodeRef)` on `Button` and `SidebarMenuButton`, a bare `AnyNodeRef`
-on the tooltip and hover card — and should converge on the struct.
+There are three of these shapes, and all three are named structs — a tuple must be re-broken every
+time it gains an element, a struct takes a field and leaves callers alone. **`TriggerRender`**
+(`primitives/floating.rs`) for the floating triggers: `node_ref`, `on_click`, and the `disabled`
+already resolved against any `Field` around it. **`StyledRender`** and **`AnchorRender`**
+(`utils/types.rs`) for the rest: the classes a part would have rendered plus its node ref, and the
+node ref alone. Kept separate rather than merged, because a tooltip trigger has no click to run and
+no classes to wear.
 
 **A styled trigger must render its `*Root`, never wrap `ctx.trigger_ref` itself.** Three of the four
 did the latter, and the cost is invisible until you look: the root is what writes `data-slot`, the

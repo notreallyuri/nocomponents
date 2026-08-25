@@ -43,11 +43,11 @@ item rather than a sentence buried in a closed one.
 - [x] Switching pages reset the sidebar's scroll to the top. Every page rendered its own
       `DocLayout`, so navigating rebuilt the whole sidebar; the chrome is now `DocShell` on a
       `ParentRoute` at `/docs` and only the `Outlet` swaps.
-- [ ] The sidebar still hand-rolls `match_media` rather than using `utils::use_media_query`. Its
-      adoption turns `SidebarContext::is_mobile` from an `RwSignal` into a `Signal` — a public
-      field, so a deliberate change rather than a tidy-up. The theme is no longer a candidate:
-      `use_media_query` re-reads on `resize`, which a colour-scheme change does not fire, so
-      `theme.rs` listens to the query itself.
+- [x] The sidebar is on `utils::use_media_query`, and `SidebarContext::is_mobile` is a `Signal`
+      rather than an `RwSignal` — derived from the viewport, so nothing but the window decides it.
+      Not the drop-in it looked: the old `resize` handler did two things, and closing the mobile
+      overlay when the breakpoint is crossed is now its own effect, keyed on the *change* rather
+      than the value so it cannot shut an overlay the reader just opened.
 - [x] A floating trigger overwrote a caller's own `id`. It now adopts an id already on the node as
       `trigger_id` instead, so a `<label for>` still names the trigger and everything downstream —
       the field's `control_id`, the content's `aria-labelledby` — follows the caller's id rather
@@ -57,11 +57,12 @@ item rather than a sentence buried in a closed one.
       layer's `pointer-events-none` — so an item styled by someone else refuses it too. One root, so
       the dropdown, the context menu and the menubar all got it; `DropdownMenuItem` and
       `MenubarItem` pass it through.
-- [ ] `NativeSelect`'s wrapper swallows everything a caller writes on it — `attr:id`, `attr:name`,
-      any event. `on_blur` is a prop because that one was needed; the general fix is for the
-      `<select>` to be the component's own root, which means drawing the chevron without a
-      positioned sibling, which means a background image and a colour that is not a token. Worth a
-      decision, not a patch.
+- [x] The `<select>` is `NativeSelect`'s own root, so `attr:id`, `attr:name` and any event land on
+      the control instead of on a wrapper. The chevron is a background image, since a pseudo-element
+      does not render on a `<select>` and there is no way to mask one to a token: two baked greys,
+      light and dark, which are the values `--muted-foreground` has in both default palettes. A
+      custom palette's own muted-foreground will not reach it — the price of the wrapper going.
+      `on_blur` stays as a convenience, but its reason for existing is gone and its doc says so.
 - [x] `DropdownMenuTrigger` and `PopoverTrigger` build their `Button` as the `render` the root
       already takes, instead of around `ctx.trigger_ref` behind the root's back. They were doing
       what `ComboboxTrigger` does — it was never the only one, and `SelectTrigger` was the only one
@@ -79,14 +80,19 @@ item rather than a sentence buried in a closed one.
       the node ref is all the shapes have in common, so one path covers both. `dropdown_menu` and
       `select`, which had no `data-slot` anywhere, now carry one on every part they own: the
       trigger, the content, the item, and the submenu's trigger and panel.
-- [ ] The remaining `data-slot` gaps are whatever an audit turns up: all four floating triggers
-      carry one now, but the convention was applied unevenly enough that `select` had none at all
-      until this pass, so the rest of the catalogue is worth a sweep rather than a guess.
-- [ ] The render callback still has three shapes across the library: `TriggerRender` on the
-      floating triggers, `(Signal<String>, AnyNodeRef)` on `SidebarMenuButton` and `Button`, and a
-      bare `AnyNodeRef` on the tooltip and hover card. The struct is the shape the other two should
-      converge on, for the reason it exists — but they carry different things, so it is a rename
-      and a merge rather than a substitution.
+- [x] Every component carries a `data-slot` now. The audit found twelve with none at all — badge,
+      button, checkbox, data_table, date_picker, input, label, progress, spinner, switch, textarea,
+      toast — which was most of the ones people reach for first. The rule: the primitive writes it
+      where there is one, the styled layer writes it for the style-only components.
+- [ ] `primitives::button::ButtonRoot` is rendered by nothing, `Button` included — the styled one
+      writes its own `<button>`. Found because a `data-slot` put on the root never appeared. It is
+      the same shape as the trigger bypass, and the same question: make `Button` render it, or
+      admit the primitive is dead and delete it.
+- [x] All three render callbacks are named structs: `TriggerRender` for the floating triggers,
+      `StyledRender` (class + node ref) for `Button` and `SidebarMenuButton`, `AnchorRender` (node
+      ref alone) for the tooltip and hover card. Kept separate rather than merged into one: a
+      tooltip trigger has no click to run and no classes to wear, and handing it fields that mean
+      nothing where it stands is worse than three honest shapes. Each can now grow on its own.
 
 ## Accessibility & keyboard
 
