@@ -8,7 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 spirit of Radix, plus a styled layer that mirrors shadcn/ui. `docs/` is a Trunk + Tailwind v4 docs
 site that is both the demo and the only way to exercise the library in a browser.
 
-Cargo workspace: root crate `nocomponents`, member `docs`.
+Cargo workspace: root crate `nocomponents`, members `docs` and `cli` (the `nocomponents-cli`
+package, which builds the `cargo-nocli` binary; `cli/README.md` is its user-facing documentation).
 
 ## Commands
 
@@ -20,6 +21,16 @@ cargo test --features full           # the unit tests, and the feature-table che
 
 cd docs && trunk serve               # dev server on :3000, watches ../src too (see Trunk.toml)
 cd docs && trunk build --release
+
+cargo build -p nocomponents-cli      # the installer; target/debug/cargo-nocli
+cargo test -p nocomponents-cli
+```
+
+To exercise the CLI against the working tree rather than the published repo, `--from` points it at
+a checkout — that flag also makes the dependency it writes a `path` one:
+
+```bash
+cargo-nocli nocli components add sidebar --from /path/to/nocomponents
 ```
 
 Trunk downloads and runs the Tailwind CLI itself (pinned in `docs/Trunk.toml`); there is no
@@ -83,27 +94,52 @@ kept in two places drifts. Ordinary `//` comments stay: they explain why a class
 which no table ever says. `src/primitives/` and `src/utils/` keep their doc comments, being
 documented nowhere else yet.
 
-## Written to be copied into other projects
+## How consumers get this: `cargo nocli`
 
 A Tailwind build only emits a class if it sees the file the class is written in, and it does not
 look inside other crates. So a project that merely *depends* on `nocomponents` gets the styled
 layer's markup with none of its CSS, and nothing on their side fixes it — `@source` would have to
 point into `~/.cargo/registry`, and the tokens the classes are written against would still be
-missing. The answer is that `src/components/<name>.rs` is meant to be **copied into the consuming
-project's own `src/`**, where Tailwind already scans it, while everything with no classes in it —
-the primitives, the icons, `utils`, `middleware` — stays an ordinary dependency.
+missing.
 
-Two rules follow, and both are invisible here because in-crate everything compiles either way:
+So the styled layer is **installed, not depended on**. `cli/` builds `cargo-nocli`, and
+`cargo nocli components add button dialog` copies `src/components/<name>.rs` into the project's own
+`src/`, where Tailwind already scans it. What stays a dependency is everything with no classes in
+it: the primitives, the icons, `utils`, `middleware`. `cargo nocli init` writes the config, installs
+`globals.css` and `animate.css` (minus the docs' font import and its `@source`, which a consumer
+must not inherit), and points `Trunk.toml` at a Tailwind. `/docs/installation` says all of this to
+the reader; `cli/README.md` says it to someone in the repo.
+
+`cli/src/rewrite.rs` is the part with teeth. An installed file is compiled by *their* crate, so
+every path in it has to be redirected, and the imports are nested trees — `use crate::{cn,
+components::button::…, primitives::…}` — in which `crate::components::` does not appear as a
+substring of the thing that must change. Each `use` is therefore flattened to one full path per
+line, rewritten, and printed back:
+
+- `crate::components::x` → the install directory's module path (`crate::components::nc::x`),
+- `crate::{primitives,icons,utils}`, and `crate::cn` → `nocomponents::…`,
+- `leptos_node_ref` and `js_sys` → `nocomponents::deps::…`.
+
+An `add` never overwrites a file that is already there — the point of installing is that the file is
+the project's to edit, and pulling in one component must not quietly undo changes to another it
+happens to be built on. `--force` overwrites. Components built on other components (`sidebar` on
+`sheet`, `drawer` on `sheet`) pull those in too, read out of the source just downloaded rather than
+from a list that could drift.
+
+Unlike the library, `cli/` is **not** written with prose commentary — it is a tool, and its
+reasoning lives in `cli/README.md` and here rather than inline.
+
+Two rules fall out of this, and both are invisible until someone installs the thing:
 
 **`src/components/` may only name `leptos` and what `nocomponents::deps` re-exports.** `deps`
-(`src/lib.rs`) re-exports `tw_merge`, `leptos_node_ref` and `js_sys` so a copied component needs one
-dependency rather than four kept in version lockstep. `leptos` is the exception because
+(`src/lib.rs`) re-exports `tw_merge`, `leptos_node_ref` and `js_sys` so an installed component needs
+one dependency rather than four kept in version lockstep. `leptos` is the exception because
 `#[component]` expands to `::leptos::…` paths, so it has to be a real dependency of whoever compiles
 the file. It is also why `cn!` expands to `$crate::deps::tw_merge::tw_merge!` — a bare `tw_merge::`
 resolved only because `docs` happens to depend on `tw_merge` itself.
 
 **`src/components/` must not `impl` anything on a type that `src/primitives/` owns.** In-crate it is
-fine; in someone else's crate it is an orphan-rule error, since neither the trait nor the type is
+fine; installed it is an orphan-rule error, since neither the trait nor the type is
 local to them. `ToastVariant` and `TabsListVariants` belong to their primitives — they are what
 `data-variant` is written from — so their classes are free functions (`variant_class`,
 `list_variant_class`) rather than an `AsClass` impl. Variants *declared* in the styled layer

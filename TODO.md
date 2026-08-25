@@ -280,8 +280,8 @@ rather than general UI, so they are the easiest to defer or skip.
       asked for yet.
 - [ ] Snippets are extracted, not curated. A few still carry the demo's layout wrapper (`<div
       class="flex gap-3">`). Worth a pass to trim the ones where it adds nothing.
-- [ ] Dead nav links in `docs/src/layout/doc_layout.rs`: `/docs/introduction` and
-      `/docs/installation` have no route and fall through to "Not Found."
+- [ ] Dead nav link in `docs/src/layout/doc_layout.rs`: `/docs/introduction` has no route and falls
+      through to "Not Found." `/docs/installation` is a page now.
 - [x] `/docs/theme`: the three axes, what each lands on `<html>` read back live, the tokens and
       the radius scale in a row of its own, and the CSS a consumer writes to define a palette or
       an accent.
@@ -310,19 +310,30 @@ rather than general UI, so they are the easiest to defer or skip.
 
 ## Publishing
 
+- [x] Consumers have no way to get the CSS. Answered by not shipping the styled layer as a crate at
+      all: a Tailwind build cannot see classes inside `~/.cargo/registry`, so `cargo nocli` installs
+      `src/components/<name>.rs` into the project's own `src/` and `init` installs the stylesheet
+      beside it. The crate keeps everything with no classes in it.
 - [x] One feature per element (64 of them), gating both layers under one name, each listing what its
       own source imports so cargo works the closure out. `tests/features.rs` re-derives the table
       from the imports and fails if `Cargo.toml` has drifted — the failure it prevents is silent,
       since `--features full` builds either way.
 
 - [ ] `Cargo.toml` has no `description`, `license`, `repository`, `keywords` or `categories` —
-      `cargo publish` will reject it as-is.
+      `cargo publish` will reject it as-is. `cli/Cargo.toml` has a `description` and needs the rest.
 - [ ] No LICENSE file, though the README credits shadcn/ui and Radix (both MIT).
 - [ ] `leptos` is pinned to `features = ["csr"]`, which forces CSR on every consumer.
-- [ ] Consumers still have no way to get the CSS: the tokens, `@custom-variant`s and `animate.css`
-      live in `docs/styles/` only. The styled layer is now written to be copied into a project
-      rather than depended on — what is missing is the thing that does the copying, and installs
-      the stylesheet with it.
+- [ ] The CLI is not published, and `cargo add nocomponents` inside it assumes the library is. Until
+      both are on crates.io the only working path is `--from <checkout>`, which is also how the CLI
+      is tested.
+- [ ] `cargo nocli` has no `remove`, and no way to tell an installed component that has been edited
+      from one that has not — `--force` is all-or-nothing. A hash of what was installed, written
+      beside the config, would let `add` say which files it would clobber.
+- [ ] The installed `mod.rs` is rewritten from the directory on every `add`, so anything a project
+      adds to it by hand is lost. It is the one generated file in a tree that is otherwise theirs.
+- [ ] `init` installs the whole of `globals.css`, which is four palettes and fourteen accents —
+      most of a consumer's stylesheet, for tokens they mostly will not use. Worth splitting the
+      base tokens from the palettes so a project takes one and opts into the rest.
 - [ ] `cargo doc` over the styled layer is a list of bare signatures. Its prose is the docs site's
       prop tables now, and a description written in both places drifts, so `src/components` carries
       no `///` on purpose — docs.rs stays empty until it can be generated from the same source as
@@ -339,7 +350,8 @@ rather than general UI, so they are the easiest to defer or skip.
       `RuntimeError: unreachable` with no message and no line. It cost an afternoon on the toast
       disposal bug, where the panic was real and the only way to find it was bisecting the call.
       Three lines in `docs/src/main.rs`.
-- [ ] Almost no tests over what renders. `src/utils` is covered and `tests/features.rs` checks the
-      feature table; nothing exercises a component. `wasm-bindgen-test` smoke tests over the primitives' `data-state` transitions
+- [ ] Almost no tests over what renders. `src/utils` is covered, `tests/features.rs` checks the
+      feature table, and `cli/` has unit tests over the import rewriting; nothing exercises a
+      component. `wasm-bindgen-test` smoke tests over the primitives' `data-state` transitions
       would catch regressions in the floating and toast state machines — the toast one has now been
       wrong twice.
