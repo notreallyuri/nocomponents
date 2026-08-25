@@ -1,6 +1,6 @@
 //! The ⌘K palette, over the same `NAV` the sidebar is built from.
 
-use crate::{app::href, layout::doc_layout::NAV};
+use crate::layout::doc_layout::NAV;
 use leptos::prelude::*;
 use leptos_router::hooks::use_navigate;
 use nocomponents::{
@@ -57,7 +57,12 @@ pub fn DocSearch() -> impl IntoView {
                                     .into_iter()
                                     .map(|item| {
                                         let navigate = use_navigate();
-                                        let target = href(item.href);
+                                        let target = item.href;
+                                        // The path as `NAV` writes it, with no `href()` around
+                                        // it: `use_navigate` resolves against the router's own
+                                        // base, so a path that already carries `BASE_PATH`
+                                        // arrives at `/base/base/docs/…`. `A` is the other way
+                                        // round, which is why the sidebar does wrap its hrefs.
                                         // Minted per item rather than once above: the palette's
                                         // children are a `ChildrenFn`, and a single navigator
                                         // cloned into them would move out of a `Fn` closure.
@@ -67,7 +72,7 @@ pub fn DocSearch() -> impl IntoView {
                                                 value=item.label
                                                 on_select=Callback::new(move |_| {
                                                     open.set(false);
-                                                    navigate(&target, Default::default());
+                                                    navigate(target, Default::default());
                                                 })
                                             >
                                                 {item.label}
