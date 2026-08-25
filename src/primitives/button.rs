@@ -13,6 +13,7 @@ pub fn ButtonRoot(
 
     view! {
         <button
+            data-slot="button"
             disabled=move || disabled.get()
             class=class
             on:click=move |ev| {

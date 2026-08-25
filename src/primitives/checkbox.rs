@@ -19,6 +19,7 @@ pub fn CheckboxRoot(
 
     view! {
         <button
+            data-slot="checkbox"
             type="button"
             id=move || field.id.get()
             role="checkbox"

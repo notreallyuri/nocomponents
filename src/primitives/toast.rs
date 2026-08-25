@@ -322,6 +322,7 @@ pub fn ToastRoot(
 
     view! {
         <div
+            data-slot="toast"
             data-state=move || if toast.is_open.get() { "open" } else { "closed" }
             data-dragging=move || if is_dragging.get() { "true" } else { "false" }
             data-size=toast.size.as_str()

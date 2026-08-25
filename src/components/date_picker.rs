@@ -37,6 +37,7 @@ pub fn DatePicker(
 
     view! {
         <FloatingRoot
+            attr:data-slot="date-picker"
             class="relative inline-block text-left"
             context=ctx
             trigger_aria=TriggerAria::Popup("dialog")

@@ -42,11 +42,17 @@ pub fn Spinner(
     let size_class = size.as_class();
 
     match variant {
-        SpinnerVariant::Default => Either::Left(
-            view! { <LoaderCircle class=move || { cn!("size-4 animate-spin", size_class, class.get()) } /> },
-        ),
-        SpinnerVariant::Lined => Either::Right(
-            view! { <Loader class=move || { cn!("size-4 animate-spin", size_class, class.get()) } /> },
-        ),
+        SpinnerVariant::Default => Either::Left(view! {
+            <LoaderCircle
+                attr:data-slot="spinner"
+                class=move || { cn!("size-4 animate-spin", size_class, class.get()) }
+            />
+        }),
+        SpinnerVariant::Lined => Either::Right(view! {
+            <Loader
+                attr:data-slot="spinner"
+                class=move || { cn!("size-4 animate-spin", size_class, class.get()) }
+            />
+        }),
     }
 }

@@ -19,6 +19,7 @@ pub fn SwitchRoot(
 
     view! {
         <button
+            data-slot="switch"
             type="button"
             id=move || field.id.get()
             role="switch"

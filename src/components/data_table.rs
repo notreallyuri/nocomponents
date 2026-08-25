@@ -99,7 +99,7 @@ where
     }));
 
     view! {
-        <Table class=class>
+        <Table attr:data-slot="data-table" class=class>
             <TableHeader>
                 <TableRow>
                     {move || {
@@ -107,7 +107,6 @@ where
                             .then(|| {
                                 let selection = selection.expect("checked by `selecting`");
                                 let all = RwSignal::new(false);
-
                                 Effect::new(move |_| {
                                     let state = selection.state(&page_ids.get());
                                     let checked = state == SelectionState::All;
@@ -133,8 +132,7 @@ where
                                                 attr:aria-label="Select all rows"
                                                 on:click=move |_| {
                                                     let ids = page_ids.get_untracked();
-                                                    let picked = selection.state(&ids)
-                                                        == SelectionState::All;
+                                                    let picked = selection.state(&ids) == SelectionState::All;
                                                     selection.set_all(&ids, !picked);
                                                 }
                                             />
@@ -151,9 +149,9 @@ where
                                     let key = column.key;
                                     let header = column.header;
                                     let class = column.class;
-
                                     match column.compare {
                                         None => {
+
                                             view! { <TableHead class=class>{header}</TableHead> }
                                                 .into_any()
                                         }
@@ -169,7 +167,10 @@ where
                                                         class="group/sort -ml-2 inline-flex h-7 items-center gap-1 rounded-md px-2 text-left transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
                                                     >
                                                         {header}
-                                                        <span class="text-muted-foreground opacity-0 transition-opacity group-hover/sort:opacity-60 data-[active]:opacity-100" data-active=move || sort.is_sorted_by(key).then_some("")>
+                                                        <span
+                                                            class="text-muted-foreground opacity-0 transition-opacity group-hover/sort:opacity-60 data-[active]:opacity-100"
+                                                            data-active=move || sort.is_sorted_by(key).then_some("")
+                                                        >
                                                             {move || {
                                                                 if sort.is_sorted_by(key)
                                                                     && sort.direction.get() == SortDirection::Descending
@@ -197,9 +198,9 @@ where
                     let rows = sorted.get();
                     let width = columns.with_value(|columns| columns.len())
                         + usize::from(selecting);
-
                     if rows.is_empty() {
-                        return view! {
+                        return
+                        view! {
                             <TableRow>
                                 <TableCell
                                     attr:colspan=width.to_string()
@@ -211,7 +212,6 @@ where
                         }
                             .into_any();
                     }
-
                     rows.into_iter()
                         .map(|row| {
                             let id = row_id.map(|row_id| row_id.run(row.clone()));
@@ -226,13 +226,14 @@ where
                             };
 
                             view! {
-                                <TableRow attr:data-selected=move || picked.get().then_some("")>
+                                <TableRow attr:data-selected=move || {
+                                    picked.get().then_some("")
+                                }>
                                     {selecting
                                         .then(|| {
                                             let id = id.clone().expect("checked by `selecting`");
                                             let selection = selection.expect("checked by `selecting`");
                                             let checked = RwSignal::new(picked.get_untracked());
-
                                             Effect::new(move |_| {
                                                 let picked = picked.get();
                                                 if checked.get_untracked() != picked {
@@ -276,10 +277,11 @@ pub fn DataTableSelectionCount(
     #[prop(optional, into)] class: Signal<String>,
 ) -> impl IntoView {
     view! {
-        <p class=move || cn!("text-sm text-muted-foreground", class.get())>
-            {move || {
-                format!("{} of {} row(s) selected.", selection.count(), total.get())
-            }}
+        <p
+            data-slot="data-table-selection-count"
+            class=move || cn!("text-sm text-muted-foreground", class.get())
+        >
+            {move || { format!("{} of {} row(s) selected.", selection.count(), total.get()) }}
         </p>
     }
 }

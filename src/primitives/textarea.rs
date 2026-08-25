@@ -45,6 +45,7 @@ pub fn TextareaRoot(
 
     view! {
         <textarea
+            data-slot="textarea"
             node_ref=node_ref
             id=move || field.id.get()
             disabled=move || field.disabled.get()

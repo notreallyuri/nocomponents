@@ -27,6 +27,7 @@ pub fn ProgressRoot(
 
     view! {
         <div
+            data-slot="progress"
             role="progressbar"
             aria-valuemin="0"
             aria-valuemax=move || max.get().to_string()
@@ -55,7 +56,7 @@ pub fn ProgressIndicatorRoot(
     };
 
     view! {
-        <div data-state=data_state class=class style=style>
+        <div data-slot="progress-indicator" data-state=data_state class=class style=style>
             {children.map(|c| c())}
         </div>
     }

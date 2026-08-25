@@ -36,6 +36,7 @@ pub fn Input(
 
     view! {
         <input
+            data-slot="input"
             type=input_type.as_str()
             id=move || field.id.get()
             disabled=move || field.disabled.get()
