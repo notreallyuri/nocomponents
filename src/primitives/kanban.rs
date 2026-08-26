@@ -57,15 +57,27 @@ pub struct KanbanDrag {
     pub over: Option<KanbanSlot>,
 }
 
+/// Where the dragged card's own container sat, and how far it was scrolled, at the press.
+///
+/// See [`KanbanContext::sync_shift`] for why those two are all it takes.
+#[derive(Copy, Clone)]
+struct ScrollOrigin {
+    left: f64,
+    top: f64,
+    scroll_x: f64,
+    scroll_y: f64,
+}
+
 #[derive(Copy, Clone)]
 pub struct KanbanContext {
     pub dragging: RwSignal<Option<KanbanDrag>>,
     /// Where the pointer was at the last move. The board's own scrolling needs it between moves:
     /// a pointer held still at the edge stops sending events but should not stop scrolling.
     pointer: RwSignal<(f64, f64)>,
-    /// How far the board has scrolled itself since the press. Added to the card's offset, or the
-    /// card drifts out from under the cursor — it sits in the scroller, so scrolling moves it too.
-    scrolled: RwSignal<f64>,
+    /// The container the card in hand sits in, and where it was when the card was picked up.
+    origin: RwSignal<Option<(Element, ScrollOrigin)>>,
+    /// How far the card has to be pushed to stay under the cursor, from [`Self::sync_shift`].
+    shift: RwSignal<(f64, f64)>,
     /// The board's scroll range as it was before the press. A card held to the right is
     /// translated past the content, which *grows* the scrollable width — so scrolling to the live
     /// maximum runs past the real end and snaps back the moment the card is let go.
@@ -87,6 +99,34 @@ impl KanbanContext {
     /// Whether this card is the one being dragged.
     pub fn is_dragging(&self, card: &str) -> bool {
         self.dragging.get().is_some_and(|drag| drag.card == card)
+    }
+
+    /// Recomputes how far the card in hand has to be pushed to stay under the cursor.
+    ///
+    /// A card follows the pointer by a transform from where it was pressed, so anything that moves
+    /// its *layout* position mid-gesture slides it out from under the cursor: the board scrolling
+    /// itself at an edge, the reader flicking the board sideways with a wheel, a column scrolling,
+    /// the page scrolling under all of it. The pointer positions the gesture works in are client
+    /// ones and hear about none of it.
+    ///
+    /// All four are the same subtraction rather than four causes to keep a tally of — where the
+    /// card's own container is now against where it was at the press. Its rect answers for
+    /// everything outside it, its scroll offsets for the one thing that moves the card without
+    /// moving the container: the container being the scroller.
+    fn sync_shift(&self) {
+        let Some((anchor, origin)) = self.origin.get_untracked() else {
+            return;
+        };
+
+        let rect = anchor.get_bounding_client_rect();
+        let shift = (
+            origin.left - rect.left() + anchor.scroll_left() as f64 - origin.scroll_x,
+            origin.top - rect.top() + anchor.scroll_top() as f64 - origin.scroll_y,
+        );
+
+        if self.shift.get_untracked() != shift {
+            self.shift.set(shift);
+        }
     }
 }
 
@@ -169,7 +209,8 @@ pub fn KanbanBoardRoot(
     let context = KanbanContext {
         dragging: RwSignal::new(None),
         pointer: RwSignal::new((0.0, 0.0)),
-        scrolled: RwSignal::new(0.0),
+        origin: RwSignal::new(None),
+        shift: RwSignal::new((0.0, 0.0)),
         scroll_max: RwSignal::new(0.0),
         board_ref,
         on_move,
@@ -185,6 +226,11 @@ pub fn KanbanBoardRoot(
         context.dragging.get()?;
         set_interval_with_handle(
             move || {
+                // The timer is the gesture's heartbeat as well as its edge scrolling, so the
+                // card's compensation is recomputed here rather than from a listener per thing
+                // that could have scrolled. It runs only while a card is in hand.
+                context.sync_shift();
+
                 let Some(board) = context.board_ref.get_untracked() else {
                     return;
                 };
@@ -193,14 +239,9 @@ pub fn KanbanBoardRoot(
                 if step == 0.0 {
                     return;
                 }
-                let before = board.scroll_left();
-                let target = (before as f64 + step).clamp(0.0, context.scroll_max.get_untracked());
+                let target = (board.scroll_left() as f64 + step)
+                    .clamp(0.0, context.scroll_max.get_untracked());
                 board.set_scroll_left(target.round() as i32);
-                // What it actually scrolled, which at either end of the range is nothing.
-                let moved = (board.scroll_left() - before) as f64;
-                if moved != 0.0 {
-                    context.scrolled.update(|scrolled| *scrolled += moved);
-                }
             },
             Duration::from_millis(16),
         )
@@ -297,7 +338,25 @@ pub fn KanbanCardRoot(
     let drag = use_drag(track)
         .on_start(move |_| {
             offset.set((0.0, 0.0));
-            ctx.scrolled.set(0.0);
+            ctx.shift.set((0.0, 0.0));
+
+            // The card's own container — whatever moves when the card's layout position does.
+            // Taken from the card rather than named in advance, since only the caller knows what
+            // it put its cards inside.
+            let anchor = card_ref
+                .get_untracked()
+                .and_then(|card| card.parent_element());
+            ctx.origin.set(anchor.map(|anchor| {
+                let rect = anchor.get_bounding_client_rect();
+                let origin = ScrollOrigin {
+                    left: rect.left(),
+                    top: rect.top(),
+                    scroll_x: anchor.scroll_left() as f64,
+                    scroll_y: anchor.scroll_top() as f64,
+                };
+                (anchor, origin)
+            }));
+
             // Measured now, while nothing is translated and the width is the real one.
             if let Some(board) = ctx.board_ref.get_untracked() {
                 let max = (board.scroll_width() - board.client_width()).max(0) as f64;
@@ -308,7 +367,8 @@ pub fn KanbanCardRoot(
             let landed = ctx.dragging.get_untracked();
             ctx.dragging.set(None);
             offset.set((0.0, 0.0));
-            ctx.scrolled.set(0.0);
+            ctx.shift.set((0.0, 0.0));
+            ctx.origin.set(None);
 
             // Nothing was ever dragged, so the press was a click.
             let Some(landed) = landed else {
@@ -355,10 +415,11 @@ pub fn KanbanCardRoot(
                     return String::new();
                 }
                 let (dx, dy) = offset.get();
-                // The board may have scrolled itself out from under the card while it was held
-                // at an edge. The card rides in that scroller, so without this it slides away
-                // from the cursor by however far the board went.
-                let dx = dx + ctx.scrolled.get();
+                // Anything may have scrolled out from under the card while it was held — the
+                // board at an edge, a column, the page. The card rides in whatever did, so
+                // without this it slides away from the cursor by however far that went.
+                let (shift_x, shift_y) = ctx.shift.get();
+                let (dx, dy) = (dx + shift_x, dy + shift_y);
                 // `pointer-events: none` so the card under the cursor is whatever it is over,
                 // not itself — the gesture's own listeners are on the window and do not care.
                 format!(
