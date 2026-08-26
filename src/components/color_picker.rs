@@ -137,7 +137,7 @@ pub fn ColorPicker(
                     {with_alpha
                         .then(|| {
                             view! {
-                                <div class="overflow-hidden rounded-full" style=CHEQUER>
+                                <div class="rounded-full" style=CHEQUER>
                                     <ColorPickerRailRoot
                                         rail=ColorPickerRail::Alpha
                                         class="relative h-3 w-full cursor-ew-resize rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
