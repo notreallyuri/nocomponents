@@ -114,6 +114,8 @@ pub mod table;
 pub mod tabs;
 #[cfg(feature = "textarea")]
 pub mod textarea;
+#[cfg(feature = "timeline")]
+pub mod timeline;
 #[cfg(feature = "toast")]
 pub mod toast;
 #[cfg(feature = "toggle")]
@@ -242,6 +244,8 @@ pub mod prelude {
     pub use super::tabs::*;
     #[cfg(feature = "textarea")]
     pub use super::textarea::*;
+    #[cfg(feature = "timeline")]
+    pub use super::timeline::*;
     #[cfg(feature = "toast")]
     pub use super::toast::*;
     #[cfg(feature = "toggle")]

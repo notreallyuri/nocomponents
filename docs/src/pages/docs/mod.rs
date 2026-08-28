@@ -61,6 +61,7 @@ pub mod table;
 pub mod tabs;
 pub mod textarea;
 pub mod theme;
+pub mod timeline;
 pub mod toast;
 pub mod toggle;
 pub mod toggle_group;

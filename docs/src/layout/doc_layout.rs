@@ -303,6 +303,10 @@ pub const NAV: &[NavGroup] = &[
                 href: "/docs/textarea",
             },
             NavItem {
+                label: "Timeline",
+                href: "/docs/timeline",
+            },
+            NavItem {
                 label: "Toast",
                 href: "/docs/toast",
             },

@@ -97,6 +97,7 @@ all-elements = [
     "table",
     "tabs",
     "textarea",
+    "timeline",
     "toast",
     "toggle",
     "toggle_group",
@@ -166,6 +167,7 @@ switch = ["field"]
 table = []
 tabs = ["roving_focus"]
 textarea = ["field"]
+timeline = []
 toast = []
 toggle = []
 toggle_group = ["roving_focus", "toggle"]

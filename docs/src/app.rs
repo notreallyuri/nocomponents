@@ -50,6 +50,7 @@ pub fn App() -> impl IntoView {
                             <Route path=path!("/textarea") view=docs::textarea::Page />
                             <Route path=path!("/skeleton") view=docs::skeleton::Page />
                             <Route path=path!("/slider") view=docs::slider::Page />
+                            <Route path=path!("/timeline") view=docs::timeline::Page />
                             <Route path=path!("/toast") view=docs::toast::Page />
                             <Route path=path!("/alert") view=docs::alert::Page />
                             <Route path=path!("/alert-dialog") view=docs::alert_dialog::Page />
