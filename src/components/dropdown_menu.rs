@@ -7,10 +7,10 @@ use crate::{
         DropdownMenuSubContentRoot, DropdownMenuSubRoot, DropdownMenuSubTriggerRoot,
         DropdownMenuTriggerRoot,
     },
-    primitives::floating::TriggerRender,
+    primitives::floating::{FloatingPortal, TriggerRender},
     utils::types::{Align, Side, SideOffset},
 };
-use leptos::{either::Either, ev, portal::Portal, prelude::*};
+use leptos::{either::Either, ev, prelude::*};
 
 #[component]
 pub fn DropdownMenu(children: ChildrenFn) -> impl IntoView {
@@ -150,7 +150,7 @@ pub fn DropdownMenuSubContent(
     let children = StoredValue::new(children);
 
     view! {
-        <Portal>
+        <FloatingPortal>
             <Show when=move || ctx.is_mounted.get()>
                 <DropdownMenuSubContentRoot
                     side_offset=side_offset
@@ -164,6 +164,6 @@ pub fn DropdownMenuSubContent(
                     {children.with_value(|c| c())}
                 </DropdownMenuSubContentRoot>
             </Show>
-        </Portal>
+        </FloatingPortal>
     }
 }

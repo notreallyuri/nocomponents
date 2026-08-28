@@ -7,13 +7,59 @@ use crate::{
 use leptos::{
     context::Provider,
     either::Either,
+    ev,
     ev::MouseEvent,
+    portal::Portal,
     prelude::*,
     tachys::renderer::{RemoveEventHandler, dom::Dom},
     wasm_bindgen::{JsCast, JsValue},
 };
 use leptos_node_ref::AnyNodeRef;
 use web_sys::{Element, HtmlElement, KeyboardEvent};
+
+/// A portal that lands inside the fullscreen element when there is one, and in `<body>` otherwise.
+///
+/// `document.body` is the right mount for a floating layer nearly always — it is what gets the
+/// layer out from under an `overflow: hidden` ancestor — and it is exactly wrong for the one case
+/// a video player is: **only the fullscreen element's own subtree is rendered**, so a menu
+/// portalled to the body vanishes the moment anything goes fullscreen, and reappears on the way
+/// out. A layer that cannot be seen in fullscreen is a layer that cannot be used there.
+///
+/// Read on every `fullscreenchange` rather than once at mount, because which element that is —
+/// or whether there is one at all — changes underneath a layer that is already open, and the
+/// portal has to move with it.
+#[component]
+pub fn FloatingPortal(children: ChildrenFn) -> impl IntoView {
+    let children = StoredValue::new(children);
+    let mount = RwSignal::new_local(document().fullscreen_element());
+
+    let listener = window_event_listener(ev::fullscreenchange, move |_| {
+        let current = document().fullscreen_element();
+        if mount.with_untracked(|held| held != &current) {
+            mount.set(current);
+        }
+    });
+    on_cleanup(move || listener.remove());
+
+    view! {
+        {move || match mount.get() {
+            Some(mount) => {
+                Either::Left(
+                    // Re-created rather than re-targeted: `Portal` reads its mount once, so moving the
+                    // layer between documents' worth of subtree means building it again.
+                    view! {
+                        <Portal mount=mount>{children.with_value(|children| children())}</Portal>
+                    },
+                )
+            }
+            None => {
+                Either::Right(
+                    view! { <Portal>{children.with_value(|children| children())}</Portal> },
+                )
+            }
+        }}
+    }
+}
 
 #[derive(Copy, Clone)]
 pub struct FloatingContext {
