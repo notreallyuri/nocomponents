@@ -4,10 +4,7 @@ use super::{Primitive, Signature, Signatures};
 use crate::components::demo_section::DemoSection;
 use leptos::prelude::*;
 use leptos_node_ref::AnyNodeRef;
-use nocomponents::{
-    primitives::roving_focus::{ROVING_ITEM, use_roving_focus},
-    utils::types::Orientation,
-};
+use nocomponents::{primitives::roving_focus::use_roving_focus, utils::types::Orientation};
 
 pub const PRIMITIVE: Primitive = Primitive {
     slug: "roving-focus",
