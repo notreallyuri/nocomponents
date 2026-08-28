@@ -1,8 +1,8 @@
 use crate::{
     primitives::{
         floating::{
-            ArrowOpen, FloatingContext, FloatingRoot, FloatingTrigger, OpenFocus, TriggerAria,
-            TriggerRender,
+            ArrowOpen, FloatingContext, FloatingPortal, FloatingRoot, FloatingTrigger, OpenFocus,
+            TriggerAria, TriggerRender,
         },
         roving_focus::{RovingFocus, use_roving_focus},
         typeahead::Typeahead,
@@ -16,9 +16,7 @@ use floating_ui_leptos::{
     Flip, FlipOptions, MiddlewareVec, Offset, OffsetOptions, Placement, Shift, ShiftOptions,
     Strategy, UseFloatingOptions, UseFloatingReturn, use_floating,
 };
-use leptos::{
-    context::Provider, either::Either, ev, portal::Portal, prelude::*, wasm_bindgen::JsCast,
-};
+use leptos::{context::Provider, either::Either, ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
 use send_wrapper::SendWrapper;
 use std::time::Duration;
@@ -166,9 +164,9 @@ pub fn DropdownMenuPortalRoot(children: ChildrenFn) -> impl IntoView {
     let stored_children = StoredValue::new(children);
 
     view! {
-        <Portal>
+        <FloatingPortal>
             <Show when=move || ctx.is_mounted.get()>{stored_children.with_value(|c| c())}</Show>
-        </Portal>
+        </FloatingPortal>
     }
 }
 

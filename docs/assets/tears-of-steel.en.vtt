@@ -1,0 +1,29 @@
+WEBVTT
+
+NOTE
+A demonstration caption track for the nocomponents video player. The text describes the
+player's own features rather than transcribing the film.
+
+1
+00:00:01.000 --> 00:00:06.000
+This is a WebVTT track, passed in as a &lt;track&gt; child.
+
+2
+00:00:06.500 --> 00:00:12.000
+The player draws these cues itself, so they can be styled and moved like anything else.
+
+3
+00:00:12.500 --> 00:00:18.000
+Pick a different one from the settings menu, or turn them off.
+
+4
+00:00:18.500 --> 00:00:24.000
+The track list is read off the element, not passed in beside it.
+
+5
+00:00:24.500 --> 00:00:31.000
+So a track added or removed later needs nothing said about it.
+
+6
+00:00:31.500 --> 00:00:39.000
+Which is how they step up out of the way when the control bar comes back.

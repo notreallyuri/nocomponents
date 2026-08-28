@@ -84,28 +84,34 @@ item rather than a sentence buried in a closed one.
       button, checkbox, data_table, date_picker, input, label, progress, spinner, switch, textarea,
       toast — which was most of the ones people reach for first. The rule: the primitive writes it
       where there is one, the styled layer writes it for the style-only components.
-- [ ] The colour picker's alpha thumb is clipped top and bottom. The thumb is `size-4` centred on
-      an `h-3` rail, so 2px of it stands proud at each end — and the rail sits inside
-      `<div class="overflow-hidden rounded-full">`, which is there to round the chequerboard behind
-      it. The hue rail above has the same thumb and no such wrapper, which is why only alpha shows
-      it. Either the chequer gets its rounding some way that does not clip (a pseudo-element, or
-      the radius on the gradient layer itself) or the thumb moves out of the clipped box.
+- [x] The colour picker's alpha thumb is clipped top and bottom. The `overflow-hidden` was never
+      doing anything: a background is already clipped to its own element's border radius, so the
+      chequer rounds itself and the rail inside it is `rounded-full` too. Dropping it lets the 2px
+      of thumb that stands proud of the `h-3` rail render, and the alpha thumb is now the same full
+      circle as the hue thumb above it.
 
-- [ ] The carousel's Next stays enabled past the last reachable slide when more than one is on
-      screen. `can_scroll_next` is `index + 1 < count`, which counts *slides* rather than scroll
-      positions — with `basis-1/3` and seven items three are visible, so index 4 is the last one
-      that moves anything and 5 and 6 are dead. That is exactly the two extra clicks the sizes demo
-      takes. The bound wants the track's scroll extent (`scroll_width - client_width`, which
-      `scroll_to` already works in) rather than the item count; `can_scroll_prev` is right as it
-      stands, the first position always being index 0.
+- [x] The carousel's Next stayed enabled past the last reachable slide when more than one was on
+      screen: `can_scroll_next` was `index + 1 < count`, which counts *slides* rather than scroll
+      positions. `CarouselContext::last` is the bound now — the track's own scroll extent, and the
+      last slide whose offset still fits inside it — read in the same pass as the current index,
+      since both come from one walk of the slides and that walk happens on every scroll event.
 
-- [ ] A dragged kanban card drifts from the cursor if anything scrolls that the board did not
-      scroll itself. `KanbanContext::scrolled` accumulates only the board's *own* auto-scroll steps,
-      so the compensation is blind to the reader scrolling the page or flicking the board sideways
-      with a wheel — the card rides in the scroller, its layout position moves, and `dx`/`dy` are
-      client-based and never hear about it. Recording the board's `scroll_left` and the window's
-      scroll offset at the press and taking the *difference* on every move would cover every cause
-      at once, ours included, and replaces the accumulator rather than adding to it.
+      Two things it needs beyond the arithmetic. The bound is a **measurement**, so it is `None`
+      until one has been taken and falls back to counting slides in the meantime: a bound of zero
+      means "nowhere to go", and a carousel measured before its track has a box would wear that as
+      one — disabling the Next that is the only thing that would have scrolled it and measured it
+      again. And a `ResizeObserver` on the track is what re-measures, because leaving a docs page
+      and coming back mounts one exactly that way; that was the reported symptom, a Sizes demo
+      stuck showing its first three slides with a dead Next.
+
+- [x] A dragged kanban card drifted from the cursor if anything scrolled that the board did not
+      scroll itself. `KanbanContext::scrolled` accumulated only the board's *own* auto-scroll
+      steps, so it was blind to the page scrolling, a wheel flick, or a column scrolling. Replaced
+      rather than added to: the card's own container is measured at the press, and every move takes
+      the difference — its rect answers for everything outside it, its scroll offsets for the one
+      thing that moves the card without moving it. Recomputed on the edge-scroll timer, which is
+      already the gesture's heartbeat, so a pointer held still is covered too. Verified in the
+      browser: an 80px page scroll used to cost 80px of drift and now costs about two.
 
 - [x] `Button` renders `ButtonRoot`, which was rendered by nothing. Filling it rather than
       deleting it, because there turned out to be behaviour for it to hold and every one of these
@@ -128,10 +134,130 @@ item rather than a sentence buried in a closed one.
       ref alone) for the tooltip and hover card. Kept separate rather than merged into one: a
       tooltip trigger has no click to run and no classes to wear, and handing it fields that mean
       nothing where it stands is worse than three honest shapes. Each can now grow on its own.
+- [x] The canvas took the primary button and left the caller nothing. `pan_on_drag` is off by
+      default now: a press is a click, and panning is space and drag, the middle button or two
+      fingers — which is where every editor since Figma has put it. The cost of the old default was
+      invisible until you tried to build on the thing: a board that pans on press has no gesture
+      left to select a node with, none to drag one by, and nowhere to put a click on empty space
+      that means "deselect". `on_surface_click` is the other half — a click that landed on the
+      board rather than on anything placed on it, reported in *world* coordinates, which is the
+      part a caller cannot work out for itself since it takes the surface's own box and the current
+      transform. It stays quiet for a click on a node and for the click that ends a pan. The three
+      pan states are one `data-pan` attribute (`ready`/`active`/absent) rather than a flag each:
+      they overlap while space is held through a drag, and two attributes styled separately leave
+      which cursor wins to stylesheet order.
+- [x] Canvas nodes were something you could look at and nothing else. `CanvasNodeRoot` reports its
+      own gestures now — `on_move` for a drag on the body, `on_resize` for one of the eight grips,
+      and it still applies neither: the caller keeps the list, as with the kanban board. What the
+      node owns is the arithmetic nobody should write twice, since a pointer travels in screen
+      pixels and a node lives in world units, and the zoom to divide by is in the canvas' context
+      that only something inside the canvas can reach. The resize itself is `WorldBox::resized` in
+      `utils::viewport`, unit-tested off the DOM like the rest of that module, and measured from
+      the **press** rather than from the last move: clamped incrementally at the minimum the
+      remainder is thrown away, and the box then lags the pointer by however far it was dragged
+      past the limit. `aspect` keeps a ratio and draws only the corners, a side handle having no
+      opposite edge to hold still on the axis it does not move.
+- [x] The grips are sized in screen pixels and divided by the zoom before they are drawn — a 10px
+      square is 1px at 0.1× and covers its own node at 4×. Everything else on a board is meant to
+      scale and a control is not, which is the same argument the background dots already won. The
+      surface publishes `--canvas-zoom` for the CSS that has to make the same division: there is no
+      class for "one pixel however far in we are", but `calc(1px / var(--canvas-zoom))` is one.
+- [x] `CanvasNodeLabel` — a node's label that becomes an input on double-click. Two rules pointing
+      opposite ways: the text lets a press through, so a sticky is still dragged by its words; the
+      input stops one, that press being the caret's. The input takes the node's own font and colour
+      rather than a browser's defaults, and its background is a tint of `currentColor`, so it
+      blends on an amber sticky and on a bordered shape alike. Escape restores — which needed a
+      flag, because Chrome fires `blur` at an element it removes from the document and the blur
+      would otherwise commit the text Escape had just thrown away.
+- [x] `Textarea` takes a `node_ref`. The selection is the one piece of a textarea's state that
+      lives nowhere but the DOM, so a toolbar that formats what the reader has highlighted cannot
+      be written without reaching the element.
+- [x] The canvas node's label was an `<input>`, and the text it stands in for wraps. So a sticky's
+      words reflowed onto one line the moment you began editing them and jumped back when you
+      stopped — the one moment an editor should be still. A `<textarea>` now, `rows="1"` and sized
+      by its content, wearing the node's own font, colour and alignment through `[font:inherit]`
+      and `text-inherit`: a browser gives a form control none of that, which is why it looked like
+      somebody else's element sitting in the note. Measured at 126×77 idle and 126×77 editing.
+- [x] Editing wore a tinted background and a ring. Both gone — the caret is the only thing that
+      says an edit is happening, which is the only thing that needs to.
+- [x] Enter left the note instead of breaking the line. It now does what it does in every other
+      multi-line field, and everything else ends the edit **keeping** the text: Escape,
+      ⌘/Ctrl+Enter, and clicking away. No cancel, on purpose — the words under the caret are the
+      note, so a key that silently threw them away would be a key nobody presses twice. The two
+      keys stop propagation as well as preventing the default, or the key that ended a rename goes
+      on to close the dialog the board is sitting in.
+- [x] Escape committed the very text it was meant to discard. Chrome fires `blur` at an element it
+      takes out of the document, so the blur spoke after the key had. A `settled` flag, cleared
+      when an edit *begins* rather than by the blur, so a browser that does not send that blur
+      cannot leave it set for the next edit. Escape commits by design now, but the flag still
+      earns its place: without it a caller that **rejects** an edit sees the same one arrive twice.
+
+- [x] **A multi-line label read as one line when it was not being edited.** A span collapses `\n`
+      to a space, so a note typed over three lines came back as one — which Enter breaking the
+      line had just made easy to hit. `whitespace-pre-wrap` on the styled label fixes it, and this
+      is now **verified in a browser** rather than only compiled: the span computes `pre-wrap`,
+      and a three-line note committed with Escape comes back 60px tall at a 20px line-height —
+      three lines, with the newlines still in the text.
+- [x] `VideoPlayer`'s subtitles sat under the control bar, and the lift meant to clear them was
+      dead code twice over. `[&::-webkit-media-text-track-container]:-translate-y-20` generated
+      the rule it was supposed to, and Chrome ignored it: Tailwind v4 writes the independent
+      `translate` property, and that pseudo-element honours only `transform`. Firefox has no such
+      pseudo-element at all, so there was never a version of this that worked in both.
+
+      **So the player draws the cues itself.** The active track is set `Hidden` rather than
+      `Showing` — which keeps `activeCues` current and `cuechange` firing while stopping the
+      browser painting — and `VideoPlayerContext::cues` becomes ordinary elements that can be
+      positioned, themed and animated. They step above the bar on the same `data-active` the bar
+      reads and drop back when it goes.
+
+      Three things fell out of it. Cue text is the source as authored, so `cue_text` drops WebVTT
+      markup (`<i>`, `<v Roger>`, the karaoke timestamps) and decodes the six character references
+      the format defines — unit-tested, since it is string arithmetic. Sizes are a reader
+      preference (`VideoPlayerCaptionSize`, a submenu) written in `cqw` against a container on the
+      caption box, so one choice holds from a thumbnail to fullscreen. And both demo `.vtt` files
+      carried a bare `<track>`, which a browser reads as a tag and drops — the cue really did say
+      "passed in as a  child".
+
+      **The cost, written down because it is invisible until someone hits it**: the browser's VTT
+      layout goes with its rendering, so cue settings that place a line somewhere other than the
+      bottom (`line`, `position`, `align`, `size`, `vertical`) are not honoured, and the box is
+      positioned against the player rather than the video frame — so on a letterboxed video the
+      caption sits in the black bar rather than over the picture.
+- [x] The pointer now goes away with the bar: the player wears `cursor-none` and takes it back on
+      `data-[active=true]`, which is the same fact the bar fades on, so the two cannot disagree.
+      Gated on `mode.has_controls()` — a mode that draws no bar has no bar going down, and a
+      cursor vanishing over a video with no controls is a cursor the reader has lost. Child rules
+      still win over the inherited value, so the scrubber keeps its `cursor-pointer`.
+- [x] Menus were misplaced by a constant offset, and only after this session's own change: the
+      caption sizes needed a container to measure against, and `@container/player` on the root
+      compiles to `container-type: inline-size`, which applies layout containment — which makes
+      the element **a containing block for `position: fixed` descendants**. The floating shell is
+      fixed, so floating-ui's viewport coordinates were read against the player's origin: every
+      menu on the page was off by exactly the player's top-left, right in fullscreen (origin 0,0)
+      and wrong on the way out. The container belongs on the caption box, which contains no
+      floating layer.
+
+      **Anything that establishes a containing block — `transform`, `filter`, `contain`,
+      `container-type`, `will-change` — breaks a fixed-positioned floating layer under it.** The
+      symptom is a constant offset equal to that ancestor's origin, which reads like a
+      positioning bug in the menu rather than a property on something else entirely.
+- [x] A submenu vanished in fullscreen. `DropdownMenuSubContent` hard-wired a `<Portal>` to
+      `document.body` while the top-level content leaves portalling to the caller — and only the
+      fullscreen element's own subtree is rendered. Deleting the portal was not the fix: the
+      parent content is `overflow-hidden` and is between the submenu and its containing block, so
+      an un-portalled submenu is clipped instead. `FloatingPortal` (`primitives/floating.rs`)
+      mounts into `document.fullscreenElement` when there is one and the body otherwise,
+      re-reading it on `fullscreenchange` since that changes under a layer already open. Used by
+      `DropdownMenuPortalRoot` too, so every portalled menu gains it.
+
+      With submenus working, the player's own menu folds: `submenu=true` on the three provided
+      groups turns fourteen rows into three, which at 106px instead of 528px is the difference
+      between a menu and a wall.
 
 ## Accessibility & keyboard
 
-All closed; this no longer blocks a "stable" tag. What exists, and where to reuse it:
+All closed bar the canvas, which arrived after this list was written and brought its own hole with
+it. This no longer blocks a "stable" tag. What exists, and where to reuse it:
 
 - [x] `primitives/dismiss.rs` — one layer stack ordered by opening time. Escape dismisses the
       topmost; an outside `pointerdown` walks down until a layer contains the target or is modal.
@@ -146,6 +272,122 @@ All closed; this no longer blocks a "stable" tag. What exists, and where to reus
 - [x] Floating triggers carry `aria-haspopup` / `aria-expanded` / `aria-controls`, written onto
       `trigger_ref` from an effect — the trigger comes in three shapes and the node ref is all they
       share.
+- [ ] Not all closed after all: a canvas node cannot be reached by the keyboard at all. Filed with
+      the rest of the canvas work rather than here, since it shares a design with the selection
+      model — see *Canvas: what a collaboration tool needs*.
+
+## Canvas: what a collaboration tool needs
+
+The canvas exists because of `novoice`, a collaborative editor that will be built on it, and this
+is the gap between what is in the tree and what that needs. **Ordered, not a bag**: each group is
+what has to be true before the next one is worth starting, and the reason is written down for
+each — a list of features with no argument for their order is a list somebody will reorder by
+whichever is most fun.
+
+What is already right, and should not be redone: the canvas **never owns what is on it**. It
+reports where a drag would put a node and the caller decides, so a CRDT can be the single source
+of truth without competing with local state, and snapping, grids and constraints are arithmetic
+applied to the reported point rather than features the component has to grow. The viewport is a
+plain signal, which makes follow-the-presenter three lines. The arithmetic is in `utils::viewport`,
+off the DOM and unit-tested. And a resize is measured from the press rather than accumulated,
+which matters more under network lag than it ever did locally.
+
+### 1. Blocking — a document cannot be edited by two people without it
+
+- [x] **`on_gesture_end` on `CanvasNodeRoot`**, carrying a `CanvasGesture { from, to, handle }`.
+      `on_move` and `on_resize` still fire on every pointer move; this fires once, when the
+      gesture is over, which is the distinction a shared document is built on — ephemeral presence
+      while the pointer is down, one committed operation when it comes up, and one undo entry per
+      drag rather than forty.
+
+      **One callback rather than the `on_move_end` / `on_resize_end` this asked for.** What a
+      caller does with either is the same job — write an operation somebody can replay — so two
+      hooks meant handing the same body to both, and `handle` (`None` for a move, `Some` for the
+      grip) is a field that says which it was and reads better than the callback's name. The same
+      argument the render callbacks settled: a struct grows a field and leaves callers alone.
+
+      Two things that only showed up in the building. `use_drag` ends a gesture on release whether
+      or not the pointer ever moved, so a plain click on a node was an operation on the wire; it
+      is silent now when nothing changed, because selecting is not editing. And *where it ended*
+      is read back out of the caller's own signals rather than recomputed from the pointer — so a
+      caller that snapped to a grid, clamped to a lane or refused the move outright reports what
+      it did rather than what it was asked to do.
+
+### 2. Settle before there is data, because it is free now and expensive later
+
+- [x] **Rotation: the field is reserved, the gesture is deferred.** `WorldBox` carries an `angle`
+      in radians about its own centre; `CanvasNodeRoot` takes it, renders it as a `transform` and
+      folds it into every `CanvasGesture`. So a board's saved shape and its operations are already
+      the ones rotation needs, and the part that was actually expensive — migrating boards made in
+      the meantime — cannot arise.
+
+      `new` still takes four numbers and `rotated()` adds the angle, so nothing that built a box
+      before had to change. The transform is written **only when the angle is not zero**, so the
+      upright node that every board is made of is the same element it always was rather than one
+      the browser has to composite.
+
+      What is deferred, and where it says so in the source rather than only here: `resized` takes
+      its delta in world axes, which stop being the box's axes once it is turned, so it carries the
+      angle through untouched and is documented as correct only for an upright box — and a node
+      with an angle **draws no grips at all**, because eight grips that grow a box in the wrong
+      direction are worse than none. `WorldBox::around` has the matching gap: it takes each box as
+      upright, so it under-covers a turned one by however far its corners swing out.
+
+- [ ] **The rotation gesture itself**, when novoice wants it. Three pieces, and the field above is
+      not one of them: rotate the pointer delta into the box's own frame before `resized` and back
+      after; project the four corners in `around` so fit and cull stop under-covering; and a ninth
+      grip to turn it by, which is the only new thing on screen.
+
+### 3. Before it is a whiteboard
+
+- [ ] **Pinch on touch.** `use_drag` follows one pointer and nothing anywhere tracks a
+      `pointerId`, so there is no two-finger anything. Zoom works on a trackpad only because a
+      browser disguises a pinch as `ctrl+wheel`, and on a tablet there is no zoom at all — the
+      styled surface sets `touch-none`, so the browser will not do it either. Two pointers on the
+      surface should scale about the midpoint between them and pan by its travel, which is one
+      gesture rather than two. Belongs in `drag.rs` if a second primitive wants it, and in the
+      canvas if none does.
+- [ ] **A drag on the surface, not only a click.** `pan_on_drag=false` freed the primary button
+      and `on_surface_click` gives back a single point — which is enough to place something and
+      nothing else. A marquee, a lasso, and drawing a shape by dragging it out all need the press,
+      the live rectangle and the release. `on_surface_drag` reporting a `WorldBox` per move and at
+      the end, with the same press-relative arithmetic the node's resize already uses.
+
+### 4. Before it is big
+
+- [ ] **Z-order as a prop.** Depth is DOM order today, so "bring to front" is a move within the
+      caller's list, which changes the keys and rebuilds the markup. Fine at four nodes, wrong at
+      four hundred, and a collaborative board will reorder from a peer's operation rather than
+      from a button. A `z` prop written into `z-index` costs nothing and makes depth a number two
+      clients can agree on.
+- [ ] **Cull what is off screen.** Every node is mounted, always. A board is the one component
+      here where the count is the reader's to decide, and thousands of absolutely-positioned
+      elements is where this stops being usable. The viewport already knows the visible world
+      rectangle, so the test is arithmetic the caller could do — but it needs the rectangle, which
+      means publishing it: `CanvasContext::visible()`.
+- [ ] **`content_bounds` is coupled to that.** It reads every `[data-slot=canvas-node]` out of the
+      DOM and takes each one's rect — a forced layout per call, which is fine for a button press
+      and not for a loop, and *silently wrong* the moment culling lands, since it would fit only
+      what happens to be mounted. Whichever of the two is done first has to answer for the other:
+      either fit takes the caller's own bounds, or culling keeps a way to measure what it hid.
+
+### 5. Before it is a product
+
+- [ ] **Multi-select gestures.** `selected` is a `Signal<bool>` per node, so the *state* is already
+      the right shape — what is missing is shift-click, marquee (see the surface drag above), and
+      a move or resize that applies to a set. A group resize is one `WorldBox` around the
+      selection and each member scaled inside it, which is arithmetic for `utils::viewport` and a
+      test rather than anything new in the DOM.
+- [ ] **Nodes are not reachable by keyboard.** The surface is a tab stop and the things on it are
+      not: nothing on a board can be selected, moved or renamed without a pointer. Wants a roving
+      tab stop over the nodes (`primitives/roving_focus.rs` already does the hard part), arrows to
+      nudge, Enter to edit the label, and the same `data-selected` the pointer path writes.
+- [ ] **World coordinates from outside the canvas.** `CanvasContext::world_at` is only reachable
+      by something inside the provider, and the board block hit that immediately: its palette
+      lives in the sidebar, so the drop had to re-derive the conversion from the viewport signal
+      and the box the canvas was wrapped in. Paste-at-pointer and a file dropped from the desktop
+      are the same problem. `Viewport` has the arithmetic; what is missing is the surface's own
+      rectangle, published rather than measured again by hand.
 
 ## Components — gap vs the shadcn/ui catalogue
 
@@ -276,16 +518,106 @@ rather than general UI, so they are the easiest to defer or skip.
       `FloatingMenuItem` renders its own `<button>` rather than a `Button`: `ButtonSize` is a value
       and not a signal, so a menu that changes density while it is on screen could not change the
       size of its items with it.
-- [ ] Timeline — Vertical/Horizontal events
-- [ ] Form — A context that holds form state, made to work with `noform`
-- [x] `dropzone` — a drop target and the picker behind it, arriving as one `Vec<File>` either way;
-      a caller who had to tell them apart would be a caller writing two paths for one thing.
-      `accept` uses the attribute's own grammar and is checked on **both** ways in, which is not
-      what it shipped as: the pick path trusted the file dialog, and a dialog's `accept` only
-      decides what it *offers* — "All files" walks a .md straight past it. A reader picked one and
-      it was taken. Both paths partition now, and both report on `on_rejected`. The matcher is pure and has five tests, including the
-      case that motivates it — a dropped file often carries no MIME type at all, so `.pdf` has to
-      match on the name.
+- [x] `canvas` — an infinite surface you can pan and zoom, with things placed on it in world
+      coordinates. The FigJam shape rather than the drawing-app shape.
+
+      **The canvas owns where you are looking, and nothing else.** Nodes take their world position
+      as props and the caller keeps the list — the same stance as the kanban board reporting a move
+      rather than applying it, and for the same reason: a canvas keeping its own copy would
+      disagree with the caller's the moment anything else edited a node.
+
+      The arithmetic is `utils::viewport`, which knows nothing about the DOM and has 10 tests.
+      That split is not tidiness: `window()` *panics* off-wasm, so a viewport that read its own
+      size could not be tested at all — the same argument as `floating_menu`'s clamp. One
+      convention holds it together, **screen = world x zoom + offset**, which makes panning
+      addition that never has to know the zoom.
+
+      The test that earns its keep is zooming about the pointer. Zooming toward the middle of the
+      surface is one line and wrong — whatever is under the cursor has to stay under it — and the
+      anchor is taken *before* the zoom changes with the offset re-derived after, so clamping
+      cannot break the promise: a zoom refused at the limit leaves the surface exactly where it
+      was rather than sliding it by the difference.
+
+      Two things about the gestures. A browser reports a **trackpad pinch as ctrl+wheel** — there
+      is no pinch event on the desktop — so that flag rather than a modifier anybody pressed is
+      what separates zooming from two-finger panning. And `DragPoint` reports distance from the
+      *press*, so panning by it on every move accelerates the canvas away from the pointer; the
+      previous delta is remembered and the difference applied. Verified in a browser: ten pointer
+      steps totalling 80x40 pan the canvas exactly 80x40.
+
+      The dotted background sits **outside** the transformed layer. Inside it the dots would scale
+      with the zoom and blur out at 4x; a repeating background whose spacing follows the zoom and
+      whose dots do not is what paper actually looks like.
+
+      Fit reads the nodes out of the DOM (`[data-slot=canvas-node]`) rather than from a registry,
+      so nodes can come and go without telling anybody, and an empty board is left alone rather
+      than fitted to nothing.
+
+      Styled: `Canvas`, `CanvasNode`, `CanvasSticky` (four colours), `CanvasShape`
+      (rectangle/ellipse), `CanvasText`, `CanvasControls`, `CanvasBackground`. Cost two icons,
+      `plus` and `minus`.
+
+- [ ] Canvas, pass two: selection and moving things. Click, shift-click and a marquee over empty
+      space; dragging a selection by transform and reporting once on release, the way a kanban
+      card does. `pan_on_drag=false` exists for exactly this — a canvas whose empty space means a
+      marquee rather than a pan.
+
+- [ ] Canvas connectors: edges between nodes, with anchors, arrowheads and re-routing as nodes
+      move. The largest of the three and the one that most wants its own primitive, since routing
+      is arithmetic and belongs beside `utils::viewport` rather than in a component.
+
+- [x] `timeline` — a sequence of events along an axis, vertical for now.
+
+      **A list, not a scaled axis.** Events sit evenly spaced in document order and are never
+      positioned by their dates: that is what almost every "timeline" UI actually is — an activity
+      feed, a changelog, an order's progress. A timeline where March and December sit
+      proportionally apart is arithmetic over a domain and belongs beside `chart`, and conflating
+      the two would hand every caller a layout that lies about half its inputs. The module header
+      says so, the way `calendar` says it is not a date-time library.
+
+      An `<ol>` of `<li>`, because that is what a sequence of events is — a screen reader is told
+      how many there are before any styling matters, and `TimelineState::Current` is the one state
+      that writes `aria-current="step"`.
+
+      **Items count themselves**, like carousel slides, so each knows whether it is last. Not a
+      nicety: a connector drawn after the final event points at nothing, and `:last-child` stops
+      being true the moment a caller wraps an item in anything.
+
+      **The connector is a part the caller places**, so a pending stretch can be dashed where a
+      finished one is solid; the styled item includes one by default and hides it on `data-last`.
+      **Markers are content** — a dot, a tick, a number, an avatar. An empty marker is
+      `aria-hidden`, since the item already carries the state and a screen reader announcing
+      "bullet" before every event helps nobody.
+
+      That last rule caught a real bug on the way in: the styled `TimelineMarker` forwarded
+      `{children.map(…)}` into the root, and the view macro passes a children closure whether or
+      not there are any — so every marker looked non-empty and none was ever marked decorative.
+      The styled layer now branches on the `Option` instead. Verified both ways round in a
+      browser: bare dots hidden, icons and numbers not.
+
+      One component rather than a Timeline and a Stepper, since the state enum is the whole
+      difference and a stepper is a timeline you have not finished walking.
+
+- [x] Timeline, horizontal and alternating. The primitive already wrote `data-orientation` on
+      every part, so both are the styled layer plus one new fact: which side of the axis an event
+      sits on. `TimelineSide` is derived from the item's own index rather than set per item —
+      a zig-zag a caller keeps in step by hand stops zig-zagging the moment one event is inserted.
+
+      The item is a two-axis grid that transposes: `[auto_1fr]` columns vertically,
+      `[1fr_auto_1fr]` when alternating so the markers hold a centre column, and rows rather than
+      columns when horizontal. Alternating is deliberately vertical-only — horizontally it would
+      put half the events above the line and half below, which reads as two timelines.
+
+      **The bug worth remembering is how it failed.** Three of the four parts took their new
+      classes and the item did not, because `cargo fmt` had collapsed its `cn!` onto one line
+      between writing the edit and applying it, so the patch matched nothing — and the edit was
+      the one without an assertion on it. The item stayed a two-column grid while content was
+      being sent to `col-start-3`, which grid quietly honours by inventing an implicit third
+      column per row, of whatever width that row's content happens to be. Every marker landed
+      somewhere different and the axis was gone. Nothing errored, nothing warned, and the computed
+      `grid-column-start` values all read exactly as intended — only `grid-template-columns`
+      showed two tracks where there should have been three. **Patch against the class literal
+      rather than the surrounding block, and assert every replacement.**
 
       Two things the browser makes you know: `dragover` must be prevented or the drop is refused
       *silently*, and `dragleave` fires when the pointer crosses onto a child — so leaving is a
@@ -321,13 +653,80 @@ rather than general UI, so they are the easiest to defer or skip.
       `SidebarMenuButton`'s look and the group takes `SidebarMenuSub`'s rule, and the whole thing
       folds away with `group-data-[collapsible=icon]:hidden`, a tree of labels having nothing to
       show at that width. `sidebar` gained `tree` as a feature edge.
-- [ ] Video player - A component that allows users to play videos, with support for multiple video formats and playback controls.
-  - [ ] View Modes:
-    - [ ] Full: All components are visible and inline
-    - [ ] Reduced: Only Play/Pause, Next/Prevous, Volume and Time bar are visible
-    - [ ] Limited: Only Play/Pause and Time bar are visible
-    - [ ] None: Only the video is visible, with no controls, clicking on the video toggles play/pause.
-    - [ ] Uncontrolled: The video is visible, but no controls are visible, and the user cannot interact with the video.
+- [x] `video_player` — the `<video>` element and the controls that drive it, in five view modes.
+
+      **The element is the state, and the player mirrors it.** Nothing decides that the video is
+      playing: the element says so and one `sync` reads the whole lot back, behind every media
+      event rather than a handler per fact. That is not tidiness — pressing play calls `play()`,
+      whose promise a browser is entitled to reject, and a player that had set `playing` on the
+      press would sit showing a pause button over a still frame. Seeks read back where they
+      landed too, since the element clamps them.
+
+      **The modes are behaviour, not decoration**, which is why they live in the primitive. Full,
+      Reduced and Limited are bars of decreasing size and the styled layer draws them; the last
+      two draw nothing and differ in the one thing only this layer can express — `None` is a video
+      you can press, `Uncontrolled` is a video you cannot, so its surface is inert and it is not a
+      tab stop.
+
+      **The player does not own a playlist.** Previous and Next report a `VideoPlayerStep` and the
+      caller moves their own list on, the same stance as the board reporting a move. Nobody
+      listening means no playlist, so both controls disable rather than swallow the press.
+
+      The scrubber and the volume slider are one component twice, differing only in what a
+      fraction along means — and in their keys, since a keypress on a time bar means five seconds
+      rather than five percent of however long the video is. The seek rail disables itself until
+      the metadata arrives: a duration that is NaN or infinite is no length to scrub along, and
+      zero is how the rest of the file spells that. `format_timestamp` says `--:--` for those
+      rather than a confident `0:00`, and has four tests.
+
+      Two demo clips, because they show different things. The default one is generated with
+      ffmpeg — a timecode burned into the frame, which is the one thing a real video cannot show
+      you: that a press at the middle of the rail lands where the rail says. 243kB. The second is
+      a 40-second excerpt of *Tears of Steel* (CC BY 3.0, Blender Foundation, credited under the
+      demo), 3.4MB at 960x400, and it is what shows the buffered bar filling and the `waiting`
+      state — the generated clip arrives before you can press play, so it can never show either.
+      Both are served by trunk's `copy-file` rather than `include_bytes!`d into the wasm, which is
+      the mistake `docs/assets/avatar.jpg` is still an example of.
+
+      Self-hosted rather than put on a CDN: this is a plain `<video>`, so it cannot play HLS, and
+      HLS is most of what a video host sells. The docs page says so, since it is a real limit of
+      the component and somebody will look for it under "several formats".
+
+      Cost ten Lucide icons (`play`, `pause`, `skip-back`, `skip-forward`, `volume`,
+      `volume-off`, `maximize`, `minimize`, `settings`, `captions`) in a new `icons/media.rs`.
+
+- [x] The video player's second pass: a collapsing volume, menus, and subtitles.
+
+      **Volume collapses to its icon** until the group is hovered or something inside it takes
+      focus. Focus as well as hover, or it is a control the keyboard can reach and never see —
+      and a `[@media(hover:none)]` fallback leaves it open where there is no hover at all, since
+      Tailwind gates every `group-hover:` rule behind `@media (hover: hover)` and a phone would
+      otherwise get a volume slider it could never open. That one is invisible from a desktop:
+      headless Chrome reports `hover: none` by default, which is why the first probe of it
+      measured the harness rather than the component and needed
+      `--blink-settings=availableHoverTypes=2` to say anything at all.
+
+      **`VideoPlayerMenu` takes whatever you put in it.** Speed and subtitle groups ship because
+      every player has them, but quality levels or an audio-track picker are the same shape.
+      Deliberately **not portalled**: a menu portalled to `document.body` vanishes the moment the
+      player goes fullscreen, since only the fullscreen element's own subtree is drawn. And the
+      idle timer had to learn about it — `menu_open` joins `scrubbing` in `controls_visible`, or
+      the bar fades out from under an open menu and leaves it hanging over nothing.
+
+      **Subtitles already worked**, because a `<track>` is a child of the `<video>` and the
+      player's children are the video's children. What was missing was everything around them: the
+      track list is now read back off the element rather than taken as a prop — the browser is
+      what turns `<track>` elements into tracks, so a list passed in beside them would be a second
+      copy to keep in step. `set_text_track` disables every other track explicitly, since a
+      `<track default>` comes up showing and two showing at once paints one caption over another.
+      Cues are nudged up off the control bar with `::-webkit-media-text-track-container`, which is
+      Chromium and WebKit only; Firefox still overlaps, and drawing cues ourselves is the only
+      real fix.
+
+      **A caller can replace the control bar entirely** with the `controls` prop and keep the
+      shell — the video, the surface, the keys, fullscreen. That is what makes "add your own
+      settings" true rather than a claim: the context is public, so any control can be built from
+      `use_video_player()`.
 
 **Unfinished corners of what is shipped.**
 
@@ -467,6 +866,22 @@ rather than general UI, so they are the easiest to defer or skip.
       delete you can take back, and right-click actions on a table row. Three of the last four
       needed library work first, and two of those turned up bugs — which is the argument for
       writing them.
+
+- [x] Two more blocks, both of them arguments for a change in the library rather than dressing on
+      one. **A board you drag things onto**: a palette down the side of a canvas, and you make a
+      thing by dragging it off and letting go over the board — which is the block `pan_on_drag`
+      was turned off for. The drop crosses a border no context reaches, since the palette sits
+      outside the canvas, so it is done with the viewport signal and the box the canvas was wrapped
+      in; `use_drag` listens on the window, so one gesture spans both panes. **A toolbar that reads
+      the selection**: a markdown editor whose toggle group tells the truth, because nothing in it
+      remembers what was pressed — the marks are read back out of the text under the caret every
+      time either the text or the selection moves. That is what `Textarea`'s `node_ref` is for, and
+      why every crossing between the two coordinate systems is converted: a browser counts the
+      selection in UTF-16 code units and Rust indexes bytes.
+
+      The board block is also the argument for `on_move` / `on_resize` / `CanvasNodeLabel`: it had
+      its own `use_drag` and its own division by the zoom, and every consumer would have written
+      the same twenty lines. It writes no pointer code for the things on the board now.
 
 - [x] `/docs/utility`, filling the second dead nav link: `cn!`, the common types, `next_id`,
       `use_media_query`, `get_placement`, and the arithmetic modules — dates, colour, crops, GIFs,

@@ -6,6 +6,8 @@ pub mod avatar;
 pub mod button;
 #[cfg(feature = "calendar")]
 pub mod calendar;
+#[cfg(feature = "canvas")]
+pub mod canvas;
 #[cfg(feature = "carousel")]
 pub mod carousel;
 #[cfg(feature = "chart")]
@@ -86,6 +88,8 @@ pub mod table;
 pub mod tabs;
 #[cfg(feature = "textarea")]
 pub mod textarea;
+#[cfg(feature = "timeline")]
+pub mod timeline;
 #[cfg(feature = "toast")]
 pub mod toast;
 #[cfg(feature = "toggle")]
@@ -98,6 +102,8 @@ pub mod tooltip;
 pub mod tree;
 #[cfg(feature = "typeahead")]
 pub mod typeahead;
+#[cfg(feature = "video_player")]
+pub mod video_player;
 
 pub mod prelude {
     #[cfg(feature = "accordion")]
@@ -108,6 +114,8 @@ pub mod prelude {
     pub use super::button::*;
     #[cfg(feature = "calendar")]
     pub use super::calendar::*;
+    #[cfg(feature = "canvas")]
+    pub use super::canvas::*;
     #[cfg(feature = "carousel")]
     pub use super::carousel::*;
     #[cfg(feature = "chart")]
@@ -188,6 +196,8 @@ pub mod prelude {
     pub use super::tabs::*;
     #[cfg(feature = "textarea")]
     pub use super::textarea::*;
+    #[cfg(feature = "timeline")]
+    pub use super::timeline::*;
     #[cfg(feature = "toast")]
     pub use super::toast::*;
     #[cfg(feature = "toggle")]
@@ -200,4 +210,6 @@ pub mod prelude {
     pub use super::tree::*;
     #[cfg(feature = "typeahead")]
     pub use super::typeahead::*;
+    #[cfg(feature = "video_player")]
+    pub use super::video_player::*;
 }

@@ -11,9 +11,15 @@ pub fn TextareaRoot(
     #[prop(optional, into)] id: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(default = false)] auto_resize: bool,
+    /// The `<textarea>` itself, for a caller that has to reach the element — the selection is the
+    /// one piece of a textarea's state that lives nowhere but the DOM, so a toolbar that formats
+    /// what the reader has highlighted cannot be written without it.
+    #[prop(optional)]
+    node_ref: Option<AnyNodeRef>,
 ) -> impl IntoView {
     let field = FieldControl::new(id, disabled);
-    let node_ref = AnyNodeRef::new();
+    // One ref whether or not the caller wanted it: auto-resize measures through the same node.
+    let node_ref = node_ref.unwrap_or_default();
 
     let resize = move || {
         if auto_resize

@@ -45,6 +45,7 @@ all-elements = [
     "button",
     "button_group",
     "calendar",
+    "canvas",
     "card",
     "carousel",
     "chart",
@@ -97,12 +98,14 @@ all-elements = [
     "table",
     "tabs",
     "textarea",
+    "timeline",
     "toast",
     "toggle",
     "toggle_group",
     "tooltip",
     "tree",
     "typeahead",
+    "video_player",
 ]
 accordion = ["collapsible", "roving_focus"]
 alert = []
@@ -115,6 +118,7 @@ button = ["field"]
 button_group = ["separator"]
 calendar = []
 card = []
+canvas = ["drag"]
 carousel = []
 chart = []
 checkbox = ["field"]
@@ -166,12 +170,14 @@ switch = ["field"]
 table = []
 tabs = ["roving_focus"]
 textarea = ["field"]
+timeline = []
 toast = []
 toggle = []
 toggle_group = ["roving_focus", "toggle"]
 tooltip = ["floating"]
 tree = ["roving_focus"]
 typeahead = []
+video_player = ["drag", "dropdown_menu"]
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
@@ -212,6 +218,21 @@ features = [
   # The dropzone: a drop is a `DragEvent`, and the files ride on its `DataTransfer`.
   "DragEvent",
   "DataTransfer",
+  # The video player drives the element itself, and asks it what it is doing. `TimeRanges` is
+  # what `buffered()` answers with.
+  "HtmlMediaElement",
+  "HtmlVideoElement",
+  "TimeRanges",
+  # Subtitle and caption tracks, which are read off the element rather than passed in.
+  "TextTrack",
+  "TextTrackList",
+  "TextTrackMode",
+  "TextTrackKind",
+  # The player draws the cues itself rather than letting the browser draw them, so it reads the
+  # active ones back off the track. `VttCue` is what carries the text.
+  "TextTrackCue",
+  "TextTrackCueList",
+  "VttCue",
 ]
 
 [dev-dependencies]

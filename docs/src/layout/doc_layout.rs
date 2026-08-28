@@ -107,6 +107,10 @@ pub const NAV: &[NavGroup] = &[
                 href: "/docs/button-group",
             },
             NavItem {
+                label: "Canvas",
+                href: "/docs/canvas",
+            },
+            NavItem {
                 label: "Card",
                 href: "/docs/card",
             },
@@ -303,6 +307,10 @@ pub const NAV: &[NavGroup] = &[
                 href: "/docs/textarea",
             },
             NavItem {
+                label: "Timeline",
+                href: "/docs/timeline",
+            },
+            NavItem {
                 label: "Toast",
                 href: "/docs/toast",
             },
@@ -321,6 +329,10 @@ pub const NAV: &[NavGroup] = &[
             NavItem {
                 label: "Toggle Group",
                 href: "/docs/toggle-group",
+            },
+            NavItem {
+                label: "Video Player",
+                href: "/docs/video-player",
             },
         ],
     },

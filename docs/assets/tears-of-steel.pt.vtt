@@ -1,0 +1,28 @@
+WEBVTT
+
+NOTE
+Uma faixa de legendas de demonstração para o video player do nocomponents.
+
+1
+00:00:01.000 --> 00:00:06.000
+Esta é uma faixa WebVTT, passada como um filho &lt;track&gt;.
+
+2
+00:00:06.500 --> 00:00:12.000
+O próprio player desenha as legendas, então dá para estilizá-las e movê-las.
+
+3
+00:00:12.500 --> 00:00:18.000
+Escolha outra no menu de configurações, ou desligue-as.
+
+4
+00:00:18.500 --> 00:00:24.000
+A lista de faixas é lida do elemento, não passada ao lado dele.
+
+5
+00:00:24.500 --> 00:00:31.000
+Assim uma faixa adicionada depois não precisa ser anunciada.
+
+6
+00:00:31.500 --> 00:00:39.000
+É assim que elas sobem para sair da frente quando a barra de controles volta.

@@ -30,6 +30,7 @@ pub fn App() -> impl IntoView {
                             <Route path=path!("/avatar") view=docs::avatar::Page />
                             <Route path=path!("/badge") view=docs::badge::Page />
                             <Route path=path!("/button") view=docs::button::Page />
+                            <Route path=path!("/canvas") view=docs::canvas::Page />
                             <Route path=path!("/card") view=docs::card::Page />
                             <Route path=path!("/checkbox") view=docs::checkbox::Page />
                             <Route path=path!("/code") view=docs::code::Page />
@@ -50,6 +51,7 @@ pub fn App() -> impl IntoView {
                             <Route path=path!("/textarea") view=docs::textarea::Page />
                             <Route path=path!("/skeleton") view=docs::skeleton::Page />
                             <Route path=path!("/slider") view=docs::slider::Page />
+                            <Route path=path!("/timeline") view=docs::timeline::Page />
                             <Route path=path!("/toast") view=docs::toast::Page />
                             <Route path=path!("/alert") view=docs::alert::Page />
                             <Route path=path!("/alert-dialog") view=docs::alert_dialog::Page />
@@ -61,6 +63,7 @@ pub fn App() -> impl IntoView {
                             <Route path=path!("/spinner") view=docs::spinner::Page />
                             <Route path=path!("/toggle") view=docs::toggle::Page />
                             <Route path=path!("/tree") view=docs::tree::Page />
+                            <Route path=path!("/video-player") view=docs::video_player::Page />
                             <Route path=path!("/toggle-group") view=docs::toggle_group::Page />
                             <Route path=path!("/button-group") view=docs::button_group::Page />
                             <Route path=path!("/radio-group") view=docs::radio_group::Page />

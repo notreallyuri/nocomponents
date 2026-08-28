@@ -14,6 +14,7 @@ const COMPONENTS: &[(&str, &str)] = &[
     ("Breadcrumb", "/docs/breadcrumb"),
     ("Button", "/docs/button"),
     ("Button Group", "/docs/button-group"),
+    ("Canvas", "/docs/canvas"),
     ("Card", "/docs/card"),
     ("Checkbox", "/docs/checkbox"),
     ("Code", "/docs/code"),
@@ -66,7 +67,9 @@ const COMPONENTS: &[(&str, &str)] = &[
     ("Toast", "/docs/toast"),
     ("Toggle", "/docs/toggle"),
     ("Tooltip", "/docs/tooltip"),
+    ("Timeline", "/docs/timeline"),
     ("Tree", "/docs/tree"),
+    ("Video Player", "/docs/video-player"),
     ("Toggle Group", "/docs/toggle-group"),
 ];
 

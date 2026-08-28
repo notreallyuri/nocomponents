@@ -280,6 +280,24 @@
       opacity: 0;
     }
   }
+
+  /* A ring that expands once and then rests, rather than pinging continuously.
+     `animate-ping` holds its end state for only the last quarter of the cycle, so lengthening
+     its duration slows the expansion instead of lengthening the gap — the pause has to be part
+     of the keyframes. The ring is out in the first 28% and invisible for the rest. */
+  --animate-beacon: beacon 3s cubic-bezier(0, 0, 0.2, 1) infinite;
+
+  @keyframes beacon {
+    0% {
+      transform: scale(1);
+      opacity: 0.75;
+    }
+    28%,
+    100% {
+      transform: scale(2);
+      opacity: 0;
+    }
+  }
 }
 
 /* Utility classes */

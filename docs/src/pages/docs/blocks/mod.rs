@@ -16,6 +16,7 @@
 //! module here and a line in [`REGISTRY`], and adding another to a file that exists means touching
 //! nothing else at all.
 
+mod canvas;
 mod chart;
 mod color_picker;
 mod combobox;
@@ -27,6 +28,7 @@ mod image_cropper;
 mod kanban;
 mod sidebar;
 mod table;
+mod text_editor;
 mod toast;
 
 use crate::{
@@ -66,6 +68,7 @@ pub struct Block {
 /// Every block there is. A flat list rather than a map keyed by component: a block belongs to all
 /// of the components it uses, and [`Block::uses`] is where that is written down.
 const REGISTRY: &[&[Block]] = &[
+    canvas::BLOCKS,
     chart::BLOCKS,
     color_picker::BLOCKS,
     combobox::BLOCKS,
@@ -77,6 +80,7 @@ const REGISTRY: &[&[Block]] = &[
     kanban::BLOCKS,
     sidebar::BLOCKS,
     table::BLOCKS,
+    text_editor::BLOCKS,
     toast::BLOCKS,
 ];
 
