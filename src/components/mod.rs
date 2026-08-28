@@ -128,6 +128,8 @@ pub mod toggle_group;
 pub mod tooltip;
 #[cfg(feature = "tree")]
 pub mod tree;
+#[cfg(feature = "video_player")]
+pub mod video_player;
 
 pub mod prelude {
     #[cfg(feature = "accordion")]
@@ -260,4 +262,6 @@ pub mod prelude {
     pub use super::tooltip::*;
     #[cfg(feature = "tree")]
     pub use super::tree::*;
+    #[cfg(feature = "video_player")]
+    pub use super::video_player::*;
 }

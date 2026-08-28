@@ -69,6 +69,7 @@ const COMPONENTS: &[(&str, &str)] = &[
     ("Tooltip", "/docs/tooltip"),
     ("Timeline", "/docs/timeline"),
     ("Tree", "/docs/tree"),
+    ("Video Player", "/docs/video-player"),
     ("Toggle Group", "/docs/toggle-group"),
 ];
 

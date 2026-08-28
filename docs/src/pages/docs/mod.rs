@@ -69,3 +69,4 @@ pub mod toggle_group;
 pub mod tooltip;
 pub mod tree;
 pub mod utility;
+pub mod video_player;

@@ -330,6 +330,10 @@ pub const NAV: &[NavGroup] = &[
                 label: "Toggle Group",
                 href: "/docs/toggle-group",
             },
+            NavItem {
+                label: "Video Player",
+                href: "/docs/video-player",
+            },
         ],
     },
 ];
