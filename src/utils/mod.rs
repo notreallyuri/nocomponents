@@ -4,6 +4,7 @@ pub mod date;
 pub mod gif;
 pub mod image;
 pub mod types;
+pub mod viewport;
 
 #[cfg(feature = "highlight")]
 pub mod highlight;

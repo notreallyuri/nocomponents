@@ -107,6 +107,10 @@ pub const NAV: &[NavGroup] = &[
                 href: "/docs/button-group",
             },
             NavItem {
+                label: "Canvas",
+                href: "/docs/canvas",
+            },
+            NavItem {
                 label: "Card",
                 href: "/docs/card",
             },

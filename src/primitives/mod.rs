@@ -6,6 +6,8 @@ pub mod avatar;
 pub mod button;
 #[cfg(feature = "calendar")]
 pub mod calendar;
+#[cfg(feature = "canvas")]
+pub mod canvas;
 #[cfg(feature = "carousel")]
 pub mod carousel;
 #[cfg(feature = "chart")]
@@ -110,6 +112,8 @@ pub mod prelude {
     pub use super::button::*;
     #[cfg(feature = "calendar")]
     pub use super::calendar::*;
+    #[cfg(feature = "canvas")]
+    pub use super::canvas::*;
     #[cfg(feature = "carousel")]
     pub use super::carousel::*;
     #[cfg(feature = "chart")]

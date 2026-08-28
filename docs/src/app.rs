@@ -30,6 +30,7 @@ pub fn App() -> impl IntoView {
                             <Route path=path!("/avatar") view=docs::avatar::Page />
                             <Route path=path!("/badge") view=docs::badge::Page />
                             <Route path=path!("/button") view=docs::button::Page />
+                            <Route path=path!("/canvas") view=docs::canvas::Page />
                             <Route path=path!("/card") view=docs::card::Page />
                             <Route path=path!("/checkbox") view=docs::checkbox::Page />
                             <Route path=path!("/code") view=docs::code::Page />

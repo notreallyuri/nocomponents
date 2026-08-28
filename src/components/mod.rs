@@ -18,6 +18,8 @@ pub mod button;
 pub mod button_group;
 #[cfg(feature = "calendar")]
 pub mod calendar;
+#[cfg(feature = "canvas")]
+pub mod canvas;
 #[cfg(feature = "card")]
 pub mod card;
 #[cfg(feature = "carousel")]
@@ -148,6 +150,8 @@ pub mod prelude {
     pub use super::button_group::*;
     #[cfg(feature = "calendar")]
     pub use super::calendar::*;
+    #[cfg(feature = "canvas")]
+    pub use super::canvas::*;
     #[cfg(feature = "card")]
     pub use super::card::*;
     #[cfg(feature = "carousel")]

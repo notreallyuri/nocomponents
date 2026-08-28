@@ -45,6 +45,7 @@ all-elements = [
     "button",
     "button_group",
     "calendar",
+    "canvas",
     "card",
     "carousel",
     "chart",
@@ -116,6 +117,7 @@ button = ["field"]
 button_group = ["separator"]
 calendar = []
 card = []
+canvas = ["drag"]
 carousel = []
 chart = []
 checkbox = ["field"]
