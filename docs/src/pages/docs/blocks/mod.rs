@@ -28,6 +28,7 @@ mod image_cropper;
 mod kanban;
 mod sidebar;
 mod table;
+mod text_editor;
 mod toast;
 
 use crate::{
@@ -79,6 +80,7 @@ const REGISTRY: &[&[Block]] = &[
     kanban::BLOCKS,
     sidebar::BLOCKS,
     table::BLOCKS,
+    text_editor::BLOCKS,
     toast::BLOCKS,
 ];
 

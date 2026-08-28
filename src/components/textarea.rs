@@ -1,5 +1,6 @@
 use crate::{cn, primitives::textarea::TextareaRoot};
 use leptos::prelude::*;
+use leptos_node_ref::AnyNodeRef;
 
 #[component]
 pub fn Textarea(
@@ -9,7 +10,10 @@ pub fn Textarea(
     #[prop(optional, into)] id: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(default = false)] auto_resize: bool,
+    #[prop(optional)] node_ref: Option<AnyNodeRef>,
 ) -> impl IntoView {
+    let node_ref = node_ref.unwrap_or_default();
+
     view! {
         <TextareaRoot
             value=value
@@ -23,6 +27,7 @@ pub fn Textarea(
                 )
             }
             auto_resize=auto_resize
+            node_ref=node_ref
         />
     }
 }
