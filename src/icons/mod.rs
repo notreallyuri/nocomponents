@@ -11,9 +11,12 @@ pub mod chevron;
 pub mod copy;
 pub mod ellipsis;
 pub mod loader;
+pub mod media;
 pub mod message;
+pub mod minus;
 pub mod panel;
 pub mod paperclip;
+pub mod plus;
 pub mod search;
 pub mod x;
 
