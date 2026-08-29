@@ -9,6 +9,9 @@ license = "Apache-2.0"
 readme = "README.md"
 keywords = ["leptos", "ui", "components", "cli", "cargo-subcommand"]
 categories = ["command-line-utilities", "development-tools::cargo-plugins"]
+rust-version = "1.88"
+# This crate reads the tag matching its own version (`remote.rs`), so it is released with the
+# library and never ahead of it.
 
 # `cargo nocli …` finds a binary called `cargo-nocli` on PATH and hands it `nocli` as argv[1].
 [[bin]]
@@ -20,5 +23,5 @@ anyhow = "1.0"
 clap = { version = "4.0", features = ["derive"] }
 reqwest = { version = "0.13", features = ["json"] }
 serde = { version = "1.0", features = ["derive"] }
-tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.0", features = ["macros", "rt-multi-thread", "sync"] }
 toml = "1.0"

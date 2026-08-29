@@ -45,3 +45,58 @@ pub fn add_dependency(features: &BTreeSet<String>, checkout: Option<&Path>) -> R
     }
     Ok(())
 }
+
+/// The exact `nocomponents` this project compiles against, read out of `Cargo.lock`.
+///
+/// The lock rather than the manifest, because the manifest holds a *requirement* — `"0.1"` — and
+/// there is no tag by that name. The lock holds the one version cargo actually resolved, which is
+/// the one the installed source has to compile against.
+///
+/// Walked upward, since a workspace member has no lock of its own.
+///
+/// `None` for a project that has not resolved it yet, which is every first `init`.
+pub fn locked_version() -> Result<Option<String>> {
+    let mut dir = std::env::current_dir().context("reading the current directory")?;
+
+    loop {
+        let lock = dir.join("Cargo.lock");
+        if lock.exists() {
+            let doc: toml::Table = toml::from_str(&fs::read_to_string(&lock)?)
+                .with_context(|| format!("parsing {}", lock.display()))?;
+
+            return Ok(doc
+                .get("package")
+                .and_then(|p| p.as_array())
+                .and_then(|packages| {
+                    packages.iter().find(|entry| {
+                        entry.get("name").and_then(|n| n.as_str()) == Some("nocomponents")
+                    })
+                })
+                .and_then(|entry| entry.get("version"))
+                .and_then(|v| v.as_str())
+                .map(str::to_string));
+        }
+        if !dir.pop() {
+            return Ok(None);
+        }
+    }
+}
+
+/// Whether this project's `nocomponents` is a path dependency — a checkout, in other words.
+///
+/// Worth asking before reading a version off it: the checkout is whatever the tree happens to be,
+/// and the release tagged with the same number is not it. Installing released source into a
+/// project that compiles a working tree is the exact mismatch the tag exists to prevent, so the
+/// caller refuses rather than guesses.
+pub fn is_path_dependency() -> Result<bool> {
+    let Ok(text) = fs::read_to_string("Cargo.toml") else {
+        return Ok(false);
+    };
+    let doc: toml::Table = toml::from_str(&text).context("parsing Cargo.toml")?;
+
+    Ok(doc
+        .get("dependencies")
+        .and_then(|d| d.get("nocomponents"))
+        .and_then(|n| n.get("path"))
+        .is_some())
+}

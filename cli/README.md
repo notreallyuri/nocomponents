@@ -105,11 +105,29 @@ An installed file is compiled by your crate, so every path in it is redirected:
 a real dependency of whoever compiles the file. Everything else goes through `nocomponents`, which
 is why an installed component adds one dependency rather than four to keep in version lockstep.
 
+## Which version it installs
+
+An installed component is compiled by *your* crate against the `nocomponents` your project depends
+on, and it names that crate's internals directly — `nocomponents::primitives::button::ButtonRoot`,
+`nocomponents::utils::types::StyledRender`. So the source and the library have to be the same
+release, and this tool reads a git tag rather than a branch to make sure of it.
+
+**The tag comes from your project, not from this tool's version.** In order:
+
+1. the `nocomponents` in your `Cargo.lock`, which is the version you actually compile against;
+2. the latest release on crates.io, when nothing is resolved yet — every first `init`;
+3. a refusal, if your `nocomponents` is a `path` dependency. That is a working tree, and the
+   release tagged with the same number is not it — use `--from` to install from that same tree.
+
+So `cargo-nocli` and `nocomponents` version independently: a newer CLI installs correctly for an
+older library you have pinned, and a CLI bugfix does not need a library release to go with it.
+
 ## Working against a checkout
 
 `--from` reads the components from a local clone instead of the repository, and points the
-dependency it writes at that clone. It is how the CLI is tested, and how you try a component you
-have not pushed yet.
+dependency it writes at that clone. No tag is resolved and nothing is fetched — `--from` already
+says which tree you mean. It is how the CLI is tested, and how you try a component you have not
+pushed yet.
 
 ```bash
 cargo nocli components add sidebar --from ../nocomponents
