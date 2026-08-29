@@ -10,6 +10,18 @@ license = "Apache-2.0"
 readme = "README.md"
 keywords = ["leptos", "ui", "components", "wasm", "accessibility"]
 categories = ["gui", "wasm", "web-programming"]
+# Let-chains, which `theme.rs` and the canvas use. Edition 2024 alone would only ask for 1.85, and
+# a consumer below this should get a version error rather than a parse error about our source.
+rust-version = "1.88"
+# Working notes, not documentation: `CLAUDE.md` and `TODO.md` are ~1,900 lines of internal
+# argument that would otherwise ship to crates.io and sit in every consumer's registry. The docs
+# site is the documentation, and `docs/` is not part of this package anyway.
+exclude = ["CLAUDE.md", "TODO.md", ".github", "docs"]
+
+# The default feature set compiles almost nothing — `utils`, `middleware`, `deps` — so a docs.rs
+# build with defaults would render an empty crate. `full` is what the docs site itself depends on.
+[package.metadata.docs.rs]
+features = ["full"]
 
 [workspace]
 members = ["cli", "docs"]

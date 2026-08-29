@@ -347,19 +347,53 @@ which matters more under network lag than it ever did locally.
       surface should scale about the midpoint between them and pan by its travel, which is one
       gesture rather than two. Belongs in `drag.rs` if a second primitive wants it, and in the
       canvas if none does.
-- [ ] **A drag on the surface, not only a click.** `pan_on_drag=false` freed the primary button
-      and `on_surface_click` gives back a single point — which is enough to place something and
-      nothing else. A marquee, a lasso, and drawing a shape by dragging it out all need the press,
-      the live rectangle and the release. `on_surface_drag` reporting a `WorldBox` per move and at
-      the end, with the same press-relative arithmetic the node's resize already uses.
+- [x] **A drag on the surface, not only a click.** `on_surface_drag` on `CanvasRoot`, carrying a
+      `CanvasDrag { from, to, rect, done }` on every move and once more on release. `done` is the
+      field that tells the two apart — the same call `CanvasGesture` made, one callback with a
+      field rather than two whose bodies would be nearly the same.
+
+      **It shares one press with `on_surface_click`, and the rule is that they never both fire.**
+      A gesture that stayed within `CLICK_SLOP` was a click and is reported as one; a gesture that
+      passed it is a drag and the click stays quiet, which it already did. So nothing is reported
+      until the pointer has travelled far enough to have meant it, and a press that never got
+      there ends *silently* rather than with an empty box — otherwise every click on the board
+      would hand a caller a selection to clear at the same instant it handed them a point to act
+      on.
+
+      **Both ends of the band are world coordinates, and the far one is re-derived from the live
+      pointer on every move** rather than from `DragPoint`'s delta ÷ zoom, which is what the
+      node's resize does. Not an inconsistency: a node's resize is measured against a box that is
+      moving with the board, and a band is not. Anchored in screen pixels it would slide off
+      whatever it was drawn around the moment the board panned under the gesture — a wheel, an
+      auto-scroll, a peer moving the viewport.
+
+      `WorldBox::between` sorts the two corners, so a drag up and to the left is as ordinary as
+      one down and to the right; `WorldBox::intersects` is the other half, since a marquee selects
+      what a band *touches* rather than what it swallows whole — one that had to contain a node
+      could never reach one bigger than the screen. Four tests between them.
+
+      Styled: `CanvasMarquee` over a new `CanvasMarqueeRoot`, which is a box and nothing else. A
+      part rather than something the canvas draws for itself, because the same rectangle is a
+      shape being pulled open or a region being cropped, and only the caller knows which. It goes
+      inside the transformed layer so it stays over the world it was drawn around, and it never
+      takes the pointer — a band under the cursor is what the release would land on, and the
+      gesture would end on itself rather than on the board.
+
+- [x] A press on the zoom controls was a press on the board. They sit inside the surface, so the
+      press bubbled up looking exactly like one on empty space and `on_surface_click` fired with
+      the world coordinate underneath — the docs demo dropped a note under the button that had
+      just zoomed it. The guard was "not on a node", which the controls are not; it is now the
+      *nearest* thing between the target and the surface (`on_the_board`), so the transformed
+      layer and the paper behind it are the board and anything else inside the surface is chrome.
+      Shared by the click and the drag, which divide one press and would otherwise disagree
+      about it.
 
 ### 4. Before it is big
 
-- [ ] **Z-order as a prop.** Depth is DOM order today, so "bring to front" is a move within the
-      caller's list, which changes the keys and rebuilds the markup. Fine at four nodes, wrong at
-      four hundred, and a collaborative board will reorder from a peer's operation rather than
-      from a button. A `z` prop written into `z-index` costs nothing and makes depth a number two
-      clients can agree on.
+- [x] **Z-order as a prop.** `z: Signal<i32>` on `CanvasNodeRoot`, written into `z-index` only
+      when it is not zero — so the ordinary node stays out of a stacking order it has no opinion
+      about, the same rule `angle` follows. The board block's "To front" is one field now rather
+      than a move to the end of the list, and it applies to a whole selection at once.
 - [ ] **Cull what is off screen.** Every node is mounted, always. A board is the one component
       here where the count is the reader's to decide, and thousands of absolutely-positioned
       elements is where this stops being usable. The viewport already knows the visible world
@@ -371,34 +405,85 @@ which matters more under network lag than it ever did locally.
       what happens to be mounted. Whichever of the two is done first has to answer for the other:
       either fit takes the caller's own bounds, or culling keeps a way to measure what it hid.
 
+      Reading the DOM has a second cost now that a caller can render a node that is not content:
+      the board block's selection frame is a `[data-slot=canvas-node]` like any other, and fit
+      counts it. Harmless there — a frame is the box around things already counted — and not
+      harmless for a guide or a ruler. A caller's own bounds would answer this too.
+
 ### 5. Before it is a product
 
-- [ ] **Multi-select gestures.** `selected` is a `Signal<bool>` per node, so the *state* is already
-      the right shape — what is missing is shift-click, marquee (see the surface drag above), and
-      a move or resize that applies to a set. A group resize is one `WorldBox` around the
+- [x] **Multi-select gestures.** All three, and none of them needed the canvas to start owning a
+      selection: `selected` was already a `Signal<bool>` per node, so the state was the right
+      shape from the start.
+
+      The **marquee** is `on_surface_drag` plus `WorldBox::intersects`. `CanvasDrag` carries the
+      modifiers now, the same rule `DragPoint` follows, so a shift-band extends a selection rather
+      than replacing it — which is the same key that adds and removes on a click.
+
+      A **group move** is arithmetic the caller does with what it already gets: a node reports
+      where *it* would go, which is the right thing for it to know, and the caller turns that into
+      a delta and applies it to the rest. The one thing it needs is where everything was at the
+      press — the same gap `CanvasGesture.from` fills at the other end — so the block snapshots
+      the set on `pointerdown`.
+
+      A **group resize** is `WorldBox::scaled_within(from, to)`: each member keeps its position
+      and size as fractions of the frame, so one in the middle stays in the middle and one against
+      the right edge stays against it. The two axes are independent, and a frame with no extent on
+      one has no fraction to keep, so that axis is left alone rather than divided by zero — a
+      selection holding a zero-width text node is the ordinary case. Five tests, plus `moved_by`.
+
+      What is *not* in the library is the frame itself. A `CanvasNode` around the selection with
+      `pointer-events: none` and its grips re-enabled is nine lines in the caller, and the
+      alternative was a canvas that had to be told what a selection is. The one change it did want
+      is that `CanvasNodeRoot`'s children are optional: a frame, a guide or an empty slot is a box
+      somebody wants placed and measured in world units and holding nothing.
+
+      Two things the block found that only show up on a real board. A member of a selection must
+      draw **no grips of its own** — the frame's grips land on the same corners, and two grips
+      over one point is a coin toss between scaling the set and scaling a node out of it. And the
+      frame must be **mounted on whether there is one** rather than rebuilt as it changes: the
+      grips being dragged live on that element, and replacing it mid-gesture takes the gesture
+      with it. A group resize is one `WorldBox` around the
       selection and each member scaled inside it, which is arithmetic for `utils::viewport` and a
       test rather than anything new in the DOM.
 - [ ] **Nodes are not reachable by keyboard.** The surface is a tab stop and the things on it are
       not: nothing on a board can be selected, moved or renamed without a pointer. Wants a roving
       tab stop over the nodes (`primitives/roving_focus.rs` already does the hard part), arrows to
       nudge, Enter to edit the label, and the same `data-selected` the pointer path writes.
-- [ ] **World coordinates from outside the canvas.** `CanvasContext::world_at` is only reachable
-      by something inside the provider, and the board block hit that immediately: its palette
-      lives in the sidebar, so the drop had to re-derive the conversion from the viewport signal
-      and the box the canvas was wrapped in. Paste-at-pointer and a file dropped from the desktop
-      are the same problem. `Viewport` has the arithmetic; what is missing is the surface's own
-      rectangle, published rather than measured again by hand.
+- [x] **World coordinates from outside the canvas.** Two free functions beside the context rather
+      than a second copy of it: `world_at(surface, viewport, x, y)` and `surface_holds(...)`, with
+      `CanvasContext::world_at` now delegating to the first so there is one conversion and not
+      two. The surface's node ref is a `node_ref` prop on `CanvasRoot`, which is the other half —
+      the block was measuring the *wrapper* it had put the canvas in, and the two are the same box
+      only until somebody puts a margin or a second child on it.
+
+      Split in two on purpose. A marquee dragged past the edge of the board is still a marquee and
+      wants the point outside; a *drop* out there is nothing at all. Whether being outside matters
+      is the caller's question, so it is the caller's call.
 
 ## Components — gap vs the shadcn/ui catalogue
 
-Shipped (59): accordion, alert, alert-dialog, aspect-ratio, avatar, badge, breadcrumb, button,
-button-group, calendar, card, carousel, chart, checkbox, code, collapsible, color-picker,
-combobox, command, context-menu, data-table, date-picker, dialog, drawer, dropdown-menu, empty,
-field, hover-card, image-cropper, input, input-group, input-otp, item, kbd, label, menubar,
+**The catalogue is complete, and this list is the count.** Shipped (66): accordion, alert,
+alert-dialog, aspect-ratio, avatar, badge, breadcrumb, button, button-group, calendar, canvas,
+card, carousel, chart, checkbox, code, collapsible, color-picker, combobox, command, context-menu,
+data-table, date-picker, dialog, drawer, dropdown-menu, dropzone, empty, field, floating-menu,
+hover-card, image-cropper, input, input-group, input-otp, item, kanban, kbd, label, menubar,
 native-select, navigation-menu, pagination, popover, progress, radio-group, resizable, scroll-area,
-select, separator, sheet, sidebar, skeleton, slider, spinner, switch, table, tabs, textarea, toast,
-toggle, toggle-group, tooltip. `code` is not in the shadcn catalogue — it is ours, for documenting
-the rest.
+select, separator, sheet, sidebar, skeleton, slider, spinner, switch, table, tabs, textarea,
+timeline, toast, toggle, toggle-group, tooltip, tree, video-player.
+
+Twelve are not in the shadcn catalogue — canvas, code, color-picker, dropzone, floating-menu,
+image-cropper, kanban, native-select, timeline, toast, tree, video-player. `toast` is that
+catalogue's `sonner` under the name the rest of the world uses; `code` is ours, for documenting
+the rest; the other ten are listed under *Beyond the shadcn catalogue* below.
+
+**Nothing in the shadcn catalogue is missing.** The three names not above are not components:
+`sonner` *is* `toast`, `typography` is a stylesheet page, and `form` is deliberately a separate
+crate (`noform`) rather than something this one grows.
+
+The remaining count, for whoever comes to check it: 72 element features, 53 of them with a
+primitive and 66 with a component. `CLAUDE.md` carried the same drift and now says the same
+numbers — when one of these moves, both do.
 
 **P3 — substantial state machines.** All closed, and three of them are what the docs site itself
 runs on: the sidebar is the nav, the command palette is ⌘K, and the data table is the only honest
@@ -423,16 +508,25 @@ way to find out what living with a generic row type is like.
 - [x] Chart — line, area and bar as one `<svg>`, geometry in viewBox units, so nothing is measured
       and there is no resize listener.
 
-**P4 — app-specific pieces.** Useful only once the core set is solid; several are chat/AI surfaces
-rather than general UI, so they are the easiest to defer or skip.
+**P4 — skipped, and here is why.** Marker, Attachment, Bubble, Message, Message Scroller and
+Questionnaire are chat and AI surfaces: markup with no state machine, no ARIA question, no gesture
+and no keyboard contract. Six of them would add six docs pages and around ninety prop rows to a
+table of 985 already kept in step by hand, and would demonstrate nothing this library does not
+already show somewhere better. They are not a gap in the catalogue; they belong to whoever is
+building a chat product, on top of `item`, `avatar`, `scroll-area` and `field`, which are here.
 
-- [ ] Direction (RTL provider; cheap, but only pays off once enough components read it)
-- [ ] Marker
-- [ ] Attachment
-- [ ] Bubble
-- [ ] Message
-- [ ] Message Scroller
-- [ ] Questionnaire
+**Adding a component is not what this needs next.** The marginal one now costs a docs page, a nav
+entry, an index entry, a feature-table row, ~15 prop rows and a primitive page that would be one
+of 48 already owed — see *Docs site*. What stands between this and somebody else using it is under
+*Publishing*: the CLI is unpublished, so `cargo nocli` only works through `--from <checkout>`, and
+the install story the whole styled layer is designed around does not work outside this repo.
+
+- [ ] **Direction (RTL).** The one thing still open here, and it is not a component: it is a
+      provider plus every component that lays out along an axis reading it — the floating layer's
+      `Side`/`Align`, the sidebar, the slider, the carousel, the resizable handles, the roving
+      focus arrows. Cheap to add and worthless alone, which is why it stayed open while the
+      catalogue was being filled and is worth doing now that it is not moving. It is the
+      difference between a library that is incomplete in RTL and one that is *wrong* in it.
 
 **Beyond the shadcn catalogue.** Ours, and none of them took a dependency.
 
@@ -557,10 +651,10 @@ rather than general UI, so they are the easiest to defer or skip.
       (rectangle/ellipse), `CanvasText`, `CanvasControls`, `CanvasBackground`. Cost two icons,
       `plus` and `minus`.
 
-- [ ] Canvas, pass two: selection and moving things. Click, shift-click and a marquee over empty
-      space; dragging a selection by transform and reporting once on release, the way a kanban
-      card does. `pan_on_drag=false` exists for exactly this — a canvas whose empty space means a
-      marquee rather than a pan.
+- [x] Canvas, pass two: selection and moving things. Marquee, shift-click, a move that applies to
+      the set and a frame whose grips scale it. Filed in full under *Canvas: what a collaboration
+      tool needs* — `on_surface_drag` and `CanvasMarquee` in group 3, and **Multi-select
+      gestures** in group 5, which is the same work from the other end.
 
 - [ ] Canvas connectors: edges between nodes, with anchors, arrowheads and re-routing as nodes
       move. The largest of the three and the one that most wants its own primitive, since routing
@@ -962,22 +1056,99 @@ rather than general UI, so they are the easiest to defer or skip.
 
       The index searches over `used_by` as well as the prose, so "which primitive does the slider
       use" is answerable from either end.
-- [ ] The other 45 primitives, the ones that do have a styled layer. 157 parts, and the component
-      page should gain a switch — Overview · Primitives · Blocks — since nobody looks up
-      `DialogContentRoot` except while reading about `Dialog`.
+### The other 48 primitives
 
-      **Generate these rather than writing them.** 199 styled prop tables are already hand-pasted
-      and drift; 157 more doubles a debt that is already the largest in the docs. An `xtask` over
-      the `#[component]` signatures would emit both sides from one source and close the five-files
-      item too. It does not help the five above — four of them contain no `#[component]` at all —
-      which is why they went first.
+The ones that do have a styled layer: **48 modules, 180 parts**, against the 5 written. Counted
+from the tree rather than remembered — an earlier version of this list said 45 and 157.
+
+**The order below is the plan, and the first item gates the rest.** Writing 180 prop tables by hand
+and then generating them is doing the work twice, and 180 is not a number anybody finishes by hand
+anyway: the 315 tables and 985 rows already in `docs/src/pages/docs/` are hand-pasted, and they are
+the largest single debt in this repo. So the generator comes first, and every page below is then a
+short file of prose around a table nobody typed.
+
+- [ ] **1. The generator.** An `xtask` over the `#[component]` signatures emitting the `ApiEntry`
+      shape both layers already use — name, type, default, and the doc comment as the description.
+      It pays for itself twice over: 180 primitive tables that never get written, and 985 styled
+      rows that stop drifting. Same item as *Generate the prop-table rows at build time* below;
+      they are one job, and this is the reason to do it now rather than the reason to do it
+      eventually.
+
+      Two things it must handle that the styled layer does not exercise: `#[prop(default = …)]`
+      needs rendering as the default column, and `src/primitives/` carries real `///` prose while
+      `src/components/` deliberately carries none — so the styled side of a pair should fall back
+      to the primitive's description rather than emit a blank.
+
+- [ ] **2. The page shape, settled once.** A generated table is the part a primitive page needs
+      *least*. What it is for is the four things a signature cannot carry, and the counts say how
+      much of each there is:
+
+      - **the context it publishes** — 33 of the 48 have one, with a `use_<name>()` beside it, and
+        the rule that it may only be called inside its own root;
+      - **the `data-*` it writes** — every one of the 48 writes some, and they are the entire
+        styling contract of the unstyled layer;
+      - **the keys it binds** — 21 of the 48;
+      - **a demo built from plain classes**, not the styled layer, since that is the claim the
+        split exists to make.
+
+      One template with those four sections, proven on two pages before the other 46 are cut to
+      fit it.
+
+- [ ] **3. The way in.** The component page gains a switch — Overview · Primitives · Blocks —
+      since nobody looks up `DialogContentRoot` except while reading about `Dialog`. `/primitives`
+      keeps its own index for the five that have no component page to hang off.
+
+Then the pages, batched by what they share rather than alphabetically, so a shape is argued once
+and reused rather than re-decided 48 times. The batches add up to 53 and cover 48: families 4 and 7
+overlap by five — `context_menu`, `dropdown_menu`, `menubar`, `navigation_menu`, `select` — which
+are the menus that both float and rove, and each belongs to whichever batch it gets written in.
+
+- [ ] **4. The floating family (9).** `popover`, `tooltip`, `hover_card`, `dropdown_menu`,
+      `select`, `combobox`, `context_menu`, `menubar`, `navigation_menu`. They alias one
+      `FloatingContext` and reuse `FloatingRoot` / `FloatingTrigger`, so their pages are one shape
+      nine times over, all linking back to `/primitives/floating`, which is already written. Do
+      these first: they settle how a page describes a primitive built on another, which nothing
+      else in the docs does yet.
+
+- [ ] **5. The thin ones (9).** `button`, `checkbox`, `input_group`, `native_select`, `separator`,
+      `switch`, `table`, `textarea`, `toggle` — one or two parts, no context, no keys. These pages
+      are the ARIA and the `data-*` and nothing else, and they are where the template gets proven
+      cheap. Two are only thin by the count. `button` is a trigger the whole floating family
+      renders through `TriggerRender`, so its page is the other end of family 4. And `table` has
+      one part but two `Copy` handles — `TableSort` and `TableSelection`, which are handles rather
+      than a context precisely because a table already has its rows in one place; that argument
+      *is* the page.
+
+- [ ] **6. The gesture family (10).** `canvas`, `color_picker`, `drawer`, `floating_menu`,
+      `image_cropper`, `kanban`, `resizable`, `scroll_area`, `slider`, `video_player` — all on
+      `use_drag`, all linking back to `/primitives/drag`. Same trick as the floating family: one
+      shape, ten pages. `video_player` is the largest primitive in the tree at 12 parts, so it
+      goes last within the batch, once the shape has stopped moving.
+
+- [ ] **7. The roving-focus family (12).** `accordion`, `calendar`, `command`, `context_menu`,
+      `dropdown_menu`, `menubar`, `navigation_menu`, `radio_group`, `select`, `tabs`,
+      `toggle_group`, `tree`. Overlaps 4 by the five menus that both float and rove — a page
+      belongs to whichever family it gets written in, and the other family is a cross-link.
+      `command` is the one worth its own page for the opposite reason: it moves the highlight
+      through `aria-activedescendant` *because* it could not reuse `roving_focus`, and a family
+      page that only says what a primitive shares never says that.
+
+- [ ] **8. The rest, one essay each (13).** `avatar`, `carousel`, `chart`, `code`, `collapsible`,
+      `dialog`, `dropzone`, `field`, `input_otp`, `progress`, `sidebar`, `timeline`, `toast`.
+      Nothing shared to exploit: `field` at six parts and five hooks, `chart`, `sidebar` and
+      `toast` are each their own argument, and the small ones are small for reasons that differ
+      every time. Last, because by then the template has been through forty pages and stopped
+      changing.
+
 - [ ] The Leptos-shaped types the prop tables keep naming — `Signal<String>`, `ChildrenFn`, the
       `render` callback shape — still have nowhere to be described once. `Side` / `Align` /
       `Orientation` / `SideOffset` are on `/docs/utility` now, so this is the other half of that
       page rather than a `/docs/types` of its own.
-- [ ] Generate the prop-table rows at build time rather than keeping 199 hand-pasted tables in step:
-      an `xtask` or a build script over the `#[component]` signatures, emitting the same `ApiEntry`
-      shape. It could drive `NAV` and `COMPONENTS` too, closing the five-files item above.
+- [ ] Generate the prop-table rows at build time rather than keeping **315 tables and 985 rows**
+      hand-pasted and in step: an `xtask` or a build script over the `#[component]` signatures,
+      emitting the same `ApiEntry` shape. It could drive `NAV` and `COMPONENTS` too, closing the
+      five-files item above. This and item 1 of *The other 48 primitives* are the same job — that
+      is where the argument for doing it now lives.
 
 ## Publishing
 
@@ -985,10 +1156,10 @@ rather than general UI, so they are the easiest to defer or skip.
       all: a Tailwind build cannot see classes inside `~/.cargo/registry`, so `cargo nocli` installs
       `src/components/<name>.rs` into the project's own `src/` and `init` installs the stylesheet
       beside it. The crate keeps everything with no classes in it.
-- [x] One feature per element (64 of them), gating both layers under one name, each listing what its
-      own source imports so cargo works the closure out. `tests/features.rs` re-derives the table
-      from the imports and fails if `Cargo.toml` has drifted — the failure it prevents is silent,
-      since `--features full` builds either way.
+- [x] One feature per element — 72 of them now — gating both layers under one name, each listing
+      what its own source imports so cargo works the closure out. `tests/features.rs` re-derives
+      the table from the imports and fails if `Cargo.toml` has drifted — the failure it prevents
+      is silent, since `--features full` builds either way.
 
 - [x] Both manifests carry `description`, `license`, `repository`, `homepage`, `keywords` and
       `categories`; `cargo publish --dry-run` is clean for each.
@@ -998,9 +1169,43 @@ rather than general UI, so they are the easiest to defer or skip.
       against `ssr`, `hydrate` and `csr` from a scratch crate — all three compile. Compiling is not
       running: nothing here has been *exercised* under hydration, and the primitives call
       `document()` directly, so an SSR consumer is unexplored rather than supported.
-- [ ] The CLI is not published, and `cargo add nocomponents` inside it assumes the library is. Until
-      both are on crates.io the only working path is `--from <checkout>`, which is also how the CLI
-      is tested.
+- [x] **The CLI read `main`, not a release.** `remote.rs` fetched from
+      `raw.githubusercontent.com/…/nocomponents/main`, so a published CLI would have installed
+      whatever `main` looked like that day — a component naming a primitive the released crate
+      does not have yet, failing at the consumer's build with an error about our source rather
+      than theirs. It reads a tag now, the GitHub API call carries `?ref=`, and a 404 says which
+      release it looked for.
+
+      **The tag comes from the library, not from the CLI.** The first version of this derived it
+      from `CARGO_PKG_VERSION`, which was the simple fix and the wrong one: what has to match is
+      the installed source and the crate it compiles against — an installed `button.rs` names
+      `nocomponents::primitives::button::ButtonRoot` directly — while the CLI's own version is
+      about its flags, its lockfile format and its rewriting rules. Tying them would have forced
+      the two crates to release in lockstep *and* still got the case that matters wrong: somebody
+      pinned to an older `nocomponents` running a newer CLI would have been handed source for a
+      library they are not compiling.
+
+      So the release is resolved from the project being installed into, in three steps:
+      `Cargo.lock` if it has resolved one (the lock, not the manifest — a manifest holds a
+      *requirement*, `"0.1"`, and there is no tag by that name), the latest published version
+      otherwise, and a **refusal** when the project's `nocomponents` is a path dependency, since
+      that is a working tree and the release tagged with its version is not it. Resolved lazily
+      and once, so `components remove` and anything run with `--from` still touch no network.
+
+      Verified over all four: a path dep refuses and names `--from`; `--from` still installs; an
+      unpublished crate gives "not on crates.io yet, use `--from`"; and a lock naming `0.9.3`
+      fetches `v0.9.3` rather than the CLI's own `v0.1.0`.
+
+      The two crates can now version independently. What is left for later is a *floor* — the CLI
+      declaring the oldest library its rewriting rules still produce valid source for — which
+      wants a semver comparison and cannot fire until there are two releases to compare.
+
+- [ ] Neither crate is published yet, so the only working path is still `--from <checkout>`, which
+      is also how the CLI is tested. Everything else is ready: names are free on crates.io, both
+      `cargo package` verify, and `init` + `components add button dialog sidebar` was run against a
+      scratch crate outside this repo — 8 files installed, imports rewritten to `nocomponents::…`,
+      and the result compiles as a foreign crate. What is left is `cargo publish` for the library,
+      the `v0.1.0` tag, then `cargo publish` for the CLI, in that order.
 - [x] `nocomponents.lock` beside the config records a hash of each file as installed, so `add` now
       says *which* kind of file it left alone — "edited here" against "unchanged, --force refreshes
       it" — and `--force` names what of yours it overwrote. FNV-1a, not a cryptographic hash: the
@@ -1022,7 +1227,28 @@ rather than general UI, so they are the easiest to defer or skip.
       prop tables now, and a description written in both places drifts, so `src/components` carries
       no `///` on purpose — docs.rs stays empty until it can be generated from the same source as
       the tables. `src/primitives` and `src/utils` keep theirs, being undocumented elsewhere.
-- [ ] README is a disclaimer — needs install steps, a minimal example and the feature-flag table.
+- [x] README is the crate's front page on crates.io and docs.rs, and was a disclaimer. Rewritten:
+      the two layers and why they install differently, the CLI flow, a styled example and the same
+      thing unstyled, both feature tables, what is ours rather than shadcn's, and the credit. Both
+      code samples were compiled in a scratch crate rather than written from memory, and every
+      link is absolute — a relative one resolves on crates.io and breaks on docs.rs.
+
+- [x] docs.rs would have rendered an empty crate: it builds with default features, and those
+      compile only `utils`, `middleware` and `deps`. `[package.metadata.docs.rs] features =
+      ["full"]`.
+
+- [x] The package shipped `CLAUDE.md` and `TODO.md` — ~1,900 lines of internal argument into
+      crates.io and every consumer's registry. `exclude`d, along with `.github`. 161 files down to
+      157.
+
+- [x] `rust-version = "1.88"` on both. Edition 2024 alone would only ask for 1.85; the let-chains
+      in `theme.rs` and the canvas are what set it, and without it a consumer below it gets a parse
+      error about our source instead of a version error.
+
+- [x] `NOTICE` had no Lucide entry, though `src/icons/mod.rs` says the path data is theirs. ISC
+      requires the notice be carried, and several of our icons are on Lucide's own Feather-derived
+      list, so the upstream `LICENSE` is reproduced whole — it covers both halves — rather than
+      reasoned about glyph by glyph. Fetched from upstream, not written from memory.
 
 ## Repo hygiene
 

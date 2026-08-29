@@ -49,10 +49,10 @@ Two kinds. The **layers** — `primitives`, `icons`, `components` (= primitives 
 `utils`, `middleware` and `deps` exist, so always check/build with `--features full`, which is what
 `docs` depends on.
 
-The **elements** are one feature per name, and there are 68 of them. A single name gates both
+The **elements** are one feature per name, and there are 72 of them. A single name gates both
 halves: `#[cfg(feature = "accordion")]` sits on `primitives::accordion` *and* on
-`components::accordion`, because an element is one thing whichever layer you take it from. 50 names
-have a primitive, 63 have a component, and the ones that have only one (`floating`, `drag`,
+`components::accordion`, because an element is one thing whichever layer you take it from. 53 names
+have a primitive, 66 have a component, and the ones that have only one (`floating`, `drag`,
 `roving_focus`, `dismiss`, `typeahead` have no styled layer; `card`, `badge`, `sheet`, `skeleton`
 and the rest of the style-only set have no primitive) are gated just the same.
 
@@ -123,6 +123,15 @@ line, rewritten, and printed back:
 - `crate::components::x` → the install directory's module path (`crate::components::nc::x`),
 - `crate::{primitives,icons,utils}`, and `crate::cn` → `nocomponents::…`,
 - `leptos_node_ref` and `js_sys` → `nocomponents::deps::…`.
+
+**The CLI reads a git tag, and the tag comes from the library, not from the CLI.** An installed
+file is compiled against whatever `nocomponents` the project depends on and names its internals
+directly, so source and crate have to be the same release. `remote.rs` resolves it from the
+project: `Cargo.lock` first (the lock, not the manifest — a manifest holds a requirement, `"0.1"`,
+and no tag is named that), the latest crates.io release otherwise, and a refusal when the
+dependency is a `path` one, since that is a working tree and `--from` is what it wants. The two
+crates therefore version independently — the CLI's own number is about its flags and its rewriting
+rules, not about the catalogue.
 
 An `add` never overwrites a file that is already there — the point of installing is that the file is
 the project's to edit, and pulling in one component must not quietly undo changes to another it
@@ -277,11 +286,12 @@ using `DocLayout` + `DemoSection`), `pages/docs/mod.rs`, the route in `app.rs`, 
 `docs/src/layout/doc_layout.rs`, and the `COMPONENTS` const in `pages/docs/index.rs`. The header's
 ⌘K palette (`docs/src/components/doc_search.rs`) reads `NAV`, so it is not a sixth place.
 
-**`/primitives` is a third section**, one sidebar line for what will be fifty pages. The five with
-no styled layer (`drag`, `floating`, `roving_focus`, `dismiss`, `typeahead`) are written; the other
-45 are not, and should be generated rather than typed. A primitive page carries what a prop table
-cannot — the context it publishes, the `data-*` it writes, the keys it binds — and its demo is built
-from plain classes, not the styled layer, since that is the claim the layer makes.
+**`/primitives` is a third section**, one sidebar line for what will be 53 pages. The five with no
+styled layer (`drag`, `floating`, `roving_focus`, `dismiss`, `typeahead`) are written; the other 48
+are not, and should be generated rather than typed — `TODO.md` carries the batched plan. A primitive
+page carries what a prop table cannot — the context it publishes, the `data-*` it writes, the keys
+it binds — and its demo is built from plain classes, not the styled layer, since that is the claim
+the layer makes.
 
 **Blocks are their own section, not a leaf of a component.** Each composes between three and ten
 components, so `/docs/<component>/blocks` had to pick one owner and hid the block from the other
