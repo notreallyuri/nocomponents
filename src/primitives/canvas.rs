@@ -20,7 +20,7 @@
 //! `pan_on_drag` turns the hand tool back on for a board that really is only scenery.
 
 use crate::{
-    primitives::drag::use_drag,
+    primitives::drag::{DragPoint, use_drag},
     utils::viewport::{BoxHandle, Viewport, WorldBox, ZoomLimits},
 };
 use leptos::wasm_bindgen::JsCast;
@@ -70,6 +70,102 @@ pub struct CanvasPoint {
     pub y: f64,
 }
 
+/// A drag across the board itself, rather than on anything placed on it.
+///
+/// Reported live on every move *and* once more when the pointer comes up, because that is the
+/// shape every gesture built on it wants: a marquee draws its band from the running report and
+/// settles the selection from the last one, and a shape pulled open is previewed the same way.
+/// `done` is what tells the two apart — one callback with a field rather than two whose bodies
+/// would be nearly the same, which is the call [`CanvasGesture`] already made.
+///
+/// Nothing is reported at all until the pointer has travelled far enough to have meant it, and a
+/// press that never got there ends silently: it was a click, and `on_surface_click` is what
+/// answers it. So a press on the board is exactly one of the two, never both and never neither.
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
+pub struct CanvasDrag {
+    /// Where the press landed, in world coordinates.
+    ///
+    /// A world anchor rather than the client point it was: the board can pan out from under a
+    /// gesture — a wheel, a peer, an auto-scroll — and an anchor kept in screen pixels would
+    /// slide off whatever the band was drawn around.
+    pub from: CanvasPoint,
+    /// Where the pointer is now, which is above and to the left of `from` as often as below it.
+    pub to: CanvasPoint,
+    /// The two as a box, sorted so it is never inside out. What a marquee tests nodes against.
+    pub rect: WorldBox,
+    /// The modifiers held for *this* report rather than for the press, the same rule
+    /// [`crate::primitives::drag::DragPoint`] follows: a key taken or let go partway through
+    /// changes what the rest of the gesture means, and shift over a marquee is the ordinary case
+    /// — it adds to a selection instead of replacing it.
+    pub shift: bool,
+    pub alt: bool,
+    /// True for the last report of the gesture and no other.
+    pub done: bool,
+}
+
+/// Whether a pointer landed on the board itself rather than on something in front of it.
+///
+/// Not simply "not on a node". The zoom controls sit inside the surface too, so a press on one
+/// bubbles up looking exactly like a press on empty space — and a board that drops a note under
+/// the button that just zoomed it is worse than one that never listened at all. The rule is the
+/// nearest thing between the target and the surface: a node's markup belongs to the node, the
+/// transformed layer and the paper behind it *are* the board, and anything else somebody put
+/// inside the surface is chrome that came with its own reason to be pressed.
+///
+/// Shared by the click and the drag on purpose. They divide one press between them, so a
+/// disagreement about what counts as the board would be a press that is both or neither.
+fn on_the_board(target: &Element) -> bool {
+    match target
+        .closest(
+            "[data-slot=canvas-node],[data-slot=canvas-viewport],[data-slot=canvas-background]",
+        )
+        .ok()
+        .flatten()
+    {
+        Some(hit) => hit.get_attribute("data-slot").as_deref() != Some("canvas-node"),
+        // Nothing between it and the surface, so it either is the surface or sits straight on it.
+        None => target.matches("[data-slot=canvas]").unwrap_or(false),
+    }
+}
+
+/// What is under a client point, for a caller that is **not** inside the canvas.
+///
+/// [`use_canvas`] needs the provider, and the two things that most want this arithmetic are
+/// outside it: a palette in a sidebar that drops a node where you let go, and a file dragged in
+/// from the desktop. Both already hold what it takes — the viewport is a prop, and so is the
+/// surface's node ref — so what was missing was only the conversion, which each of them wrote out
+/// again by hand and got subtly differently.
+///
+/// Deliberately without a bounds check. A marquee dragged past the edge of the board is still a
+/// marquee, and the point outside is the one it wants; a *drop* outside is nothing at all, which
+/// is why that question is [`surface_holds`] and answered by the caller who cares.
+pub fn world_at(
+    surface: AnyNodeRef,
+    viewport: Viewport,
+    client_x: f64,
+    client_y: f64,
+) -> Option<CanvasPoint> {
+    let rect = surface.get_untracked()?.get_bounding_client_rect();
+    let (x, y) = viewport.screen_to_world(client_x - rect.left(), client_y - rect.top());
+    Some(CanvasPoint { x, y })
+}
+
+/// Whether a client point is over the surface at all.
+pub fn surface_holds(surface: AnyNodeRef, client_x: f64, client_y: f64) -> bool {
+    surface.get_untracked().is_some_and(|surface| {
+        let rect = surface.get_bounding_client_rect();
+        client_x >= rect.left()
+            && client_x <= rect.right()
+            && client_y >= rect.top()
+            && client_y <= rect.bottom()
+    })
+}
+
+/// The element a pointer landed on, for the two handlers that have to ask what it was.
+fn target_element(event: &web_sys::Event) -> Option<Element> {
+    event.target()?.dyn_into::<Element>().ok()
+}
+
 #[derive(Copy, Clone)]
 pub struct CanvasContext {
     pub viewport: RwSignal<Viewport>,
@@ -100,8 +196,13 @@ impl CanvasContext {
 
     /// What is under a pointer, in world coordinates.
     pub fn world_at(&self, client_x: f64, client_y: f64) -> Option<(f64, f64)> {
-        let (x, y) = self.to_surface(client_x, client_y)?;
-        Some(self.viewport.get_untracked().screen_to_world(x, y))
+        let at = world_at(
+            self.surface_ref,
+            self.viewport.get_untracked(),
+            client_x,
+            client_y,
+        )?;
+        Some((at.x, at.y))
     }
 
     pub fn pan_by(&self, dx: f64, dy: f64) {
@@ -232,10 +333,28 @@ pub fn CanvasRoot(
     /// surface's own box and the current transform, both of which live in here.
     #[prop(default = None, into)]
     on_surface_click: Option<Callback<CanvasPoint>>,
+    /// Run while the primary button is dragged across the board itself, and once more when it is
+    /// let go — which is what a marquee, a lasso and a shape pulled open all need and a click
+    /// cannot give: the press, the live rectangle, and the release.
+    ///
+    /// Only when the primary button is not already the hand tool. It shares one press with
+    /// `on_surface_click` and the two never both fire: a gesture that stayed within a few pixels
+    /// was a click, and one that did not is this.
+    #[prop(default = None, into)]
+    on_surface_drag: Option<Callback<CanvasDrag>>,
+    /// The surface itself, for a caller that has to measure it from outside — a palette that
+    /// drops a node where you let go needs the box that [`world_at`] converts against, and it
+    /// cannot ask the context for it, not being inside the provider.
+    ///
+    /// Worth taking rather than leaving them to wrap the canvas in a div and measure that: the
+    /// wrapper is the same box only as long as nobody puts a margin, a border or a second child
+    /// on it, and when it stops being the same box every drop lands slightly wrong.
+    #[prop(optional)]
+    node_ref: Option<AnyNodeRef>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
-    let surface_ref = AnyNodeRef::new();
+    let surface_ref = node_ref.unwrap_or_default();
     let ctx = CanvasContext {
         viewport,
         limits,
@@ -265,6 +384,54 @@ pub fn CanvasRoot(
         travelled.set_value((0.0, 0.0));
         ctx.panning.set(false);
     });
+
+    // Where a surface drag began, in world coordinates rather than in the client ones it arrived
+    // as — see `CanvasDrag::from`. The far corner is converted from the live pointer on every
+    // move rather than derived from a delta, for the same reason: both ends of the band then
+    // survive a board that panned or zoomed under the gesture.
+    let dragged_from = StoredValue::new(CanvasPoint::default());
+    // Whether the press has travelled far enough to be a drag at all, rather than a click that
+    // has not been released yet.
+    let dragged = StoredValue::new(false);
+
+    let report = move |point: DragPoint, done: bool| {
+        let Some(on_surface_drag) = on_surface_drag else {
+            return;
+        };
+        // The same distance the click below allows itself, so one press is a click or a drag and
+        // never both. Until it is passed there is nothing worth drawing: a band that appeared
+        // under every click would flicker on each one.
+        if !dragged.get_value() {
+            if point.dx.hypot(point.dy) <= CLICK_SLOP {
+                return;
+            }
+            dragged.set_value(true);
+        }
+        let from = dragged_from.get_value();
+        let Some((x, y)) = ctx.world_at(point.client_x, point.client_y) else {
+            return;
+        };
+        on_surface_drag.run(CanvasDrag {
+            from,
+            to: CanvasPoint { x, y },
+            rect: WorldBox::between(from.x, from.y, x, y),
+            shift: point.shift,
+            alt: point.alt,
+            done,
+        });
+    };
+
+    let surface_drag = use_drag(move |point| report(point, false))
+        .on_start(move |_| dragged.set_value(false))
+        // Only a gesture that became one gets its last word. A press that never travelled is a
+        // click, and reporting an empty box for it would hand every caller a selection to clear
+        // at the same moment the click handler hands them a point to act on.
+        .on_end(move |end| {
+            if dragged.get_value() {
+                report(end.point, true);
+            }
+            dragged.set_value(false);
+        });
 
     view! {
         <Provider value=ctx>
@@ -339,8 +506,21 @@ pub fn CanvasRoot(
                     let primary = e.button() == 0;
                     let with_space = primary && ctx.space_held.get_untracked();
                     if !(middle || with_space || (primary && pan_on_drag)) {
-                        // Left alone, so the press focuses the surface the way a press on any
-                        // other tabbable element does — which is what the space key needs.
+                        // The primary button is not the hand tool here, so it is the caller's if
+                        // they asked for it and the press landed on the board rather than on a
+                        // node or on the controls.
+                        if primary && on_surface_drag.is_some()
+                            && target_element(&e).is_some_and(|target| on_the_board(&target))
+                            && let Some((x, y)) = ctx
+                                .world_at(e.client_x() as f64, e.client_y() as f64)
+                        {
+                            dragged_from.set_value(CanvasPoint { x, y });
+                            surface_drag.start(&e);
+                        }
+                        // Not prevented either way, so the press focuses the surface the way a
+                        // press on any other tabbable element does — which is what the space key
+                        // needs. There is no selection to suppress in its place: the surface is
+                        // `select-none`, which is where a rule about text belongs.
                         return;
                     }
                     e.prevent_default();
@@ -358,15 +538,7 @@ pub fn CanvasRoot(
                     {
                         return;
                     }
-                    // A click that landed on something the caller put on the board belongs to
-                    // that thing. `closest` rather than the target itself, because a node's own
-                    // markup is what the pointer actually hits.
-                    if e
-                        .target()
-                        .and_then(|target| target.dyn_into::<Element>().ok())
-                        .and_then(|target| target.closest("[data-slot=canvas-node]").ok().flatten())
-                        .is_some()
-                    {
+                    if !target_element(&e).is_some_and(|target| on_the_board(&target)) {
                         return;
                     }
                     if let Some((x, y)) = ctx.world_at(e.client_x() as f64, e.client_y() as f64) {
@@ -431,6 +603,41 @@ pub fn CanvasBackgroundRoot(
     }
 }
 
+/// The band a surface drag draws, placed in world coordinates.
+///
+/// Nothing but a box. The arithmetic that produced it is [`CanvasDrag::rect`] and what it means is
+/// the caller's — this is here because every one of them would otherwise write the same
+/// `position: absolute` string, and because it has to sit *inside* the transformed layer to stay
+/// over the world it was drawn around.
+///
+/// `None` renders nothing, which is what a board with no gesture on it looks like. It never takes
+/// the pointer: a band under the cursor is what the release would land on, and the gesture would
+/// then end on itself rather than on the board.
+#[component]
+pub fn CanvasMarqueeRoot(
+    #[prop(into)] rect: Signal<Option<WorldBox>>,
+    #[prop(optional, into)] class: Signal<String>,
+) -> impl IntoView {
+    move || {
+        rect.get().map(|rect| {
+            view! {
+                <div
+                    data-slot="canvas-marquee"
+                    aria-hidden="true"
+                    style=format!(
+                        "position: absolute; left: {}px; top: {}px; width: {}px; height: {}px; pointer-events: none;",
+                        rect.x,
+                        rect.y,
+                        rect.width,
+                        rect.height,
+                    )
+                    class=class
+                />
+            }
+        })
+    }
+}
+
 /// One thing on the canvas, placed in world coordinates.
 ///
 /// Position is a prop rather than state here: the caller keeps the list, so a node moved by
@@ -482,12 +689,27 @@ pub fn CanvasNodeRoot(
     /// The smallest a resize may leave it, in world units.
     #[prop(default = 24.0)]
     min_size: f64,
+    /// Where the node sits in the stack.
+    ///
+    /// Depth is DOM order without it, so "bring to front" is a move within the caller's list —
+    /// which changes the keys and rebuilds the markup. Fine at four nodes, wrong at four hundred,
+    /// and a board two people are editing reorders from a peer's operation rather than from a
+    /// button. A number is something two clients can agree on without agreeing on an order.
+    ///
+    /// Written only when it is not zero, so the ordinary node stays out of a stacking order it
+    /// has no opinion about.
+    #[prop(optional, into)]
+    z: Signal<i32>,
     /// Whether this is the node the caller considers selected. Written as `data-selected`, and
     /// what the grips are drawn by — a board with eight grips on every node is unreadable.
     #[prop(optional, into)]
     selected: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
-    children: Children,
+    /// Optional, because a node is not always something with contents. A frame drawn round a
+    /// selection, a guide, a slot waiting to be filled: each is a box the caller wants placed and
+    /// measured in world units, and none of them holds anything.
+    #[prop(optional)]
+    children: Option<Children>,
 ) -> impl IntoView {
     // Only a node that does something needs the canvas, so a plain one still renders outside it.
     let interactive = on_move.is_some() || on_resize.is_some();
@@ -607,6 +829,10 @@ pub fn CanvasNodeRoot(
                 if angle != 0.0 {
                     style.push_str(&format!(" transform: rotate({angle}rad);"));
                 }
+                let z = z.get();
+                if z != 0 {
+                    style.push_str(&format!(" z-index: {z};"));
+                }
                 style
             }
             on:pointerdown=move |e: ev::PointerEvent| {
@@ -616,7 +842,7 @@ pub fn CanvasNodeRoot(
             }
             class=class
         >
-            {children()}
+            {children.map(|children| children())}
             {move || {
                 (resizable && angle.get() == 0.0)
                     .then(|| {

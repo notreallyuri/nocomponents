@@ -2,8 +2,8 @@ use crate::{
     cn,
     icons::{media::Maximize, minus::Minus, plus::Plus},
     primitives::canvas::{
-        CanvasBackgroundRoot, CanvasGesture, CanvasNodeLabelRoot, CanvasNodeRoot, CanvasPoint,
-        CanvasRoot, CanvasViewportRoot, use_canvas,
+        CanvasBackgroundRoot, CanvasDrag, CanvasGesture, CanvasMarqueeRoot, CanvasNodeLabelRoot,
+        CanvasNodeRoot, CanvasPoint, CanvasRoot, CanvasViewportRoot, use_canvas,
     },
     utils::{
         types::AsClass,
@@ -11,6 +11,7 @@ use crate::{
     },
 };
 use leptos::prelude::*;
+use leptos_node_ref::AnyNodeRef;
 
 #[derive(Default, Copy, Clone, PartialEq, Eq, Debug)]
 pub enum StickyColor {
@@ -54,17 +55,23 @@ pub fn Canvas(
     #[prop(optional)] limits: ZoomLimits,
     #[prop(default = false)] pan_on_drag: bool,
     #[prop(default = None, into)] on_surface_click: Option<Callback<CanvasPoint>>,
+    #[prop(default = None, into)] on_surface_drag: Option<Callback<CanvasDrag>>,
     #[prop(default = true)] controls: bool,
     #[prop(default = 24.0)] gap: f64,
+    #[prop(optional)] node_ref: Option<AnyNodeRef>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
+    let node_ref = node_ref.unwrap_or_default();
+
     view! {
         <CanvasRoot
+            node_ref=node_ref
             viewport=viewport
             limits=limits
             pan_on_drag=pan_on_drag
             on_surface_click=on_surface_click
+            on_surface_drag=on_surface_drag
             class=move || {
                 cn!(
                     "relative touch-none overflow-hidden rounded-lg border bg-muted/20 outline-none select-none",
@@ -94,6 +101,24 @@ pub fn CanvasBackground(
             class=move || {
                 cn!(
                     "pointer-events-none absolute inset-0 bg-[radial-gradient(circle,var(--color-border)_1px,transparent_1px)]",
+                    class.get(),
+                )
+            }
+        />
+    }
+}
+
+#[component]
+pub fn CanvasMarquee(
+    #[prop(into)] rect: Signal<Option<WorldBox>>,
+    #[prop(optional, into)] class: Signal<String>,
+) -> impl IntoView {
+    view! {
+        <CanvasMarqueeRoot
+            rect=rect
+            class=move || {
+                cn!(
+                    "border-[length:calc(1px/var(--canvas-zoom))] border-primary bg-primary/10",
                     class.get(),
                 )
             }
@@ -160,9 +185,10 @@ pub fn CanvasNode(
     #[prop(default = None, into)] aspect: Option<f64>,
     #[prop(optional, into)] angle: Signal<f64>,
     #[prop(default = 24.0)] min_size: f64,
+    #[prop(optional, into)] z: Signal<i32>,
     #[prop(optional, into)] selected: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
-    children: Children,
+    #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     let movable = on_move.is_some();
 
@@ -178,6 +204,7 @@ pub fn CanvasNode(
             aspect=aspect
             angle=angle
             min_size=min_size
+            z=z
             selected=selected
             class=move || {
                 cn!(
@@ -194,7 +221,7 @@ pub fn CanvasNode(
                 )
             }
         >
-            {children()}
+            {children.map(|children| children())}
         </CanvasNodeRoot>
     }
 }
@@ -233,6 +260,7 @@ pub fn CanvasSticky(
     #[prop(default = None, into)] on_gesture_end: Option<Callback<CanvasGesture>>,
     #[prop(optional, into)] angle: Signal<f64>,
     #[prop(default = 60.0)] min_size: f64,
+    #[prop(optional, into)] z: Signal<i32>,
     #[prop(optional, into)] selected: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
@@ -249,6 +277,7 @@ pub fn CanvasSticky(
             aspect=1.0
             angle=angle
             min_size=min_size
+            z=z
             selected=selected
             class=move || {
                 cn!(
@@ -276,6 +305,7 @@ pub fn CanvasShape(
     #[prop(default = None, into)] aspect: Option<f64>,
     #[prop(optional, into)] angle: Signal<f64>,
     #[prop(default = 32.0)] min_size: f64,
+    #[prop(optional, into)] z: Signal<i32>,
     #[prop(optional, into)] selected: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional)] children: Option<Children>,
@@ -292,6 +322,7 @@ pub fn CanvasShape(
             aspect=aspect
             angle=angle
             min_size=min_size
+            z=z
             selected=selected
             class=move || {
                 cn!(
@@ -313,6 +344,7 @@ pub fn CanvasText(
     #[prop(default = None, into)] on_move: Option<Callback<CanvasPoint>>,
     #[prop(default = None, into)] on_gesture_end: Option<Callback<CanvasGesture>>,
     #[prop(optional, into)] angle: Signal<f64>,
+    #[prop(optional, into)] z: Signal<i32>,
     #[prop(optional, into)] selected: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
@@ -324,6 +356,7 @@ pub fn CanvasText(
             on_move=on_move
             on_gesture_end=on_gesture_end
             angle=angle
+            z=z
             selected=selected
             class=move || cn!("text-sm font-medium whitespace-nowrap text-foreground", class.get())
         >

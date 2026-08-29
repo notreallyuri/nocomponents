@@ -183,6 +183,33 @@ impl WorldBox {
         self.angle == 0.0
     }
 
+    /// The upright box with these two points as opposite corners, whichever way round they are.
+    ///
+    /// What a gesture that drags a box out of nothing produces — a marquee, a lasso, a shape
+    /// drawn by pulling it open. The press is one corner and the pointer is the other, and a drag
+    /// up and to the left is as ordinary as one down and to the right, so the two are sorted here
+    /// rather than in every caller: a box with a negative width is one that nothing downstream —
+    /// not [`WorldBox::intersects`], not a `style` string — reads correctly.
+    pub fn between(x1: f64, y1: f64, x2: f64, y2: f64) -> Self {
+        Self::new(x1.min(x2), y1.min(y2), (x2 - x1).abs(), (y2 - y1).abs())
+    }
+
+    /// Whether the two overlap at all, edges included.
+    ///
+    /// What a marquee asks of every node on the board: Figma, Miro and every editor since select
+    /// what a band *touches* rather than only what it swallows whole, because a band that has to
+    /// contain a node cannot reach one larger than the screen.
+    ///
+    /// Both are taken as upright, the same gap [`WorldBox::around`] has: a turned box is tested
+    /// by the rectangle it was before it turned, so it can be caught slightly early or missed
+    /// slightly late at its corners.
+    pub fn intersects(&self, other: &WorldBox) -> bool {
+        self.x <= other.x + other.width
+            && other.x <= self.x + self.width
+            && self.y <= other.y + other.height
+            && other.y <= self.y + self.height
+    }
+
     /// The smallest box containing all of them, or `None` for nothing at all — which is a real
     /// answer rather than an empty box at the origin, since "fit nothing" has no meaning.
     ///
@@ -205,6 +232,51 @@ impl WorldBox {
         }
 
         Some(Self::new(left, top, right - left, bottom - top))
+    }
+
+    /// The same box, shifted. What a group move applies to every member but the one the pointer
+    /// is on, which already reported where it went.
+    pub fn moved_by(self, dx: f64, dy: f64) -> Self {
+        Self {
+            x: self.x + dx,
+            y: self.y + dy,
+            ..self
+        }
+    }
+
+    /// This box, as `from` becomes `to`.
+    ///
+    /// What a group resize *is*: one frame around the selection, dragged by a grip, and every
+    /// member scaled inside it as though it were painted on. A member keeps its position and size
+    /// as fractions of the frame, so one in the middle stays in the middle and one against the
+    /// right edge stays against it.
+    ///
+    /// The two axes are independent, which is what lets a frame be stretched one way only. A
+    /// frame with no extent on an axis has no fraction to keep, so that axis is left alone rather
+    /// than divided by zero — a selection of one zero-width text node is the ordinary case, not a
+    /// degenerate one.
+    ///
+    /// The angle is carried through untouched, the same gap [`WorldBox::resized`] has: scaling a
+    /// turned box unevenly does not produce a box at all.
+    pub fn scaled_within(self, from: WorldBox, to: WorldBox) -> Self {
+        let scale_x = if from.width == 0.0 {
+            1.0
+        } else {
+            to.width / from.width
+        };
+        let scale_y = if from.height == 0.0 {
+            1.0
+        } else {
+            to.height / from.height
+        };
+
+        Self::new(
+            to.x + (self.x - from.x) * scale_x,
+            to.y + (self.y - from.y) * scale_y,
+            self.width * scale_x,
+            self.height * scale_y,
+        )
+        .rotated(self.angle)
     }
 
     /// The box a resize leaves behind, given the distance the pointer has travelled **since the
@@ -622,5 +694,100 @@ mod tests {
         .unwrap();
 
         assert_eq!(around, WorldBox::new(-5.0, 0.0, 15.0, 30.0));
+    }
+
+    #[test]
+    fn a_box_between_two_points_is_the_same_whichever_corner_was_pressed() {
+        let down_right = WorldBox::between(10.0, 20.0, 60.0, 90.0);
+        let up_left = WorldBox::between(60.0, 90.0, 10.0, 20.0);
+
+        assert_eq!(down_right, WorldBox::new(10.0, 20.0, 50.0, 70.0));
+        assert_eq!(up_left, down_right);
+    }
+
+    #[test]
+    fn a_box_between_one_point_and_itself_has_no_size() {
+        assert_eq!(
+            WorldBox::between(5.0, 5.0, 5.0, 5.0),
+            WorldBox::new(5.0, 5.0, 0.0, 0.0)
+        );
+    }
+
+    #[test]
+    fn a_band_catches_what_it_only_touches() {
+        let band = WorldBox::new(0.0, 0.0, 100.0, 100.0);
+
+        // Overlapping, contained, and containing.
+        assert!(band.intersects(&WorldBox::new(90.0, 90.0, 50.0, 50.0)));
+        assert!(band.intersects(&WorldBox::new(20.0, 20.0, 10.0, 10.0)));
+        assert!(WorldBox::new(20.0, 20.0, 10.0, 10.0).intersects(&band));
+        // Edge to edge counts: a band dragged exactly up to a node has reached it.
+        assert!(band.intersects(&WorldBox::new(100.0, 0.0, 10.0, 10.0)));
+        // Clear on one axis is clear, however much the other overlaps.
+        assert!(!band.intersects(&WorldBox::new(101.0, 0.0, 10.0, 10.0)));
+        assert!(!band.intersects(&WorldBox::new(0.0, -20.0, 100.0, 10.0)));
+    }
+
+    #[test]
+    fn a_band_with_no_size_still_catches_what_it_is_inside() {
+        let node = WorldBox::new(0.0, 0.0, 100.0, 100.0);
+
+        assert!(WorldBox::between(50.0, 50.0, 50.0, 50.0).intersects(&node));
+    }
+
+    #[test]
+    fn a_move_changes_nothing_but_the_corner() {
+        let box_ = WorldBox::new(10.0, 20.0, 30.0, 40.0).rotated(0.5);
+        let moved = box_.moved_by(-5.0, 7.0);
+
+        assert_eq!((moved.x, moved.y), (5.0, 27.0));
+        assert_eq!((moved.width, moved.height, moved.angle), (30.0, 40.0, 0.5));
+    }
+
+    #[test]
+    fn a_member_keeps_its_place_in_the_frame_it_is_scaled_with() {
+        let frame = WorldBox::new(0.0, 0.0, 100.0, 100.0);
+        let doubled = WorldBox::new(0.0, 0.0, 200.0, 200.0);
+
+        // Dead centre before, dead centre after.
+        let middle = WorldBox::new(40.0, 40.0, 20.0, 20.0).scaled_within(frame, doubled);
+        assert_eq!(middle, WorldBox::new(80.0, 80.0, 40.0, 40.0));
+
+        // Against the far corner before, against it after.
+        let corner = WorldBox::new(80.0, 80.0, 20.0, 20.0).scaled_within(frame, doubled);
+        assert_eq!(corner.x + corner.width, doubled.x + doubled.width);
+        assert_eq!(corner.y + corner.height, doubled.y + doubled.height);
+    }
+
+    #[test]
+    fn a_frame_that_only_moved_moves_its_members_and_leaves_their_size() {
+        let frame = WorldBox::new(0.0, 0.0, 100.0, 50.0);
+        let shifted = WorldBox::new(30.0, -10.0, 100.0, 50.0);
+
+        assert_eq!(
+            WorldBox::new(10.0, 10.0, 20.0, 20.0).scaled_within(frame, shifted),
+            WorldBox::new(40.0, 0.0, 20.0, 20.0)
+        );
+    }
+
+    #[test]
+    fn the_axes_of_a_scale_are_independent() {
+        let frame = WorldBox::new(0.0, 0.0, 100.0, 100.0);
+        let wider = WorldBox::new(0.0, 0.0, 300.0, 100.0);
+        let member = WorldBox::new(20.0, 20.0, 10.0, 10.0).scaled_within(frame, wider);
+
+        assert_eq!((member.x, member.width), (60.0, 30.0));
+        assert_eq!((member.y, member.height), (20.0, 10.0));
+    }
+
+    #[test]
+    fn a_frame_with_no_extent_leaves_that_axis_alone() {
+        // A selection of one text node: no width to take a fraction of, and nothing to divide by.
+        let flat = WorldBox::new(10.0, 0.0, 0.0, 100.0);
+        let grown = WorldBox::new(10.0, 0.0, 0.0, 200.0);
+        let member = WorldBox::new(10.0, 50.0, 0.0, 20.0).scaled_within(flat, grown);
+
+        assert_eq!((member.x, member.width), (10.0, 0.0));
+        assert_eq!((member.y, member.height), (100.0, 40.0));
     }
 }

@@ -10,11 +10,12 @@ use nocomponents::{
     components::{
         button::{Button, ButtonSize, ButtonVariant},
         canvas::{
-            Canvas, CanvasNodeLabel, CanvasShape, CanvasSticky, CanvasText, ShapeKind, StickyColor,
+            Canvas, CanvasMarquee, CanvasNodeLabel, CanvasShape, CanvasSticky, CanvasText,
+            ShapeKind, StickyColor,
         },
         kbd::Kbd,
     },
-    primitives::canvas::{CanvasGesture, CanvasPoint},
+    primitives::canvas::{CanvasDrag, CanvasGesture, CanvasPoint},
     utils::viewport::{Viewport, WorldBox},
 };
 
@@ -43,6 +44,53 @@ view! {
         <For each=move || notes.get() key=|at| … let:at>
             <CanvasSticky x=at.0 y=at.1>"New"</CanvasSticky>
         </For>
+    </Canvas>
+}"#;
+
+/// The board the marquee demo selects over: world x, y and size.
+const BAND_NOTES: &[(f64, f64, f64)] = &[
+    (40.0, 40.0, 120.0),
+    (210.0, 70.0, 100.0),
+    (370.0, 40.0, 140.0),
+    (60.0, 210.0, 110.0),
+    (250.0, 230.0, 130.0),
+    (440.0, 220.0, 100.0),
+];
+
+const MARQUEE: &str = r#"// The press, the live rectangle and the release — which is everything a
+// click cannot give. Reported on every move and once more when the pointer
+// comes up, and `done` is which one you are reading.
+let band = RwSignal::new(None::<WorldBox>);
+let selected = RwSignal::new(Vec::<usize>::new());
+
+view! {
+    <Canvas
+        on_surface_drag=Callback::new(move |drag: CanvasDrag| {
+            // `rect` is sorted, so a drag up and to the left is as ordinary
+            // as one down and to the right. `intersects` selects what the
+            // band touches rather than what it swallows whole — a band that
+            // had to contain a node could never reach one larger than the
+            // screen.
+            selected.set(
+                notes.iter().enumerate()
+                    .filter(|(_, note)| drag.rect.intersects(note))
+                    .map(|(i, _)| i)
+                    .collect(),
+            );
+            // The band is the gesture; the selection is what it left behind.
+            band.set((!drag.done).then_some(drag.rect));
+        })
+        // The two share one press and never both fire: a gesture that stayed
+        // within a few pixels was a click, and one that did not was a drag.
+        on_surface_click=Callback::new(move |_| selected.set(Vec::new()))
+        class="h-96"
+    >
+        <For each=… key=… let:note>
+            <CanvasSticky … selected=… />
+        </For>
+        // Inside the transformed layer, so it stays over the world it was
+        // drawn around rather than over the screen it was drawn on.
+        <CanvasMarquee rect=band />
     </Canvas>
 }"#;
 
@@ -131,10 +179,22 @@ const API: &[ApiEntry] = &[
                 description: "Run for a click that landed on the board rather than on anything placed on it, with the world coordinate — which is what a caller cannot work out for itself. Silent for a click on a node, and for the click that ends a pan.",
             },
             Prop {
+                name: "on_surface_drag",
+                ty: "Option<Callback<CanvasDrag>>",
+                default: "None",
+                description: "Run while the primary button is dragged across the board, and once more when it is let go — the press, the live rectangle and the release, which is what a marquee, a lasso and a shape pulled open all need and a click cannot give. It shares one press with `on_surface_click`: a gesture that stayed within a few pixels was a click, one that did not was this, and the two never both fire. Silent while the primary button is the hand tool.",
+            },
+            Prop {
                 name: "controls",
                 ty: "bool",
                 default: "true",
                 description: "Whether to draw the zoom controls in the corner.",
+            },
+            Prop {
+                name: "node_ref",
+                ty: "Option<AnyNodeRef>",
+                default: "None",
+                description: "The surface itself, for something outside the canvas that has to measure it — a palette that drops a node where you let go cannot ask the context, not being inside the provider. Pass it here and hand it to `world_at`, rather than wrapping the canvas in a div and measuring that: the two are the same box only until somebody puts a margin or a second child on the wrapper.",
             },
             Prop {
                 name: "gap",
@@ -203,6 +263,12 @@ const API: &[ApiEntry] = &[
                 description: "Run once when a move or a resize is over, with the box it began from, the box it ended at, and the grip that did it — `None` for a move. One callback for both, because writing an operation a peer can replay is the same job either way. It carries the starting box because the caller cannot keep it: the live callbacks have been overwriting that position since the press, and an operation somebody can invert needs both ends. Silent for a press that changed nothing, so selecting a node is not an edit. Where it ended is read back out of the caller's own signals, so a caller that snapped the node to a grid reports what it did rather than what it was asked to do.",
             },
             Prop {
+                name: "z",
+                ty: "Signal<i32>",
+                default: "0",
+                description: "Where the node sits in the stack. Depth is DOM order without it, so \"bring to front\" is a move within the caller's list — which changes the keys and rebuilds the markup, fine at four nodes and wrong at four hundred. Written into `z-index` only when it is not zero, so an ordinary node stays out of a stacking order it has no opinion about.",
+            },
+            Prop {
                 name: "aspect",
                 ty: "Option<f64>",
                 default: "None",
@@ -234,9 +300,9 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "children",
-                ty: "Children",
-                default: "",
-                description: "Anything at all.",
+                ty: "Option<Children>",
+                default: "None",
+                description: "Anything at all, or nothing: a frame drawn round a selection, a guide, a slot waiting to be filled is a box the caller wants placed and measured in world units and holding nothing.",
             },
         ],
     },
@@ -367,6 +433,24 @@ const API: &[ApiEntry] = &[
         ],
     },
     ApiEntry {
+        name: "CanvasMarquee",
+        description: "The band a surface drag draws, placed in world coordinates. Nothing but a box — the arithmetic that produced it is `CanvasDrag::rect` and what it means is the caller's. It is a part rather than something the canvas draws for itself because a band is not always a selection: the same rectangle is a shape being pulled open, or a region being cropped. Goes inside the canvas, so it stays over the world it was drawn around rather than over the screen it was drawn on, and it never takes the pointer — a band under the cursor is what the release would land on, and the gesture would end on itself.",
+        props: &[
+            Prop {
+                name: "rect",
+                ty: "Signal<Option<WorldBox>>",
+                default: "",
+                description: "The band, in world units. `None` renders nothing, which is what a board with no gesture on it looks like.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the band's classes. Its border is `calc(1px / var(--canvas-zoom))`, so it stays one pixel however far in the reader is.",
+            },
+        ],
+    },
+    ApiEntry {
         name: "CanvasControls",
         description: "Zoom out, the current zoom as a percentage (press it to reset), zoom in, and fit. Fit reads the nodes out of the DOM rather than from a registry the caller keeps in step — nodes can come and go without telling anybody, and an empty board is left alone rather than fitted to nothing.",
         props: &[Prop {
@@ -408,6 +492,8 @@ pub fn Page() -> impl IntoView {
     let picked = RwSignal::new(String::from("shape"));
     let tilted = RwSignal::new(WorldBox::new(120.0, 300.0, 0.0, 0.0).rotated(-0.28));
     let log = RwSignal::new(Vec::<CanvasGesture>::new());
+    let band = RwSignal::new(None::<WorldBox>);
+    let banded = RwSignal::new(Vec::<usize>::new());
     // One closure for both nodes and for both gestures: what a caller does with either is the
     // same, which is why there is one callback rather than an `on_move_end` and an `on_resize_end`
     // that would be handed the same body twice.
@@ -506,6 +592,72 @@ pub fn Page() -> impl IntoView {
                                 "Clear"
                             </Button>
                         </div>
+                    </div>
+                </DemoSection>
+
+                <DemoSection
+                    title="A drag on the board"
+                    description="`on_surface_drag` gives back the press, the live rectangle and the release, which is everything a click cannot: a marquee, a lasso and a shape pulled open all need the middle of the gesture and not only its end. It reports on every move and once more when the pointer comes up, and `done` is which one you are reading — here the band is drawn from the running report and the selection is what the last one leaves behind. It shares one press with `on_surface_click`, and the two never both fire: a gesture that stayed within a few pixels was a click, one that did not was a drag. Click the empty board to clear."
+                    code=MARQUEE
+                >
+                    <div class="flex flex-col gap-3">
+                        <Canvas
+                            on_surface_drag=Callback::new(move |drag: CanvasDrag| {
+                                banded
+                                    .set(
+                                        BAND_NOTES
+                                            .iter()
+                                            .enumerate()
+                                            .filter(|(_, (x, y, size))| {
+                                                drag.rect.intersects(&WorldBox::new(*x, *y, *size, *size))
+                                            })
+                                            .map(|(index, _)| index)
+                                            .collect(),
+                                    );
+                                band.set((!drag.done).then_some(drag.rect));
+                            })
+                            on_surface_click=Callback::new(move |_| banded.set(Vec::new()))
+                            class="h-96"
+                        >
+                            {BAND_NOTES
+                                .iter()
+                                .enumerate()
+                                .map(|(index, (x, y, size))| {
+                                    view! {
+                                        <CanvasSticky
+                                            x=*x
+                                            y=*y
+                                            size=*size
+                                            color=if index % 2 == 0 {
+                                                StickyColor::Yellow
+                                            } else {
+                                                StickyColor::Blue
+                                            }
+                                            selected=Signal::derive(move || {
+                                                banded.get().contains(&index)
+                                            })
+                                            class="text-xs"
+                                        >
+                                            <span class="font-semibold">
+                                                {format!("Note {}", index + 1)}
+                                            </span>
+                                        </CanvasSticky>
+                                    }
+                                })
+                                .collect_view()}
+                            <CanvasMarquee rect=band />
+                        </Canvas>
+                        <p class="text-xs text-muted-foreground">
+                            "Drag across the board to select. "
+                            {move || {
+                                let count = banded.get().len();
+                                match count {
+                                    0 => "Nothing selected.".to_string(),
+                                    1 => "One note selected.".to_string(),
+                                    _ => format!("{count} notes selected."),
+                                }
+                            }}
+                        </p>
                     </div>
                 </DemoSection>
 
