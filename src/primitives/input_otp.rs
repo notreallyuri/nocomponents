@@ -9,7 +9,13 @@
 //! that move it — collapsing selections instead would also kill select-all, and then pasting over
 //! a full field would do nothing.
 
-use crate::{primitives::field::FieldControl, utils::controllable::controllable};
+use crate::{
+    primitives::field::FieldControl,
+    utils::{
+        controllable::controllable,
+        form::{non_empty, on_form_reset},
+    },
+};
 use leptos::{context::Provider, ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
 use web_sys::HtmlInputElement;
@@ -91,6 +97,17 @@ pub fn InputOtpRoot(
     /// surrounding field's label.
     #[prop(optional, into)]
     label: Signal<String>,
+    /// The name the code is submitted under, through the real `<input>`. Empty leaves it out of a
+    /// form's data.
+    #[prop(optional, into)]
+    name: Signal<String>,
+    /// The browser refuses to submit the form while the field is empty.
+    #[prop(optional, into)]
+    required: Signal<bool>,
+    /// The `id` of a `<form>` the field belongs to when it is not inside one. Empty means the one
+    /// around it.
+    #[prop(optional, into)]
+    form: Signal<String>,
     /// The code, held by the caller. Omit it and the root keeps its own.
     #[prop(default = None, into)]
     value: Option<RwSignal<String>>,
@@ -106,7 +123,9 @@ pub fn InputOtpRoot(
     children: Children,
 ) -> impl IntoView {
     let value = controllable(value, default_value, on_value_change);
+    let initial = value.get_untracked();
     let input_ref = AnyNodeRef::new();
+    on_form_reset(input_ref, move || value.set(initial.clone()));
     let field = FieldControl::new(id, disabled);
     let disabled = field.disabled;
 
@@ -195,6 +214,9 @@ pub fn InputOtpRoot(
                     // No `maxlength`: it truncates the raw text, so "12-34-56" would be cut to
                     // "12-34-" and then filtered to four digits. The cap comes after filtering.
                     disabled=move || disabled.get()
+                    name=move || non_empty(name)
+                    form=move || non_empty(form)
+                    required=move || required.get()
                     prop:value=move || value.get()
                     on:input=handle_input
                     on:focus=move |_| {

@@ -1,4 +1,4 @@
-use crate::{cn, primitives::field::FieldControl};
+use crate::{cn, primitives::field::FieldControl, utils::form::non_empty};
 use leptos::{prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
 use web_sys::HtmlElement;
@@ -11,6 +11,26 @@ pub fn TextareaRoot(
     #[prop(optional, into)] id: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(default = false)] auto_resize: bool,
+    /// The name the text is submitted under. Empty leaves it out of a form's data.
+    #[prop(optional, into)]
+    name: Signal<String>,
+    /// The browser refuses to submit the form while this is empty.
+    #[prop(optional, into)]
+    required: Signal<bool>,
+    /// Focusable and selectable but not editable, and still submitted.
+    #[prop(optional, into)]
+    readonly: Signal<bool>,
+    #[prop(optional, into)] placeholder: Signal<String>,
+    /// A browser autofill hint such as `"street-address"`. Empty leaves the attribute off.
+    #[prop(optional, into)]
+    autocomplete: Signal<String>,
+    /// The visible height in lines. Unset leaves the browser's default.
+    #[prop(default = None, into)]
+    rows: Option<u32>,
+    /// The `id` of a `<form>` the textarea belongs to when it is not inside one. Empty means the
+    /// one around it.
+    #[prop(optional, into)]
+    form: Signal<String>,
     /// The `<textarea>` itself, for a caller that has to reach the element — the selection is the
     /// one piece of a textarea's state that lives nowhere but the DOM, so a toolbar that formats
     /// what the reader has highlighted cannot be written without it.
@@ -55,6 +75,13 @@ pub fn TextareaRoot(
             node_ref=node_ref
             id=move || field.id.get()
             disabled=move || field.disabled.get()
+            name=move || non_empty(name)
+            form=move || non_empty(form)
+            required=move || required.get()
+            readonly=move || readonly.get()
+            placeholder=move || non_empty(placeholder)
+            autocomplete=move || non_empty(autocomplete)
+            rows=rows
             aria-describedby=move || field.described_by.get()
             aria-invalid=move || field.invalid.get().then_some("true")
             prop:value=move || if let Some(m) = model { m.get() } else { value.get() }

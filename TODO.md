@@ -970,21 +970,15 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
 
 - [x] **Controlled and uncontrolled** — every stateful root takes `x`, `default_x` and
       `on_x_change`, resolved in the primitive by `utils::controllable`; the styled layer forwards.
-- [ ] **Nothing here submits with a form.** `Checkbox`, `RadioGroupItem` and `Switch` are
-      `<button role=…>` with no hidden `<input>`, so a native `<form>` sees nothing, and none of
-      them takes `name`, `value` or `required`. `Select` has a hidden `<select>`
-      (`primitives/select.rs`) that takes a `name` now, but its only `<option>` is the current
-      value. `Slider`, `InputOtp` (its real `<input>`, `primitives/input_otp.rs`),
-      `Textarea`, `NativeSelect`, `Input` and `Combobox` take no `name`/`required` too. The
-      project's stance is that forms are `noform`'s, but `noform` reads signals and a plain
-      `<form method=post>` or a `FormData` reader gets an empty set; a hidden input driven from
-      the state the root already holds is the standard fix.
-- [ ] **`field_disabled` is honoured by `Button` and nothing else that has a `disabled` of its
-      own.** A `<Field disabled>` disables `Button`, `Checkbox`, `Switch`, `Input`, `Textarea`,
-      `NativeSelect`, `Select`, `Combobox` and `RadioGroupItem`, but `ToggleRoot`
-      (`primitives/toggle.rs:30`) and `ToggleGroupItemRoot` (`primitives/toggle_group.rs:111`)
-      read only their own `disabled`, and `Slider` has no `Field` wiring at all — no
-      `FieldControl`, so no `id` for the label, no `aria-invalid` and no `aria-describedby`.
+- [ ] **A form reset does not reach a `model`-bound native control.** `Input`, `Textarea` and
+      `NativeSelect` reset on screen when the form fires `reset`, but a caller's `model` signal
+      keeps the old value, so the two disagree until the next keystroke. The button-based
+      controls already listen for the form's `reset` (`utils::form::on_form_reset`); the native
+      ones want the same listener writing the default back into `model`.
+- [ ] **A slider has no accessible name inside a `Field`.** `SliderRoot` now takes the field's
+      `id`, `aria-invalid` and `aria-describedby`, but a `<label for>` cannot name a
+      `<span role="slider">` — `for` only labels labelable elements. The thumb wants
+      `aria-labelledby` pointing at the `FieldLabel`'s id, which means the label publishing one.
 - [ ] **`src/components/` still carries comments.** `CLAUDE.md` says none, at all:
       `components/floating_menu.rs` has 19 comment lines (`///` and `//`), `kanban.rs` 5,
       `dropzone.rs` 2 and `tree.rs` 2. Their content belongs on the docs pages, or in the
@@ -1051,10 +1045,8 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       on `ImageCropper` (`components/image_cropper.rs:12`). The resize handles are
       `aria-hidden="true"` (`primitives/image_cropper.rs:386`) with no keyboard path, so the crop
       can be moved and not resized without a pointer.
-- [ ] `input`: no `placeholder`, `name`, `required`, `readonly`, `autocomplete`, `on_input` or
-      `on_change` (`components/input.rs:27`); the commonest attribute on the commonest control has
-      to be reached through `attr:placeholder=…`. `InputType` has five variants (:5) and lacks
-      `Tel`, `Url`, `Search` and `Date`.
+- [ ] `input`: no `on_input` or `on_change` (`components/input.rs:27`). `InputType` has five
+      variants (:5) and lacks `Tel`, `Url`, `Search` and `Date`.
 - [ ] `input_group`: `InputGroupButton` takes no `disabled` and no `type`
       (`components/input_group.rs:116`), and `InputGroupInput` and `InputGroupTextarea` forward only
       the subset of `Input`'s and `Textarea`'s props they list (:49), so whatever `Input` gains
@@ -1072,8 +1064,8 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       (:188), see the cross-cutting item, and that is where it diverges from
       `DropdownMenuSubContent` — which is the same component with the one word right.
 - [ ] `native_select`: no `NativeSelectOption` or `NativeSelectOptGroup`
-      (`components/native_select.rs:20`); every caller writes bare `<option>`s. No
-      `name`, `required` or `on_change` (:21).
+      (`components/native_select.rs:20`); every caller writes bare `<option>`s. No `on_change`
+      (:21).
 - [ ] `navigation_menu`: `NavigationMenu` exposes `value` and not the primitive's
       `open_delay`/`close_delay` (`components/navigation_menu.rs:13`,
       `primitives/navigation_menu.rs:127-128`), so the hover timing is fixed.
@@ -1096,15 +1088,12 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
 - [ ] `sheet`: `SheetContent` has no `modal` (`components/sheet.rs:35`); the close button is
       hardcoded like the dialog's (:98-103), and is why the sidebar's mobile branch has to hide it
       with `[&>button]:hidden`.
-- [ ] `slider`: no `name` or `inverted` (`components/slider.rs:8`); see the cross-cutting items for
-      the `Field` wiring.
-- [ ] `textarea`: no `placeholder`, `name`, `rows`, `required`, `readonly` or `on_input`
-      (`components/textarea.rs:6`) — the same hole as `input`, and the same `attr:` workaround.
+- [ ] `slider`: no `inverted` (`components/slider.rs:8`).
+- [ ] `textarea`: no `on_input` (`components/textarea.rs:6`) — the same hole as `input`.
 - [ ] `toast`: `duration` is hardcoded `5000.0` in the provider's defaults
       (`primitives/toast.rs:223`) with no `default_duration`, and there are no
       `ToastTitle`/`ToastDescription`/`ToastAction`/`ToastClose` parts: a toast can only be built
       through the builder, never composed.
-- [ ] `toggle`: the `field_disabled` point is in the cross-cutting items.
 - [ ] `tooltip`: no `TooltipProvider` — shadcn's shared `delayDuration`/`skipDelayDuration`, which
       is what stops every tooltip in a toolbar waiting out its own delay. `TooltipContent` (:45)
       has no arrow.

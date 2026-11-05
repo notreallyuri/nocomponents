@@ -26,6 +26,9 @@ pub fn NativeSelect(
     #[prop(optional, into)] value: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] id: Signal<String>,
+    #[prop(optional, into)] name: Signal<String>,
+    #[prop(optional, into)] required: Signal<bool>,
+    #[prop(optional, into)] form: Signal<String>,
     #[prop(optional, into)] on_blur: Option<Callback<ev::FocusEvent>>,
     children: Children,
 ) -> impl IntoView {
@@ -35,6 +38,9 @@ pub fn NativeSelect(
             model=model
             value=value
             disabled=disabled
+            name=name
+            required=required
+            form=form
             on_blur=forward(on_blur)
             class=move || {
                 cn!(

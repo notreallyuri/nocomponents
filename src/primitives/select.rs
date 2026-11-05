@@ -1,6 +1,6 @@
 use crate::{
     primitives::{
-        field::field_control_for_trigger,
+        field::{field_control_for_trigger, field_disabled},
         floating::{
             ArrowOpen, FloatingContext, FloatingPortal, FloatingRoot, FloatingTrigger, TriggerAria,
             TriggerRender,
@@ -10,6 +10,7 @@ use crate::{
     },
     utils::{
         controllable::{controllable, forward},
+        form::{SHADOW_STYLE, non_empty, on_form_reset},
         types::Orientation,
     },
 };
@@ -58,6 +59,11 @@ pub fn use_select_label() -> Signal<Option<String>> {
         })
     })
 }
+/// Whether the root was disabled, for the trigger to wear. Held in a context because the trigger
+/// is a descendant with a `disabled` of its own, and the two are one answer.
+#[derive(Copy, Clone)]
+struct SelectDisabled(Signal<bool>);
+
 #[component]
 pub fn SelectRoot(
     /// The chosen value, held by the caller. Omit it and the root keeps its own.
@@ -72,9 +78,20 @@ pub fn SelectRoot(
     #[prop(optional, into)]
     on_value_change: Option<Callback<Option<String>>>,
     #[prop(optional, into)] class: Signal<String>,
-    /// The name the choice is submitted under, through the hidden native `<select>`.
+    /// The name the choice is submitted under, through the hidden native `<select>`. Empty leaves
+    /// it out of a form's data.
     #[prop(optional, into)]
     name: Signal<String>,
+    /// The browser refuses to submit the form while nothing is chosen.
+    #[prop(optional, into)]
+    required: Signal<bool>,
+    /// Disables the trigger, and keeps the choice out of a form's data.
+    #[prop(optional, into)]
+    disabled: Signal<bool>,
+    /// The `id` of a `<form>` the select belongs to when it is not inside one. Empty means the one
+    /// around it.
+    #[prop(optional, into)]
+    form: Signal<String>,
     /// Whether the list is open, held by the caller. Omit it and the root keeps its own.
     #[prop(default = None, into)]
     open: Option<RwSignal<bool>>,
@@ -90,30 +107,44 @@ pub fn SelectRoot(
         value: controllable(value, default_value, on_value_change),
         ..Default::default()
     };
+    let initial = ctx.value.get_untracked();
 
     let labels = SelectLabels(RwSignal::new(HashMap::new()));
+    let disabled = field_disabled(disabled);
+
+    let native_ref = AnyNodeRef::new();
+    on_form_reset(native_ref, move || ctx.value.set(initial.clone()));
 
     view! {
         <Provider value=labels>
-            <FloatingRoot
-                class=class
-                context=ctx
-                open=open
-                default_open=default_open
-                on_open_change=forward(on_open_change)
-                trigger_aria=TriggerAria::Popup("listbox")
-                arrow_open=ArrowOpen::Open
-            >
-                {children()}
-                <select
-                    class="hidden"
-                    aria-hidden="true"
-                    tabindex="-1"
-                    name=move || Some(name.get()).filter(|name| !name.is_empty())
+            <Provider value=SelectDisabled(disabled)>
+                <FloatingRoot
+                    class=class
+                    context=ctx
+                    open=open
+                    default_open=default_open
+                    on_open_change=forward(on_open_change)
+                    trigger_aria=TriggerAria::Popup("listbox")
+                    arrow_open=ArrowOpen::Open
                 >
-                    <option value=move || ctx.value.get().unwrap_or_default() selected=true></option>
-                </select>
-            </FloatingRoot>
+                    {children()}
+                    <select
+                        node_ref=native_ref
+                        style=SHADOW_STYLE
+                        aria-hidden="true"
+                        tabindex="-1"
+                        name=move || non_empty(name)
+                        form=move || non_empty(form)
+                        required=move || required.get()
+                        disabled=move || disabled.get()
+                    >
+                        {move || {
+                            let value = ctx.value.get().unwrap_or_default();
+                            view! { <option value=value selected=true></option> }
+                        }}
+                    </select>
+                </FloatingRoot>
+            </Provider>
         </Provider>
     }
 }
@@ -126,7 +157,11 @@ pub fn SelectTriggerRoot(
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     let ctx = use_select();
-    let field = field_control_for_trigger(ctx.trigger_id, ctx.trigger_ref, disabled);
+    let root_disabled = use_context::<SelectDisabled>()
+        .map(|inner| inner.0)
+        .unwrap_or_default();
+    let own = Signal::derive(move || disabled.get() || root_disabled.get());
+    let field = field_control_for_trigger(ctx.trigger_id, ctx.trigger_ref, own);
 
     view! {
         <FloatingTrigger

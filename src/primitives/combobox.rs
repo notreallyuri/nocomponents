@@ -20,6 +20,7 @@ use crate::{
     },
     utils::{
         controllable::{controllable, forward},
+        form::non_empty,
         types::{Align, Side, SideOffset},
     },
 };
@@ -53,6 +54,15 @@ pub fn ComboboxRoot(
     #[prop(optional, into)]
     display_value: RwSignal<Option<String>>,
     #[prop(optional, into)] class: Signal<String>,
+    /// The name the chosen value is submitted under, through a hidden input. Empty leaves it out
+    /// of a form's data. There is no `required`: a hidden input is exempt from validation, and
+    /// the trigger is a button.
+    #[prop(optional, into)]
+    name: Signal<String>,
+    /// The `id` of a `<form>` the combobox belongs to when it is not inside one. Empty means the
+    /// one around it.
+    #[prop(optional, into)]
+    form: Signal<String>,
     /// Whether the list is open, held by the caller. Omit it and the root keeps its own.
     #[prop(default = None, into)]
     open: Option<RwSignal<bool>>,
@@ -81,6 +91,12 @@ pub fn ComboboxRoot(
             arrow_open=ArrowOpen::Open
         >
             {children()}
+            <input
+                type="hidden"
+                name=move || non_empty(name)
+                form=move || non_empty(form)
+                value=move || ctx.value.get().unwrap_or_default()
+            />
         </FloatingRoot>
     }
 }

@@ -13,6 +13,9 @@ pub fn Slider(
     #[prop(optional)] orientation: Orientation,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] id: Signal<String>,
+    #[prop(optional, into)] name: Signal<String>,
+    #[prop(optional, into)] form: Signal<String>,
     #[prop(default = None, into)] value: Option<RwSignal<Vec<f64>>>,
     #[prop(optional)] default_value: Option<Vec<f64>>,
     #[prop(optional, into)] on_value_change: Option<Callback<Vec<f64>>>,
@@ -29,6 +32,9 @@ pub fn Slider(
             orientation=orientation
             disabled=disabled
             value=values
+            id=id
+            name=name
+            form=form
             class=move || {
                 cn!(
                     "relative flex touch-none items-center select-none data-[orientation=horizontal]:h-4 data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-40 data-[orientation=vertical]:w-4 data-[orientation=vertical]:flex-col data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50",

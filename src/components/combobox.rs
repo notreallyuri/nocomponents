@@ -21,6 +21,8 @@ pub fn Combobox(
     #[prop(optional, into)] on_value_change: Option<Callback<Option<String>>>,
     #[prop(optional, into)] display_value: RwSignal<Option<String>>,
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] name: Signal<String>,
+    #[prop(optional, into)] form: Signal<String>,
     #[prop(default = None, into)] open: Option<RwSignal<bool>>,
     #[prop(optional)] default_open: bool,
     #[prop(optional, into)] on_open_change: Option<Callback<bool>>,
@@ -36,6 +38,8 @@ pub fn Combobox(
             value=value
             on_value_change=forward(on_value_change)
             display_value=display_value
+            name=name
+            form=form
             class=move || cn!("relative inline-block text-left", class.get())
         >
             {children()}

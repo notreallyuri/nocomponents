@@ -16,6 +16,9 @@ pub fn Select(
     #[prop(optional, into)] on_value_change: Option<Callback<Option<String>>>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] name: Signal<String>,
+    #[prop(optional, into)] required: Signal<bool>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional, into)] form: Signal<String>,
     #[prop(default = None, into)] open: Option<RwSignal<bool>>,
     #[prop(optional)] default_open: bool,
     #[prop(optional, into)] on_open_change: Option<Callback<bool>>,
@@ -30,6 +33,9 @@ pub fn Select(
             on_open_change=forward(on_open_change)
             value=value
             name=name
+            required=required
+            disabled=disabled
+            form=form
             on_value_change=forward(on_value_change)
             class=move || cn!("relative w-full", class.get())
         >

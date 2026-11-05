@@ -6,10 +6,21 @@
 //! Dragging goes through [`crate::primitives::drag`], so a pointer that leaves the track mid-drag
 //! still belongs to the drag. Positions are geometry, so this layer writes the inline
 //! `left`/`width`.
+//!
+//! A slider takes part in a native form through `<input type="hidden">`s, one per thumb: a lone
+//! thumb is submitted under `name`, and a range under `name[]` once per thumb, lowest first — the
+//! convention Radix uses and the one a server reading repeated fields expects.
 
 use crate::{
-    primitives::drag::{DragPoint, use_drag},
-    utils::{controllable::controllable, types::Orientation},
+    primitives::{
+        drag::{DragPoint, use_drag},
+        field::FieldControl,
+    },
+    utils::{
+        controllable::controllable,
+        form::{non_empty, on_form_reset},
+        types::Orientation,
+    },
 };
 use leptos::{context::Provider, ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
@@ -23,6 +34,9 @@ pub struct SliderContext {
     pub step: Signal<f64>,
     pub orientation: Orientation,
     pub disabled: Signal<bool>,
+    /// What the surrounding [`crate::primitives::field`] hands a control: the id the label points
+    /// at, which the first thumb wears, and the description and invalid state every thumb wears.
+    pub field: FieldControl,
     /// The thumb currently being dragged, so the styled layer can mark it.
     pub active_thumb: RwSignal<Option<usize>>,
     pub track_ref: AnyNodeRef,
@@ -158,6 +172,16 @@ pub fn SliderRoot(
     #[prop(optional)] orientation: Orientation,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
+    /// The id of the first thumb, which a `FieldLabel` points at. Inside a field one is minted.
+    #[prop(optional, into)]
+    id: Signal<String>,
+    /// The name the values are submitted under. Empty leaves them out of a form's data.
+    #[prop(optional, into)]
+    name: Signal<String>,
+    /// The `id` of a `<form>` the slider belongs to when it is not inside one. Empty means the
+    /// one around it.
+    #[prop(optional, into)]
+    form: Signal<String>,
     /// Omit for an uncontrolled slider. The length decides how many thumbs there are.
     #[prop(default = None, into)]
     value: Option<RwSignal<Vec<f64>>>,
@@ -170,11 +194,14 @@ pub fn SliderRoot(
     on_value_change: Option<Callback<Vec<f64>>>,
     children: Children,
 ) -> impl IntoView {
-    let values = controllable(
-        value,
-        default_value.unwrap_or_else(|| vec![min.get_untracked()]),
-        on_value_change,
-    );
+    let default_value = default_value.unwrap_or_else(|| vec![min.get_untracked()]);
+    let values = controllable(value, default_value, on_value_change);
+    let initial = values.get_untracked();
+    let field = FieldControl::new(id, disabled);
+    let disabled = field.disabled;
+    let root_ref = AnyNodeRef::new();
+    on_form_reset(root_ref, move || values.set(initial.clone()));
+    let count = Memo::new(move |_| values.with(|values| values.len()));
 
     let context = SliderContext {
         values,
@@ -183,6 +210,7 @@ pub fn SliderRoot(
         step,
         orientation,
         disabled,
+        field,
         active_thumb: RwSignal::new(None),
         track_ref: AnyNodeRef::new(),
     };
@@ -221,6 +249,7 @@ pub fn SliderRoot(
     view! {
         <Provider value=context>
             <div
+                node_ref=root_ref
                 data-slot="slider"
                 data-orientation=orientation_str
                 data-disabled=move || disabled.get().then_some("true")
@@ -228,6 +257,26 @@ pub fn SliderRoot(
                 class=class
             >
                 {children()}
+                {move || {
+                    (0..count.get())
+                        .map(|index| {
+                            view! {
+                                <input
+                                    type="hidden"
+                                    name=move || {
+                                        non_empty(name)
+                                            .map(|name| {
+                                                if count.get() > 1 { format!("{name}[]") } else { name }
+                                            })
+                                    }
+                                    form=move || non_empty(form)
+                                    value=move || context.value_at(index).to_string()
+                                    disabled=move || disabled.get()
+                                />
+                            }
+                        })
+                        .collect_view()
+                }}
             </div>
         </Provider>
     }
@@ -360,6 +409,9 @@ pub fn SliderThumbRoot(
     view! {
         <span
             role="slider"
+            id=move || if index == 0 { ctx.field.id.get() } else { None }
+            aria-describedby=move || ctx.field.described_by.get()
+            aria-invalid=move || ctx.field.invalid.get().then_some("true")
             data-slot="slider-thumb"
             data-orientation=ctx.orientation.as_str()
             data-disabled=move || ctx.disabled.get().then_some("true")

@@ -11,11 +11,19 @@ pub fn Checkbox(
     #[prop(optional, into)] on_checked_change: Option<Callback<bool>>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] id: Signal<String>,
+    #[prop(optional, into)] name: Signal<String>,
+    #[prop(optional, into)] value: Signal<String>,
+    #[prop(optional, into)] required: Signal<bool>,
+    #[prop(optional, into)] form: Signal<String>,
 ) -> impl IntoView {
     view! {
         <CheckboxRoot
             id=id
             disabled=disabled
+            name=name
+            value=value
+            required=required
+            form=form
             checked=checked
             default_checked=default_checked
             on_checked_change=forward(on_checked_change)

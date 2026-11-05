@@ -1,5 +1,5 @@
 use crate::{
-    primitives::roving_focus::use_roving_focus,
+    primitives::{field::field_disabled, roving_focus::use_roving_focus},
     utils::{controllable::controllable, types::Orientation},
 };
 use leptos::{context::Provider, ev, prelude::*};
@@ -117,6 +117,7 @@ pub fn ToggleGroupItemRoot(
 
     let item = value.clone();
     let is_pressed = Memo::new(move |_| ctx.is_pressed(&item));
+    let disabled = field_disabled(disabled);
     let is_disabled = Signal::derive(move || disabled.get() || ctx.disabled.get());
 
     let on_click = move |_: ev::MouseEvent| {

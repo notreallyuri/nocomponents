@@ -126,6 +126,18 @@ const API: &[ApiEntry] = &[
                 description: "Merged over the wrapper's classes.",
             },
             Prop {
+                name: "name",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The name the chosen value is submitted under, through a hidden input. Empty leaves it out. There is no `required`: a hidden input is exempt from validation.",
+            },
+            Prop {
+                name: "form",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The `id` of a `<form>` it belongs to when it is not inside one. Empty means the one around it.",
+            },
+            Prop {
                 name: "open",
                 ty: "Option<RwSignal<bool>>",
                 default: "None",

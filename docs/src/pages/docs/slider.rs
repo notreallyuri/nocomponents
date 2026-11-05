@@ -73,6 +73,24 @@ const API: &[ApiEntry] = &[
                 description: "Merged over the wrapper's classes.",
             },
             Prop {
+                name: "id",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Given to the first thumb, so a `FieldLabel` can name it. Inside a `Field` this is filled in, along with `aria-describedby` and `aria-invalid` on every thumb.",
+            },
+            Prop {
+                name: "name",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The name the values are submitted under, through one `<input type=\"hidden\">` per thumb: `name` for a single thumb, `name[]` once per thumb, lowest first, for a range. Empty leaves it out.",
+            },
+            Prop {
+                name: "form",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The `id` of a `<form>` it belongs to when it is not inside one. Empty means the one around it.",
+            },
+            Prop {
                 name: "value",
                 ty: "Option<RwSignal<Vec<f64>>>",
                 default: "None",

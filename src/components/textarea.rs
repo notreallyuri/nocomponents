@@ -11,6 +11,13 @@ pub fn Textarea(
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(default = false)] auto_resize: bool,
     #[prop(optional)] node_ref: Option<AnyNodeRef>,
+    #[prop(optional, into)] name: Signal<String>,
+    #[prop(optional, into)] required: Signal<bool>,
+    #[prop(optional, into)] readonly: Signal<bool>,
+    #[prop(optional, into)] placeholder: Signal<String>,
+    #[prop(optional, into)] autocomplete: Signal<String>,
+    #[prop(default = None, into)] rows: Option<u32>,
+    #[prop(optional, into)] form: Signal<String>,
 ) -> impl IntoView {
     let node_ref = node_ref.unwrap_or_default();
 
@@ -20,6 +27,13 @@ pub fn Textarea(
             model=model
             id=id
             disabled=disabled
+            name=name
+            required=required
+            readonly=readonly
+            placeholder=placeholder
+            autocomplete=autocomplete
+            rows=rows
+            form=form
             class=move || {
                 cn!(
                     "flex min-h-16 w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",

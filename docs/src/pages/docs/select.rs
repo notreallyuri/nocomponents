@@ -117,6 +117,24 @@ const API: &[ApiEntry] = &[
                 description: "The name the choice is submitted under, written on the hidden native `<select>`. Empty submits nothing.",
             },
             Prop {
+                name: "required",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "The browser refuses to submit the form while nothing is chosen.",
+            },
+            Prop {
+                name: "disabled",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Disables the trigger, and keeps the choice out of a form's data.",
+            },
+            Prop {
+                name: "form",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The `id` of a `<form>` it belongs to when it is not inside one. Empty means the one around it.",
+            },
+            Prop {
                 name: "open",
                 ty: "Option<RwSignal<bool>>",
                 default: "None",

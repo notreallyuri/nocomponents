@@ -92,6 +92,30 @@ const API: &[ApiEntry] = &[ApiEntry {
             default: "\"\"",
             description: "Given to the control, so a `Label` can point `for` at it. Inside a `Field` this is filled in.",
         },
+        Prop {
+            name: "name",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "The name it is submitted under. A native `<input type=\"checkbox\">` kept beside the button carries it, so `FormData` sees the control; it is only rendered inside a `<form>` or when `name` or `form` is set, and it is `aria-hidden` and not a tab stop. Unchecked, nothing is submitted.",
+        },
+        Prop {
+            name: "value",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "What it submits while checked. Empty is `\"on\"`, as a native checkbox has it.",
+        },
+        Prop {
+            name: "required",
+            ty: "Signal<bool>",
+            default: "false",
+            description: "The browser refuses to submit the form, and says so beside the control, while it is unchecked.",
+        },
+        Prop {
+            name: "form",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "The `id` of a `<form>` it belongs to when it is not inside one. Empty means the one around it.",
+        },
     ],
 }];
 

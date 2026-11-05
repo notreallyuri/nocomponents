@@ -73,7 +73,7 @@ const API: &[ApiEntry] = &[ApiEntry {
             name: "disabled",
             ty: "Signal<bool>",
             default: "false",
-            description: "Stops it taking pointer events and marks it disabled.",
+            description: "Stops it taking pointer events and marks it disabled. Also disabled by a `Field` around it.",
         },
         Prop {
             name: "on_pressed_change",

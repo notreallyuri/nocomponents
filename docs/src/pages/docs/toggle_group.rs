@@ -103,7 +103,7 @@ const API: &[ApiEntry] = &[
                 name: "disabled",
                 ty: "Signal<bool>",
                 default: "false",
-                description: "Disables every item in the group.",
+                description: "Disables every item in the group, as does a `Field` around it.",
             },
             Prop {
                 name: "value",
@@ -163,7 +163,7 @@ const API: &[ApiEntry] = &[
                 name: "disabled",
                 ty: "Signal<bool>",
                 default: "false",
-                description: "Disables this item only.",
+                description: "Disables this item only. A `Field` around it disables it too.",
             },
             Prop {
                 name: "children",

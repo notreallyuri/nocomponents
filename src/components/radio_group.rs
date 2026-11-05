@@ -13,6 +13,9 @@ pub fn RadioGroup(
     #[prop(default = None, into)] value: Option<RwSignal<Option<String>>>,
     #[prop(optional, into)] default_value: Option<String>,
     #[prop(optional, into)] on_value_change: Option<Callback<Option<String>>>,
+    #[prop(optional, into)] name: Signal<String>,
+    #[prop(optional, into)] required: Signal<bool>,
+    #[prop(optional, into)] form: Signal<String>,
     children: Children,
 ) -> impl IntoView {
     let value = Some(value.unwrap_or_else(|| RwSignal::new(default_value)));
@@ -22,6 +25,9 @@ pub fn RadioGroup(
             orientation=orientation
             disabled=disabled
             value=value
+            name=name
+            required=required
+            form=form
             on_value_change=forward(on_value_change)
             class=move || {
                 cn!(

@@ -1,5 +1,12 @@
-use crate::{primitives::field::FieldControl, utils::controllable::controllable};
+use crate::{
+    primitives::field::FieldControl,
+    utils::{
+        controllable::controllable,
+        form::{FormInput, on_form_reset},
+    },
+};
 use leptos::{ev, prelude::*};
+use leptos_node_ref::AnyNodeRef;
 
 #[component]
 pub fn SwitchRoot(
@@ -15,10 +22,26 @@ pub fn SwitchRoot(
     on_checked_change: Option<Callback<bool>>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] id: Signal<String>,
+    /// The name it is submitted under. Empty leaves it out of a form's data.
+    #[prop(optional, into)]
+    name: Signal<String>,
+    /// What it submits while checked. Empty is `"on"`, as a native checkbox has it.
+    #[prop(optional, into)]
+    value: Signal<String>,
+    /// The browser refuses to submit the form while this is unchecked.
+    #[prop(optional, into)]
+    required: Signal<bool>,
+    /// The `id` of a `<form>` it belongs to when it is not inside one. Empty means the one around it.
+    #[prop(optional, into)]
+    form: Signal<String>,
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     let checked = controllable(checked, default_checked, on_checked_change);
     let field = FieldControl::new(id, disabled);
+    let node_ref = AnyNodeRef::new();
+
+    let initial = checked.get_untracked();
+    on_form_reset(node_ref, move || checked.set(initial));
 
     let toggle = move |_: ev::MouseEvent| {
         if !field.disabled.get() {
@@ -28,6 +51,7 @@ pub fn SwitchRoot(
 
     view! {
         <button
+            node_ref=node_ref
             data-slot="switch"
             type="button"
             id=move || field.id.get()
@@ -42,5 +66,15 @@ pub fn SwitchRoot(
         >
             {children.map(|c| c())}
         </button>
+        <FormInput
+            control=node_ref
+            input_type="checkbox"
+            name=name
+            value=value
+            form=form
+            checked=checked
+            required=required
+            disabled=field.disabled
+        />
     }
 }

@@ -49,6 +49,48 @@ const API: &[ApiEntry] = &[ApiEntry {
             description: "Stops it taking pointer events and marks it disabled.",
         },
         Prop {
+            name: "name",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "The name it is submitted under in a form's data. Empty leaves it out.",
+        },
+        Prop {
+            name: "required",
+            ty: "Signal<bool>",
+            default: "false",
+            description: "The browser refuses to submit the form while it is empty.",
+        },
+        Prop {
+            name: "readonly",
+            ty: "Signal<bool>",
+            default: "false",
+            description: "Focusable and selectable but not editable; still submitted.",
+        },
+        Prop {
+            name: "placeholder",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "Hint text shown while empty.",
+        },
+        Prop {
+            name: "autocomplete",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "A browser autofill hint. Empty leaves the attribute off.",
+        },
+        Prop {
+            name: "rows",
+            ty: "Option<u32>",
+            default: "None",
+            description: "The visible height in lines.",
+        },
+        Prop {
+            name: "form",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "The `id` of a `<form>` it belongs to when it is not inside one. Empty means the one around it.",
+        },
+        Prop {
             name: "auto_resize",
             ty: "bool",
             default: "false",

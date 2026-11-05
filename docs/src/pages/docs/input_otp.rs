@@ -108,6 +108,24 @@ const API: &[ApiEntry] = &[
                 description: "The accessible name of the real `<input>`, written as `aria-label`. Needed outside a `Field`, where nothing else names it.",
             },
             Prop {
+                name: "name",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The name the code is submitted under, on the real `<input>`. Empty leaves it out.",
+            },
+            Prop {
+                name: "required",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "The browser refuses to submit the form while the field is empty.",
+            },
+            Prop {
+                name: "form",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The `id` of a `<form>` it belongs to when it is not inside one. Empty means the one around it.",
+            },
+            Prop {
                 name: "value",
                 ty: "Option<RwSignal<String>>",
                 default: "None",
