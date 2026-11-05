@@ -1430,8 +1430,13 @@ are the menus that both float and rove, and each belongs to whichever batch it g
       `RuntimeError: unreachable` with no message and no line. It cost an afternoon on the toast
       disposal bug, where the panic was real and the only way to find it was bisecting the call.
       Three lines in `docs/src/main.rs`.
-- [ ] Almost no tests over what renders. `src/utils` is covered, `tests/features.rs` checks the
-      feature table, and `cli/` has unit tests over the import rewriting; nothing exercises a
-      component. `wasm-bindgen-test` smoke tests over the primitives' `data-state` transitions
-      would catch regressions in the floating and toast state machines — the toast one has now been
-      wrong twice.
+- [ ] What renders is covered by `docs/smoke/` (`node docs/smoke/run.mjs`: a console-error sweep of
+      every page and an interaction check per component page), but two things remain.
+      It is not in CI. `ci.yml` already has Rust and the `wasm32-unknown-unknown` target; a job
+      would add `trunk` (`pages.yml` installs it with `jetli/trunk-action`, and it downloads the
+      pinned Tailwind itself) and a browser (Google Chrome is on the runner image, and the suite
+      finds `google-chrome`), then run `node docs/smoke/run.mjs`. The first build is the slow part;
+      `Swatinem/rust-cache` helps.
+      And there are no `wasm-bindgen-test` unit tests over the primitives' `data-state`
+      transitions, which would catch regressions in the floating and toast state machines without a
+      browser session — the toast one has now been wrong twice.

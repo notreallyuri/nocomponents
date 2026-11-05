@@ -18,6 +18,7 @@ cargo check --features full          # type-check the library (default features 
 cargo check -p docs                  # type-check the docs app
 cargo fmt && cargo clippy --features full
 cargo test --features full           # the unit tests, and the feature-table check below
+node docs/smoke/run.mjs              # browser smoke: builds the docs, sweeps every page, runs the interaction checks
 
 cd docs && trunk serve               # dev server on :3000, watches ../src too (see Trunk.toml)
 cd docs && trunk build --release
@@ -34,8 +35,10 @@ cargo-nocli nocli components add sidebar --from /path/to/nocomponents
 ```
 
 Trunk downloads and runs the Tailwind CLI itself (pinned in `docs/Trunk.toml`); there is no
-`tailwind.config.js` and no npm build step. The tests cover `utils` and the feature table, and
-nothing that renders — behaviour is still verified in `trunk serve`.
+`tailwind.config.js` and no npm build step. The cargo tests cover `utils` and the feature table, and
+nothing that renders; that is `docs/smoke/` — zero-dependency Node driving headless Chromium over CDP, with
+a per-page console-error sweep and one interaction check per component page (`docs/smoke/README.md`).
+What a check cannot judge — layout, animation, how it looks — is still verified in `trunk serve`.
 
 `leptosfmt` is what formats `view!` blocks, and `cargo fmt` leaves them alone. Run it on the files
 you changed, never over `src/` or `docs/src/`: 0.1.33 silently **deletes** Rust comments that sit
