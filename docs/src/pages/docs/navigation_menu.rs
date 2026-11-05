@@ -221,9 +221,9 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "render",
-                ty: "Option<Callback<Callback<MouseEvent>, AnyView>>",
+                ty: "Option<Callback<NavigationMenuLinkRender, AnyView>>",
                 default: "None",
-                description: "Render as something else — a router's `A`, which owns its own href. Handed the click handler that closes the menu.",
+                description: "Render as something else — a router's `A`, which owns its own href. Handed the click handler that closes the menu (`on_click`), the `class` the part would have worn and its `children`, so the node it builds needs none of them written twice.",
             },
             Prop {
                 name: "children",

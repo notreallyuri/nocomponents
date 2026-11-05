@@ -14,7 +14,9 @@ pub fn ScrollArea(
     children: Children,
 ) -> impl IntoView {
     view! {
-        <ScrollAreaRoot class=move || cn!("group/scroll-area relative overflow-hidden", class.get())>
+        <ScrollAreaRoot class=move || {
+            cn!("group/scroll-area relative overflow-hidden", class.get())
+        }>
             <ScrollAreaViewport>{children()}</ScrollAreaViewport>
             <ScrollAreaScrollbar orientation=Orientation::Vertical>
                 <ScrollAreaThumb orientation=Orientation::Vertical />
@@ -39,7 +41,7 @@ pub fn ScrollAreaViewport(
     view! {
         <ScrollAreaViewportRoot class=move || {
             cn!(
-                "h-full w-full [&::-webkit-scrollbar]:hidden",
+                "h-full w-full rounded-[inherit] outline-none focus-visible:ring-3 focus-visible:ring-ring/50 [&::-webkit-scrollbar]:hidden",
                 class.get()
             )
         }>{children()}</ScrollAreaViewportRoot>

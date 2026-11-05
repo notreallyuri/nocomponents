@@ -3,12 +3,12 @@ use crate::{
     icons::chevron::ChevronDown,
     primitives::navigation_menu::{
         NavigationMenuContentRoot, NavigationMenuIndicatorRoot, NavigationMenuItemRoot,
-        NavigationMenuLinkRoot, NavigationMenuListRoot, NavigationMenuRoot,
-        NavigationMenuTriggerRoot,
+        NavigationMenuLinkRender, NavigationMenuLinkRoot, NavigationMenuListRoot,
+        NavigationMenuRoot, NavigationMenuTriggerRoot,
     },
     utils::controllable::forward,
 };
-use leptos::{ev, prelude::*};
+use leptos::prelude::*;
 
 #[component]
 pub fn NavigationMenu(
@@ -102,7 +102,7 @@ pub fn NavigationMenuLink(
     #[prop(optional, into)] href: Signal<String>,
     #[prop(optional, into)] active: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
-    #[prop(default = None, into)] render: Option<Callback<Callback<ev::MouseEvent>, AnyView>>,
+    #[prop(default = None, into)] render: Option<Callback<NavigationMenuLinkRender, AnyView>>,
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     view! {

@@ -14,6 +14,7 @@ pub fn Chart(
     #[prop(default = true)] tooltip: bool,
     #[prop(default = true)] legend: bool,
     #[prop(default = true)] grid: bool,
+    #[prop(optional, into)] label: Signal<String>,
     #[prop(optional, into)] class: Signal<String>,
 ) -> impl IntoView {
     view! {
@@ -26,6 +27,7 @@ pub fn Chart(
             <div class="relative w-full">
                 <ChartPlotRoot
                     grid=grid
+                    label=label
                     class="aspect-[2/1] w-full overflow-visible [&_text]:select-none"
                 />
 

@@ -679,7 +679,7 @@ pub fn ColorPickerFormatRoot(
         <button
             type="button"
             data-slot="color-picker-format"
-            aria-label="Change colour format"
+            title="Change colour format"
             on:click=move |_| ctx.cycle_format()
             class=class
         >

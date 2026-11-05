@@ -4,10 +4,18 @@ use leptos::prelude::*;
 #[component]
 pub fn Breadcrumb(
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] aria_label: Signal<String>,
     children: Children,
 ) -> impl IntoView {
     view! {
-        <nav aria-label="breadcrumb" data-slot="breadcrumb" class=class>
+        <nav
+            aria-label=move || {
+                let label = aria_label.get();
+                if label.is_empty() { "Breadcrumb".to_string() } else { label }
+            }
+            data-slot="breadcrumb"
+            class=class
+        >
             {children()}
         </nav>
     }
@@ -56,11 +64,9 @@ pub fn BreadcrumbLink(
 ) -> impl IntoView {
     view! {
         <a
-            href=move || href.get()
+            href=move || Some(href.get()).filter(|href| !href.is_empty())
             data-slot="breadcrumb-link"
-            class=move || {
-                cn!("transition-colors hover:text-foreground", class.get())
-            }
+            class=move || { cn!("transition-colors hover:text-foreground", class.get()) }
         >
             {children()}
         </a>
@@ -109,12 +115,10 @@ pub fn BreadcrumbSeparator(
 pub fn BreadcrumbEllipsis(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
     view! {
         <span
-            role="presentation"
-            aria-hidden="true"
             data-slot="breadcrumb-ellipsis"
             class=move || cn!("flex size-5 items-center justify-center", class.get())
         >
-            "…"
+            <span aria-hidden="true">"…"</span>
             <span class="sr-only">"More"</span>
         </span>
     }

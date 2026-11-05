@@ -15,11 +15,11 @@ use crate::{
     primitives::{
         dropdown_menu::{DropdownMenuTriggerRoot, use_dropdown},
         video_player::{
-            VideoPlayerCaptionSize, VideoPlayerCaptionsRoot, VideoPlayerControlsRoot,
-            VideoPlayerFullscreenRoot, VideoPlayerMode, VideoPlayerMuteRoot, VideoPlayerPlayRoot,
-            VideoPlayerRail, VideoPlayerRailFillRoot, VideoPlayerRailRoot, VideoPlayerRoot,
-            VideoPlayerSkipRoot, VideoPlayerStep, VideoPlayerSurfaceRoot, VideoPlayerTimeRoot,
-            VideoPlayerVideoRoot, use_video_player,
+            VideoPlayerCaptionSize, VideoPlayerCaptionsRoot, VideoPlayerCaptionsToggleRoot,
+            VideoPlayerControlsRoot, VideoPlayerFullscreenRoot, VideoPlayerMode,
+            VideoPlayerMuteRoot, VideoPlayerPlayRoot, VideoPlayerRail, VideoPlayerRailFillRoot,
+            VideoPlayerRailRoot, VideoPlayerRoot, VideoPlayerSkipRoot, VideoPlayerStep,
+            VideoPlayerSurfaceRoot, VideoPlayerTimeRoot, VideoPlayerVideoRoot, use_video_player,
         },
     },
 };
@@ -618,35 +618,17 @@ pub fn VideoPlayerCaptionSizeItems(#[prop(default = false)] submenu: bool) -> im
 #[component]
 pub fn VideoPlayerCaptionsButton(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
     let ctx = use_video_player();
-    let showing = Signal::derive(move || ctx.active_track.get().is_some());
-
     view! {
         <Show when=move || !ctx.tracks.get().is_empty()>
-            <button
-                type="button"
-                data-slot="video-player-captions"
-                data-state=move || if showing.get() { "on" } else { "off" }
-                aria-label=move || {
-                    if showing.get() { "Turn off subtitles" } else { "Turn on subtitles" }
-                }
-                aria-pressed=move || showing.get().then_some("true")
-                on:click=move |_| {
-                    if showing.get_untracked() {
-                        ctx.set_text_track(None);
-                    } else {
-                        ctx.set_text_track(ctx.tracks.get_untracked().first().map(|t| t.index));
-                    }
-                }
-                class=move || {
-                    cn!(
-                        CONTROL,
-                        "relative after:absolute after:inset-x-1.5 after:bottom-1 after:h-px after:bg-current after:opacity-0 data-[state=on]:after:opacity-100",
-                        class.get(),
-                    )
-                }
-            >
+            <VideoPlayerCaptionsToggleRoot class=move || {
+                cn!(
+                    CONTROL,
+                    "relative after:absolute after:inset-x-1.5 after:bottom-1 after:h-px after:bg-current after:opacity-0 data-[state=on]:after:opacity-100",
+                    class.get(),
+                )
+            }>
                 <Captions />
-            </button>
+            </VideoPlayerCaptionsToggleRoot>
         </Show>
     }
 }

@@ -28,6 +28,10 @@ pub struct DropzoneContext {
     pub disabled: Signal<bool>,
     /// The hidden input, so a trigger anywhere inside can open the picker.
     pub input_ref: AnyNodeRef,
+    /// Whether a button inside the zone opens the picker. Set by that button while it is mounted:
+    /// with one present the zone stops being a button itself, since a button inside a button is
+    /// interactive content nested in interactive content.
+    pub has_trigger: RwSignal<bool>,
 }
 
 impl DropzoneContext {
@@ -115,6 +119,7 @@ pub fn DropzoneRoot(
         is_over: RwSignal::new(false),
         disabled,
         input_ref,
+        has_trigger: RwSignal::new(false),
     };
 
     // `dragleave` fires on the way onto a child as well as on the way out, so leaving is the
@@ -139,9 +144,17 @@ pub fn DropzoneRoot(
     view! {
         <div
             data-slot="dropzone"
-            role="button"
-            tabindex=move || if disabled.get() { "-1" } else { "0" }
-            aria-disabled=move || disabled.get().then_some("true")
+            role=move || (!context.has_trigger.get()).then_some("button")
+            tabindex=move || {
+                if context.has_trigger.get() {
+                    None
+                } else {
+                    Some(if disabled.get() { "-1" } else { "0" })
+                }
+            }
+            aria-disabled=move || {
+                (!context.has_trigger.get() && disabled.get()).then_some("true")
+            }
             data-over=move || context.is_over.get().then_some("true")
             data-disabled=move || disabled.get().then_some("true")
             on:dragenter=move |e: ev::DragEvent| {
@@ -184,7 +197,7 @@ pub fn DropzoneRoot(
             }
             on:click=move |_| context.open()
             on:keydown=move |e: ev::KeyboardEvent| {
-                if matches!(e.key().as_str(), "Enter" | " ") {
+                if !context.has_trigger.get_untracked() && matches!(e.key().as_str(), "Enter" | " ") {
                     e.prevent_default();
                     context.open();
                 }

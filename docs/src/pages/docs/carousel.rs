@@ -69,6 +69,12 @@ const API: &[ApiEntry] = &[
                 description: "The slide at the start of the track. Pass one to read the position or to jump elsewhere.",
             },
             Prop {
+                name: "label",
+                ty: "Signal<String>",
+                default: "\"Carousel\"",
+                description: "The region's accessible name. A page with two carousels should tell them apart; each slide is announced as \"n of m\" within it.",
+            },
+            Prop {
                 name: "class",
                 ty: "Signal<String>",
                 default: "\"\"",

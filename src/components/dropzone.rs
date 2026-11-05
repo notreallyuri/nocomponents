@@ -75,10 +75,16 @@ pub fn DropzoneTrigger(
 ) -> impl IntoView {
     let ctx = use_dropzone();
 
+    ctx.has_trigger.set(true);
+    on_cleanup(move || {
+        let _ = ctx.has_trigger.try_set(false);
+    });
+
     view! {
         <button
             type="button"
             data-slot="dropzone-trigger"
+            disabled=move || ctx.disabled.get()
             on:click=move |e| {
                 e.stop_propagation();
                 ctx.open();

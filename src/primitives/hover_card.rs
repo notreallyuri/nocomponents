@@ -96,7 +96,7 @@ pub fn HoverCardRoot(
     on_cleanup(move || intent.cancel());
 
     view! {
-        <FloatingRoot class=class context=context trigger_aria=TriggerAria::Popup("dialog")>
+        <FloatingRoot class=class context=context trigger_aria=TriggerAria::Describes>
             <Provider value=intent>{stored_children.with_value(|children| children())}</Provider>
         </FloatingRoot>
     }

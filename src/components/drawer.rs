@@ -135,7 +135,7 @@ pub fn DrawerTrigger(
     children: Children,
 ) -> impl IntoView {
     view! {
-        <DialogTriggerRoot class=class disabled=disabled>
+        <DialogTriggerRoot data_slot="drawer-trigger" class=class disabled=disabled>
             {children()}
         </DialogTriggerRoot>
     }

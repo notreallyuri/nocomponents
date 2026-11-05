@@ -472,7 +472,11 @@ pub fn CalendarGridRoot(
                                         .map(|date| {
                                             let date = *date;
                                             view! {
-                                                <td role="gridcell" class=move || cell_class.get()>
+                                                <td
+                                                    role="gridcell"
+                                                    aria-selected=move || ctx.is_selected(date).to_string()
+                                                    class=move || cell_class.get()
+                                                >
                                                     {day.run(date)}
                                                 </td>
                                             }
@@ -512,15 +516,17 @@ pub fn CalendarDayRoot(date: Date, #[prop(optional, into)] class: Signal<String>
                 (ctx.mode == CalendarMode::Range).then(|| ctx.range_position(date).as_str())
             }
             aria-label=move || ctx.names.with(|names| names.long_form(date))
-            aria-selected=move || selected.get().to_string()
+            data-disabled=move || disabled.get().then_some("")
+            // `aria-disabled` rather than `disabled`: a disabled button cannot take focus, so
+            // the arrow keys would lose the grid on a day that cannot be picked, and the one tab
+            // stop could land on a day that holds it for nobody.
             aria-disabled=move || disabled.get().then_some("true")
-            disabled=move || disabled.get()
             // One tab stop for the whole grid, on whichever date the keyboard is on.
             tabindex=move || if focused.get() { "0" } else { "-1" }
             on:click=move |_| ctx.select(date)
             on:focus=move |_| ctx.focused.set(date)
             on:pointerenter=move |_| {
-                if ctx.mode == CalendarMode::Range
+                if ctx.mode == CalendarMode::Range && !disabled.get_untracked()
                     && ctx.selected.with_untracked(|selected| selected.len() == 1)
                 {
                     ctx.preview.set(Some(date));

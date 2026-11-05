@@ -302,6 +302,9 @@ pub fn ChartPlotRoot(
     /// Whether to draw the horizontal grid and its value labels.
     #[prop(default = true)]
     grid: bool,
+    /// The accessible name of the plot, written as `aria-label`. Left empty, the plot has none.
+    #[prop(optional, into)]
+    label: Signal<String>,
 ) -> impl IntoView {
     let ctx = use_chart();
 
@@ -311,6 +314,7 @@ pub fn ChartPlotRoot(
             data-slot="chart-plot"
             viewBox=format!("0 0 {VIEW_WIDTH} {VIEW_HEIGHT}")
             role="img"
+            aria-label=move || Some(label.get()).filter(|label| !label.is_empty())
             on:pointermove=move |e: ev::PointerEvent| {
                 ctx.hovered.set(ctx.index_at(e.client_x() as f64));
             }
@@ -366,7 +370,8 @@ pub fn ChartPlotRoot(
                                         .iter()
                                         .enumerate()
                                         .map(|(category, value)| {
-                                            let (x, y, width, height) = ctx.bar(category, index, *value);
+                                            let (x, y, width, height) = ctx
+                                                .bar(category, index, *value);
                                             view! {
                                                 <rect
                                                     x=x
@@ -453,8 +458,12 @@ pub fn ChartPlotRoot(
                                     y=VIEW_HEIGHT - 8.0
                                     text-anchor=match (index, count) {
                                         (0, _) if ctx.kind != ChartKind::Bar => "start",
-                                        (index, count) if index + 1 == count
-                                            && ctx.kind != ChartKind::Bar => "end",
+                                        (
+                                            index,
+                                            count,
+                                        ) if index + 1 == count && ctx.kind != ChartKind::Bar => {
+                                            "end"
+                                        }
                                         _ => "middle",
                                     }
                                     class="fill-muted-foreground text-[10px]"
@@ -509,12 +518,14 @@ pub fn ChartTooltipRoot(
     let ctx = use_chart();
 
     view! {
-        <Show when=move || ctx.hovered.get().is_some()>
+        <Show when=move || {
+            ctx.hovered.get().is_some()
+        }>
             {move || {
                 let hovered = ctx.hovered.get()?;
                 let label = ctx.labels.with(|labels| labels.get(hovered).cloned())?;
-
                 Some(
+
                     view! {
                         <div
                             data-slot="chart-tooltip"

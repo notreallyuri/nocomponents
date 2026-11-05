@@ -200,6 +200,7 @@ pub fn ContextMenuContentRoot(
             <div
                 node_ref=menu_ref
                 id=move || ctx.content_id.get()
+                data-slot="context-menu-content"
                 role="menu"
                 tabindex="-1"
                 on:keydown=move |e| {

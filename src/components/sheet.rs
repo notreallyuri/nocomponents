@@ -87,7 +87,13 @@ pub fn SheetTrigger(
         .into_any()
     });
 
-    view! { <DialogTriggerRoot disabled=disabled as_child=render.unwrap_or(styled) /> }
+    view! {
+        <DialogTriggerRoot
+            data_slot="sheet-trigger"
+            disabled=disabled
+            as_child=render.unwrap_or(styled)
+        />
+    }
 }
 
 #[component]

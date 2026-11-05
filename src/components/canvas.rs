@@ -151,7 +151,7 @@ pub fn CanvasControls(#[prop(optional, into)] class: Signal<String>) -> impl Int
             </button>
             <button
                 type="button"
-                aria-label="Reset zoom"
+                title="Reset zoom"
                 class="min-w-12 rounded-md px-1 text-center font-mono text-xs tabular-nums text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
                 on:click=move |_| ctx.reset()
             >

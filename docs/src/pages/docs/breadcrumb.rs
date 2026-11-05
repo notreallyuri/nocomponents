@@ -41,6 +41,12 @@ const API: &[ApiEntry] = &[
         description: "The trail back up. A labelled `<nav>` around an ordered list.",
         props: &[
             Prop {
+                name: "aria_label",
+                ty: "Signal<String>",
+                default: "\"Breadcrumb\"",
+                description: "The nav's accessible name. Change it for a second breadcrumb on the page, or another language.",
+            },
+            Prop {
                 name: "class",
                 ty: "Signal<String>",
                 default: "\"\"",
@@ -98,7 +104,7 @@ const API: &[ApiEntry] = &[
                 name: "href",
                 ty: "Signal<String>",
                 default: "\"\"",
-                description: "Where it goes.",
+                description: "Where it goes. Left empty, no `href` is written, rather than a link to the current page.",
             },
             Prop {
                 name: "class",

@@ -174,6 +174,10 @@ pub enum DialogPart {
 pub fn DialogTriggerRoot(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
+    /// What `data-slot` the trigger wears, named by the component that owns it —
+    /// `"sheet-trigger"`, `"drawer-trigger"` — for the reason `FloatingTrigger`'s is.
+    #[prop(default = "dialog-trigger")]
+    data_slot: &'static str,
     /// Render as something else. Handed the node ref to attach, the click to run, and the
     /// `disabled` already resolved against any `Field` around it.
     #[prop(optional, into)]
@@ -189,6 +193,7 @@ pub fn DialogTriggerRoot(
             return;
         };
 
+        let _ = trigger.set_attribute("data-slot", data_slot);
         let _ = trigger.set_attribute("aria-haspopup", "dialog");
         let _ = trigger.set_attribute(
             "aria-expanded",

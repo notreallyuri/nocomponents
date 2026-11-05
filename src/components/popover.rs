@@ -86,9 +86,7 @@ pub fn PopoverContent(
                 cn!(base_class.as_str(), class.get())
             }
         >
-            <div data-slot="popover-content" class="flex flex-col gap-2">
-                {children()}
-            </div>
+            <div class="flex flex-col gap-2">{children()}</div>
         </PopoverContentRoot>
     }
 }

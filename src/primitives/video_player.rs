@@ -1100,8 +1100,8 @@ pub fn VideoPlayerMuteRoot(
             type="button"
             data-slot="video-player-mute"
             data-state=move || if ctx.muted.get() { "muted" } else { "unmuted" }
-            aria-label=move || if ctx.muted.get() { "Unmute" } else { "Mute" }
-            aria-pressed=move || ctx.muted.get().then_some("true")
+            aria-label="Mute"
+            aria-pressed=move || if ctx.muted.get() { "true" } else { "false" }
             on:click=move |_| ctx.toggle_muted()
             class=class
         >
@@ -1287,11 +1287,40 @@ pub fn VideoPlayerFullscreenRoot(
             type="button"
             data-slot="video-player-fullscreen"
             data-state=move || if ctx.fullscreen.get() { "fullscreen" } else { "inline" }
-            aria-label=move || {
-                if ctx.fullscreen.get() { "Exit fullscreen" } else { "Enter fullscreen" }
-            }
-            aria-pressed=move || ctx.fullscreen.get().then_some("true")
+            aria-label="Fullscreen"
+            aria-pressed=move || if ctx.fullscreen.get() { "true" } else { "false" }
             on:click=move |_| ctx.toggle_fullscreen()
+            class=class
+        >
+            {children()}
+        </button>
+    }
+}
+
+/// The subtitles toggle: on shows the first track, off hides them. The label stays fixed and
+/// `aria-pressed` carries the state.
+#[component]
+pub fn VideoPlayerCaptionsToggleRoot(
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    let ctx = use_video_player();
+    let showing = Signal::derive(move || ctx.active_track.get().is_some());
+
+    view! {
+        <button
+            type="button"
+            data-slot="video-player-captions"
+            data-state=move || if showing.get() { "on" } else { "off" }
+            aria-label="Subtitles"
+            aria-pressed=move || if showing.get() { "true" } else { "false" }
+            on:click=move |_| {
+                if showing.get_untracked() {
+                    ctx.set_text_track(None);
+                } else {
+                    ctx.set_text_track(ctx.tracks.get_untracked().first().map(|t| t.index));
+                }
+            }
             class=class
         >
             {children()}

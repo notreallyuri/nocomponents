@@ -37,20 +37,33 @@ impl SpinnerSize {
 pub fn Spinner(
     #[prop(optional)] variant: SpinnerVariant,
     #[prop(optional)] size: SpinnerSize,
+    #[prop(optional, into)] label: Signal<String>,
     #[prop(optional, into)] class: Signal<String>,
 ) -> impl IntoView {
     let size_class = size.as_class();
+    let name = move || {
+        let label = label.get();
+        if label.is_empty() {
+            "Loading".to_string()
+        } else {
+            label
+        }
+    };
 
     match variant {
         SpinnerVariant::Default => Either::Left(view! {
             <LoaderCircle
                 attr:data-slot="spinner"
+                attr:role="status"
+                attr:aria-label=name
                 class=move || { cn!("size-4 animate-spin", size_class, class.get()) }
             />
         }),
         SpinnerVariant::Lined => Either::Right(view! {
             <Loader
                 attr:data-slot="spinner"
+                attr:role="status"
+                attr:aria-label=name
                 class=move || { cn!("size-4 animate-spin", size_class, class.get()) }
             />
         }),

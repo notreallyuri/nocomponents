@@ -379,6 +379,14 @@ fn focus_trigger(ctx: NavigationMenuContext, item: NavigationMenuItemContext) {
     }
 }
 
+/// What a link rendered as something else is handed: the click handler that closes the menu, the
+/// classes the part would have worn, and the children it would have shown.
+pub struct NavigationMenuLinkRender {
+    pub on_click: Callback<ev::MouseEvent>,
+    pub class: Signal<String>,
+    pub children: AnyView,
+}
+
 #[component]
 pub fn NavigationMenuLinkRoot(
     #[prop(optional, into)] href: Signal<String>,
@@ -388,16 +396,25 @@ pub fn NavigationMenuLinkRoot(
     active: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
     /// Render the link as something else — a router's `A`, which owns its own `href`. The
-    /// callback is handed the click handler that closes the menu.
+    /// callback is handed the click handler that closes the menu, along with the `class` and the
+    /// children, so the node it builds wears what the part would have.
     #[prop(default = None, into)]
-    render: Option<Callback<Callback<ev::MouseEvent>, AnyView>>,
+    render: Option<Callback<NavigationMenuLinkRender, AnyView>>,
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     let ctx = use_navigation_menu();
     let on_click = Callback::new(move |_: ev::MouseEvent| ctx.close_now());
 
     match render {
-        Some(render) => leptos::either::Either::Left(render.run(on_click)),
+        Some(render) => leptos::either::Either::Left(
+            render.run(NavigationMenuLinkRender {
+                on_click,
+                class,
+                children: children
+                    .map(|children| children().into_any())
+                    .unwrap_or_else(|| ().into_any()),
+            }),
+        ),
         None => leptos::either::Either::Right(view! {
             <a
                 href=move || href.get()

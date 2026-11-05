@@ -121,7 +121,7 @@ view! {
 
             // Bars rather than a line: a column is a *total* over its days, and a line
             // between two totals draws values that were never counted.
-            <Chart labels=labels series=series kind=ChartKind::Bar legend=false />
+            <Chart labels=labels series=series kind=ChartKind::Bar legend=false label="Visits per day" />
         </CardContent>
     </Card>
 }"##;
@@ -270,7 +270,13 @@ fn VisitorsCard() -> impl IntoView {
 
                 // Bars rather than a line: a column is a total over its days, and a line between
                 // two totals draws values that were never counted.
-                <Chart labels=labels series=series kind=ChartKind::Bar legend=false />
+                <Chart
+                    labels=labels
+                    series=series
+                    kind=ChartKind::Bar
+                    legend=false
+                    label="Visits per day"
+                />
             </CardContent>
         </Card>
     }

@@ -409,7 +409,6 @@ pub fn KanbanCardRoot(
             data-slot="kanban-card"
             data-kanban-card=attribute
             data-dragging=move || dragging().then_some("true")
-            aria-grabbed=move || dragging().then_some("true")
             style=move || {
                 if !dragging() {
                     return String::new();

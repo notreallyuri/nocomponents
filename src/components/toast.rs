@@ -71,6 +71,8 @@ fn Toaster() -> impl IntoView {
 
                 view! {
                     <div
+                        role="region"
+                        aria-label="Notifications"
                         class=move || {
                             let has_toasts = ctx.toasts.get().iter().any(|t| t.position == pos);
                             if has_toasts {

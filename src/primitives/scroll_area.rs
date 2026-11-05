@@ -176,6 +176,9 @@ pub fn ScrollAreaViewportRoot(
         <div
             node_ref=ctx.viewport_ref
             data-slot="scroll-area-viewport"
+            // With the native bars gone and nothing focusable inside, a keyboard user could not
+            // scroll at all; a tab stop on the viewport is what lets the arrow keys reach it.
+            tabindex="0"
             // Functional: the box scrolls and its native bars go. WebKit needs a pseudo-element
             // rule an inline style cannot express, which the styled layer carries.
             style="overflow: auto; scrollbar-width: none; -ms-overflow-style: none;"

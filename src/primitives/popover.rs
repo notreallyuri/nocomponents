@@ -136,7 +136,7 @@ pub fn PopoverContentRoot(
                 data-state=move || {
                     if ctx.is_open.get() && is_positioned.get() { "open" } else { "closed" }
                 }
-                data-slot="popover-portal"
+                data-slot="popover-content"
                 data-align=move || match placement.get() {
                     Placement::TopStart
                     | Placement::BottomStart

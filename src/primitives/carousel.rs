@@ -262,6 +262,9 @@ pub fn CarouselRoot(
     /// The current slide, for a caller that wants to read it or jump elsewhere.
     #[prop(optional, into)]
     index: RwSignal<usize>,
+    /// The accessible name of the carousel region. Empty reads as "Carousel".
+    #[prop(optional, into)]
+    label: Signal<String>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
@@ -296,7 +299,12 @@ pub fn CarouselRoot(
             <section
                 data-slot="carousel"
                 data-orientation=orientation.as_str()
+                role="region"
                 aria-roledescription="carousel"
+                aria-label=move || {
+                    let label = label.get();
+                    if label.is_empty() { "Carousel".to_string() } else { label }
+                }
                 // The arrows work from anywhere in the carousel, which is what makes it operable
                 // without reaching for the two buttons.
                 on:keydown=move |e: ev::KeyboardEvent| {
@@ -390,6 +398,7 @@ pub fn CarouselItemRoot(
     children: Children,
 ) -> impl IntoView {
     let ctx = use_carousel();
+    let position = ctx.count.get_untracked() + 1;
 
     // Counted rather than measured: the buttons need to know how many there are before anyone
     // has scrolled, and a slide knows when it arrives and when it goes.
@@ -406,6 +415,7 @@ pub fn CarouselItemRoot(
             data-slot="carousel-item"
             role="group"
             aria-roledescription="slide"
+            aria-label=move || format!("{position} of {}", ctx.count.get())
             class=class
         >
             {children()}

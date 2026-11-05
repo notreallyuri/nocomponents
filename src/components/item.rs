@@ -61,7 +61,6 @@ pub fn ItemGroup(
     view! {
         <div
             data-slot="item-group"
-            role="list"
             class=move || cn!("group/item-group flex flex-col", class.get())
         >
             {children()}
@@ -193,10 +192,7 @@ pub fn ItemActions(
     children: Children,
 ) -> impl IntoView {
     view! {
-        <div
-            data-slot="item-actions"
-            class=move || cn!("flex items-center gap-2", class.get())
-        >
+        <div data-slot="item-actions" class=move || cn!("flex items-center gap-2", class.get())>
             {children()}
         </div>
     }
@@ -210,9 +206,7 @@ pub fn ItemHeader(
     view! {
         <div
             data-slot="item-header"
-            class=move || {
-                cn!("flex basis-full items-center justify-between gap-2", class.get())
-            }
+            class=move || { cn!("flex basis-full items-center justify-between gap-2", class.get()) }
         >
             {children()}
         </div>
@@ -227,9 +221,7 @@ pub fn ItemFooter(
     view! {
         <div
             data-slot="item-footer"
-            class=move || {
-                cn!("flex basis-full items-center justify-between gap-2", class.get())
-            }
+            class=move || { cn!("flex basis-full items-center justify-between gap-2", class.get()) }
         >
             {children()}
         </div>

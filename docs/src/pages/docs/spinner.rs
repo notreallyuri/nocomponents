@@ -49,6 +49,12 @@ const API: &[ApiEntry] = &[ApiEntry {
             description: "One of: Xs, Sm, Default, Lg, Icon.",
         },
         Prop {
+            name: "label",
+            ty: "Signal<String>",
+            default: "\"Loading\"",
+            description: "The accessible name, written as `aria-label` on the `role=\"status\"` icon. Empty reads as \"Loading\"; name what is loading when the page has more than one.",
+        },
+        Prop {
             name: "class",
             ty: "Signal<String>",
             default: "\"\"",
