@@ -944,6 +944,435 @@ the install story the whole styled layer is designed around does not work outsid
 - [ ] The colour picker's square announces itself as `role="application"` with a description of the
       keys. There is no honest ARIA role for a two-axis drag; the rails and the text field are the
       paths that announce themselves properly.
+- [x] **A full API review of the styled layer before noaweb (the Leptos port of immich-front)
+      leans on it.** The port's first header found a hole: `DropdownMenuLabel` (and
+      `DropdownMenuSeparator`) take no `class`, so `<DropdownMenuLabel class=…>` fails with E0599 on
+      the props builder. noaweb patched its installed copy, and that patch belongs here. Go over all
+      66 components, with their primitives, against one checklist:
+      A. every part that renders an element takes `class` and merges it with `cn!`;
+      B. parts and props the shadcn equivalent has and a real app would use (menu Group, Shortcut,
+         CheckboxItem, RadioItem and `inset`; controlled `open`/`on_open_change`, `value`/`on_value_change`);
+      C. props taken as plain values that a caller would change at runtime (should be `Signal`/`MaybeProp`),
+         and signals read in a component body outside a closure;
+      D. `Children` where the content can render more than once (`Show`, a portal that remounts) and needs
+         `ChildrenFn`;
+      E. plain bugs.
+      Record the findings as items here; fixing them comes after.
+
+### Styled-layer API review (2026-11-05)
+
+All 66 components were read against the A–E checklist above, each with its primitive. What follows
+is the findings, cross-cutting ones first because the same defect recurs across components and one
+fix serves them all, then one item per component; fixing comes next. noaweb's patch for
+`DropdownMenuLabel` and `DropdownMenuSeparator` is the first to land.
+
+**Cross-cutting**
+
+- [ ] **Controlled and uncontrolled are half-wired almost everywhere.** The idiom is an optional
+      `RwSignal` (`open`, `value`, `pressed`, `selected`), which covers a caller who owns the state
+      and nothing else: there is no `default_*` for one who only wants a starting value without
+      making a signal, and no `on_*_change` for one who only wants to hear about it without an
+      `Effect` on a signal they did not otherwise need. Where there is not even the signal: no
+      `open` on `Popover`, `HoverCard`, `Tooltip`, `DropdownMenu`, `ContextMenu`, `Select` or
+      `Combobox`; `Tabs` takes `default_value` and nothing controlled (`TabsRoot` makes its own
+      signal, `primitives/tabs.rs:37`); `Checkbox` and `Switch` take a *required* `checked`, so
+      there is no uncontrolled mode at all (`components/checkbox.rs:7`, `components/switch.rs:7`).
+      Signal but no default: `Dialog`, `AlertDialog`, `Sheet`, `Drawer`, `Collapsible`, `Accordion`,
+      `RadioGroup`, `ToggleGroup`, `Toggle`, `Calendar`, `DatePicker`, `Command`,
+      `CommandDialog`, `Slider` (which has `default_value` but no callback), `NavigationMenu` and
+      `Menubar` (whose `open: RwSignal<Option<String>>` is the open menu's name, where shadcn has
+      `value`/`on_value_change`). No change callback on any
+      of them except `Toggle::on_change`, `InputOtp::on_complete` and the `on_select`s. Settle one
+      shape — `default_x: T`, `x: Option<RwSignal<T>>`, `on_x_change: Option<Callback<T>>` — and
+      apply it to every root; the primitives are where it goes, the styled layer only forwards.
+- [ ] **`side`, `align` and `side_offset` are read once.** `DropdownMenuContent`,
+      `ContextMenuContent`, `MenubarContent`, `PopoverContent`, `HoverCardContent`,
+      `TooltipContent`, `ComboboxContent` and `DatePicker` take them as plain values, and the
+      primitive hands them straight to `use_floating` (`primitives/dropdown_menu.rs:199-207` is the
+      shape; the others copy it). Wrapping the props in `Signal` is the easy half; the hard half is
+      that `UseFloatingOptions::placement` is built once, so a signal would need the options
+      rebuilt or the placement fed from one. A primitive change, not a prop-type one — a
+      responsive layout that flips a popover from `Right` to `Bottom` at a breakpoint is the case
+      that would notice.
+- [ ] **`variant`, `size` and the other enums are plain values.** Taken as `ButtonVariant`,
+      `ButtonSize`, `ToggleVariant`, `ToggleSize` and the rest, then resolved once into a class
+      string outside any closure, so none of them can follow a signal. Affects `Button`
+      (`components/button.rs:88-89`), `DropdownMenuTrigger` and `PopoverTrigger`, `Toggle`,
+      `ToggleGroup` and `ToggleGroupItem` (resolved once through `unwrap_or`, :56-57), `Alert`,
+      `Badge`, `Card` (`data-size` written once), `Item` (`data-variant` outside the closure),
+      `Spinner`, `Separator` (`orientation` and `decorative`), `NativeSelect` (`size_class`, :31),
+      `Tabs` (`orientation`), `Accordion` (`kind`, `collapsible`), `Carousel`, `Timeline`,
+      `Resizable` (`direction`), `Chart` (`kind`, and the `tooltip`/`legend`/`grid` bools),
+      `Calendar` and `DatePicker` (`mode`, `week_starts_on`, `min`, `max`), `ColorPicker`
+      (`format`, `with_alpha`), `ImageCropper` (`aspect`, `circular`), `Canvas` (`pan_on_drag`),
+      `Dropzone` (`multiple`), `ScrollArea` (`horizontal`), `Input` and `InputGroupInput`
+      (`input_type`), and `SidebarMenuButton` / `SidebarMenuSubButton` (`size`). Where the
+      primitive reads the value inside a closure the styled prop can become a `Signal` at no
+      cost; where it copies it into a context at mount (`Accordion`, `Timeline`, `Calendar`,
+      `Slider`) the primitive has to change first, as above. `Input`'s is the one a caller hits
+      first: a show/hide-password toggle cannot switch `Password` to `Text`.
+- [ ] **Nothing here submits with a form.** `Checkbox`, `RadioGroupItem` and `Switch` are
+      `<button role=…>` with no hidden `<input>`, so a native `<form>` sees nothing, and none of
+      them takes `name`, `value` or `required`. `Select` has a hidden `<select>`
+      (`primitives/select.rs:45`) but it has no `name` either, and its only `<option>` is the
+      current value. `Slider`, `InputOtp` (its real `<input>`, `primitives/input_otp.rs:173`),
+      `Textarea`, `NativeSelect`, `Input` and `Combobox` take no `name`/`required` too. The
+      project's stance is that forms are `noform`'s, but `noform` reads signals and a plain
+      `<form method=post>` or a `FormData` reader gets an empty set; a hidden input driven from
+      the state the root already holds is the standard fix.
+- [ ] **`field_disabled` is honoured by `Button` and nothing else that has a `disabled` of its
+      own.** A `<Field disabled>` disables `Button`, `Checkbox`, `Switch`, `Input`, `Textarea`,
+      `NativeSelect`, `Select`, `Combobox` and `RadioGroupItem`, but `ToggleRoot`
+      (`primitives/toggle.rs:30`) and `ToggleGroupItemRoot` (`primitives/toggle_group.rs:111`)
+      read only their own `disabled`, and `Slider` and `InputOtp` have no `Field` wiring at all —
+      no `FieldControl`, so no `id` for the label, no `aria-invalid` and no `aria-describedby`.
+- [ ] **Bare `leptos::portal::Portal` where `FloatingPortal` belongs.** `PopoverPortalRoot`
+      (`primitives/popover.rs:65`), `HoverCardPortalRoot` (:142), `TooltipPortalRoot`
+      (`primitives/tooltip.rs:147`), `SelectPortalRoot` (`primitives/select.rs:84`),
+      `ComboboxPortalRoot` (`primitives/combobox.rs:104`) and the styled `MenubarSubContent`
+      (`components/menubar.rs:188`) all mount into `document.body`, so each vanishes the moment
+      anything goes fullscreen — the exact bug `DropdownMenuSubContent` had and `FloatingPortal`
+      fixed, in the closed item above. One-word change per file.
+- [ ] **Three styled triggers go around their `*Root`, and a fourth wrote it by hand.**
+      `DialogTrigger` (`components/dialog.rs:18`), `AlertDialogTrigger` (`:20`) and `SheetTrigger`
+      (`:40`) render a `Button` and run `ctx.toggle()` themselves instead of rendering
+      `DialogTriggerRoot`; `DrawerTrigger` (`components/drawer.rs:122`) is a raw `<button>`. That
+      is the pattern `CLAUDE.md` forbids, and it costs what it says: `trigger_ref` is never set
+      (the dialog's `LayerBounds`, `primitives/dialog.rs:120`, and the dismiss stack that counts
+      the trigger as inside, `primitives/dismiss.rs:40`, both read it), so a non-modal drawer
+      closes on the trigger's pointerdown and the click reopens it. `DialogTriggerRoot` itself
+      (`primitives/dialog.rs:155`) sets no `aria-haspopup="dialog"`, `aria-expanded` or
+      `aria-controls` even when it is used, and its `as_child` is handed the click and not the
+      node ref. Fix the root first — give it a `TriggerRender` like the floating triggers have —
+      then make all four render it.
+- [ ] **`aria-pressed` on a button whose label flips.** `VideoPlayerMuteRoot`
+      (`primitives/video_player.rs:1104`), `VideoPlayerFullscreenRoot` (:1293) and the styled
+      `VideoPlayerCaptionsButton` (`components/video_player.rs:632`) write `aria-pressed` only
+      while true *and* change `aria-label` between "Mute"/"Unmute" and so on. A toggle button's
+      label must not change with its state — "Unmute, pressed" reads as "not muted" — and
+      `aria-pressed` absent when false reads as "not a toggle". Pick one: a fixed label with
+      `aria-pressed="true"|"false"`, or a flipping label and no `aria-pressed`. 
+- [ ] **`aria-hidden` over text that was meant to be read.** `PaginationEllipsis`
+      (`components/pagination.rs:121`) and `BreadcrumbEllipsis` (`components/breadcrumb.rs:109-121`)
+      put `aria-hidden="true"` on the wrapper that contains the `sr-only` "More pages" / "More",
+      so the one thing that was added for a screen reader is hidden from it. Hide the `…`, not its
+      wrapper.
+- [ ] **`#[prop(optional)]` (or `optional, into`) on an `Option<Callback>`.** `CLAUDE.md` says an
+      optional callback is `#[prop(default = None, into)]`, because `optional` on an `Option<T>`
+      makes the setter take `T` and the two spellings behave differently at the call site. Still
+      `optional` in `DropdownMenuItem` (`components/dropdown_menu.rs:94`), `PopoverTrigger`'s
+      `as_child` (`components/popover.rs:21`), the `render` of `DropdownMenuTrigger`,
+      `DialogTrigger`, `AlertDialogTrigger` and `SheetTrigger`, `AlertDialogAction` and
+      `AlertDialogCancel` (`components/alert_dialog.rs:138,163`), `Button`
+      (`components/button.rs:87`), `InputGroupButton` (`:119`), and `Toggle::on_change`
+      (`components/toggle.rs:53`, which is also bare `optional` with no `into`, so a closure has
+      to be wrapped by hand). Likewise the `open: Option<RwSignal<bool>>` of `Dialog`,
+      `AlertDialog`, `Sheet` and `CommandDialog`.
+- [ ] **`src/components/` still carries comments.** `CLAUDE.md` says none, at all:
+      `components/floating_menu.rs` has 19 comment lines (`///` and `//`), `kanban.rs` 5,
+      `dropzone.rs` 2 and `tree.rs` 2. Their content belongs on the docs pages, or in the
+      primitive where it explains behaviour.
+
+**Per component**
+
+- [ ] `accordion`: `AccordionContent` gives the root a fixed class and puts the caller's `class` on
+      the inner padding div (`components/accordion.rs:72-79`), so the animated panel itself
+      cannot be styled — `class` should land on the element that carries `data-state`, with the
+      padding div a fixed inner.
+- [ ] `alert_dialog`: **`AlertDialogAction` runs `on_click` and never closes the dialog**
+      (`components/alert_dialog.rs:136-145`), where shadcn's closes it; every confirm button needs
+      its own `ctx.close()`, and one that forgets leaves the dialog open over a finished action.
+      The content is built on `DialogContentRoot`, so it carries `role="dialog"` where an alert
+      dialog is `role="alertdialog"` (`primitives/dialog.rs:298` hardcodes it). No
+      `AlertDialogOverlay`/`AlertDialogContent` split — the portal's `class` styles the panel,
+      the overlay is fixed — and no `modal`, which `DialogRoot` has and the styled wrapper hides.
+- [ ] `avatar`: `AvatarImage` takes `src` and `alt` as plain `String`s
+      (`components/avatar.rs:50`, `primitives/avatar.rs:31`), so a changed URL never reaches the
+      `<img>` — an account switcher keeps the first user's face. And the fallback delay is an
+      uncancelled `set_timeout` writing `show` (`primitives/avatar.rs:65`): a fallback that
+      unmounts inside its delay writes to a disposed signal, which is the same bug the delayed
+      unmount in the closed list above was.
+- [ ] `badge`: a hardcoded `<div>` with no `render`, so a badge cannot be a link
+      (`components/badge.rs:35`), while the variants write `[a&]:hover:…` modifiers
+      (:18-29) that can only match when the badge *is* an `<a>` — on a `<div>` they are dead
+      classes. Either add `render` (the `StyledRender` shape) or drop the modifiers.
+- [ ] `breadcrumb`: `BreadcrumbLink` has no `render`, so it cannot be a router's `A`
+      (`components/breadcrumb.rs:52`), and an unset `href` writes `<a href="">` — a link to the
+      current page rather than no link. The `aria-label="breadcrumb"` on the `<nav>` (:10) is
+      lowercase and not overridable; a page with two breadcrumbs, or one in another language,
+      cannot change it.
+- [ ] `button`: with `render`, `ButtonRoot` never attaches `on_click` and never runs the
+      disabled-click refusal (`primitives/button.rs:97`, the handler is built at :86-95 and used
+      only in the `None` arm), so a `Button` given both `render` and `on_click` drops the click
+      without saying so; `StyledRender` carries no handler, so the caller has to know. Either put
+      the handler on the node from the same effect that writes `data-slot`, or say in the prop's
+      doc that `render` owns the click. No `id`, `name`, `value` or `aria-label` passthrough
+      (`components/button.rs:85`), so a submit button's `name` cannot be set.
+- [ ] `calendar`: no `on_select` and no `number_of_months` (`components/calendar.rs:13`).
+      `aria-selected` sits on the `<button>` inside a `role="gridcell"` `<td>`
+      (`primitives/calendar.rs:495`, cell at :455); the attribute belongs on the cell, and a
+      button does not support it. The one tab stop is `tabindex=0` on whichever date is focused,
+      and the focused date starts at the first selected date or today (:246-249) — if that date is
+      disabled or out of `min`/`max`, a disabled button holds the only tab stop and the grid
+      cannot be entered from the keyboard.
+- [ ] `canvas`: the "Reset zoom" button's `aria-label` replaces its visible text, the percentage
+      (`components/canvas.rs:154`) — the accessible name has to contain the visible one, so a
+      voice-control user saying "100%" gets nothing. `aria-label="Reset zoom (100%)"` or
+      `title`, and drop the label. `StickyColor` and `ShapeKind` are plain values like the rest of
+      the enums; see the cross-cutting item.
+- [ ] `carousel`: **`index` is documented as the way to jump, and nothing reacts to a write**
+      (`primitives/carousel.rs:29`). The only effect tracks `count` (:304); `scroll_to` runs from
+      Prev and Next alone, so `index.set(3)` changes the signal and not the track. The root's
+      `section` has `aria-roledescription="carousel"` with no `role="region"` and no label (:262),
+      so the description attaches to nothing a screen reader will announce. And the arrow keys are
+      handled on the whole `<section>` (:265) with no check on the target: ArrowLeft in an `<input>`
+      inside a slide moves the slides.
+- [ ] `chart`: the plot is `role="img"` with no accessible name (`primitives/chart.rs:313`), so a
+      screen reader announces "image" and nothing about it. A `label` prop on `Chart`, written
+      as `aria-label`.
+- [ ] `checkbox`: no `indeterminate` and no `aria-checked="mixed"` (`primitives/checkbox.rs:25`),
+      which `DataTable`'s select-all needs and fakes with a wrapper `span` at the moment. The
+      indicator's visibility is computed from `checked` into a `visible`/`hidden` class
+      (`components/checkbox.rs:26`) rather than from `data-state` — the exact `if is_open`
+      styling `CLAUDE.md` says belongs on the primitive. The indicator should be driven from
+      `data-state`, as `SelectItem`'s check mark is.
+- [ ] `code`: **the copy button shows "Copied" whether or not the write succeeded**
+      (`primitives/code.rs:16`: the clipboard promise is dropped), so on an insecure origin or a
+      denied permission the reader is told something that did not happen. And every copy starts a
+      new reset `set_timeout` without cancelling the last (:21): copy twice in a second and the
+      first timer clears "Copied" early. `CodeBlock`'s `code` is a `String` frozen into a
+      `StoredValue` and read through `get_value` (:42, :65), so a block whose source changes
+      does not re-render; `label` and `has_header` (`components/code.rs:31,36`) are read once.
+- [ ] `color_picker`: `ColorPickerRoot` copies `format` into its own `RwSignal`
+      (`primitives/color_picker.rs:291`), so changing the prop later changes nothing; `presets` is
+      a `Vec<&'static str>` whose `is_empty()` is evaluated once (:162), so presets that arrive
+      late never show the row. The format button's `aria-label="Change colour format"` replaces
+      its visible text, "HEX" or "RGB" (:682) — the same name-must-contain-label failure as the
+      canvas, and here the visible text is what a screen reader should say as well.
+- [ ] `combobox`: no `open`/`on_open_change` — see the cross-cutting item — and `should_filter`
+      on `ComboboxContent` is a plain `bool` handed to `CommandRoot`, which keeps it in
+      `CommandContext` and reads it with no tracking (`primitives/command.rs:121`), so a combobox
+      that goes from client-filtered to server-filtered while open keeps filtering.
+      `ComboboxItem`'s `deselectable` and `close_on_select` (`components/combobox.rs:135`) are
+      plain for the same reason.
+- [ ] `command`: `CommandInput` wraps the `<input>` in a fixed `div`
+      (`components/command.rs:50`), so the caller's `class` reaches the input and nothing reaches
+      the row with the icon — you cannot change its height or border. `CommandDialog` takes
+      `open: Option<RwSignal<bool>>` and no `on_open_change`/`default_open` (:158), and `Command`
+      no `on_value_change`. `should_filter` is plain on both (:20, :165); see `combobox`.
+- [ ] `context_menu`: `ContextMenu` takes no `class` (`components/context_menu.rs:16`) though
+      `ContextMenuRoot` is a `FloatingRoot` with one. `ContextMenuContentRoot` writes no
+      `data-slot` (`primitives/context_menu.rs:186-200`; its trigger writes one at :98), and the
+      re-exported items, labels and sub parts carry the dropdown's names —
+      `data-slot="dropdown-menu-item"` (`primitives/dropdown_menu.rs:310`) inside a context menu —
+      so a stylesheet keyed on slot cannot tell the two apart. `Group`, `Shortcut`, `CheckboxItem`,
+      `RadioGroup` and `RadioItem` are now re-exported under `ContextMenu*` names.
+- [ ] `data_table`: **a selected row is never highlighted.** The row is given
+      `attr:data-selected` (`components/data_table.rs:229`) but `TableRow` styles
+      `data-[state=selected]`, which it writes from its own `selected` prop, which `DataTable`
+      never passes — so the selection state exists, the checkbox shows it, and the row does not.
+      Pass `selected=picked`. The sortable header re-implements `TableSortHeaderRoot`
+      (`:160-190`) by hand and drops what the primitive writes: `data-sorted` and the primitive's
+      own `scope="col"`; the styled layer has no wrapper for it either (`primitives/table.rs:187`),
+      so the two can drift. The select-all cannot be mixed until `Checkbox` has `indeterminate`.
+      `columns` is moved into a `StoredValue` once (:57), so a column list that changes
+      (a user hiding a column) is not seen; and `empty` is `&'static str` (:50), so "No results"
+      cannot be a translated or computed string, never mind a node.
+- [ ] `date_picker`: no way to disable the picker — its `disabled` is a per-date
+      `Callback<Date, bool>` (`components/date_picker.rs:21`), the same name meaning two things next
+      to every other component's `Signal<bool>` — and no `id` for a `Field` label to point at.
+- [ ] `dialog`: no `modal` on the styled `Dialog` although `DialogRoot` has it
+      (`components/dialog.rs:13`, `primitives/dialog.rs:46-53`), no `default_open`, no
+      `on_open_change`. No `DialogClose`: the close button is hardcoded inside `DialogPortal`
+      (:76-87), gated by `show_close` read once, so a footer "Cancel" has to call `ctx.close()` by
+      hand. No `DialogOverlay`/`DialogContent` split either — the portal's `class` styles the
+      panel and the overlay is fixed (and unconditional, `components/dialog.rs:63-67`, so exposing
+      `modal` means gating it the way `DrawerContent` does). The content's `role` is hardcoded `"dialog"`
+      (`primitives/dialog.rs:298`), which is what `alert_dialog` inherits wrongly.
+- [ ] `drawer`: no `default_open`/`on_open_change` (`components/drawer.rs:39-44`); no `DrawerPortal`
+      or `DrawerOverlay` — the overlay is built inside `DrawerContent` and only when `modal`
+      (:66-75), so a non-default overlay means rewriting the content. `DrawerTrigger` takes no
+      `disabled` (:122), on top of the trigger bypass above.
+- [x] `dropdown_menu`: `class` on every part (noaweb's patch), sub-trigger click opens, `data-align`
+      and `disabled` on the submenu, the five missing shadcn parts, `inset` and `data-variant`;
+      checkbox and radio items stay open (`close_on_select`).
+- [ ] `dropdown_menu`: the pointer and the keyboard keep two different highlights. Hovering an
+      item paints it (`hover:bg-accent`) but leaves focus where it was, so hovering "Right" and
+      pressing Enter activates whatever the arrows last reached. Radix focuses the item under the
+      pointer on `pointermove`, which makes the two one highlight; every menu built on these
+      parts — context menu, menubar — inherits the fix.
+- [ ] `dropzone`: `multiple=false` sets only the `<input>`'s attribute
+      (`primitives/dropzone.rs:198`); a drop delivers every file regardless, so the setting is
+      honoured by the picker and ignored by the thing people actually do. No `max_size` or
+      maximum count either (`components/dropzone.rs:10`). `DropzoneTrigger` is a `<button>`
+      (:72) inside the zone that is itself `role="button"` (`primitives/dropzone.rs:139`):
+      interactive content nested in a button, which assistive tech does not handle well and
+      which is why the trigger has to `stop_propagation`.
+- [ ] `field`: **`FieldLabelRoot` always writes `for=ctx.control_id`**
+      (`primitives/field.rs:418`), but `FieldControl::new` lets the control's own `id` win
+      (:80-88), so `<Field><FieldLabel/><Input id="email"/></Field>` has a label pointing at an id
+      nothing carries — and clicking it focuses nothing. The label has to follow whichever id the
+      control adopted. No `FieldContent`, `FieldTitle` or `FieldSeparator`
+      (`components/field.rs:12`).
+- [ ] `floating_menu`: the styled layer does not expose the primitive's `style`
+      (`primitives/floating_menu.rs:86`, `components/floating_menu.rs:11`). `FloatingMenuItem`
+      builds its own `<button>`, the `data-compact` rule and the compact-to-tooltip switch
+      (:107-165) in the styled layer, and `FloatingMenuContent` (:77) and `FloatingMenuSeparator`
+      (:169) render their elements directly with no `*Root` behind them — behaviour that belongs in
+      the primitive under the rule in `CLAUDE.md`. The doc comment gives a reason (`ButtonSize` is
+      a value, so an item could not resize with the menu), which is a reason for the enum item
+      above rather than for the layering.
+- [ ] `hover_card`: `delay` and `close_delay` are plain `u64`s read once into `HoverIntent`
+      (`components/hover_card.rs:13`, `primitives/hover_card.rs:78-83`), and `delay` is Radix's
+      `open_delay`. The root writes `TriggerAria::Popup("dialog")` (`primitives/hover_card.rs:88`)
+      onto a trigger that by default is a non-focusable `<span>` that only pointer hover and
+      `focusin` open — `aria-haspopup` and `aria-expanded` on something that cannot be operated
+      are announced and not usable; a hover card arguably describes its trigger, which is
+      `TriggerAria::Describes`.
+- [ ] `image_cropper`: `min_size` is on the primitive (`primitives/image_cropper.rs:219`) and not
+      on `ImageCropper` (`components/image_cropper.rs:12`). The resize handles are
+      `aria-hidden="true"` (`primitives/image_cropper.rs:386`) with no keyboard path, so the crop
+      can be moved and not resized without a pointer.
+- [ ] `input`: no `placeholder`, `name`, `required`, `readonly`, `autocomplete`, `on_input` or
+      `on_change` (`components/input.rs:27`); the commonest attribute on the commonest control has
+      to be reached through `attr:placeholder=…`. `InputType` has five variants (:5) and lacks
+      `Tel`, `Url`, `Search` and `Date`.
+- [ ] `input_group`: `InputGroupButton` takes no `disabled` and no `type`
+      (`components/input_group.rs:116`), and `InputGroupInput` and `InputGroupTextarea` forward only
+      the subset of `Input`'s and `Textarea`'s props they list (:49), so whatever `Input` gains
+      does not reach them until someone remembers.
+- [ ] `input_otp`: **the real `<input>` has no accessible name**
+      (`primitives/input_otp.rs:167-185`): no `id`, no `aria-label`, no `FieldControl` — and the
+      slots that draw the digits are `aria-hidden`. A screen reader finds an unlabelled text box.
+      No `name`, `id` or `on_change` on the styled `InputOtp` (`components/input_otp.rs:10`), only
+      `on_complete`.
+- [ ] `item`: a hardcoded `<div>` with no `render`, whose classes assume it may be an `<a>`
+      (`[a]:hover:bg-accent/50`, `components/item.rs:88`) — an `Item` that links has to wrap itself.
+      `ItemGroup` is `role="list"` (:64) and `Item` has no `role="listitem"`, so the list has no
+      items and a screen reader announces an empty list. `ItemMediaVariant` lacks shadcn's `Image`
+      (:39-43).
+- [ ] `kanban`: `aria-grabbed` is deprecated in ARIA 1.2 (`primitives/kanban.rs:412`) and no
+      assistive tech acts on it; `data-dragging` already says it. `KanbanSlot`'s `index` is a
+      plain `usize` (`components/kanban.rs:100`), so a slot between cards whose order changes
+      keeps the position it mounted with.
+- [ ] `label`: no `html_for` (`components/label.rs:5`), so a `Label` outside a `Field` — which is
+      most uses of the bare component — cannot be tied to its control without `attr:for=…`.
+- [ ] `menubar`: `MenubarSub` takes no `class` (`components/menubar.rs:157`) and
+      `MenubarSubTrigger` no `disabled` (:162) — see `dropdown_menu`, which this is built on.
+      None of `MenubarGroup`, `MenubarCheckboxItem`, `MenubarRadioGroup`, `MenubarRadioItem` or
+      `inset`, though the dropdown primitive has all of them now and `menubar.rs` only has to wrap
+      them. `MenubarSubContent` mounts into `document.body` rather than `FloatingPortal`
+      (:188), see the cross-cutting item, and that is where it diverges from
+      `DropdownMenuSubContent` — which is the same component with the one word right.
+- [ ] `native_select`: no `NativeSelectOption` or `NativeSelectOptGroup`
+      (`components/native_select.rs:20`); every caller writes bare `<option>`s. No
+      `name`, `required` or `on_change` (:21). `size_class` is computed once (:31).
+- [ ] `navigation_menu`: `NavigationMenu` exposes `value` and not the primitive's
+      `open_delay`/`close_delay` (`components/navigation_menu.rs:13`,
+      `primitives/navigation_menu.rs:127-128`), so the hover timing is fixed. With `render`,
+      `NavigationMenuLinkRoot` hands the caller only the close-on-click callback
+      (`primitives/navigation_menu.rs:390`): the `class` and the children never reach the node
+      the callback builds, so a router `A` inside a styled `NavigationMenuLink` has to be given
+      its classes a second time.
+- [ ] `pagination`: `PaginationItem` takes no `class` (`components/pagination.rs:56`).
+      `PaginationPrevious` and `PaginationNext` (:82) have no `disabled` or `aria-disabled`, so
+      the first page's "Previous" is a live link to nowhere. `PaginationLink` is a plain `<a>` with
+      no `render`, so a router link has to be wrapped; and an unset `href` writes `href=""`.
+- [ ] `popover`: `Popover` takes no `class` (`components/popover.rs:11`), no `PopoverAnchor`.
+      `PopoverContentRoot` writes `data-slot="popover-portal"` on the element that is the content
+      (`primitives/popover.rs:123`) — the styled layer's inner div is the one called
+      `popover-content` (`components/popover.rs:77`), so a slot-keyed selector for the content
+      matches the inner wrapper and the real `role="dialog"` is called a portal.
+- [ ] `progress`: the `progressbar` has no accessible name (`primitives/progress.rs:31`), so it is
+      announced as "progress bar, 40%" with no subject; a `label` prop for `aria-label`. A `max`
+      of zero with a value of zero is `0/0`, `NaN`, and a `translateX(-NaN%)`
+      (`components/progress.rs:34`).
+- [ ] `resizable`: no `collapsible` or `collapsed_size` (`components/resizable.rs:32`), the
+      panel's `min_size`/`max_size` are read once at registration (`primitives/resizable.rs:199`),
+      so a panel that should be wider on a larger viewport cannot say so.
+- [ ] `scroll_area`: the styled component always renders a vertical scrollbar and takes only
+      `horizontal` for the other (`components/scroll_area.rs:11-30`) — no `ScrollBar` part and no
+      `orientation`, so a horizontal-only area has an inert vertical track. The viewport has no
+      `tabindex` (`primitives/scroll_area.rs:178`), and with its native bars removed a keyboard
+      user cannot scroll content that has nothing focusable in it.
+- [ ] `select`: **the trigger shows the option's value, not its label.** `SelectValue` renders
+      `ctx.value` as it stands (`components/select.rs:41-46`) — `apple` for an item reading
+      "Apple" — because `SelectItemRoot` registers nothing about its text; `Combobox` has a
+      `display_value` signal for this, `Select` has no equivalent, and the placeholder is a plain
+      `String` read once. **`SelectItemRoot` takes no `disabled`** (`primitives/select.rs:200`), so
+      the `data-disabled:` classes `SelectItem` writes (`components/select.rs:85`) can never
+      apply and an option cannot be disabled. The styled `SelectContent` wraps its children in a
+      hardcoded `max-h-96 overflow-y-auto` div (:69) while the caller's `class` goes on the outer
+      listbox (`primitives/select.rs:150-200`), so `class="max-h-48"` clips the list rather than
+      scrolling it. No `disabled` or `size` on `SelectTrigger` (:25) though the root takes
+      `disabled`, no `SelectGroup`, `SelectLabel`, `SelectSeparator` or the scroll buttons, and
+      `SelectValue` takes no `class`.
+- [ ] `sheet`: `SheetContent` resolves `side` once into `side_class` (`components/sheet.rs:81`),
+      and has no `modal`, `default_open` or `on_open_change` (:35); the close button is hardcoded
+      like the dialog's (:98-103), and is why the sidebar's mobile branch has to hide it with
+      `[&>button]:hidden`.
+- [ ] `sidebar`: **the mobile branch drops the caller's `class`** (`components/sidebar.rs:142-158`
+      builds a `Sheet` with a fixed class; the merge happens only in the desktop `SidebarRoot`,
+      :161-166). And the mobile branch never renders `SidebarRoot`, which is the only element
+      carrying `id=content_id` (`primitives/sidebar.rs:220`), so `SidebarTriggerRoot`'s
+      `aria-controls` (:250) points at nothing on mobile. `variant` is captured once and `gap_class`
+      and `fixed_class` (:122-132) never update; `side` and `collapsible` are copied once into
+      `SidebarContext` on the provider. `SidebarProvider` takes `open` and `default_open` but no
+      `on_open_change` (:73-82).
+- [ ] `slider`: `min`, `max` and `step` are plain `f64` and are copied into `SliderContext` at
+      mount (`primitives/slider.rs:165-174`), so a range whose bounds depend on other state is
+      stuck at the first ones. **The thumb count is read with `with_untracked`**
+      (`components/slider.rs:20`), so a `value` that grows from one to two entries never gains a
+      thumb, and a range slider cannot be switched from a single. No `on_value_change`, `name`
+      or `inverted` (:8); see the cross-cutting items for the `Field` wiring.
+- [ ] `spinner`: no `role="status"` and no accessible name (`components/spinner.rs:37-56`), so a
+      spinner announces nothing — and it is the thing most often swapped in for content that has
+      not arrived. `role="status"` with an `aria-label` that defaults to "Loading".
+- [ ] `table`: **`TableRow` writes `data-state=""` when unselected** (`components/table.rs:68`)
+      rather than omitting the attribute, so `[data-state]` is true on every row and a selector
+      for "has a state" matches them all; `then_some("selected")` is the shape the rest of the
+      library uses.
+- [ ] `tabs`: the tab buttons carry no `id` and no `aria-controls` (`primitives/tabs.rs:112-124`)
+      and the tabpanel carries no `id` and no `aria-labelledby` (:138-146), so a screen reader
+      cannot walk from a tab to its panel. They need ids minted per value, the way
+      `FloatingRoot` mints its trigger and content ids.
+- [ ] `textarea`: no `placeholder`, `name`, `rows`, `required`, `readonly` or `on_input`
+      (`components/textarea.rs:6`) — the same hole as `input`, and the same `attr:` workaround.
+- [ ] `timeline`: **an item's index and alternating side are fixed at mount**
+      (`primitives/timeline.rs:152-165`): the count is decremented when an item unmounts, but the
+      items that remain keep the index they took, so removing the first of three leaves two items
+      at indices 1 and 2 under a count of 2 — both pass `index + 1 >= count` and both believe they
+      are the last, which hides both connectors. Inserting into the middle of a keyed list is the
+      same defect in the other direction: parity does not move, and two neighbours land on the
+      same side. `orientation`, `alternate` and `side` are copied into the context once
+      (`components/timeline.rs:12`).
+- [ ] `toast`: **`data=[size=lg]:text-base` is a typo** (`components/toast.rs:287`) — an `=` where
+      the variant needs `-`, so the class matches nothing and a large toast keeps small text. The
+      regions are plain `div`s (:48-88) with no `role="status"` or `aria-live`, and `ToastRoot`
+      (`primitives/toast.rs:325`) has no role either, so a toast appears and is never announced —
+      the whole point of one. `duration` is hardcoded `5000.0` in the provider's defaults
+      (`primitives/toast.rs:223`) with no `default_duration`, and there are no
+      `ToastTitle`/`ToastDescription`/`ToastAction`/`ToastClose` parts: a toast can only be built
+      through the builder, never composed.
+- [ ] `toggle`: no `default_pressed` (`components/toggle.rs:47`); the `field_disabled` and
+      `on_change` points are in the cross-cutting items.
+- [ ] `toggle_group`: controlled-only `value` with no `default_value`
+      (`components/toggle_group.rs:16`).
+- [ ] `tooltip`: no `TooltipProvider` — shadcn's shared `delayDuration`/`skipDelayDuration`, which
+      is what stops every tooltip in a toolbar waiting out its own delay — and `delay` and
+      `close_delay` are plain `u64`s (`components/tooltip.rs:11-12`). `TooltipContent` (:45) has
+      no arrow.
+- [ ] `video_player`: the three menu parts take no `class` and hardcode the item classes
+      (`VideoPlayerSpeedItems` `components/video_player.rs:437`, `VideoPlayerCaptionItems` :479,
+      `VideoPlayerCaptionSizeItems` :556), and `VideoPlayerMenu`'s `class` goes to the trigger
+      (:419) while the content's is fixed (:428). `muted` is a plain `bool` the primitive seeds
+      the element with once (`primitives/video_player.rs:889`), `mode` is read once (:702), and
+      `label` is a `String` in a `StoredValue` (:413). `VideoPlayerCaptionsButton` is a raw
+      `<button>` with the track-selection logic in the styled layer (:619-639), which belongs in a
+      primitive part. Nothing draws `ctx.waiting` (buffering) or `ctx.ended` (a replay) in the
+      styled player (`primitives/video_player.rs:259-260`, set at :910-919), so the player sits
+      silent over a stalled stream; `idle_delay`, `preload` and `playsinline` are not exposed
+      (:678, :867-869). The `aria-pressed` points are in the cross-cutting items.
 
 ## Docs site
 
