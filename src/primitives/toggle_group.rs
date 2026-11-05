@@ -1,4 +1,7 @@
-use crate::{primitives::roving_focus::use_roving_focus, utils::types::Orientation};
+use crate::{
+    primitives::roving_focus::use_roving_focus,
+    utils::{controllable::controllable, types::Orientation},
+};
 use leptos::{context::Provider, ev, prelude::*};
 use leptos_node_ref::AnyNodeRef;
 
@@ -56,9 +59,15 @@ pub fn ToggleGroupRoot(
     /// Omit for an uncontrolled group that owns its own selection.
     #[prop(default = None, into)]
     value: Option<RwSignal<Vec<String>>>,
+    /// The values an uncontrolled group starts with. Ignored when `value` is given.
+    #[prop(optional, into)]
+    default_value: Vec<String>,
+    /// Called with the new values whenever the selection changes, however that came about.
+    #[prop(optional, into)]
+    on_value_change: Option<Callback<Vec<String>>>,
     children: Children,
 ) -> impl IntoView {
-    let value = value.unwrap_or_else(|| RwSignal::new(Vec::new()));
+    let value = controllable(value, default_value, on_value_change);
     let context = ToggleGroupContext {
         value,
         kind,

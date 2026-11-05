@@ -37,6 +37,17 @@ const CONTROLLED: &str = r#"<Button
     </CollapsibleContent>
 </Collapsible>"#;
 
+const OPEN_BY_DEFAULT: &str = r#"<Collapsible
+    default_open=true
+    on_open_change=move |_: bool| changes.update(|n| *n += 1)
+    class="w-full max-w-md"
+>
+    <CollapsibleTrigger class="rounded-lg border px-3 py-2">"Starts open"</CollapsibleTrigger>
+    <CollapsibleContent>
+        <p class="p-3">"Opened and closed " {move || changes.get()} " times."</p>
+    </CollapsibleContent>
+</Collapsible>"#;
+
 const DISABLED: &str = r#"<Collapsible disabled=true class="w-full max-w-md">
     <CollapsibleTrigger class="border px-3 py-2">"Locked section"</CollapsibleTrigger>
     <CollapsibleContent>
@@ -66,6 +77,18 @@ const API: &[ApiEntry] = &[
                 ty: "Option<RwSignal<bool>>",
                 default: "None",
                 description: "Omit for an uncontrolled panel that owns its own state.",
+            },
+            Prop {
+                name: "default_open",
+                ty: "bool",
+                default: "false",
+                description: "Whether the panel starts open. Ignored when `open` is given.",
+            },
+            Prop {
+                name: "on_open_change",
+                ty: "Option<Callback<bool>>",
+                default: "None",
+                description: "Called with the new value whenever the panel opens or closes, including when the signal passed as `open` is written from outside.",
             },
             Prop {
                 name: "children",
@@ -122,6 +145,7 @@ const API: &[ApiEntry] = &[
 #[component]
 pub fn Page() -> impl IntoView {
     let open = RwSignal::new(false);
+    let changes = RwSignal::new(0);
 
     view! {
         <DocLayout title="Collapsible" description="A panel that opens and closes.">
@@ -173,6 +197,27 @@ pub fn Page() -> impl IntoView {
                             </CollapsibleContent>
                         </Collapsible>
                     </div>
+                </DemoSection>
+
+                <DemoSection
+                    title="Open by default"
+                    description="default_open starts an uncontrolled panel open, and on_open_change hears every change without a signal to hold."
+                    code=OPEN_BY_DEFAULT
+                >
+                    <Collapsible
+                        default_open=true
+                        on_open_change=move |_: bool| changes.update(|n| *n += 1)
+                        class="w-full max-w-md"
+                    >
+                        <CollapsibleTrigger class="rounded-lg border px-3 py-2">
+                            "Starts open"
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                            <p class="p-3">
+                                "Opened and closed " {move || changes.get()} " times."
+                            </p>
+                        </CollapsibleContent>
+                    </Collapsible>
                 </DemoSection>
 
                 <DemoSection

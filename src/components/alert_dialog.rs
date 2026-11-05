@@ -5,15 +5,22 @@ use crate::{
         DialogContentRoot, DialogPart, DialogPortalRoot, DialogRoot, use_dialog,
         use_dialog_label_id,
     },
+    utils::controllable::forward,
 };
 use leptos::{either::Either, ev, prelude::*};
 
 #[component]
 pub fn AlertDialog(
-    #[prop(optional)] open: Option<RwSignal<bool>>,
+    #[prop(default = None, into)] open: Option<RwSignal<bool>>,
+    #[prop(optional)] default_open: bool,
+    #[prop(optional, into)] on_open_change: Option<Callback<bool>>,
     children: Children,
 ) -> impl IntoView {
-    view! { <DialogRoot open=open>{children()}</DialogRoot> }
+    view! {
+        <DialogRoot open=open default_open=default_open on_open_change=forward(on_open_change)>
+            {children()}
+        </DialogRoot>
+    }
 }
 
 #[component]

@@ -1,4 +1,7 @@
-use crate::{primitives::roving_focus::use_roving_focus, utils::types::Orientation};
+use crate::{
+    primitives::roving_focus::use_roving_focus,
+    utils::{controllable::controllable, types::Orientation},
+};
 use leptos::{ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
 use web_sys::HtmlElement;
@@ -29,12 +32,20 @@ pub fn use_tabs() -> TabsContext {
 
 #[component]
 pub fn TabsRoot(
-    #[prop(into)] default_value: String,
+    /// The selected tab, held by the caller. Omit it and the root keeps its own.
+    #[prop(default = None, into)]
+    value: Option<RwSignal<String>>,
+    /// The tab an uncontrolled root starts on. Ignored when `value` is given.
+    #[prop(optional, into)]
+    default_value: String,
+    /// Called with the new value whenever the selected tab changes, however that came about.
+    #[prop(optional, into)]
+    on_value_change: Option<Callback<String>>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] orientation: Orientation,
     children: Children,
 ) -> impl IntoView {
-    let current_tab = RwSignal::new(default_value);
+    let current_tab = controllable(value, default_value, on_value_change);
     let orientation_str = orientation.as_str();
 
     provide_context(TabsContext {

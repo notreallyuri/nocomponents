@@ -968,23 +968,8 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
 
 **Cross-cutting**
 
-- [ ] **Controlled and uncontrolled are half-wired almost everywhere.** The idiom is an optional
-      `RwSignal` (`open`, `value`, `pressed`, `selected`), which covers a caller who owns the state
-      and nothing else: there is no `default_*` for one who only wants a starting value without
-      making a signal, and no `on_*_change` for one who only wants to hear about it without an
-      `Effect` on a signal they did not otherwise need. Where there is not even the signal: no
-      `open` on `Popover`, `HoverCard`, `Tooltip`, `DropdownMenu`, `ContextMenu`, `Select` or
-      `Combobox`; `Tabs` takes `default_value` and nothing controlled (`TabsRoot` makes its own
-      signal, `primitives/tabs.rs:37`); `Checkbox` and `Switch` take a *required* `checked`, so
-      there is no uncontrolled mode at all (`components/checkbox.rs:7`, `components/switch.rs:7`).
-      Signal but no default: `Dialog`, `AlertDialog`, `Sheet`, `Drawer`, `Collapsible`, `Accordion`,
-      `RadioGroup`, `ToggleGroup`, `Toggle`, `Calendar`, `DatePicker`, `Command`,
-      `CommandDialog`, `Slider` (which has `default_value` but no callback), `NavigationMenu` and
-      `Menubar` (whose `open: RwSignal<Option<String>>` is the open menu's name, where shadcn has
-      `value`/`on_value_change`). No change callback on any
-      of them except `Toggle::on_change`, `InputOtp::on_complete` and the `on_select`s. Settle one
-      shape — `default_x: T`, `x: Option<RwSignal<T>>`, `on_x_change: Option<Callback<T>>` — and
-      apply it to every root; the primitives are where it goes, the styled layer only forwards.
+- [x] **Controlled and uncontrolled** — every stateful root takes `x`, `default_x` and
+      `on_x_change`, resolved in the primitive by `utils::controllable`; the styled layer forwards.
 - [ ] **`side`, `align` and `side_offset` are read once.** `DropdownMenuContent`,
       `ContextMenuContent`, `MenubarContent`, `PopoverContent`, `HoverCardContent`,
       `TooltipContent`, `ComboboxContent` and `DatePicker` take them as plain values, and the
@@ -1057,17 +1042,39 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       put `aria-hidden="true"` on the wrapper that contains the `sr-only` "More pages" / "More",
       so the one thing that was added for a screen reader is hidden from it. Hide the `…`, not its
       wrapper.
-- [ ] **`#[prop(optional)]` (or `optional, into`) on an `Option<Callback>`.** `CLAUDE.md` says an
-      optional callback is `#[prop(default = None, into)]`, because `optional` on an `Option<T>`
-      makes the setter take `T` and the two spellings behave differently at the call site. Still
-      `optional` in `DropdownMenuItem` (`components/dropdown_menu.rs:94`), `PopoverTrigger`'s
-      `as_child` (`components/popover.rs:21`), the `render` of `DropdownMenuTrigger`,
-      `DialogTrigger`, `AlertDialogTrigger` and `SheetTrigger`, `AlertDialogAction` and
-      `AlertDialogCancel` (`components/alert_dialog.rs:138,163`), `Button`
-      (`components/button.rs:87`), `InputGroupButton` (`:119`), and `Toggle::on_change`
-      (`components/toggle.rs:53`, which is also bare `optional` with no `into`, so a closure has
-      to be wrapped by hand). Likewise the `open: Option<RwSignal<bool>>` of `Dialog`,
-      `AlertDialog`, `Sheet` and `CommandDialog`.
+- [ ] **Callbacks still declared `#[prop(default = None, into)]`.** `CLAUDE.md` now says an
+      optional callback is `#[prop(optional, into)] x: Option<Callback<T>>`, because that setter
+      takes the `Callback<T>` itself and so accepts a bare closure (`on_click=move |e| …`), where
+      `default = None` forces `Callback::new(…)`. `default = None, into` stays the rule for
+      optional *values*. What is left is converting the callbacks declared the old way.
+
+      Two things to know before doing it. A component that holds an `Option<Callback<T>>` and
+      hands it to a part declared `optional, into` cannot pass it as it stands, because the setter
+      wants a `Callback<T>`; `utils::controllable::forward` is the adapter (`None` becomes a
+      callback that does nothing). And the `view!` macro does not parse an unbraced
+      `x=move |v: Option<String>| …` (a generic inside the closure's parameter type), so such a
+      call site wants braces: `x={move |v: Option<String>| …}`.
+
+      By file (`render` and `as_child` are `Option<Callback<…, AnyView>>`, the rest events or
+      predicates):
+      - `components/`: `button.rs` (render); `calendar.rs` (disabled); `canvas.rs`
+        (on_surface_click, on_surface_drag, on_move ×4, on_resize ×3, on_gesture_end ×4,
+        on_change); `combobox.rs` (render, on_select); `command.rs` (on_select); `data_table.rs`
+        (row_id); `date_picker.rs` (disabled); `dropdown_menu.rs` (on_checked_change,
+        on_value_change); `dropzone.rs` (on_rejected); `floating_menu.rs` (on_click);
+        `hover_card.rs` (render); `input_otp.rs` (on_complete); `kanban.rs` (on_select);
+        `menubar.rs` (on_click); `native_select.rs` (on_blur); `navigation_menu.rs` (render);
+        `sidebar.rs` (render ×2, on_select); `tooltip.rs` (render); `tree.rs` (on_select);
+        `video_player.rs` (on_skip, controls).
+      - `primitives/`: `button.rs` (on_click, render); `calendar.rs` (disabled); `canvas.rs`
+        (on_surface_click, on_surface_drag, on_move, on_resize, on_gesture_end, on_change);
+        `combobox.rs` (as_child, on_select); `command.rs` (on_select); `dropdown_menu.rs` (render,
+        on_arrow_horizontal, on_click ×3, on_checked_change, on_value_change); `dropzone.rs`
+        (on_rejected); `floating.rs` (render); `hover_card.rs` (render); `input_otp.rs`
+        (on_complete); `kanban.rs` (on_select); `native_select.rs` (on_blur);
+        `navigation_menu.rs` (render); `popover.rs` (as_child); `select.rs` (as_child);
+        `sidebar.rs` (render); `tooltip.rs` (render); `tree.rs` (on_select); `video_player.rs`
+        (on_skip, thumb).
 - [ ] **`src/components/` still carries comments.** `CLAUDE.md` says none, at all:
       `components/floating_menu.rs` has 19 comment lines (`///` and `//`), `kanban.rs` 5,
       `dropzone.rs` 2 and `tree.rs` 2. Their content belongs on the docs pages, or in the
@@ -1078,7 +1085,10 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
 - [ ] `accordion`: `AccordionContent` gives the root a fixed class and puts the caller's `class` on
       the inner padding div (`components/accordion.rs:72-79`), so the animated panel itself
       cannot be styled — `class` should land on the element that carries `data-state`, with the
-      padding div a fixed inner.
+      padding div a fixed inner. Every item also reads the open sections outside a tracking context
+      — `AccordionItemRoot` seeds its state with `ctx.is_open(&item)` in the component body
+      (`primitives/accordion.rs:131`), which logs Leptos's untracked-read warning once per item on
+      every page with an accordion. It wants `with_untracked`, or the seed derived in a closure.
 - [ ] `alert_dialog`: **`AlertDialogAction` runs `on_click` and never closes the dialog**
       (`components/alert_dialog.rs:136-145`), where shadcn's closes it; every confirm button needs
       its own `ctx.close()`, and one that forgets leaves the dialog open over a finished action.
@@ -1108,7 +1118,7 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       the handler on the node from the same effect that writes `data-slot`, or say in the prop's
       doc that `render` owns the click. No `id`, `name`, `value` or `aria-label` passthrough
       (`components/button.rs:85`), so a submit button's `name` cannot be set.
-- [ ] `calendar`: no `on_select` and no `number_of_months` (`components/calendar.rs:13`).
+- [ ] `calendar`: no `number_of_months` (`components/calendar.rs:13`).
       `aria-selected` sits on the `<button>` inside a `role="gridcell"` `<td>`
       (`primitives/calendar.rs:495`, cell at :455); the attribute belongs on the cell, and a
       button does not support it. The one tab stop is `tabindex=0` on whichever date is focused,
@@ -1131,11 +1141,7 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       screen reader announces "image" and nothing about it. A `label` prop on `Chart`, written
       as `aria-label`.
 - [ ] `checkbox`: no `indeterminate` and no `aria-checked="mixed"` (`primitives/checkbox.rs:25`),
-      which `DataTable`'s select-all needs and fakes with a wrapper `span` at the moment. The
-      indicator's visibility is computed from `checked` into a `visible`/`hidden` class
-      (`components/checkbox.rs:26`) rather than from `data-state` — the exact `if is_open`
-      styling `CLAUDE.md` says belongs on the primitive. The indicator should be driven from
-      `data-state`, as `SelectItem`'s check mark is.
+      which `DataTable`'s select-all needs and fakes with a wrapper `span` at the moment.
 - [ ] `code`: **the copy button shows "Copied" whether or not the write succeeded**
       (`primitives/code.rs:16`: the clipboard promise is dropped), so on an insecure origin or a
       denied permission the reader is told something that did not happen. And every copy starts a
@@ -1149,17 +1155,16 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       late never show the row. The format button's `aria-label="Change colour format"` replaces
       its visible text, "HEX" or "RGB" (:682) — the same name-must-contain-label failure as the
       canvas, and here the visible text is what a screen reader should say as well.
-- [ ] `combobox`: no `open`/`on_open_change` — see the cross-cutting item — and `should_filter`
-      on `ComboboxContent` is a plain `bool` handed to `CommandRoot`, which keeps it in
+- [ ] `combobox`: `should_filter` on `ComboboxContent` is a plain `bool` handed to
+      `CommandRoot`, which keeps it in
       `CommandContext` and reads it with no tracking (`primitives/command.rs:121`), so a combobox
       that goes from client-filtered to server-filtered while open keeps filtering.
       `ComboboxItem`'s `deselectable` and `close_on_select` (`components/combobox.rs:135`) are
       plain for the same reason.
 - [ ] `command`: `CommandInput` wraps the `<input>` in a fixed `div`
       (`components/command.rs:50`), so the caller's `class` reaches the input and nothing reaches
-      the row with the icon — you cannot change its height or border. `CommandDialog` takes
-      `open: Option<RwSignal<bool>>` and no `on_open_change`/`default_open` (:158), and `Command`
-      no `on_value_change`. `should_filter` is plain on both (:20, :165); see `combobox`.
+      the row with the icon — you cannot change its height or border. `should_filter` is plain on
+      both (:20, :165); see `combobox`.
 - [ ] `context_menu`: `ContextMenu` takes no `class` (`components/context_menu.rs:16`) though
       `ContextMenuRoot` is a `FloatingRoot` with one. `ContextMenuContentRoot` writes no
       `data-slot` (`primitives/context_menu.rs:186-200`; its trigger writes one at :98), and the
@@ -1182,15 +1187,13 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       `Callback<Date, bool>` (`components/date_picker.rs:21`), the same name meaning two things next
       to every other component's `Signal<bool>` — and no `id` for a `Field` label to point at.
 - [ ] `dialog`: no `modal` on the styled `Dialog` although `DialogRoot` has it
-      (`components/dialog.rs:13`, `primitives/dialog.rs:46-53`), no `default_open`, no
-      `on_open_change`. No `DialogClose`: the close button is hardcoded inside `DialogPortal`
+      (`components/dialog.rs:13`, `primitives/dialog.rs:46-53`). No `DialogClose`: the close button is hardcoded inside `DialogPortal`
       (:76-87), gated by `show_close` read once, so a footer "Cancel" has to call `ctx.close()` by
       hand. No `DialogOverlay`/`DialogContent` split either — the portal's `class` styles the
       panel and the overlay is fixed (and unconditional, `components/dialog.rs:63-67`, so exposing
       `modal` means gating it the way `DrawerContent` does). The content's `role` is hardcoded `"dialog"`
       (`primitives/dialog.rs:298`), which is what `alert_dialog` inherits wrongly.
-- [ ] `drawer`: no `default_open`/`on_open_change` (`components/drawer.rs:39-44`); no `DrawerPortal`
-      or `DrawerOverlay` — the overlay is built inside `DrawerContent` and only when `modal`
+- [ ] `drawer`: no `DrawerPortal` or `DrawerOverlay` — the overlay is built inside `DrawerContent` and only when `modal`
       (:66-75), so a non-default overlay means rewriting the content. `DrawerTrigger` takes no
       `disabled` (:122), on top of the trigger bypass above.
 - [x] `dropdown_menu`: `class` on every part (noaweb's patch), sub-trigger click opens, `data-align`
@@ -1214,6 +1217,9 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       nothing carries — and clicking it focuses nothing. The label has to follow whichever id the
       control adopted. No `FieldContent`, `FieldTitle` or `FieldSeparator`
       (`components/field.rs:12`).
+- [ ] `field`: a control with no `id` outside a `Field` renders `id=""` — `FieldControl::new`
+      resolves an absent id to the empty string and the controls write it unconditionally (seen
+      on the switch page). An empty `id` is invalid HTML; it should be omitted when there is none.
 - [ ] `floating_menu`: the styled layer does not expose the primitive's `style`
       (`primitives/floating_menu.rs:86`, `components/floating_menu.rs:11`). `FloatingMenuItem`
       builds its own `<button>`, the `data-compact` rule and the compact-to-tooltip switch
@@ -1244,8 +1250,7 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
 - [ ] `input_otp`: **the real `<input>` has no accessible name**
       (`primitives/input_otp.rs:167-185`): no `id`, no `aria-label`, no `FieldControl` — and the
       slots that draw the digits are `aria-hidden`. A screen reader finds an unlabelled text box.
-      No `name`, `id` or `on_change` on the styled `InputOtp` (`components/input_otp.rs:10`), only
-      `on_complete`.
+      No `name` or `id` on the styled `InputOtp` (`components/input_otp.rs:10`).
 - [ ] `item`: a hardcoded `<div>` with no `render`, whose classes assume it may be an `<a>`
       (`[a]:hover:bg-accent/50`, `components/item.rs:88`) — an `Item` that links has to wrap itself.
       `ItemGroup` is `role="list"` (:64) and `Item` has no `role="listitem"`, so the list has no
@@ -1308,7 +1313,7 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       `disabled`, no `SelectGroup`, `SelectLabel`, `SelectSeparator` or the scroll buttons, and
       `SelectValue` takes no `class`.
 - [ ] `sheet`: `SheetContent` resolves `side` once into `side_class` (`components/sheet.rs:81`),
-      and has no `modal`, `default_open` or `on_open_change` (:35); the close button is hardcoded
+      and has no `modal` (:35); the close button is hardcoded
       like the dialog's (:98-103), and is why the sidebar's mobile branch has to hide it with
       `[&>button]:hidden`.
 - [ ] `sidebar`: **the mobile branch drops the caller's `class`** (`components/sidebar.rs:142-158`
@@ -1317,14 +1322,13 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       carrying `id=content_id` (`primitives/sidebar.rs:220`), so `SidebarTriggerRoot`'s
       `aria-controls` (:250) points at nothing on mobile. `variant` is captured once and `gap_class`
       and `fixed_class` (:122-132) never update; `side` and `collapsible` are copied once into
-      `SidebarContext` on the provider. `SidebarProvider` takes `open` and `default_open` but no
-      `on_open_change` (:73-82).
+      `SidebarContext` on the provider.
 - [ ] `slider`: `min`, `max` and `step` are plain `f64` and are copied into `SliderContext` at
       mount (`primitives/slider.rs:165-174`), so a range whose bounds depend on other state is
       stuck at the first ones. **The thumb count is read with `with_untracked`**
       (`components/slider.rs:20`), so a `value` that grows from one to two entries never gains a
-      thumb, and a range slider cannot be switched from a single. No `on_value_change`, `name`
-      or `inverted` (:8); see the cross-cutting items for the `Field` wiring.
+      thumb, and a range slider cannot be switched from a single. No `name` or `inverted`
+      (:8); see the cross-cutting items for the `Field` wiring.
 - [ ] `spinner`: no `role="status"` and no accessible name (`components/spinner.rs:37-56`), so a
       spinner announces nothing — and it is the thing most often swapped in for content that has
       not arrived. `role="status"` with an `aria-label` that defaults to "Loading".
@@ -1354,10 +1358,7 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       (`primitives/toast.rs:223`) with no `default_duration`, and there are no
       `ToastTitle`/`ToastDescription`/`ToastAction`/`ToastClose` parts: a toast can only be built
       through the builder, never composed.
-- [ ] `toggle`: no `default_pressed` (`components/toggle.rs:47`); the `field_disabled` and
-      `on_change` points are in the cross-cutting items.
-- [ ] `toggle_group`: controlled-only `value` with no `default_value`
-      (`components/toggle_group.rs:16`).
+- [ ] `toggle`: the `field_disabled` point is in the cross-cutting items.
 - [ ] `tooltip`: no `TooltipProvider` — shadcn's shared `delayDuration`/`skipDelayDuration`, which
       is what stops every tooltip in a toolbar waiting out its own delay — and `delay` and
       `close_delay` are plain `u64`s (`components/tooltip.rs:11-12`). `TooltipContent` (:45) has

@@ -1,6 +1,7 @@
 use crate::{
     cn,
     primitives::collapsible::{CollapsibleContentRoot, CollapsibleRoot, CollapsibleTriggerRoot},
+    utils::controllable::forward,
 };
 use leptos::prelude::*;
 
@@ -9,12 +10,16 @@ pub fn Collapsible(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(default = None, into)] open: Option<RwSignal<bool>>,
+    #[prop(optional)] default_open: bool,
+    #[prop(optional, into)] on_open_change: Option<Callback<bool>>,
     children: Children,
 ) -> impl IntoView {
     view! {
         <CollapsibleRoot
             disabled=disabled
             open=open
+            default_open=default_open
+            on_open_change=forward(on_open_change)
             class=move || cn!("flex flex-col gap-2", class.get())
         >
             {children()}

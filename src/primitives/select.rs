@@ -7,7 +7,10 @@ use crate::{
         roving_focus::use_roving_focus,
         typeahead::Typeahead,
     },
-    utils::types::Orientation,
+    utils::{
+        controllable::{controllable, forward},
+        types::Orientation,
+    },
 };
 use floating_ui_leptos::{
     Flip, FlipOptions, MiddlewareVec, Offset, OffsetOptions, Placement, Shift, ShiftOptions,
@@ -25,12 +28,31 @@ pub fn use_select() -> SelectContext {
 }
 #[component]
 pub fn SelectRoot(
-    #[prop(optional, into)] value: RwSignal<Option<String>>,
+    /// The chosen value, held by the caller. Omit it and the root keeps its own.
+    #[prop(default = None, into)]
+    value: Option<RwSignal<Option<String>>>,
+    /// The value the root starts with. Ignored when `value` is given. Declared `optional, into`
+    /// rather than `default = None, into` so that `default_value="apple"` compiles: `&str` does
+    /// not convert into `Option<String>`.
+    #[prop(optional, into)]
+    default_value: Option<String>,
+    /// Called with the new value whenever the choice changes, however that came about.
+    #[prop(optional, into)]
+    on_value_change: Option<Callback<Option<String>>>,
     #[prop(optional, into)] class: Signal<String>,
+    /// Whether the list is open, held by the caller. Omit it and the root keeps its own.
+    #[prop(default = None, into)]
+    open: Option<RwSignal<bool>>,
+    /// Whether the list starts open. Ignored when `open` is given.
+    #[prop(optional)]
+    default_open: bool,
+    /// Called with the new value whenever the list opens or closes, however that came about.
+    #[prop(optional, into)]
+    on_open_change: Option<Callback<bool>>,
     children: ChildrenFn,
 ) -> impl IntoView {
     let ctx = FloatingContext {
-        value,
+        value: controllable(value, default_value, on_value_change),
         ..Default::default()
     };
 
@@ -38,6 +60,9 @@ pub fn SelectRoot(
         <FloatingRoot
             class=class
             context=ctx
+            open=open
+            default_open=default_open
+            on_open_change=forward(on_open_change)
             trigger_aria=TriggerAria::Popup("listbox")
             arrow_open=ArrowOpen::Open
         >

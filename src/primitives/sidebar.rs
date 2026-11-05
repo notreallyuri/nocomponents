@@ -7,6 +7,7 @@
 //! on and whether it is open.
 
 use crate::utils::{
+    controllable::controllable,
     types::{Side, StyledRender},
     use_media_query,
 };
@@ -134,12 +135,21 @@ pub fn SidebarProviderRoot(
     /// Where an uncontrolled sidebar starts, before local storage has anything to say.
     #[prop(default = true)]
     default_open: bool,
+    /// Called with the new value whenever the wide-viewport state changes, however that came
+    /// about.
+    #[prop(optional, into)]
+    on_open_change: Option<Callback<bool>>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] style: Signal<String>,
     children: Children,
 ) -> impl IntoView {
     let controlled = open.is_some();
-    let open = open.unwrap_or_else(|| RwSignal::new(stored_open().unwrap_or(default_open)));
+    let start = if controlled {
+        default_open
+    } else {
+        stored_open().unwrap_or(default_open)
+    };
+    let open = controllable(open, start, on_open_change);
 
     let context = SidebarContext {
         open,

@@ -1,7 +1,7 @@
 use crate::{
     cn,
     primitives::slider::{SliderRangeRoot, SliderRoot, SliderThumbRoot, SliderTrackRoot},
-    utils::types::Orientation,
+    utils::{controllable::forward, types::Orientation},
 };
 use leptos::prelude::*;
 
@@ -15,6 +15,7 @@ pub fn Slider(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(default = None, into)] value: Option<RwSignal<Vec<f64>>>,
     #[prop(optional)] default_value: Option<Vec<f64>>,
+    #[prop(optional, into)] on_value_change: Option<Callback<Vec<f64>>>,
 ) -> impl IntoView {
     let default_value = default_value.unwrap_or_else(|| vec![min]);
     let thumb_count = value.map_or(default_value.len(), |v| v.with_untracked(|v| v.len()));
@@ -28,6 +29,7 @@ pub fn Slider(
             disabled=disabled
             value=value
             default_value=default_value
+            on_value_change=forward(on_value_change)
             class=move || {
                 cn!(
                     "relative flex touch-none items-center select-none data-[orientation=horizontal]:h-4 data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-40 data-[orientation=vertical]:w-4 data-[orientation=vertical]:flex-col data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50",

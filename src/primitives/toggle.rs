@@ -1,3 +1,4 @@
+use crate::utils::controllable::controllable;
 use leptos::{ev, prelude::*};
 
 #[component]
@@ -6,18 +7,20 @@ pub fn ToggleRoot(
     /// Omit for an uncontrolled toggle that owns its own state.
     #[prop(default = None, into)]
     pressed: Option<RwSignal<bool>>,
+    /// Whether an uncontrolled toggle starts pressed. Ignored when `pressed` is given.
+    #[prop(optional)]
+    default_pressed: bool,
+    /// Called with the new value whenever it is pressed or released, however that came about.
+    #[prop(optional, into)]
+    on_pressed_change: Option<Callback<bool>>,
     #[prop(optional, into)] disabled: Signal<bool>,
-    #[prop(default = None)] on_change: Option<Callback<bool>>,
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
-    let pressed = pressed.unwrap_or_else(|| RwSignal::new(false));
+    let pressed = controllable(pressed, default_pressed, on_pressed_change);
 
     let toggle = move |_: ev::MouseEvent| {
         if !disabled.get() {
             pressed.update(|p| *p = !*p);
-            if let Some(cb) = on_change {
-                cb.run(pressed.get_untracked());
-            }
         }
     };
 

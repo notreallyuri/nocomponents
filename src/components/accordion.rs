@@ -4,6 +4,7 @@ use crate::{
     primitives::accordion::{
         AccordionContentRoot, AccordionItemRoot, AccordionRoot, AccordionTriggerRoot, AccordionType,
     },
+    utils::controllable::forward,
 };
 use leptos::prelude::*;
 
@@ -14,6 +15,8 @@ pub fn Accordion(
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(default = true)] collapsible: bool,
     #[prop(default = None, into)] value: Option<RwSignal<Vec<String>>>,
+    #[prop(optional, into)] default_value: Vec<String>,
+    #[prop(optional, into)] on_value_change: Option<Callback<Vec<String>>>,
     children: Children,
 ) -> impl IntoView {
     view! {
@@ -22,6 +25,8 @@ pub fn Accordion(
             disabled=disabled
             collapsible=collapsible
             value=value
+            default_value=default_value
+            on_value_change=forward(on_value_change)
             class=move || cn!("w-full", class.get())
         >
             {children()}

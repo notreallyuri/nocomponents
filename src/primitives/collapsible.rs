@@ -10,7 +10,7 @@ use leptos_node_ref::AnyNodeRef;
 use std::time::Duration;
 use web_sys::HtmlElement;
 
-use crate::utils::next_id;
+use crate::utils::{controllable::controllable, next_id};
 
 #[derive(Copy, Clone)]
 pub struct CollapsibleContext {
@@ -69,17 +69,32 @@ pub fn CollapsibleRoot(
     /// Omit for an uncontrolled panel that owns its own state.
     #[prop(default = None, into)]
     open: Option<RwSignal<bool>>,
+    /// Whether an uncontrolled panel starts open. Ignored when `open` is given.
+    #[prop(optional)]
+    default_open: bool,
+    /// Called with the new value whenever the panel opens or closes, however that came about.
+    #[prop(optional, into)]
+    on_open_change: Option<Callback<bool>>,
     #[prop(default = 200, into)] unmount_delay: u64,
     #[prop(optional)] context: Option<CollapsibleContext>,
     children: Children,
 ) -> impl IntoView {
-    let context = context.unwrap_or_else(|| CollapsibleContext {
-        is_open: open.unwrap_or_else(|| RwSignal::new(false)),
-        is_mounted: RwSignal::new(open.map(|o| o.get_untracked()).unwrap_or(false)),
-        disabled,
-        content_id: RwSignal::new(next_id("collapsible-content")),
-        content_ref: AnyNodeRef::new(),
-    });
+    let context = match context {
+        Some(context) => {
+            controllable(Some(context.is_open), false, on_open_change);
+            context
+        }
+        None => {
+            let is_open = controllable(open, default_open, on_open_change);
+            CollapsibleContext {
+                is_open,
+                is_mounted: RwSignal::new(is_open.get_untracked()),
+                disabled,
+                content_id: RwSignal::new(next_id("collapsible-content")),
+                content_ref: AnyNodeRef::new(),
+            }
+        }
+    };
 
     let unmount_handle: StoredValue<Option<TimeoutHandle>> = StoredValue::new(None);
     let cancel_unmount = move || {

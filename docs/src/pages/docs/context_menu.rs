@@ -73,12 +73,32 @@ const API: &[ApiEntry] = &[
     ApiEntry {
         name: "ContextMenu",
         description: "A menu summoned by right-clicking a region, anchored to the pointer. Everything below the trigger is the dropdown menu's.",
-        props: &[Prop {
-            name: "children",
-            ty: "ChildrenFn",
-            default: "",
-            description: "A trigger and a portal.",
-        }],
+        props: &[
+            Prop {
+                name: "open",
+                ty: "Option<RwSignal<bool>>",
+                default: "None",
+                description: "Pass one to drive the menu from outside or to watch it; omit it and the root owns the signal.",
+            },
+            Prop {
+                name: "default_open",
+                ty: "bool",
+                default: "false",
+                description: "Whether the menu starts open. Ignored when `open` is given.",
+            },
+            Prop {
+                name: "on_open_change",
+                ty: "Option<Callback<bool>>",
+                default: "None",
+                description: "Called with the new value whenever the menu opens or closes, including when the signal passed as `open` is written from outside.",
+            },
+            Prop {
+                name: "children",
+                ty: "ChildrenFn",
+                default: "",
+                description: "A trigger and a portal.",
+            },
+        ],
     },
     ApiEntry {
         name: "ContextMenuTrigger",

@@ -17,6 +17,7 @@ use crate::{
         typeahead::Typeahead,
     },
     utils::{
+        controllable::controllable,
         get_placement,
         types::{Align, Orientation, Side, SideOffset},
     },
@@ -49,9 +50,21 @@ pub fn use_context_menu_point() -> ContextMenuPoint {
 #[component]
 pub fn ContextMenuRoot(
     #[prop(optional, into)] class: Signal<String>,
+    /// Whether the menu is open, held by the caller. Omit it and the root keeps its own.
+    #[prop(default = None, into)]
+    open: Option<RwSignal<bool>>,
+    /// Whether the menu starts open. Ignored when `open` is given.
+    #[prop(optional)]
+    default_open: bool,
+    /// Called with the new value whenever the menu opens or closes, however that came about.
+    #[prop(optional, into)]
+    on_open_change: Option<Callback<bool>>,
     children: ChildrenFn,
 ) -> impl IntoView {
-    let context = ContextMenuContext::default();
+    let context = ContextMenuContext {
+        is_open: controllable(open, default_open, on_open_change),
+        ..Default::default()
+    };
     let point = ContextMenuPoint {
         x: RwSignal::new(0.0),
         y: RwSignal::new(0.0),

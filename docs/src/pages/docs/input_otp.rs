@@ -102,6 +102,18 @@ const API: &[ApiEntry] = &[
                 description: "Omit for an uncontrolled field that owns its own value.",
             },
             Prop {
+                name: "default_value",
+                ty: "String",
+                default: "\"\"",
+                description: "The code an uncontrolled field starts with. Ignored when `value` is given.",
+            },
+            Prop {
+                name: "on_value_change",
+                ty: "Option<Callback<String>>",
+                default: "None",
+                description: "Called with the code whenever it changes, including when the signal passed as `value` is written from outside.",
+            },
+            Prop {
                 name: "on_complete",
                 ty: "Option<Callback<String>>",
                 default: "None",

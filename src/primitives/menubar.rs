@@ -16,7 +16,10 @@ use crate::{
         floating::{FloatingContext, FloatingRoot, OpenFocus, TriggerAria},
         roving_focus::use_roving_focus,
     },
-    utils::types::{Direction, Orientation},
+    utils::{
+        controllable::controllable,
+        types::{Direction, Orientation},
+    },
 };
 use leptos::{context::Provider, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
@@ -111,14 +114,23 @@ pub fn use_menubar() -> MenubarContext {
 
 #[component]
 pub fn MenubarRoot(
-    /// Which menu is open, for a caller that wants to drive the bar or watch it.
+    /// Which menu is open, by name, held by the caller. Omit it and the root keeps its own.
+    #[prop(default = None, into)]
+    value: Option<RwSignal<Option<String>>>,
+    /// The value the root starts with. Ignored when `value` is given. Declared `optional, into`
+    /// rather than `default = None, into` so that `default_value="file"` compiles: `&str` does
+    /// not convert into `Option<String>`.
     #[prop(optional, into)]
-    open: RwSignal<Option<String>>,
+    default_value: Option<String>,
+    /// Called with the new value whenever it changes, however that came about.
+    #[prop(optional, into)]
+    on_value_change: Option<Callback<Option<String>>>,
+
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
     let ctx = MenubarContext {
-        open,
+        open: controllable(value, default_value, on_value_change),
         bar_ref: AnyNodeRef::new(),
     };
 

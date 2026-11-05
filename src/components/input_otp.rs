@@ -3,6 +3,7 @@ use crate::{
     primitives::input_otp::{
         InputOtpGroupRoot, InputOtpRoot, InputOtpSeparatorRoot, InputOtpSlotRoot, OtpPattern,
     },
+    utils::controllable::forward,
 };
 use leptos::prelude::*;
 
@@ -13,6 +14,8 @@ pub fn InputOtp(
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(default = None, into)] value: Option<RwSignal<String>>,
+    #[prop(optional, into)] default_value: String,
+    #[prop(optional, into)] on_value_change: Option<Callback<String>>,
     #[prop(default = None, into)] on_complete: Option<Callback<String>>,
     children: Children,
 ) -> impl IntoView {
@@ -22,6 +25,8 @@ pub fn InputOtp(
             pattern=pattern
             disabled=disabled
             value=value
+            default_value=default_value
+            on_value_change=forward(on_value_change)
             on_complete=on_complete
             class=move || {
                 cn!(

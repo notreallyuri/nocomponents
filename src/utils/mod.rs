@@ -1,5 +1,6 @@
 pub mod cn;
 pub mod color;
+pub mod controllable;
 pub mod date;
 pub mod gif;
 pub mod image;

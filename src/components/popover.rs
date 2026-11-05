@@ -3,13 +3,25 @@ use crate::{
     components::button::{Button, ButtonSize, ButtonVariant},
     primitives::floating::TriggerRender,
     primitives::popover::{PopoverContentRoot, PopoverPortalRoot, PopoverRoot, PopoverTriggerRoot},
-    utils::types::{Align, Side, SideOffset},
+    utils::{
+        controllable::forward,
+        types::{Align, Side, SideOffset},
+    },
 };
 use leptos::{either::Either, prelude::*};
 
 #[component]
-pub fn Popover(children: ChildrenFn) -> impl IntoView {
-    view! { <PopoverRoot>{children()}</PopoverRoot> }
+pub fn Popover(
+    #[prop(default = None, into)] open: Option<RwSignal<bool>>,
+    #[prop(optional)] default_open: bool,
+    #[prop(optional, into)] on_open_change: Option<Callback<bool>>,
+    children: ChildrenFn,
+) -> impl IntoView {
+    view! {
+        <PopoverRoot open=open default_open=default_open on_open_change=forward(on_open_change)>
+            {children()}
+        </PopoverRoot>
+    }
 }
 
 #[component]

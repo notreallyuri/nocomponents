@@ -2,7 +2,10 @@ use crate::{
     cn,
     components::toggle::{TOGGLE_BASE, ToggleSize, ToggleVariant},
     primitives::toggle_group::{ToggleGroupItemRoot, ToggleGroupRoot, ToggleGroupType},
-    utils::types::{AsClass, Orientation},
+    utils::{
+        controllable::forward,
+        types::{AsClass, Orientation},
+    },
 };
 use leptos::{context::Provider, prelude::*};
 
@@ -21,6 +24,8 @@ pub fn ToggleGroup(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(default = None, into)] value: Option<RwSignal<Vec<String>>>,
+    #[prop(optional, into)] default_value: Vec<String>,
+    #[prop(optional, into)] on_value_change: Option<Callback<Vec<String>>>,
     children: Children,
 ) -> impl IntoView {
     view! {
@@ -30,6 +35,8 @@ pub fn ToggleGroup(
                 orientation=orientation
                 disabled=disabled
                 value=value
+                default_value=default_value
+                on_value_change=forward(on_value_change)
                 class=move || {
                     cn!(
                         "group/toggle-group flex w-fit items-center rounded-lg data-[orientation=vertical]:flex-col data-[orientation=vertical]:items-stretch",

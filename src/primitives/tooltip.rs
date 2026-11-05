@@ -9,6 +9,7 @@
 use crate::{
     primitives::floating::{FloatingContext, FloatingRoot, TriggerAria},
     utils::{
+        controllable::controllable,
         get_placement,
         types::{Align, AnchorRender, Side, SideOffset},
     },
@@ -44,9 +45,19 @@ pub fn TooltipRoot(
     #[prop(default = 100, into)]
     close_delay: u64,
     #[prop(optional)] context: Option<TooltipContext>,
+    /// Whether the tooltip is open, held by the caller. Omit it and the root keeps its own.
+    #[prop(default = None, into)]
+    open: Option<RwSignal<bool>>,
+    /// Whether the tooltip starts open. Ignored when `open` is given.
+    #[prop(optional)]
+    default_open: bool,
+    /// Called with the new value whenever the tooltip opens or closes, however that came about.
+    #[prop(optional, into)]
+    on_open_change: Option<Callback<bool>>,
     children: ChildrenFn,
 ) -> impl IntoView {
-    let context = context.unwrap_or_default();
+    let mut context = context.unwrap_or_default();
+    context.is_open = controllable(open, default_open, on_open_change);
     let stored_children = StoredValue::new(children);
 
     view! {

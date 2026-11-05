@@ -72,6 +72,24 @@ const API: &[ApiEntry] = &[
                 description: "The grace period after leaving, long enough to cross the gap into the card.",
             },
             Prop {
+                name: "open",
+                ty: "Option<RwSignal<bool>>",
+                default: "None",
+                description: "Pass one to drive the card from outside or to watch it; omit it and the root owns the signal.",
+            },
+            Prop {
+                name: "default_open",
+                ty: "bool",
+                default: "false",
+                description: "Whether the card starts open. Ignored when `open` is given.",
+            },
+            Prop {
+                name: "on_open_change",
+                ty: "Option<Callback<bool>>",
+                default: "None",
+                description: "Called with the new value whenever the card opens or closes, including when the signal passed as `open` is written from outside.",
+            },
+            Prop {
                 name: "children",
                 ty: "ChildrenFn",
                 default: "",

@@ -3,6 +3,7 @@ use crate::{
         FloatingContext, FloatingRoot, FloatingTrigger, TriggerAria, TriggerRender,
     },
     utils::{
+        controllable::forward,
         get_placement,
         types::{Align, Side, SideOffset},
     },
@@ -23,10 +24,25 @@ pub fn use_popover() -> PopoverContext {
 #[component]
 pub fn PopoverRoot(
     #[prop(optional, into)] class: Signal<String>,
+    /// Whether the popover is open, held by the caller. Omit it and the root keeps its own.
+    #[prop(default = None, into)]
+    open: Option<RwSignal<bool>>,
+    /// Whether the popover starts open. Ignored when `open` is given.
+    #[prop(optional)]
+    default_open: bool,
+    /// Called with the new value whenever the popover opens or closes, however that came about.
+    #[prop(optional, into)]
+    on_open_change: Option<Callback<bool>>,
     children: ChildrenFn,
 ) -> impl IntoView {
     view! {
-        <FloatingRoot class=class trigger_aria=TriggerAria::Popup("dialog")>
+        <FloatingRoot
+            class=class
+            trigger_aria=TriggerAria::Popup("dialog")
+            open=open
+            default_open=default_open
+            on_open_change=forward(on_open_change)
+        >
             {children()}
         </FloatingRoot>
     }

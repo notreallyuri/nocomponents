@@ -9,7 +9,7 @@
 
 use crate::{
     primitives::drag::{DragPoint, use_drag},
-    utils::types::Orientation,
+    utils::{controllable::controllable, types::Orientation},
 };
 use leptos::{context::Provider, ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
@@ -157,10 +157,20 @@ pub fn SliderRoot(
     /// Omit for an uncontrolled slider. The length decides how many thumbs there are.
     #[prop(default = None, into)]
     value: Option<RwSignal<Vec<f64>>>,
-    #[prop(optional)] default_value: Option<Vec<f64>>,
+    /// The values an uncontrolled slider starts with; one `min` thumb when omitted. Ignored when
+    /// `value` is given.
+    #[prop(optional)]
+    default_value: Option<Vec<f64>>,
+    /// Called with the new values whenever a thumb moves, however that came about.
+    #[prop(optional, into)]
+    on_value_change: Option<Callback<Vec<f64>>>,
     children: Children,
 ) -> impl IntoView {
-    let values = value.unwrap_or_else(|| RwSignal::new(default_value.unwrap_or_else(|| vec![min])));
+    let values = controllable(
+        value,
+        default_value.unwrap_or_else(|| vec![min]),
+        on_value_change,
+    );
 
     let context = SliderContext {
         values,

@@ -84,6 +84,12 @@ const API: &[ApiEntry] = &[
                 default: "None",
                 description: "Where an uncontrolled slider starts. Its length decides how many thumbs there are.",
             },
+            Prop {
+                name: "on_value_change",
+                ty: "Option<Callback<Vec<f64>>>",
+                default: "None",
+                description: "Called with every thumb's value whenever one moves, including when the signal passed as `value` is written from outside.",
+            },
         ],
     },
     ApiEntry {

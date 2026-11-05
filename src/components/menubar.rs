@@ -7,19 +7,27 @@ use crate::{
         },
         menubar::{MenubarMenuRoot, MenubarRoot, MenubarTriggerRoot, use_menubar},
     },
-    utils::types::{Align, Side, SideOffset},
+    utils::{
+        controllable::forward,
+        types::{Align, Side, SideOffset},
+    },
 };
 use leptos::{ev, portal::Portal, prelude::*};
 
 #[component]
 pub fn Menubar(
-    #[prop(optional, into)] open: RwSignal<Option<String>>,
+    #[prop(default = None, into)] value: Option<RwSignal<Option<String>>>,
+    #[prop(optional, into)] default_value: Option<String>,
+    #[prop(optional, into)] on_value_change: Option<Callback<Option<String>>>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
+    let value = Some(value.unwrap_or_else(|| RwSignal::new(default_value)));
+
     view! {
         <MenubarRoot
-            open=open
+            value=value
+            on_value_change=forward(on_value_change)
             class=move || {
                 cn!(
                     "flex h-9 items-center gap-1 rounded-lg border bg-background p-1 shadow-xs",

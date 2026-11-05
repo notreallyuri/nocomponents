@@ -103,6 +103,18 @@ const API: &[ApiEntry] = &[
                 description: "Omit for an uncontrolled group that owns its own selection.",
             },
             Prop {
+                name: "default_value",
+                ty: "Option<String>",
+                default: "None",
+                description: "The option an uncontrolled group starts on. Ignored when `value` is given.",
+            },
+            Prop {
+                name: "on_value_change",
+                ty: "Option<Callback<Option<String>>>",
+                default: "None",
+                description: "Called with the new value whenever the choice changes, including when the signal passed as `value` is written from outside.",
+            },
+            Prop {
                 name: "children",
                 ty: "Children",
                 default: "",

@@ -15,7 +15,10 @@ use crate::{
         },
         tree::{TreeGroupRoot, TreeItemRoot, TreeRoot, TreeRowRoot, use_tree_item},
     },
-    utils::types::{AsClass, Side, StyledRender},
+    utils::{
+        controllable::forward,
+        types::{AsClass, Side, StyledRender},
+    },
 };
 use leptos::{either::Either, ev, prelude::*};
 use leptos_node_ref::AnyNodeRef;
@@ -76,6 +79,7 @@ pub fn SidebarProvider(
     #[prop(optional)] collapsible: SidebarCollapsible,
     #[prop(default = None, into)] open: Option<RwSignal<bool>>,
     #[prop(default = true)] default_open: bool,
+    #[prop(optional, into)] on_open_change: Option<Callback<bool>>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] style: Signal<String>,
     children: Children,
@@ -86,6 +90,7 @@ pub fn SidebarProvider(
             collapsible=collapsible
             open=open
             default_open=default_open
+            on_open_change=forward(on_open_change)
             style=style
             class=move || {
                 cn!(

@@ -8,7 +8,7 @@ use crate::{
         field::{FieldControl, FieldSetControl},
         roving_focus::use_roving_focus,
     },
-    utils::types::Orientation,
+    utils::{controllable::controllable, types::Orientation},
 };
 use leptos::{context::Provider, ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
@@ -44,9 +44,17 @@ pub fn RadioGroupRoot(
     /// Omit for an uncontrolled group that owns its own selection.
     #[prop(default = None, into)]
     value: Option<RwSignal<Option<String>>>,
+    /// The value an uncontrolled group starts with. Ignored when `value` is given. Declared
+    /// `optional, into` so that `default_value="a"` compiles: `&str` does not convert into
+    /// `Option<String>`.
+    #[prop(optional, into)]
+    default_value: Option<String>,
+    /// Called with the new value whenever the choice changes, however that came about.
+    #[prop(optional, into)]
+    on_value_change: Option<Callback<Option<String>>>,
     children: Children,
 ) -> impl IntoView {
-    let value = value.unwrap_or_else(|| RwSignal::new(None));
+    let value = controllable(value, default_value, on_value_change);
     // A radiogroup is what a `<fieldset>`'s legend names: there is no one control for `for` to
     // point at, so the group points back. Outside a fieldset these read empty.
     let group = FieldSetControl::new(disabled);

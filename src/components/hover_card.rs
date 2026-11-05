@@ -3,7 +3,10 @@ use crate::{
     primitives::hover_card::{
         HoverCardContentRoot, HoverCardPortalRoot, HoverCardRoot, HoverCardTriggerRoot,
     },
-    utils::types::{Align, AnchorRender, Side, SideOffset},
+    utils::{
+        controllable::forward,
+        types::{Align, AnchorRender, Side, SideOffset},
+    },
 };
 use leptos::prelude::*;
 
@@ -12,10 +15,16 @@ pub fn HoverCard(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(default = 600, into)] delay: u64,
     #[prop(default = 250, into)] close_delay: u64,
+    #[prop(default = None, into)] open: Option<RwSignal<bool>>,
+    #[prop(optional)] default_open: bool,
+    #[prop(optional, into)] on_open_change: Option<Callback<bool>>,
     children: ChildrenFn,
 ) -> impl IntoView {
     view! {
         <HoverCardRoot
+            open=open
+            default_open=default_open
+            on_open_change=forward(on_open_change)
             delay=delay
             close_delay=close_delay
             class=move || cn!("inline-block", class.get())

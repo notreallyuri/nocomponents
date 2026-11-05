@@ -1,6 +1,6 @@
 use crate::{
     primitives::dismiss::{LayerBounds, use_dismissable_layer},
-    utils::next_id,
+    utils::{controllable::controllable, next_id},
 };
 use leptos::{
     context::Provider, either::Either, ev, portal::Portal, prelude::*, wasm_bindgen::JsCast,
@@ -46,12 +46,18 @@ pub fn use_dialog() -> DialogContext {
 pub fn DialogRoot(
     #[prop(default = 150, into)] unmount_delay: u64,
     #[prop(default = None, into)] open: Option<RwSignal<bool>>,
+    /// Whether the dialog starts open. Ignored when `open` is given.
+    #[prop(optional)]
+    default_open: bool,
+    /// Called with the new value whenever the dialog opens or closes, however that came about.
+    #[prop(optional, into)]
+    on_open_change: Option<Callback<bool>>,
     /// Non-modal leaves the page interactive underneath.
     #[prop(default = true)]
     modal: bool,
     children: Children,
 ) -> impl IntoView {
-    let is_open = open.unwrap_or_else(|| RwSignal::new(false));
+    let is_open = controllable(open, default_open, on_open_change);
     let is_mounted = RwSignal::new(is_open.get_untracked());
 
     let context = DialogContext {

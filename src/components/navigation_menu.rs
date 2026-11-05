@@ -6,18 +6,24 @@ use crate::{
         NavigationMenuLinkRoot, NavigationMenuListRoot, NavigationMenuRoot,
         NavigationMenuTriggerRoot,
     },
+    utils::controllable::forward,
 };
 use leptos::{ev, prelude::*};
 
 #[component]
 pub fn NavigationMenu(
-    #[prop(optional, into)] value: RwSignal<Option<String>>,
+    #[prop(default = None, into)] value: Option<RwSignal<Option<String>>>,
+    #[prop(optional, into)] default_value: Option<String>,
+    #[prop(optional, into)] on_value_change: Option<Callback<Option<String>>>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
+    let value = Some(value.unwrap_or_else(|| RwSignal::new(default_value)));
+
     view! {
         <NavigationMenuRoot
             value=value
+            on_value_change=forward(on_value_change)
             class=move || {
                 cn!("relative flex max-w-max flex-1 items-center justify-center", class.get())
             }

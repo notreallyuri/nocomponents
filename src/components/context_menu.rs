@@ -1,7 +1,10 @@
 use crate::{
     cn,
     primitives::context_menu::{ContextMenuContentRoot, ContextMenuRoot, ContextMenuTriggerRoot},
-    utils::types::{Align, Side, SideOffset},
+    utils::{
+        controllable::forward,
+        types::{Align, Side, SideOffset},
+    },
 };
 use leptos::prelude::*;
 
@@ -16,8 +19,17 @@ pub use crate::components::dropdown_menu::{
 };
 
 #[component]
-pub fn ContextMenu(children: ChildrenFn) -> impl IntoView {
-    view! { <ContextMenuRoot>{children()}</ContextMenuRoot> }
+pub fn ContextMenu(
+    #[prop(default = None, into)] open: Option<RwSignal<bool>>,
+    #[prop(optional)] default_open: bool,
+    #[prop(optional, into)] on_open_change: Option<Callback<bool>>,
+    children: ChildrenFn,
+) -> impl IntoView {
+    view! {
+        <ContextMenuRoot open=open default_open=default_open on_open_change=forward(on_open_change)>
+            {children()}
+        </ContextMenuRoot>
+    }
 }
 
 #[component]

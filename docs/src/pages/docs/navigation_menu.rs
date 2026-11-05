@@ -83,9 +83,21 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "value",
-                ty: "RwSignal<Option<String>>",
+                ty: "Option<RwSignal<Option<String>>>",
                 default: "None",
                 description: "The value of the item whose panel is open. Pass one to drive the menu or to watch it.",
+            },
+            Prop {
+                name: "default_value",
+                ty: "Option<String>",
+                default: "None",
+                description: "The value to start with, as in `default_value=\"docs\"`. Ignored when `value` is given.",
+            },
+            Prop {
+                name: "on_value_change",
+                ty: "Option<Callback<Option<String>>>",
+                default: "None",
+                description: "Called with the new value whenever it changes, including when the signal passed as `value` is written from outside.",
             },
             Prop {
                 name: "class",

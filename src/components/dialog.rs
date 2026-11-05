@@ -6,12 +6,23 @@ use crate::{
         DialogContentRoot, DialogPart, DialogPortalRoot, DialogRoot, use_dialog,
         use_dialog_label_id,
     },
+    utils::controllable::forward,
 };
 use leptos::{either::Either, ev, prelude::*};
 
 #[component]
-pub fn Dialog(#[prop(optional)] open: Option<RwSignal<bool>>, children: Children) -> impl IntoView {
-    view! { <DialogRoot open=open>{children()}</DialogRoot> }
+pub fn Dialog(
+    #[prop(default = None, into)] open: Option<RwSignal<bool>>,
+    #[prop(optional)] default_open: bool,
+    #[prop(optional, into)] on_open_change: Option<Callback<bool>>,
+    #[prop(default = true)] modal: bool,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <DialogRoot open=open default_open=default_open on_open_change=forward(on_open_change) modal=modal>
+            {children()}
+        </DialogRoot>
+    }
 }
 
 #[component]
@@ -60,11 +71,17 @@ pub fn DialogPortal(
     view! {
         <DialogPortalRoot>
             <div data-slot="dialog-portal">
-                <div
-                    data-state=move || if context.is_open.get() { "open" } else { "closed" }
-                    class="fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:pointer-events-none"
-                    on:click=move |_| context.close()
-                />
+                {context
+                    .modal
+                    .then(|| {
+                        view! {
+                            <div
+                                data-state=move || if context.is_open.get() { "open" } else { "closed" }
+                                class="fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:pointer-events-none"
+                                on:click=move |_| context.close()
+                            />
+                        }
+                    })}
 
                 <DialogContentRoot class=move || {
                     cn!(

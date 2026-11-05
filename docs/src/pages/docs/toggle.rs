@@ -64,16 +64,22 @@ const API: &[ApiEntry] = &[ApiEntry {
             description: "Omit for an uncontrolled toggle that owns its own state.",
         },
         Prop {
+            name: "default_pressed",
+            ty: "bool",
+            default: "false",
+            description: "Whether an uncontrolled toggle starts pressed. Ignored when `pressed` is given.",
+        },
+        Prop {
             name: "disabled",
             ty: "Signal<bool>",
             default: "false",
             description: "Stops it taking pointer events and marks it disabled.",
         },
         Prop {
-            name: "on_change",
+            name: "on_pressed_change",
             ty: "Option<Callback<bool>>",
             default: "None",
-            description: "Called with the new state on every press.",
+            description: "Called with the new state whenever it is pressed or released, including when the signal passed as `pressed` is written from outside.",
         },
         Prop {
             name: "children",

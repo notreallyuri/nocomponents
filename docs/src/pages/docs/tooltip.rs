@@ -75,6 +75,24 @@ const API: &[ApiEntry] = &[
                 description: "The grace period after leaving, long enough to cross the gap to the content.",
             },
             Prop {
+                name: "open",
+                ty: "Option<RwSignal<bool>>",
+                default: "None",
+                description: "Pass one to drive the tooltip from outside or to watch it; omit it and the root owns the signal.",
+            },
+            Prop {
+                name: "default_open",
+                ty: "bool",
+                default: "false",
+                description: "Whether the tooltip starts open. Ignored when `open` is given.",
+            },
+            Prop {
+                name: "on_open_change",
+                ty: "Option<Callback<bool>>",
+                default: "None",
+                description: "Called with the new value whenever the tooltip opens or closes, including when the signal passed as `open` is written from outside.",
+            },
+            Prop {
                 name: "children",
                 ty: "ChildrenFn",
                 default: "",

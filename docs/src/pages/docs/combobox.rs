@@ -97,9 +97,21 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "value",
-                ty: "RwSignal<Option<String>>",
+                ty: "Option<RwSignal<Option<String>>>",
                 default: "None",
-                description: "The chosen value. Pass one to read the selection or to preset it.",
+                description: "The chosen value, held by the caller. Pass one to read the selection or to preset it.",
+            },
+            Prop {
+                name: "default_value",
+                ty: "Option<String>",
+                default: "None",
+                description: "The value to start with, as in `default_value=\"apple\"`. Ignored when `value` is given.",
+            },
+            Prop {
+                name: "on_value_change",
+                ty: "Option<Callback<Option<String>>>",
+                default: "None",
+                description: "Called with the new value whenever it changes, including when the signal passed as `value` is written from outside.",
             },
             Prop {
                 name: "display_value",
@@ -112,6 +124,24 @@ const API: &[ApiEntry] = &[
                 ty: "Signal<String>",
                 default: "\"\"",
                 description: "Merged over the wrapper's classes.",
+            },
+            Prop {
+                name: "open",
+                ty: "Option<RwSignal<bool>>",
+                default: "None",
+                description: "Pass one to drive the list from outside or to watch it; omit it and the root owns the signal.",
+            },
+            Prop {
+                name: "default_open",
+                ty: "bool",
+                default: "false",
+                description: "Whether the list starts open. Ignored when `open` is given.",
+            },
+            Prop {
+                name: "on_open_change",
+                ty: "Option<Callback<bool>>",
+                default: "None",
+                description: "Called with the new value whenever the list opens or closes, including when the signal passed as `open` is written from outside.",
             },
             Prop {
                 name: "children",

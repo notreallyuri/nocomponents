@@ -9,6 +9,7 @@
 //! that move it — collapsing selections instead would also kill select-all, and then pasting over
 //! a full field would do nothing.
 
+use crate::utils::controllable::controllable;
 use leptos::{context::Provider, ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
 use web_sys::HtmlInputElement;
@@ -83,15 +84,21 @@ pub fn InputOtpRoot(
     #[prop(optional)] pattern: OtpPattern,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
-    /// Omit for an uncontrolled field.
+    /// The code, held by the caller. Omit it and the root keeps its own.
     #[prop(default = None, into)]
     value: Option<RwSignal<String>>,
+    /// The code an uncontrolled field starts with. Ignored when `value` is given.
+    #[prop(optional, into)]
+    default_value: String,
+    /// Called with the code whenever it changes, however that came about.
+    #[prop(optional, into)]
+    on_value_change: Option<Callback<String>>,
     /// Fired once the last slot fills, with the finished code.
     #[prop(default = None, into)]
     on_complete: Option<Callback<String>>,
     children: Children,
 ) -> impl IntoView {
-    let value = value.unwrap_or_else(|| RwSignal::new(String::new()));
+    let value = controllable(value, default_value, on_value_change);
     let input_ref = AnyNodeRef::new();
 
     let context = InputOtpContext {

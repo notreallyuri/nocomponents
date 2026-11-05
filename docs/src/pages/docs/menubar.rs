@@ -48,7 +48,7 @@ const CONTROLLED: &str = r#"{
     let open = RwSignal::new(None::<String>);
 
     view! {
-        <Menubar open=open>…</Menubar>
+        <Menubar value=open>…</Menubar>
         <Button on:click=move |_| open.set(Some("view".to_string()))>"Open View"</Button>
         <p>{move || open.get().unwrap_or_else(|| "closed".to_string())}</p>
     }
@@ -60,10 +60,22 @@ const API: &[ApiEntry] = &[
         description: "The bar. One tab stop, arrows along it, and one menu open at a time.",
         props: &[
             Prop {
-                name: "open",
-                ty: "RwSignal<Option<String>>",
+                name: "value",
+                ty: "Option<RwSignal<Option<String>>>",
                 default: "None",
-                description: "The value of the menu that is open. Pass one to drive the bar or to watch it; this is the whole of its state.",
+                description: "The value of the menu that is open, or `None`. Pass one to drive the bar or to watch it; omit it and the bar owns the signal.",
+            },
+            Prop {
+                name: "default_value",
+                ty: "Option<String>",
+                default: "None",
+                description: "The value to start with, as in `default_value=\"file\"`. Ignored when `value` is given.",
+            },
+            Prop {
+                name: "on_value_change",
+                ty: "Option<Callback<Option<String>>>",
+                default: "None",
+                description: "Called with the new value whenever it changes, including when the signal passed as `value` is written from outside.",
             },
             Prop {
                 name: "class",
@@ -87,7 +99,7 @@ const API: &[ApiEntry] = &[
                 name: "value",
                 ty: "String",
                 default: "",
-                description: "What this menu is called in the bar's `open` signal. Unique within the bar.",
+                description: "What this menu is called in the bar's `value` signal. Unique within the bar.",
             },
             Prop {
                 name: "class",
@@ -318,7 +330,7 @@ pub fn Page() -> impl IntoView {
                     description="Each menu is a dropdown menu; the bar is what makes them one control. Open one and the bar is armed: the pointer switches menus as it crosses the triggers, and Left and Right do the same from inside an open menu. The bar is a single tab stop."
                     code=DEFAULT
                 >
-                    <Menubar open=open>
+                    <Menubar value=open>
                         <MenubarMenu value="file">
                             <MenubarTrigger>"File"</MenubarTrigger>
                             <MenubarPortal>

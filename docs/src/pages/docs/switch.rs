@@ -64,9 +64,21 @@ const API: &[ApiEntry] = &[ApiEntry {
         },
         Prop {
             name: "checked",
-            ty: "RwSignal<bool>",
-            default: "",
-            description: "The state, read and written. Required: the switch does not own it.",
+            ty: "Option<RwSignal<bool>>",
+            default: "None",
+            description: "The state, held by the caller. Omit it and the switch keeps its own.",
+        },
+        Prop {
+            name: "default_checked",
+            ty: "bool",
+            default: "false",
+            description: "Whether it starts checked. Ignored when `checked` is given.",
+        },
+        Prop {
+            name: "on_checked_change",
+            ty: "Option<Callback<bool>>",
+            default: "None",
+            description: "Called with the new value whenever it is switched, including when the signal passed as `checked` is written from outside.",
         },
         Prop {
             name: "disabled",

@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use crate::{
     primitives::dismiss::{LayerBounds, use_dismissable_layer},
-    utils::{next_id, types::TriggerRect},
+    utils::{controllable::controllable, next_id, types::TriggerRect},
 };
 use leptos::{
     context::Provider,
@@ -254,9 +254,36 @@ pub fn FloatingRoot(
     /// Whether the arrow keys open this layer from its closed trigger, and where they leave focus.
     #[prop(optional)]
     arrow_open: ArrowOpen,
+    /// The caller's signal for whether the layer is open. When given, it replaces the context's own
+    /// `is_open`, and `default_open` is ignored.
+    #[prop(default = None, into)]
+    open: Option<RwSignal<bool>>,
+    /// Whether the layer starts open. Ignored when `open` is given.
+    #[prop(optional)]
+    default_open: bool,
+    /// Called with the new value whenever the layer opens or closes, however that came about.
+    #[prop(optional, into)]
+    on_open_change: Option<Callback<bool>>,
     children: ChildrenFn,
 ) -> impl IntoView {
-    let context = context.unwrap_or_default();
+    let mut context = context.unwrap_or_default();
+
+    // A context a caller built and kept hold of keeps its own `is_open` unless `open` replaces it.
+    let is_open = match open {
+        Some(open) => controllable(Some(open), false, on_open_change),
+        None => {
+            if default_open {
+                context.is_open.set(true);
+            }
+            controllable(Some(context.is_open), false, on_open_change)
+        }
+    };
+    context.is_open = is_open;
+    // Mounted from the first paint when it starts open, rather than a tick later when the effect
+    // below first runs.
+    if is_open.get_untracked() {
+        context.is_mounted.set(true);
+    }
 
     if context.trigger_id.get_untracked().is_empty() {
         context.trigger_id.set(next_id("trigger"));

@@ -14,7 +14,7 @@ use crate::{
         dismiss::{LayerBounds, use_dismissable_layer},
         roving_focus::use_roving_focus,
     },
-    utils::{next_id, types::Orientation},
+    utils::{controllable::controllable, next_id, types::Orientation},
 };
 use leptos::{context::Provider, ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
@@ -121,14 +121,24 @@ pub fn use_navigation_menu_item() -> NavigationMenuItemContext {
 
 #[component]
 pub fn NavigationMenuRoot(
-    /// Which panel is open, for a caller that wants to drive the menu or watch it.
+    /// Which panel is open, held by the caller. Omit it and the root keeps its own.
+    #[prop(default = None, into)]
+    value: Option<RwSignal<Option<String>>>,
+    /// The value the root starts with. Ignored when `value` is given. Declared `optional, into`
+    /// rather than `default = None, into` so that `default_value="home"` compiles: `&str` does
+    /// not convert into `Option<String>`.
     #[prop(optional, into)]
-    value: RwSignal<Option<String>>,
+    default_value: Option<String>,
+    /// Called with the new value whenever it changes, however that came about.
+    #[prop(optional, into)]
+    on_value_change: Option<Callback<Option<String>>>,
+
     #[prop(default = OPEN_DELAY)] open_delay: u64,
     #[prop(default = CLOSE_DELAY)] close_delay: u64,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
+    let value = controllable(value, default_value, on_value_change);
     let ctx = NavigationMenuContext {
         value,
         root_ref: AnyNodeRef::new(),

@@ -112,6 +112,18 @@ const API: &[ApiEntry] = &[
                 description: "Omit for an uncontrolled group. `Single` keeps at most one entry in the vector.",
             },
             Prop {
+                name: "default_value",
+                ty: "Vec<String>",
+                default: "[]",
+                description: "The items an uncontrolled group starts with. Ignored when `value` is given.",
+            },
+            Prop {
+                name: "on_value_change",
+                ty: "Option<Callback<Vec<String>>>",
+                default: "None",
+                description: "Called with the pressed items whenever they change, including when the signal passed as `value` is written from outside.",
+            },
+            Prop {
                 name: "children",
                 ty: "Children",
                 default: "",

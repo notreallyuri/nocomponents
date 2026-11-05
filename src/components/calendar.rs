@@ -5,15 +5,19 @@ use crate::{
         CalendarCaptionRoot, CalendarDayRoot, CalendarGridRoot, CalendarMode, CalendarNavRoot,
         CalendarRoot,
     },
-    utils::date::Date,
+    utils::{controllable::forward, date::Date},
 };
 use leptos::prelude::*;
 
 #[component]
 pub fn Calendar(
     #[prop(optional)] mode: CalendarMode,
-    #[prop(optional, into)] selected: RwSignal<Vec<Date>>,
+    #[prop(default = None, into)] selected: Option<RwSignal<Vec<Date>>>,
+    #[prop(optional, into)] default_selected: Vec<Date>,
+    #[prop(optional, into)] on_selected_change: Option<Callback<Vec<Date>>>,
     #[prop(default = None, into)] month: Option<RwSignal<Date>>,
+    #[prop(default = None, into)] default_month: Option<Date>,
+    #[prop(optional, into)] on_month_change: Option<Callback<Date>>,
     #[prop(default = 0)] week_starts_on: u32,
     #[prop(default = None, into)] min: Option<Date>,
     #[prop(default = None, into)] max: Option<Date>,
@@ -25,7 +29,11 @@ pub fn Calendar(
         <CalendarRoot
             mode=mode
             selected=selected
+            default_selected=default_selected
+            on_selected_change=forward(on_selected_change)
             month=month
+            default_month=default_month
+            on_month_change=forward(on_month_change)
             week_starts_on=week_starts_on
             min=min
             max=max

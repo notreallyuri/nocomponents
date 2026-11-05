@@ -9,7 +9,7 @@ use crate::{
         dialog::{DialogContentRoot, DialogRoot, use_dialog},
         drag::{DragEnd, DragPoint, use_drag},
     },
-    utils::types::Side,
+    utils::{controllable::forward, types::Side},
 };
 use leptos::{context::Provider, ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
@@ -113,6 +113,12 @@ pub fn use_drawer() -> DrawerContext {
 pub fn DrawerRoot(
     #[prop(default = Side::Bottom)] side: Side,
     #[prop(default = None, into)] open: Option<RwSignal<bool>>,
+    /// Whether the drawer starts open. Ignored when `open` is given.
+    #[prop(optional)]
+    default_open: bool,
+    /// Called with the new value whenever the drawer opens or closes, however that came about.
+    #[prop(optional, into)]
+    on_open_change: Option<Callback<bool>>,
     /// Non-modal leaves the page usable underneath: no overlay, no focus trap, and an outside
     /// pointer closes the drawer.
     #[prop(default = true)]
@@ -138,7 +144,7 @@ pub fn DrawerRoot(
     };
 
     view! {
-        <DialogRoot open=open modal=modal>
+        <DialogRoot open=open default_open=default_open on_open_change=forward(on_open_change) modal=modal>
             <Provider value=context>{children()}</Provider>
         </DialogRoot>
     }

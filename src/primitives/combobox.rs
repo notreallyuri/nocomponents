@@ -18,6 +18,7 @@ use crate::{
         },
     },
     utils::{
+        controllable::{controllable, forward},
         get_placement,
         types::{Align, Side, SideOffset},
     },
@@ -38,19 +39,37 @@ pub fn use_combobox() -> ComboboxContext {
 
 #[component]
 pub fn ComboboxRoot(
-    /// The chosen value.
+    /// The chosen value, held by the caller. Omit it and the root keeps its own.
+    #[prop(default = None, into)]
+    value: Option<RwSignal<Option<String>>>,
+    /// The value the root starts with. Ignored when `value` is given. Declared `optional, into`
+    /// rather than `default = None, into` so that `default_value="apple"` compiles: `&str` does
+    /// not convert into `Option<String>`.
     #[prop(optional, into)]
-    value: RwSignal<Option<String>>,
+    default_value: Option<String>,
+    /// Called with the new value whenever the choice changes, however that came about.
+    #[prop(optional, into)]
+    on_value_change: Option<Callback<Option<String>>>,
+
     /// What the trigger shows for that value, when the two differ. An item sets it as it is
     /// chosen; preset it alongside `value` for a selection that arrives from outside, since the
     /// items that know the labels do not exist until the list first opens.
     #[prop(optional, into)]
     display_value: RwSignal<Option<String>>,
     #[prop(optional, into)] class: Signal<String>,
+    /// Whether the list is open, held by the caller. Omit it and the root keeps its own.
+    #[prop(default = None, into)]
+    open: Option<RwSignal<bool>>,
+    /// Whether the list starts open. Ignored when `open` is given.
+    #[prop(optional)]
+    default_open: bool,
+    /// Called with the new value whenever the list opens or closes, however that came about.
+    #[prop(optional, into)]
+    on_open_change: Option<Callback<bool>>,
     children: ChildrenFn,
 ) -> impl IntoView {
     let ctx = FloatingContext {
-        value,
+        value: controllable(value, default_value, on_value_change),
         display_value,
         ..Default::default()
     };
@@ -59,6 +78,9 @@ pub fn ComboboxRoot(
         <FloatingRoot
             class=class
             context=ctx
+            open=open
+            default_open=default_open
+            on_open_change=forward(on_open_change)
             trigger_aria=TriggerAria::Popup("listbox")
             arrow_open=ArrowOpen::Open
         >

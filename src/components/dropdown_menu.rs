@@ -10,19 +10,30 @@ use crate::{
         DropdownMenuTriggerRoot,
     },
     primitives::floating::{FloatingPortal, TriggerRender},
-    utils::types::{Align, Side, SideOffset},
+    utils::{
+        controllable::forward,
+        types::{Align, Side, SideOffset},
+    },
 };
 use leptos::{either::Either, ev, prelude::*};
 
 #[component]
 pub fn DropdownMenu(
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(default = None, into)] open: Option<RwSignal<bool>>,
+    #[prop(optional)] default_open: bool,
+    #[prop(optional, into)] on_open_change: Option<Callback<bool>>,
     children: ChildrenFn,
 ) -> impl IntoView {
     view! {
-        <DropdownMenuRoot class=move || {
-            cn!("relative inline-block text-left", class.get())
-        }>{children()}</DropdownMenuRoot>
+        <DropdownMenuRoot
+            open=open
+            default_open=default_open
+            on_open_change=forward(on_open_change)
+            class=move || cn!("relative inline-block text-left", class.get())
+        >
+            {children()}
+        </DropdownMenuRoot>
     }
 }
 

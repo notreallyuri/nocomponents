@@ -1,7 +1,10 @@
 use crate::{
     cn,
     primitives::tooltip::{TooltipContentRoot, TooltipPortalRoot, TooltipRoot, TooltipTriggerRoot},
-    utils::types::{Align, AnchorRender, Side, SideOffset},
+    utils::{
+        controllable::forward,
+        types::{Align, AnchorRender, Side, SideOffset},
+    },
 };
 use leptos::prelude::*;
 
@@ -10,10 +13,16 @@ pub fn Tooltip(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(default = 400, into)] delay: u64,
     #[prop(default = 100, into)] close_delay: u64,
+    #[prop(default = None, into)] open: Option<RwSignal<bool>>,
+    #[prop(optional)] default_open: bool,
+    #[prop(optional, into)] on_open_change: Option<Callback<bool>>,
     children: ChildrenFn,
 ) -> impl IntoView {
     view! {
         <TooltipRoot
+            open=open
+            default_open=default_open
+            on_open_change=forward(on_open_change)
             delay=delay
             close_delay=close_delay
             class=move || cn!("inline-block", class.get())

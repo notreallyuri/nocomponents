@@ -11,6 +11,7 @@
 //! in-between days derived rather than stored.
 
 use crate::utils::{
+    controllable::controllable,
     date::{Date, DateNames, month_grid},
     next_id,
 };
@@ -224,12 +225,26 @@ pub fn use_calendar() -> CalendarContext {
 #[component]
 pub fn CalendarRoot(
     #[prop(optional)] mode: CalendarMode,
-    /// The selected dates. One for `Single`, two for `Range`, any number for `Multiple`.
+    /// The selected dates, held by the caller. One for `Single`, two for `Range`, any number for
+    /// `Multiple`. Omit it and the root keeps its own.
+    #[prop(default = None, into)]
+    selected: Option<RwSignal<Vec<Date>>>,
+    /// The dates an uncontrolled calendar starts with. Ignored when `selected` is given.
     #[prop(optional, into)]
-    selected: RwSignal<Vec<Date>>,
-    /// The month on show. Defaults to the month of the first selected date, or today's.
+    default_selected: Vec<Date>,
+    /// Called with the new dates whenever the selection changes, however that came about.
+    #[prop(optional, into)]
+    on_selected_change: Option<Callback<Vec<Date>>>,
+    /// The month on show, held by the caller. Omit it and the root keeps its own.
     #[prop(default = None, into)]
     month: Option<RwSignal<Date>>,
+    /// The month an uncontrolled calendar starts on; the month of the first selected date, or
+    /// today's, when omitted. Ignored when `month` is given.
+    #[prop(default = None, into)]
+    default_month: Option<Date>,
+    /// Called with the new month whenever the one on show changes, however that came about.
+    #[prop(optional, into)]
+    on_month_change: Option<Callback<Date>>,
     /// 0 is Sunday, 1 Monday.
     #[prop(default = 0)]
     week_starts_on: u32,
@@ -245,13 +260,18 @@ pub fn CalendarRoot(
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
+    let selected = controllable(selected, default_selected, on_selected_change);
     let today = Date::today();
     let opening = selected
         .with_untracked(|selected| selected.first().copied())
         .unwrap_or(today);
 
     let ctx = CalendarContext {
-        month: month.unwrap_or_else(|| RwSignal::new(opening.first_of_month())),
+        month: controllable(
+            month,
+            default_month.unwrap_or(opening).first_of_month(),
+            on_month_change,
+        ),
         focused: RwSignal::new(opening),
         selected,
         mode,

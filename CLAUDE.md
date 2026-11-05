@@ -224,9 +224,12 @@ them. The styled `Button` belongs in the `render` the root already takes.
 
 **Prop conventions**: `#[prop(optional, into)] class: Signal<String>`, `#[prop(optional, into)] disabled: Signal<bool>`,
 `children: Option<ChildrenFn>` when children may be re-rendered inside a `Portal` or `Either` branch.
-An optional callback or value prop is `#[prop(default = None, into)] x: Option<T>` — `optional` on an
+An optional *value* prop is `#[prop(default = None, into)] x: Option<T>` — `optional` on an
 `Option<T>` makes the setter take `T`, and `&str` will not coerce into `Option<String>`; where the
-empty string can stand in for "unset" (a label, a heading), prefer `Signal<String>`.
+empty string can stand in for "unset" (a label, a heading), prefer `Signal<String>`. An optional
+*callback* is the reverse, `#[prop(optional, into)] x: Option<Callback<T>>`: the setter takes the
+`Callback<T>` itself, so a caller can pass a bare closure (`on_open_change=move |open: bool| …`)
+instead of wrapping it in `Callback::new`.
 
 **Pointer gestures** go through `use_drag` (`src/primitives/drag.rs`), never through hand-rolled
 window listeners: it owns the listener lifecycle (including `pointercancel`, which every hand-rolled

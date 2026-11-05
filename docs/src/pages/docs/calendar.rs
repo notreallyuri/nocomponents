@@ -64,15 +64,39 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "selected",
-                ty: "RwSignal<Vec<Date>>",
+                ty: "Option<RwSignal<Vec<Date>>>",
+                default: "None",
+                description: "The selection, held by the caller, in every mode: one date, many, or a start and an end in order. Omit it and the calendar keeps its own.",
+            },
+            Prop {
+                name: "default_selected",
+                ty: "Vec<Date>",
                 default: "[]",
-                description: "The selection, in every mode: one date, many, or a start and an end in order.",
+                description: "The dates an uncontrolled calendar starts with. Ignored when `selected` is given.",
+            },
+            Prop {
+                name: "on_selected_change",
+                ty: "Option<Callback<Vec<Date>>>",
+                default: "None",
+                description: "Called with the new selection whenever it changes, including when the signal passed as `selected` is written from outside.",
             },
             Prop {
                 name: "month",
                 ty: "Option<RwSignal<Date>>",
                 default: "None",
                 description: "The month on show. Pass one to drive the paging from outside; omitted, it starts on the first selected date's month, or today's.",
+            },
+            Prop {
+                name: "default_month",
+                ty: "Option<Date>",
+                default: "None",
+                description: "The month an uncontrolled calendar starts on; the first selected date's month, or today's, when omitted. Ignored when `month` is given.",
+            },
+            Prop {
+                name: "on_month_change",
+                ty: "Option<Callback<Date>>",
+                default: "None",
+                description: "Called with the new month whenever the one on show changes, including when the signal passed as `month` is written from outside.",
             },
             Prop {
                 name: "week_starts_on",

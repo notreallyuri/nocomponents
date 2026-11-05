@@ -1,7 +1,7 @@
 use crate::{
     cn,
     primitives::radio_group::{RadioGroupItemRoot, RadioGroupRoot},
-    utils::types::Orientation,
+    utils::{controllable::forward, types::Orientation},
 };
 use leptos::prelude::*;
 
@@ -11,13 +11,18 @@ pub fn RadioGroup(
     #[prop(default = Orientation::Vertical)] orientation: Orientation,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(default = None, into)] value: Option<RwSignal<Option<String>>>,
+    #[prop(optional, into)] default_value: Option<String>,
+    #[prop(optional, into)] on_value_change: Option<Callback<Option<String>>>,
     children: Children,
 ) -> impl IntoView {
+    let value = Some(value.unwrap_or_else(|| RwSignal::new(default_value)));
+
     view! {
         <RadioGroupRoot
             orientation=orientation
             disabled=disabled
             value=value
+            on_value_change=forward(on_value_change)
             class=move || {
                 cn!(
                     "flex gap-3 data-[orientation=vertical]:flex-col data-[orientation=horizontal]:flex-row data-[orientation=horizontal]:items-center",

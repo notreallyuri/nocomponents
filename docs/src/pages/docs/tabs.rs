@@ -110,10 +110,22 @@ const API: &[ApiEntry] = &[
         description: "One panel at a time, chosen from a row of triggers.",
         props: &[
             Prop {
+                name: "value",
+                ty: "Option<RwSignal<String>>",
+                default: "None",
+                description: "The selected tab, held by the caller. Omit it and the root keeps its own.",
+            },
+            Prop {
                 name: "default_value",
                 ty: "String",
-                default: "",
-                description: "Which tab starts selected. Match a trigger's `value`.",
+                default: "\"\"",
+                description: "Which tab starts selected, when `value` is not given. Match a trigger's `value`.",
+            },
+            Prop {
+                name: "on_value_change",
+                ty: "Option<Callback<String>>",
+                default: "None",
+                description: "Called with the new value whenever the selected tab changes, including when the signal passed as `value` is written from outside.",
             },
             Prop {
                 name: "class",

@@ -1,4 +1,8 @@
-use crate::{cn, primitives::toggle::ToggleRoot, utils::types::AsClass};
+use crate::{
+    cn,
+    primitives::toggle::ToggleRoot,
+    utils::{controllable::forward, types::AsClass},
+};
 use leptos::prelude::*;
 
 #[derive(Default, Clone, Copy, PartialEq)]
@@ -49,15 +53,17 @@ pub fn Toggle(
     #[prop(optional)] size: ToggleSize,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(default = None, into)] pressed: Option<RwSignal<bool>>,
+    #[prop(optional)] default_pressed: bool,
+    #[prop(optional, into)] on_pressed_change: Option<Callback<bool>>,
     #[prop(optional, into)] disabled: Signal<bool>,
-    #[prop(optional)] on_change: Option<Callback<bool>>,
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     view! {
         <ToggleRoot
             pressed=pressed
             disabled=disabled
-            on_change=on_change
+            default_pressed=default_pressed
+            on_pressed_change=forward(on_pressed_change)
             class=move || cn!(TOGGLE_BASE, variant.as_class(), size.as_class(), class.get())
         >
             {children.map(|c| c())}

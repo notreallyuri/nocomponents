@@ -97,6 +97,24 @@ const API: &[ApiEntry] = &[
                 description: "Pass one to drive the dialog from outside; omit it and the root owns the signal.",
             },
             Prop {
+                name: "default_open",
+                ty: "bool",
+                default: "false",
+                description: "Whether the dialog starts open. Ignored when `open` is given.",
+            },
+            Prop {
+                name: "on_open_change",
+                ty: "Option<Callback<bool>>",
+                default: "None",
+                description: "Called with the new value whenever the dialog opens or closes, including when the signal passed as `open` is written from outside.",
+            },
+            Prop {
+                name: "modal",
+                ty: "bool",
+                default: "true",
+                description: "Non-modal leaves the page usable underneath: no overlay, no focus trap, and an outside pointer closes it.",
+            },
+            Prop {
                 name: "children",
                 ty: "Children",
                 default: "",

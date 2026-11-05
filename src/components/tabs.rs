@@ -3,7 +3,7 @@ use crate::{
     primitives::tabs::{
         TabsContentRoot, TabsListRoot, TabsListVariants, TabsRoot, TabsTriggerRoot,
     },
-    utils::types::Orientation,
+    utils::{controllable::forward, types::Orientation},
 };
 use leptos::prelude::*;
 
@@ -16,14 +16,18 @@ fn list_variant_class(variant: TabsListVariants) -> &'static str {
 
 #[component]
 pub fn Tabs(
-    #[prop(into)] default_value: String,
+    #[prop(default = None, into)] value: Option<RwSignal<String>>,
+    #[prop(optional, into)] default_value: String,
+    #[prop(optional, into)] on_value_change: Option<Callback<String>>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] orientation: Orientation,
     children: Children,
 ) -> impl IntoView {
     view! {
         <TabsRoot
+            value=value
             default_value=default_value
+            on_value_change=forward(on_value_change)
             orientation=orientation
             class=move || cn!("group/tabs flex gap-2 data-horizontal:flex-col", class.get())
         >

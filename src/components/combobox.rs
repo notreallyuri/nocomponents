@@ -7,20 +7,34 @@ use crate::{
         ComboboxTriggerRoot, use_combobox,
     },
     primitives::floating::TriggerRender,
-    utils::types::{Align, Side, SideOffset},
+    utils::{
+        controllable::forward,
+        types::{Align, Side, SideOffset},
+    },
 };
 use leptos::{either::Either, prelude::*};
 
 #[component]
 pub fn Combobox(
-    #[prop(optional, into)] value: RwSignal<Option<String>>,
+    #[prop(default = None, into)] value: Option<RwSignal<Option<String>>>,
+    #[prop(optional, into)] default_value: Option<String>,
+    #[prop(optional, into)] on_value_change: Option<Callback<Option<String>>>,
     #[prop(optional, into)] display_value: RwSignal<Option<String>>,
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(default = None, into)] open: Option<RwSignal<bool>>,
+    #[prop(optional)] default_open: bool,
+    #[prop(optional, into)] on_open_change: Option<Callback<bool>>,
     children: ChildrenFn,
 ) -> impl IntoView {
+    let value = Some(value.unwrap_or_else(|| RwSignal::new(default_value)));
+
     view! {
         <ComboboxRoot
+            open=open
+            default_open=default_open
+            on_open_change=forward(on_open_change)
             value=value
+            on_value_change=forward(on_value_change)
             display_value=display_value
             class=move || cn!("relative inline-block text-left", class.get())
         >
