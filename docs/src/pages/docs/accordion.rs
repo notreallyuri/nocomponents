@@ -46,7 +46,7 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "kind",
-                ty: "AccordionType",
+                ty: "Signal<AccordionType>",
                 default: "Single",
                 description: "One of: Single, Multiple.",
             },
@@ -64,7 +64,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "collapsible",
-                ty: "bool",
+                ty: "Signal<bool>",
                 default: "true",
                 description: "Whether a `Single` accordion can be closed entirely. Ignored for `Multiple`.",
             },
@@ -73,6 +73,18 @@ const API: &[ApiEntry] = &[
                 ty: "Option<RwSignal<Vec<String>>>",
                 default: "None",
                 description: "Omit for an uncontrolled accordion that owns its own selection.",
+            },
+            Prop {
+                name: "default_value",
+                ty: "Vec<String>",
+                default: "[]",
+                description: "The sections an uncontrolled accordion starts open. Ignored when `value` is given.",
+            },
+            Prop {
+                name: "on_value_change",
+                ty: "Option<Callback<Vec<String>>>",
+                default: "None",
+                description: "Called with the open sections whenever they change, including when the signal passed as `value` is written from outside.",
             },
             Prop {
                 name: "children",

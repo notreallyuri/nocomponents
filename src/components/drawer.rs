@@ -2,10 +2,13 @@ use crate::{
     cn,
     icons::x::X,
     primitives::{
-        dialog::{DialogPortalRoot, use_dialog},
+        dialog::{DialogPortalRoot, DialogTriggerRoot, use_dialog},
         drawer::{DrawerContentRoot, DrawerHandleRoot, DrawerRoot, use_drawer},
     },
-    utils::types::{AsClass, Side},
+    utils::{
+        controllable::forward,
+        types::{AsClass, Side},
+    },
 };
 use leptos::prelude::*;
 
@@ -39,11 +42,19 @@ impl AsClass for DrawerSide {
 pub fn Drawer(
     #[prop(default = Side::Bottom)] side: Side,
     #[prop(default = None, into)] open: Option<RwSignal<bool>>,
+    #[prop(optional)] default_open: bool,
+    #[prop(optional, into)] on_open_change: Option<Callback<bool>>,
     #[prop(default = true)] modal: bool,
     children: Children,
 ) -> impl IntoView {
     view! {
-        <DrawerRoot side=side open=open modal=modal>
+        <DrawerRoot
+            side=side
+            open=open
+            default_open=default_open
+            on_open_change=forward(on_open_change)
+            modal=modal
+        >
             {children()}
         </DrawerRoot>
     }
@@ -73,7 +84,6 @@ pub fn DrawerContent(
                             />
                         }
                     })}
-
                 <DrawerContentRoot class=move || {
                     cn!(
                         "fixed z-50 flex flex-col gap-4 bg-popover p-4 text-sm text-popover-foreground shadow-lg outline-none",
@@ -121,13 +131,12 @@ pub fn DrawerHandle(#[prop(optional, into)] class: Signal<String>) -> impl IntoV
 #[component]
 pub fn DrawerTrigger(
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
     children: Children,
 ) -> impl IntoView {
-    let ctx = use_dialog();
-
     view! {
-        <button type="button" on:click=move |_| ctx.toggle() class=class>
+        <DialogTriggerRoot data_slot="drawer-trigger" class=class disabled=disabled>
             {children()}
-        </button>
+        </DialogTriggerRoot>
     }
 }

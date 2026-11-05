@@ -1,21 +1,29 @@
 use crate::{
     primitives::{
-        field::field_control_for_trigger,
+        field::{field_control_for_trigger, field_disabled},
         floating::{
-            ArrowOpen, FloatingContext, FloatingRoot, FloatingTrigger, TriggerAria, TriggerRender,
+            ArrowOpen, FloatingContext, FloatingPortal, FloatingRoot, FloatingTrigger, TriggerAria,
+            TriggerRender,
         },
         roving_focus::use_roving_focus,
         typeahead::Typeahead,
     },
-    utils::types::Orientation,
+    utils::{
+        controllable::{controllable, forward},
+        form::{SHADOW_STYLE, non_empty, on_form_reset},
+        types::Orientation,
+    },
 };
 use floating_ui_leptos::{
     Flip, FlipOptions, MiddlewareVec, Offset, OffsetOptions, Placement, Shift, ShiftOptions,
     Strategy, UseFloatingOptions, UseFloatingReturn, use_floating,
 };
-use leptos::{either::Either, ev, portal::Portal, prelude::*, wasm_bindgen::JsCast};
+use leptos::{
+    context::Provider, either::Either, ev, mount::mount_to, prelude::*, wasm_bindgen::JsCast,
+};
 use leptos_node_ref::AnyNodeRef;
 use send_wrapper::SendWrapper;
+use std::{collections::HashMap, time::Duration};
 use web_sys::HtmlElement;
 
 pub type SelectContext = FloatingContext;
@@ -23,29 +31,121 @@ pub type SelectContext = FloatingContext;
 pub fn use_select() -> SelectContext {
     expect_context::<SelectContext>()
 }
+
+/// What each option is called, by value: the text a `SelectValue` shows once one is chosen.
+///
+/// Held by the root rather than by the items, because the items only exist while the list is
+/// mounted and the trigger has to name the choice long before — and long after — that. Entries are
+/// never removed; an option that unmounts is still the label of what was picked from it.
+#[derive(Copy, Clone)]
+pub struct SelectLabels(RwSignal<HashMap<String, String>>);
+
+fn use_select_labels() -> SelectLabels {
+    expect_context::<SelectLabels>()
+}
+
+/// The chosen option's label, or its value while no option has said what it is called, or `None`
+/// when nothing is chosen.
+pub fn use_select_label() -> Signal<Option<String>> {
+    let ctx = use_select();
+    let labels = use_select_labels();
+
+    Signal::derive(move || {
+        ctx.value.get().map(|value| {
+            labels
+                .0
+                .with(|labels| labels.get(&value).cloned())
+                .unwrap_or(value)
+        })
+    })
+}
+/// Whether the root was disabled, for the trigger to wear. Held in a context because the trigger
+/// is a descendant with a `disabled` of its own, and the two are one answer.
+#[derive(Copy, Clone)]
+struct SelectDisabled(Signal<bool>);
+
 #[component]
 pub fn SelectRoot(
-    #[prop(optional, into)] value: RwSignal<Option<String>>,
+    /// The chosen value, held by the caller. Omit it and the root keeps its own.
+    #[prop(default = None, into)]
+    value: Option<RwSignal<Option<String>>>,
+    /// The value the root starts with. Ignored when `value` is given. Declared `optional, into`
+    /// rather than `default = None, into` so that `default_value="apple"` compiles: `&str` does
+    /// not convert into `Option<String>`.
+    #[prop(optional, into)]
+    default_value: Option<String>,
+    /// Called with the new value whenever the choice changes, however that came about.
+    #[prop(optional, into)]
+    on_value_change: Option<Callback<Option<String>>>,
     #[prop(optional, into)] class: Signal<String>,
+    /// The name the choice is submitted under, through the hidden native `<select>`. Empty leaves
+    /// it out of a form's data.
+    #[prop(optional, into)]
+    name: Signal<String>,
+    /// The browser refuses to submit the form while nothing is chosen.
+    #[prop(optional, into)]
+    required: Signal<bool>,
+    /// Disables the trigger, and keeps the choice out of a form's data.
+    #[prop(optional, into)]
+    disabled: Signal<bool>,
+    /// The `id` of a `<form>` the select belongs to when it is not inside one. Empty means the one
+    /// around it.
+    #[prop(optional, into)]
+    form: Signal<String>,
+    /// Whether the list is open, held by the caller. Omit it and the root keeps its own.
+    #[prop(default = None, into)]
+    open: Option<RwSignal<bool>>,
+    /// Whether the list starts open. Ignored when `open` is given.
+    #[prop(optional)]
+    default_open: bool,
+    /// Called with the new value whenever the list opens or closes, however that came about.
+    #[prop(optional, into)]
+    on_open_change: Option<Callback<bool>>,
     children: ChildrenFn,
 ) -> impl IntoView {
     let ctx = FloatingContext {
-        value,
+        value: controllable(value, default_value, on_value_change),
         ..Default::default()
     };
+    let initial = ctx.value.get_untracked();
+
+    let labels = SelectLabels(RwSignal::new(HashMap::new()));
+    let disabled = field_disabled(disabled);
+
+    let native_ref = AnyNodeRef::new();
+    on_form_reset(native_ref, move || ctx.value.set(initial.clone()));
 
     view! {
-        <FloatingRoot
-            class=class
-            context=ctx
-            trigger_aria=TriggerAria::Popup("listbox")
-            arrow_open=ArrowOpen::Open
-        >
-            {children()}
-            <select class="hidden" aria-hidden="true" tabindex="-1">
-                <option value=move || ctx.value.get().unwrap_or_default() selected=true></option>
-            </select>
-        </FloatingRoot>
+        <Provider value=labels>
+            <Provider value=SelectDisabled(disabled)>
+                <FloatingRoot
+                    class=class
+                    context=ctx
+                    open=open
+                    default_open=default_open
+                    on_open_change=forward(on_open_change)
+                    trigger_aria=TriggerAria::Popup("listbox")
+                    arrow_open=ArrowOpen::Open
+                >
+                    {children()}
+                    <select
+                        node_ref=native_ref
+                        style=SHADOW_STYLE
+                        aria-hidden="true"
+                        tabindex="-1"
+                        name=move || non_empty(name)
+                        form=move || non_empty(form)
+                        required=move || required.get()
+                        disabled=move || disabled.get()
+                    >
+                        {move || {
+                            let value = ctx.value.get().unwrap_or_default();
+                            view! { <option value=value selected=true></option> }
+                        }}
+                    </select>
+                </FloatingRoot>
+            </Provider>
+        </Provider>
     }
 }
 
@@ -57,7 +157,11 @@ pub fn SelectTriggerRoot(
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     let ctx = use_select();
-    let field = field_control_for_trigger(ctx.trigger_id, ctx.trigger_ref, disabled);
+    let root_disabled = use_context::<SelectDisabled>()
+        .map(|inner| inner.0)
+        .unwrap_or_default();
+    let own = Signal::derive(move || disabled.get() || root_disabled.get());
+    let field = field_control_for_trigger(ctx.trigger_id, ctx.trigger_ref, own);
 
     view! {
         <FloatingTrigger
@@ -78,12 +182,49 @@ pub fn SelectTriggerRoot(
 #[component]
 pub fn SelectPortalRoot(children: ChildrenFn) -> impl IntoView {
     let ctx = use_select();
+    let labels = use_select_labels();
     let stored_children = StoredValue::new(children);
+    let preloaded = StoredValue::new(false);
+
+    // The items are not in the DOM until the list first opens, so a value chosen before that —
+    // `default_value`, or a controlled signal set from outside — would be shown as itself. Once,
+    // and only when it is needed, the content is built into a detached node under a throwaway
+    // context so the items can say what they are called, then thrown away. The labels outlive it.
+    Effect::new(move |_| {
+        let Some(value) = ctx.value.get() else {
+            return;
+        };
+
+        if preloaded.get_value()
+            || ctx.is_mounted.get_untracked()
+            || labels
+                .0
+                .with_untracked(|labels| labels.contains_key(&value))
+        {
+            return;
+        }
+        preloaded.set_value(true);
+
+        let Ok(detached) = document().create_element("div") else {
+            return;
+        };
+        let Ok(detached) = detached.dyn_into::<HtmlElement>() else {
+            return;
+        };
+
+        let handle = mount_to(detached, move || {
+            provide_context(SelectContext::default());
+            stored_children.with_value(|children| children())
+        });
+
+        // The items register from an effect, once their nodes exist.
+        let _ = set_timeout_with_handle(move || drop(handle), Duration::ZERO);
+    });
 
     view! {
-        <Portal>
+        <FloatingPortal>
             <Show when=move || ctx.is_mounted.get()>{stored_children.with_value(|c| c())}</Show>
-        </Portal>
+        </FloatingPortal>
     }
 }
 
@@ -199,26 +340,63 @@ pub fn SelectContentRoot(
 #[component]
 pub fn SelectItemRoot(
     #[prop(into)] value: String,
+    /// What the trigger shows once this item is chosen. Empty means the item's own text.
+    #[prop(optional, into)]
+    label: Signal<String>,
+    /// Skipped by the keyboard and refused by the pointer.
+    #[prop(optional, into)]
+    disabled: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
     let ctx = use_select();
+    let labels = use_select_labels();
     let item_value = value.clone();
+    let item_ref = AnyNodeRef::new();
 
     let is_selected = Signal::derive(move || ctx.value.get() == Some(item_value.clone()));
 
+    let label_value = value.clone();
+    Effect::new(move |_| {
+        let explicit = label.get();
+        let text = if explicit.is_empty() {
+            let Some(el) = item_ref.get() else {
+                return;
+            };
+            el.text_content().unwrap_or_default().trim().to_string()
+        } else {
+            explicit
+        };
+
+        if text.is_empty() {
+            return;
+        }
+
+        labels.0.update(|labels| {
+            if labels.get(&label_value) != Some(&text) {
+                labels.insert(label_value.clone(), text);
+            }
+        });
+    });
+
     let on_click = move |_: ev::MouseEvent| {
+        if disabled.get() {
+            return;
+        }
         ctx.value.set(Some(value.clone()));
         ctx.close();
     };
 
     view! {
         <div
+            node_ref=item_ref
             data-slot="select-item"
             role="option"
             tabindex="-1"
             data-roving-item=""
             aria-selected=move || is_selected.get().to_string()
+            aria-disabled=move || disabled.get().then_some("true")
+            data-disabled=move || disabled.get().then_some("")
             on:click=on_click
             data-state=move || if is_selected.get() { "checked" } else { "unchecked" }
             class=class

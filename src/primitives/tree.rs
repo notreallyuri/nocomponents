@@ -196,7 +196,7 @@ struct TreeRowId(StoredValue<String>);
 #[component]
 pub fn TreeRowRoot(
     #[prop(optional, into)] class: Signal<String>,
-    #[prop(default = None, into)] on_select: Option<Callback<ev::MouseEvent>>,
+    #[prop(optional, into)] on_select: Option<Callback<ev::MouseEvent>>,
     children: Children,
 ) -> impl IntoView {
     let ctx = expect_context::<TreeItemContext>();

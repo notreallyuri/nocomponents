@@ -5,7 +5,9 @@ use crate::{
         table::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow},
     },
     icons::chevron::{ChevronDown, ChevronUp},
-    primitives::table::{SelectionState, SortDirection, TableSelection, TableSort},
+    primitives::table::{
+        SelectionState, SortDirection, TableSelection, TableSort, TableSortHeaderRoot,
+    },
 };
 use leptos::prelude::*;
 use std::cmp::Ordering;
@@ -43,26 +45,24 @@ impl<T: Send + Sync + 'static> DataTableColumn<T> {
 #[component]
 pub fn DataTable<T>(
     #[prop(into)] rows: Signal<Vec<T>>,
-    columns: Vec<DataTableColumn<T>>,
-    #[prop(default = None, into)] row_id: Option<Callback<T, String>>,
+    #[prop(into)] columns: Signal<Vec<DataTableColumn<T>>>,
+    #[prop(optional, into)] row_id: Option<Callback<T, String>>,
     #[prop(default = None, into)] selection: Option<TableSelection>,
     #[prop(default = None, into)] sort: Option<TableSort>,
-    #[prop(default = "No results.", into)] empty: &'static str,
+    #[prop(default = "No results.".into(), into)] empty: Signal<String>,
     #[prop(optional, into)] class: Signal<String>,
 ) -> impl IntoView
 where
     T: Clone + PartialEq + Send + Sync + 'static,
 {
     let sort = sort.unwrap_or_default();
-    let columns = StoredValue::new(columns);
-
     let sorted = Memo::new(move |_| {
         let mut rows = rows.get();
         let Some(column) = sort.column.get() else {
             return rows;
         };
 
-        let compare = columns.with_value(|columns| {
+        let compare = columns.with(|columns| {
             columns
                 .iter()
                 .find(|candidate| candidate.key == column)
@@ -90,13 +90,6 @@ where
     });
 
     let selecting = row_id.is_some() && selection.is_some();
-
-    let cells = StoredValue::new(columns.with_value(|columns| {
-        columns
-            .iter()
-            .map(|column| (column.class, column.cell))
-            .collect::<Vec<_>>()
-    }));
 
     view! {
         <Table attr:data-slot="data-table" class=class>
@@ -141,30 +134,30 @@ where
                                 }
                             })
                     }}
-                    {columns
-                        .with_value(|columns| {
-                            columns
-                                .iter()
-                                .map(|column| {
-                                    let key = column.key;
-                                    let header = column.header;
-                                    let class = column.class;
-                                    match column.compare {
-                                        None => {
+                    {move || {
+                        columns
+                            .with(|columns| {
+                                columns
+                                    .iter()
+                                    .map(|column| {
+                                        let key = column.key;
+                                        let header = column.header;
+                                        let class = column.class;
+                                        match column.compare {
+                                            None => {
 
-                                            view! { <TableHead class=class>{header}</TableHead> }
-                                                .into_any()
-                                        }
-                                        Some(_) => {
-                                            view! {
-                                                <TableHead
-                                                    class=class
-                                                    attr:aria-sort=move || sort.aria_sort(key)
-                                                >
-                                                    <button
-                                                        type="button"
-                                                        on:click=move |_| sort.toggle(key)
-                                                        class="group/sort -ml-2 inline-flex h-7 items-center gap-1 rounded-md px-2 text-left transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                                                view! { <TableHead class=class>{header}</TableHead> }
+                                                    .into_any()
+                                            }
+                                            Some(_) => {
+                                                view! {
+                                                    <TableSortHeaderRoot
+                                                        sort=sort
+                                                        column=key
+                                                        class=cn!(
+                                                            "h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground", class
+                                                        )
+                                                        button_class="group/sort -ml-2 inline-flex h-7 items-center gap-1 rounded-md px-2 text-left transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
                                                     >
                                                         {header}
                                                         <span
@@ -181,32 +174,37 @@ where
                                                                 }
                                                             }}
                                                         </span>
-                                                    </button>
-                                                </TableHead>
+                                                    </TableSortHeaderRoot>
+                                                }
+                                                    .into_any()
                                             }
-                                                .into_any()
                                         }
-                                    }
-                                })
-                                .collect_view()
-                        })}
+                                    })
+                                    .collect_view()
+                            })
+                    }}
                 </TableRow>
             </TableHeader>
 
             <TableBody>
                 {move || {
                     let rows = sorted.get();
-                    let width = columns.with_value(|columns| columns.len())
-                        + usize::from(selecting);
+                    let width = columns.with(|columns| columns.len()) + usize::from(selecting);
+                    let cells = columns
+                        .with(|columns| {
+                            columns
+                                .iter()
+                                .map(|column| (column.class, column.cell))
+                                .collect::<Vec<_>>()
+                        });
                     if rows.is_empty() {
-                        return
-                        view! {
+                        return view! {
                             <TableRow>
                                 <TableCell
                                     attr:colspan=width.to_string()
                                     class="h-24 text-center text-muted-foreground"
                                 >
-                                    {empty}
+                                    {move || empty.get()}
                                 </TableCell>
                             </TableRow>
                         }
@@ -214,6 +212,7 @@ where
                     }
                     rows.into_iter()
                         .map(|row| {
+                            let cells = cells.clone();
                             let id = row_id.map(|row_id| row_id.run(row.clone()));
                             let picked = {
                                 let id = id.clone();
@@ -226,9 +225,7 @@ where
                             };
 
                             view! {
-                                <TableRow attr:data-selected=move || {
-                                    picked.get().then_some("")
-                                }>
+                                <TableRow selected=picked>
                                     {selecting
                                         .then(|| {
                                             let id = id.clone().expect("checked by `selecting`");
@@ -252,9 +249,8 @@ where
                                             }
                                         })}
                                     {cells
-                                        .get_value()
-                                        .into_iter()
-                                        .map(|(class, cell)| {
+                                        .iter()
+                                        .map(|&(class, cell)| {
                                             let value = cell.run(row.clone());
                                             view! { <TableCell class=class>{value}</TableCell> }
                                         })

@@ -8,6 +8,7 @@ use leptos::prelude::*;
 pub mod calendar;
 pub mod check;
 pub mod chevron;
+pub mod circle;
 pub mod copy;
 pub mod ellipsis;
 pub mod loader;

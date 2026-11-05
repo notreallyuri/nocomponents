@@ -48,7 +48,7 @@ pub fn InputGroupAddon(
 #[component]
 pub fn InputGroupInput(
     #[prop(optional, into)] class: Signal<String>,
-    #[prop(optional)] input_type: InputType,
+    #[prop(optional, into)] input_type: Signal<InputType>,
     #[prop(default = None, into)] model: Option<RwSignal<String>>,
     #[prop(optional, into)] value: Signal<String>,
     #[prop(optional, into)] id: Signal<String>,
@@ -114,8 +114,8 @@ pub fn InputGroupText(
 
 #[component]
 pub fn InputGroupButton(
-    #[prop(default = ButtonVariant::Ghost)] variant: ButtonVariant,
-    #[prop(default = ButtonSize::Xs)] size: ButtonSize,
+    #[prop(default = ButtonVariant::Ghost.into(), into)] variant: Signal<ButtonVariant>,
+    #[prop(default = ButtonSize::Xs.into(), into)] size: Signal<ButtonSize>,
     #[prop(optional, into)] on_click: Option<Callback<ev::MouseEvent>>,
     #[prop(optional, into)] class: Signal<String>,
     children: ChildrenFn,

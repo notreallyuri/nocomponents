@@ -51,7 +51,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "horizontal",
-                ty: "bool",
+                ty: "Signal<bool>",
                 default: "false",
                 description: "Also draw a horizontal scrollbar. Off by default, since most scroll areas are vertical.",
             },

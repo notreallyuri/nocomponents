@@ -47,7 +47,7 @@ const ALPHANUMERIC: &str = r#"<InputOtp length=4 pattern=OtpPattern::Alphanumeri
 
 const COMPLETE: &str = r#"<InputOtp
     length=4
-    on_complete=Callback::new(move |code: String| submitted.set(code))
+    on_complete=move |code: String| submitted.set(code)
 >
     <InputOtpGroup>
         <InputOtpSlot index=0 />
@@ -96,10 +96,52 @@ const API: &[ApiEntry] = &[
                 description: "Merged over the wrapper's classes.",
             },
             Prop {
+                name: "id",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The id of the real `<input>`, which a `FieldLabel` points at. Inside a `Field` one is minted for you.",
+            },
+            Prop {
+                name: "label",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The accessible name of the real `<input>`, written as `aria-label`. Needed outside a `Field`, where nothing else names it.",
+            },
+            Prop {
+                name: "name",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The name the code is submitted under, on the real `<input>`. Empty leaves it out.",
+            },
+            Prop {
+                name: "required",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "The browser refuses to submit the form while the field is empty.",
+            },
+            Prop {
+                name: "form",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The `id` of a `<form>` it belongs to when it is not inside one. Empty means the one around it.",
+            },
+            Prop {
                 name: "value",
                 ty: "Option<RwSignal<String>>",
                 default: "None",
                 description: "Omit for an uncontrolled field that owns its own value.",
+            },
+            Prop {
+                name: "default_value",
+                ty: "String",
+                default: "\"\"",
+                description: "The code an uncontrolled field starts with. Ignored when `value` is given.",
+            },
+            Prop {
+                name: "on_value_change",
+                ty: "Option<Callback<String>>",
+                default: "None",
+                description: "Called with the code whenever it changes, including when the signal passed as `value` is written from outside.",
             },
             Prop {
                 name: "on_complete",
@@ -242,10 +284,7 @@ pub fn Page() -> impl IntoView {
                     code=COMPLETE
                 >
                     <div class="flex flex-col gap-3">
-                        <InputOtp
-                            length=4
-                            on_complete=Callback::new(move |code: String| submitted.set(code))
-                        >
+                        <InputOtp length=4 on_complete=move |code: String| submitted.set(code)>
                             <InputOtpGroup>
                                 <InputOtpSlot index=0 />
                                 <InputOtpSlot index=1 />

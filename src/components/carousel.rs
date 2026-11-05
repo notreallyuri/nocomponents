@@ -11,9 +11,10 @@ use leptos::prelude::*;
 
 #[component]
 pub fn Carousel(
-    #[prop(default = Orientation::Horizontal)] orientation: Orientation,
-    #[prop(default = false)] wrap: bool,
+    #[prop(into, default = Orientation::Horizontal.into())] orientation: Signal<Orientation>,
+    #[prop(optional, into)] wrap: Signal<bool>,
     #[prop(optional, into)] index: RwSignal<usize>,
+    #[prop(optional, into)] label: Signal<String>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
@@ -22,6 +23,7 @@ pub fn Carousel(
             orientation=orientation
             wrap=wrap
             index=index
+            label=label
             class=move || cn!("relative", class.get())
         >
             {children()}
@@ -98,15 +100,13 @@ fn CarouselButton(
                 )
             }
         >
-            {match (previous, ctx.orientation) {
+            {move || match (previous, ctx.orientation.get()) {
                 (true, Orientation::Horizontal) => view! { <ChevronLeft /> }.into_any(),
                 (false, Orientation::Horizontal) => view! { <ChevronRight /> }.into_any(),
                 (true, Orientation::Vertical) => view! { <ChevronUp /> }.into_any(),
                 (false, Orientation::Vertical) => view! { <ChevronDown /> }.into_any(),
             }}
-            <span class="sr-only">
-                {if previous { "Previous slide" } else { "Next slide" }}
-            </span>
+            <span class="sr-only">{if previous { "Previous slide" } else { "Next slide" }}</span>
         </CarouselButtonRoot>
     }
 }

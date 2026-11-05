@@ -38,7 +38,7 @@ let track = RwSignal::new(0usize);
 view! {
     <VideoPlayer
         src=Signal::derive(move || CLIPS[track.get()].to_string())
-        on_skip=Callback::new(move |step| {
+        on_skip=move |step| {
             track
                 .update(|track| {
                     *track = match step {
@@ -46,7 +46,7 @@ view! {
                         VideoPlayerStep::Next => (*track + 1).min(CLIPS.len() - 1),
                     };
                 })
-        })
+        }
     />
 }"#;
 
@@ -105,7 +105,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "mode",
-                ty: "VideoPlayerMode",
+                ty: "Signal<VideoPlayerMode>",
                 default: "Full",
                 description: "How much of the player the reader is given. A value rather than a signal: changing it remounts the player.",
             },
@@ -123,9 +123,9 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "muted",
-                ty: "bool",
+                ty: "Signal<bool>",
                 default: "false",
-                description: "The element's starting mute. The mute control writes to the element from then on.",
+                description: "Whether the element is muted. A change is written to the element; the mute control writes to it too.",
             },
             Prop {
                 name: "on_skip",
@@ -183,9 +183,9 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "muted",
-                ty: "bool",
+                ty: "Signal<bool>",
                 default: "false",
-                description: "The element's starting mute.",
+                description: "Whether the element is muted. A change is written to the element.",
             },
             Prop {
                 name: "class",
@@ -347,7 +347,7 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "label",
-                ty: "String",
+                ty: "Signal<String>",
                 default: "\"Settings\"",
                 description: "The trigger's `aria-label`, since the trigger is an icon.",
             },
@@ -564,7 +564,7 @@ pub fn Page() -> impl IntoView {
                         <VideoPlayer
                             src=playlist_source
                             mode=VideoPlayerMode::Reduced
-                            on_skip=Callback::new(move |step| {
+                            on_skip=move |step| {
                                 track
                                     .update(|track| {
                                         *track = match step {
@@ -572,7 +572,7 @@ pub fn Page() -> impl IntoView {
                                             VideoPlayerStep::Next => (*track + 1).min(3),
                                         };
                                     })
-                            })
+                            }
                             class="max-w-xl"
                         />
                         <p class="text-sm text-muted-foreground">
@@ -624,7 +624,7 @@ pub fn Page() -> impl IntoView {
                             src=menu_source
                             poster=menu_poster
                             class="max-w-xl"
-                            controls=Callback::new(move |_| {
+                            controls=move |_| {
                                 view! {
                                     <VideoPlayerSeek />
                                     <div class="flex items-center gap-1">
@@ -663,7 +663,7 @@ pub fn Page() -> impl IntoView {
                                     </div>
                                 }
                                     .into_any()
-                            })
+                            }
                         />
                     </div>
                 </DemoSection>

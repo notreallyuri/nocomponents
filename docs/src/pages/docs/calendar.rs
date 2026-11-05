@@ -46,7 +46,7 @@ const BOUNDS: &str = r#"// `min` and `max` fence the grid — and disable the pa
 <Calendar
     min=Date::today()
     max=Date::today().add_months(2)
-    disabled=Callback::new(|date: Date| matches!(date.weekday(), 0 | 6))
+    disabled=|date: Date| matches!(date.weekday(), 0 | 6)
 />"#;
 
 const MULTIPLE: &str = r#"<Calendar mode=CalendarMode::Multiple selected=selected />"#;
@@ -58,15 +58,27 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "mode",
-                ty: "CalendarMode",
+                ty: "Signal<CalendarMode>",
                 default: "Single",
                 description: "`Single` picks one date and clicking it again clears it; `Multiple` toggles each; `Range` takes two clicks and fills in between.",
             },
             Prop {
                 name: "selected",
-                ty: "RwSignal<Vec<Date>>",
+                ty: "Option<RwSignal<Vec<Date>>>",
+                default: "None",
+                description: "The selection, held by the caller, in every mode: one date, many, or a start and an end in order. Omit it and the calendar keeps its own.",
+            },
+            Prop {
+                name: "default_selected",
+                ty: "Vec<Date>",
                 default: "[]",
-                description: "The selection, in every mode: one date, many, or a start and an end in order.",
+                description: "The dates an uncontrolled calendar starts with. Ignored when `selected` is given.",
+            },
+            Prop {
+                name: "on_selected_change",
+                ty: "Option<Callback<Vec<Date>>>",
+                default: "None",
+                description: "Called with the new selection whenever it changes, including when the signal passed as `selected` is written from outside.",
             },
             Prop {
                 name: "month",
@@ -75,20 +87,32 @@ const API: &[ApiEntry] = &[
                 description: "The month on show. Pass one to drive the paging from outside; omitted, it starts on the first selected date's month, or today's.",
             },
             Prop {
+                name: "default_month",
+                ty: "Option<Date>",
+                default: "None",
+                description: "The month an uncontrolled calendar starts on; the first selected date's month, or today's, when omitted. Ignored when `month` is given.",
+            },
+            Prop {
+                name: "on_month_change",
+                ty: "Option<Callback<Date>>",
+                default: "None",
+                description: "Called with the new month whenever the one on show changes, including when the signal passed as `month` is written from outside.",
+            },
+            Prop {
                 name: "week_starts_on",
-                ty: "u32",
+                ty: "Signal<u32>",
                 default: "0",
                 description: "0 is Sunday, 1 Monday. The weekday header follows.",
             },
             Prop {
                 name: "min",
-                ty: "Option<Date>",
+                ty: "MaybeProp<Date>",
                 default: "None",
                 description: "The earliest date that can be picked. Also disables the paging button once a month is entirely below it.",
             },
             Prop {
                 name: "max",
-                ty: "Option<Date>",
+                ty: "MaybeProp<Date>",
                 default: "None",
                 description: "The latest date that can be picked.",
             },
@@ -238,7 +262,7 @@ pub fn Page() -> impl IntoView {
                         <Calendar
                             min=Date::today()
                             max=Date::today().add_months(2)
-                            disabled=Callback::new(|date: Date| matches!(date.weekday(), 0 | 6))
+                            disabled=|date: Date| matches!(date.weekday(), 0 | 6)
                         />
                     </div>
                 </DemoSection>

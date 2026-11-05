@@ -3,19 +3,42 @@ use crate::{
     icons::{check::Check, chevron::ChevronDown},
     primitives::select::{
         SelectContentRoot, SelectItemRoot, SelectPortalRoot, SelectRoot, SelectTriggerRoot,
-        use_select,
+        use_select_label,
     },
+    utils::controllable::forward,
 };
 use leptos::prelude::*;
 
 #[component]
 pub fn Select(
-    #[prop(optional, into)] value: RwSignal<Option<String>>,
+    #[prop(default = None, into)] value: Option<RwSignal<Option<String>>>,
+    #[prop(optional, into)] default_value: Option<String>,
+    #[prop(optional, into)] on_value_change: Option<Callback<Option<String>>>,
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] name: Signal<String>,
+    #[prop(optional, into)] required: Signal<bool>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional, into)] form: Signal<String>,
+    #[prop(default = None, into)] open: Option<RwSignal<bool>>,
+    #[prop(optional)] default_open: bool,
+    #[prop(optional, into)] on_open_change: Option<Callback<bool>>,
     children: ChildrenFn,
 ) -> impl IntoView {
+    let value = Some(value.unwrap_or_else(|| RwSignal::new(default_value)));
+
     view! {
-        <SelectRoot value=value class=move || cn!("relative w-full", class.get())>
+        <SelectRoot
+            open=open
+            default_open=default_open
+            on_open_change=forward(on_open_change)
+            value=value
+            name=name
+            required=required
+            disabled=disabled
+            form=form
+            on_value_change=forward(on_value_change)
+            class=move || cn!("relative w-full", class.get())
+        >
             {children()}
         </SelectRoot>
     }
@@ -38,14 +61,10 @@ pub fn SelectTrigger(
 }
 
 #[component]
-pub fn SelectValue(#[prop(into)] placeholder: String) -> impl IntoView {
-    let ctx = use_select();
+pub fn SelectValue(#[prop(into)] placeholder: Signal<String>) -> impl IntoView {
+    let label = use_select_label();
 
-    view! {
-        <span class="truncate">
-            {move || ctx.value.get().unwrap_or_else(|| placeholder.clone())}
-        </span>
-    }
+    view! { <span class="truncate">{move || label.get().unwrap_or_else(|| placeholder.get())}</span> }
 }
 
 #[component]
@@ -61,12 +80,12 @@ pub fn SelectContent(
     view! {
         <SelectContentRoot class=move || {
             cn!(
-                "z-50 overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md pointer-events-auto data-[state=closed]:pointer-events-none",
+                "z-50 flex max-h-96 flex-col overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md pointer-events-auto data-[state=closed]:pointer-events-none",
                 "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2",
                 class.get()
             )
         }>
-            <div class="p-1 w-full max-h-96 overflow-y-auto">{children()}</div>
+            <div class="min-h-0 w-full flex-1 overflow-y-auto p-1">{children()}</div>
         </SelectContentRoot>
     }
 }
@@ -74,12 +93,16 @@ pub fn SelectContent(
 #[component]
 pub fn SelectItem(
     #[prop(into)] value: String,
+    #[prop(optional, into)] label: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
     view! {
         <SelectItemRoot
             value=value
+            label=label
+            disabled=disabled
             class=move || {
                 cn!(
                     "group relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50",

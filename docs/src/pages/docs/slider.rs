@@ -38,19 +38,19 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "min",
-                ty: "f64",
+                ty: "Signal<f64>",
                 default: "0.0",
                 description: "The value at the start of the track.",
             },
             Prop {
                 name: "max",
-                ty: "f64",
+                ty: "Signal<f64>",
                 default: "100.0",
                 description: "The value at the end of the track.",
             },
             Prop {
                 name: "step",
-                ty: "f64",
+                ty: "Signal<f64>",
                 default: "1.0",
                 description: "What the value snaps to, rounded at the step's own precision.",
             },
@@ -73,6 +73,24 @@ const API: &[ApiEntry] = &[
                 description: "Merged over the wrapper's classes.",
             },
             Prop {
+                name: "id",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Given to the first thumb, so a `FieldLabel` can name it. Inside a `Field` this is filled in, along with `aria-describedby` and `aria-invalid` on every thumb.",
+            },
+            Prop {
+                name: "name",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The name the values are submitted under, through one `<input type=\"hidden\">` per thumb: `name` for a single thumb, `name[]` once per thumb, lowest first, for a range. Empty leaves it out.",
+            },
+            Prop {
+                name: "form",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The `id` of a `<form>` it belongs to when it is not inside one. Empty means the one around it.",
+            },
+            Prop {
                 name: "value",
                 ty: "Option<RwSignal<Vec<f64>>>",
                 default: "None",
@@ -83,6 +101,12 @@ const API: &[ApiEntry] = &[
                 ty: "Option<Vec<f64>>",
                 default: "None",
                 description: "Where an uncontrolled slider starts. Its length decides how many thumbs there are.",
+            },
+            Prop {
+                name: "on_value_change",
+                ty: "Option<Callback<Vec<f64>>>",
+                default: "None",
+                description: "Called with every thumb's value whenever one moves, including when the signal passed as `value` is written from outside.",
             },
         ],
     },

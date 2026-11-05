@@ -1,4 +1,7 @@
-use crate::{primitives::roving_focus::use_roving_focus, utils::types::Orientation};
+use crate::{
+    primitives::roving_focus::use_roving_focus,
+    utils::{controllable::controllable, next_id, types::Orientation},
+};
 use leptos::{ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
 use web_sys::HtmlElement;
@@ -14,13 +17,37 @@ pub enum TabsListVariants {
 pub struct TabsContext {
     pub current_tab: RwSignal<String>,
     /// Which arrow keys walk the tab list, and what `aria-orientation` it reports.
-    pub orientation: Orientation,
+    pub orientation: Signal<Orientation>,
+    /// The prefix every tab and panel id is minted from, so a trigger and its panel can point at
+    /// each other without the caller naming either.
+    pub id_prefix: StoredValue<String>,
 }
 
 impl TabsContext {
+    pub fn trigger_id(&self, value: &str) -> String {
+        format!("{}-tab-{}", self.id_prefix.get_value(), id_part(value))
+    }
+
+    pub fn content_id(&self, value: &str) -> String {
+        format!("{}-panel-{}", self.id_prefix.get_value(), id_part(value))
+    }
+
     pub fn set_tab(&self, tab: String) {
         self.current_tab.set(tab);
     }
+}
+
+fn id_part(value: &str) -> String {
+    value
+        .chars()
+        .map(|c| {
+            if c.is_alphanumeric() || c == '-' {
+                c
+            } else {
+                '_'
+            }
+        })
+        .collect()
 }
 
 pub fn use_tabs() -> TabsContext {
@@ -29,21 +56,29 @@ pub fn use_tabs() -> TabsContext {
 
 #[component]
 pub fn TabsRoot(
-    #[prop(into)] default_value: String,
+    /// The selected tab, held by the caller. Omit it and the root keeps its own.
+    #[prop(default = None, into)]
+    value: Option<RwSignal<String>>,
+    /// The tab an uncontrolled root starts on. Ignored when `value` is given.
+    #[prop(optional, into)]
+    default_value: String,
+    /// Called with the new value whenever the selected tab changes, however that came about.
+    #[prop(optional, into)]
+    on_value_change: Option<Callback<String>>,
     #[prop(optional, into)] class: Signal<String>,
-    #[prop(optional, into)] orientation: Orientation,
+    #[prop(optional, into)] orientation: Signal<Orientation>,
     children: Children,
 ) -> impl IntoView {
-    let current_tab = RwSignal::new(default_value);
-    let orientation_str = orientation.as_str();
+    let current_tab = controllable(value, default_value, on_value_change);
 
     provide_context(TabsContext {
         current_tab,
         orientation,
+        id_prefix: StoredValue::new(next_id("tabs")),
     });
 
     view! {
-        <div class=class data-orientation=orientation_str data-slot="tabs">
+        <div class=class data-orientation=move || orientation.get().as_str() data-slot="tabs">
             {children()}
         </div>
     }
@@ -75,7 +110,7 @@ pub fn TabsListRoot(
             node_ref=list_ref
             data-variant=variant_str
             role="tablist"
-            aria-orientation=ctx.orientation.as_str()
+            aria-orientation=move || ctx.orientation.get().as_str()
             on:keydown=move |e: ev::KeyboardEvent| {
                 if roving.on_keydown(&e.key()) {
                     e.prevent_default();
@@ -107,11 +142,15 @@ pub fn TabsTriggerRoot(
 
     let tab_value = value.clone();
     let is_active = Memo::new(move |_| ctx.current_tab.get() == tab_value);
+    let id = ctx.trigger_id(&value);
+    let controls = ctx.content_id(&value);
 
     view! {
         <button
             type="button"
             role="tab"
+            id=id
+            aria-controls=controls
             tabindex="-1"
             data-roving-item=""
             aria-selected=move || if is_active.get() { "true" } else { "false" }
@@ -133,11 +172,15 @@ pub fn TabsContentRoot(
 ) -> impl IntoView {
     let ctx = use_tabs();
 
+    let id = ctx.content_id(&value);
+    let labelled_by = ctx.trigger_id(&value);
     let is_active = Memo::new(move |_| ctx.current_tab.get() == value);
 
     view! {
         <div
             role="tabpanel"
+            id=id
+            aria-labelledby=labelled_by
             data-state=move || if is_active.get() { "active" } else { "inactive" }
             class=class
         >

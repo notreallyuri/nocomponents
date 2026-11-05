@@ -43,15 +43,27 @@ const API: &[ApiEntry] = &[ApiEntry {
     props: &[
         Prop {
             name: "mode",
-            ty: "CalendarMode",
+            ty: "Signal<CalendarMode>",
             default: "Single",
             description: "As on `Calendar`. `Single` closes on the first click, `Range` on the second, `Multiple` stays open.",
         },
         Prop {
             name: "selected",
-            ty: "RwSignal<Vec<Date>>",
+            ty: "Option<RwSignal<Vec<Date>>>",
+            default: "None",
+            description: "The selection, held by the caller, in the shape the mode implies. Omit it and the picker keeps its own.",
+        },
+        Prop {
+            name: "default_selected",
+            ty: "Vec<Date>",
             default: "[]",
-            description: "The selection, in the shape the mode implies.",
+            description: "The dates an uncontrolled picker starts with. Ignored when `selected` is given.",
+        },
+        Prop {
+            name: "on_selected_change",
+            ty: "Option<Callback<Vec<Date>>>",
+            default: "None",
+            description: "Called with the new selection whenever it changes, including when the signal passed as `selected` is written from outside.",
         },
         Prop {
             name: "placeholder",
@@ -66,20 +78,50 @@ const API: &[ApiEntry] = &[ApiEntry {
             description: "The month on show, if you want to drive the paging.",
         },
         Prop {
+            name: "default_month",
+            ty: "Option<Date>",
+            default: "None",
+            description: "The month an uncontrolled calendar opens on. Ignored when `month` is given.",
+        },
+        Prop {
+            name: "on_month_change",
+            ty: "Option<Callback<Date>>",
+            default: "None",
+            description: "Called with the new month whenever the one on show changes.",
+        },
+        Prop {
+            name: "open",
+            ty: "Option<RwSignal<bool>>",
+            default: "None",
+            description: "Whether the calendar is open, held by the caller. Omit it and the picker keeps its own.",
+        },
+        Prop {
+            name: "default_open",
+            ty: "bool",
+            default: "false",
+            description: "Whether the calendar starts open. Ignored when `open` is given.",
+        },
+        Prop {
+            name: "on_open_change",
+            ty: "Option<Callback<bool>>",
+            default: "None",
+            description: "Called with the new value whenever the calendar opens or closes, however that came about.",
+        },
+        Prop {
             name: "week_starts_on",
-            ty: "u32",
+            ty: "Signal<u32>",
             default: "0",
             description: "0 is Sunday, 1 Monday.",
         },
         Prop {
             name: "min",
-            ty: "Option<Date>",
+            ty: "MaybeProp<Date>",
             default: "None",
             description: "The earliest date that can be picked.",
         },
         Prop {
             name: "max",
-            ty: "Option<Date>",
+            ty: "MaybeProp<Date>",
             default: "None",
             description: "The latest date that can be picked.",
         },
@@ -91,19 +133,19 @@ const API: &[ApiEntry] = &[ApiEntry {
         },
         Prop {
             name: "side",
-            ty: "Side",
+            ty: "Signal<Side>",
             default: "Side::Bottom",
             description: "Which side of the button the calendar opens on.",
         },
         Prop {
             name: "align",
-            ty: "Align",
+            ty: "Signal<Align>",
             default: "Start",
             description: "How it lines up with the button.",
         },
         Prop {
             name: "side_offset",
-            ty: "SideOffset",
+            ty: "Signal<SideOffset>",
             default: "SideOffset(4.0)",
             description: "Distance from the button, in pixels.",
         },
@@ -189,7 +231,7 @@ pub fn Page() -> impl IntoView {
                         <DatePicker
                             selected=delivery
                             min=Date::today()
-                            disabled=Callback::new(|date: Date| matches!(date.weekday(), 0 | 6))
+                            disabled=|date: Date| matches!(date.weekday(), 0 | 6)
                         />
                         <FieldDescription>"Weekdays only, from today onwards."</FieldDescription>
                     </Field>

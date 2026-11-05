@@ -61,15 +61,33 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "delay",
-                ty: "u64",
+                ty: "Signal<u64>",
                 default: "600",
                 description: "How long the pointer has to rest before the card opens.",
             },
             Prop {
                 name: "close_delay",
-                ty: "u64",
+                ty: "Signal<u64>",
                 default: "250",
                 description: "The grace period after leaving, long enough to cross the gap into the card.",
+            },
+            Prop {
+                name: "open",
+                ty: "Option<RwSignal<bool>>",
+                default: "None",
+                description: "Pass one to drive the card from outside or to watch it; omit it and the root owns the signal.",
+            },
+            Prop {
+                name: "default_open",
+                ty: "bool",
+                default: "false",
+                description: "Whether the card starts open. Ignored when `open` is given.",
+            },
+            Prop {
+                name: "on_open_change",
+                ty: "Option<Callback<bool>>",
+                default: "None",
+                description: "Called with the new value whenever the card opens or closes, including when the signal passed as `open` is written from outside.",
             },
             Prop {
                 name: "children",
@@ -109,19 +127,19 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "side",
-                ty: "Side",
+                ty: "Signal<Side>",
                 default: "Side::Bottom",
                 description: "One of: Left, Right, Bottom, Top.",
             },
             Prop {
                 name: "align",
-                ty: "Align",
+                ty: "Signal<Align>",
                 default: "Start",
                 description: "One of: Start, Center, End.",
             },
             Prop {
                 name: "side_offset",
-                ty: "SideOffset",
+                ty: "Signal<SideOffset>",
                 default: "SideOffset(8.0)",
                 description: "Distance from the trigger, in pixels.",
             },

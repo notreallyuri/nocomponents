@@ -1,3 +1,4 @@
+use crate::{primitives::field::field_disabled, utils::controllable::controllable};
 use leptos::{ev, prelude::*};
 
 #[component]
@@ -6,18 +7,23 @@ pub fn ToggleRoot(
     /// Omit for an uncontrolled toggle that owns its own state.
     #[prop(default = None, into)]
     pressed: Option<RwSignal<bool>>,
-    #[prop(optional, into)] disabled: Signal<bool>,
-    #[prop(default = None)] on_change: Option<Callback<bool>>,
+    /// Whether an uncontrolled toggle starts pressed. Ignored when `pressed` is given.
+    #[prop(optional)]
+    default_pressed: bool,
+    /// Called with the new value whenever it is pressed or released, however that came about.
+    #[prop(optional, into)]
+    on_pressed_change: Option<Callback<bool>>,
+    /// Resolved against any [`crate::primitives::field`] around it.
+    #[prop(optional, into)]
+    disabled: Signal<bool>,
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
-    let pressed = pressed.unwrap_or_else(|| RwSignal::new(false));
+    let pressed = controllable(pressed, default_pressed, on_pressed_change);
+    let disabled = field_disabled(disabled);
 
     let toggle = move |_: ev::MouseEvent| {
         if !disabled.get() {
             pressed.update(|p| *p = !*p);
-            if let Some(cb) = on_change {
-                cb.run(pressed.get_untracked());
-            }
         }
     };
 
@@ -27,7 +33,7 @@ pub fn ToggleRoot(
             data-slot="toggle"
             aria-pressed=move || if pressed.get() { "true" } else { "false" }
             data-state=move || if pressed.get() { "on" } else { "off" }
-            disabled=disabled
+            disabled=move || disabled.get()
             on:click=toggle
             class=class
         >

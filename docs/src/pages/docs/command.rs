@@ -109,19 +109,43 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "search",
-                ty: "RwSignal<String>",
+                ty: "Option<RwSignal<String>>",
+                default: "None",
+                description: "What is typed into the input, held by the caller. Pass one to read it, preset it or clear it from outside.",
+            },
+            Prop {
+                name: "default_search",
+                ty: "String",
                 default: "\"\"",
-                description: "What is typed into the input. Pass one to read it, preset it or clear it from outside.",
+                description: "What the input starts with. Ignored when `search` is given.",
+            },
+            Prop {
+                name: "on_search_change",
+                ty: "Option<Callback<String>>",
+                default: "None",
+                description: "Called with the new text whenever the search changes, including when the signal passed as `search` is written from outside.",
             },
             Prop {
                 name: "value",
-                ty: "RwSignal<Option<String>>",
+                ty: "Option<RwSignal<Option<String>>>",
                 default: "None",
                 description: "The value of the last item activated, for a caller who would rather read a signal than pass `on_select` to every item.",
             },
             Prop {
+                name: "default_value",
+                ty: "Option<String>",
+                default: "None",
+                description: "The value to start with, as in `default_value=\"apple\"`. Ignored when `value` is given.",
+            },
+            Prop {
+                name: "on_value_change",
+                ty: "Option<Callback<Option<String>>>",
+                default: "None",
+                description: "Called with the new value whenever it changes, including when the signal passed as `value` is written from outside.",
+            },
+            Prop {
                 name: "should_filter",
-                ty: "bool",
+                ty: "Signal<bool>",
                 default: "true",
                 description: "Off when the list arrives already narrowed — a search that went to a server has no business being filtered again on the way in.",
             },
@@ -310,6 +334,18 @@ const API: &[ApiEntry] = &[
                 description: "Pass one to drive it from outside; omit it and the dialog owns the signal.",
             },
             Prop {
+                name: "default_open",
+                ty: "bool",
+                default: "false",
+                description: "Whether the palette starts open. Ignored when `open` is given.",
+            },
+            Prop {
+                name: "on_open_change",
+                ty: "Option<Callback<bool>>",
+                default: "None",
+                description: "Called with the new value whenever the palette opens or closes, including when the signal passed as `open` is written from outside.",
+            },
+            Prop {
                 name: "shortcut",
                 ty: "Option<&'static str>",
                 default: "Some(\"k\")",
@@ -341,7 +377,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "should_filter",
-                ty: "bool",
+                ty: "Signal<bool>",
                 default: "true",
                 description: "As on `Command`.",
             },

@@ -3,12 +3,15 @@ use crate::{
     components::button::{Button, ButtonSize, ButtonVariant},
     icons::x::X,
     primitives::dialog::{
-        DialogContentRoot, DialogPart, DialogPortalRoot, DialogRoot, use_dialog,
+        DialogContentRoot, DialogPart, DialogPortalRoot, DialogRoot, DialogTriggerRoot, use_dialog,
         use_dialog_label_id,
     },
-    utils::types::{AsClass, Side},
+    utils::{
+        controllable::forward,
+        types::{AsClass, Side, TriggerRender},
+    },
 };
-use leptos::{either::Either, ev, prelude::*};
+use leptos::{either::Either, prelude::*};
 
 struct SheetSide(Side);
 
@@ -32,67 +35,100 @@ impl AsClass for SheetSide {
 }
 
 #[component]
-pub fn Sheet(#[prop(optional)] open: Option<RwSignal<bool>>, children: Children) -> impl IntoView {
-    view! { <DialogRoot open=open>{children()}</DialogRoot> }
+pub fn Sheet(
+    #[prop(default = None, into)] open: Option<RwSignal<bool>>,
+    #[prop(optional)] default_open: bool,
+    #[prop(optional, into)] on_open_change: Option<Callback<bool>>,
+    #[prop(default = true)] modal: bool,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <DialogRoot
+            open=open
+            default_open=default_open
+            on_open_change=forward(on_open_change)
+            modal=modal
+        >
+            {children()}
+        </DialogRoot>
+    }
 }
 
 #[component]
 pub fn SheetTrigger(
-    #[prop(optional)] size: ButtonSize,
-    #[prop(optional)] variant: ButtonVariant,
+    #[prop(optional, into)] size: Signal<ButtonSize>,
+    #[prop(optional, into)] variant: Signal<ButtonVariant>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
-    #[prop(optional, into)] render: Option<Callback<Callback<ev::MouseEvent>, AnyView>>,
+    #[prop(optional, into)] render: Option<Callback<TriggerRender, AnyView>>,
     #[prop(optional)] children: Option<ChildrenFn>,
 ) -> impl IntoView {
-    let ctx = use_dialog();
-    let on_click = Callback::new(move |_: ev::MouseEvent| ctx.toggle());
+    let children = StoredValue::new(children);
 
-    match render {
-        Some(render_fn) => Either::Left(render_fn.run(on_click)),
-        None => Either::Right(view! {
+    let styled = Callback::new(move |trigger: TriggerRender| {
+        view! {
             <Button
                 size=size
                 variant=variant
+                node_ref=trigger.node_ref
+                on_click=trigger.on_click
+                disabled=trigger.disabled
                 class=class
-                disabled=disabled
-                on:click=move |e| on_click.run(e)
             >
-                {
-                    let children = children.clone();
-                    move || match &children {
-                        Some(child) => Either::Left(child()),
-                        None => Either::Right(view! { "" }.into_any()),
-                    }
-                }
+                {move || {
+                    children
+                        .with_value(|children| match children {
+                            Some(child) => Either::Left(child()),
+                            None => Either::Right(view! { "" }.into_any()),
+                        })
+                }}
             </Button>
-        }),
+        }
+        .into_any()
+    });
+
+    view! {
+        <DialogTriggerRoot
+            data_slot="sheet-trigger"
+            disabled=disabled
+            as_child=render.unwrap_or(styled)
+        />
     }
 }
 
 #[component]
 pub fn SheetContent(
-    #[prop(default = Side::Right)] side: Side,
+    #[prop(default = Side::Right.into(), into)] side: Signal<Side>,
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] id: Option<String>,
     children: ChildrenFn,
 ) -> impl IntoView {
     let context = use_dialog();
+    if let Some(id) = id {
+        context.content_id.set(id);
+    }
     let stored_children = StoredValue::new(children);
-    let side_class = SheetSide(side).as_class();
 
     view! {
         <DialogPortalRoot>
             <div data-slot="sheet-portal">
-                <div
-                    data-state=move || if context.is_open.get() { "open" } else { "closed" }
-                    class="fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:pointer-events-none"
-                    on:click=move |_| context.close()
-                />
-
+                {context
+                    .modal
+                    .then(|| {
+                        view! {
+                            <div
+                                data-state=move || {
+                                    if context.is_open.get() { "open" } else { "closed" }
+                                }
+                                class="fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:pointer-events-none"
+                                on:click=move |_| context.close()
+                            />
+                        }
+                    })}
                 <DialogContentRoot class=move || {
                     cn!(
                         "fixed z-50 flex flex-col gap-4 bg-popover p-4 text-sm text-popover-foreground shadow-lg duration-200 outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:pointer-events-none",
-                        side_class,
+                        SheetSide(side.get()).as_class(),
                         class.get()
                     )
                 }>
@@ -115,11 +151,7 @@ pub fn SheetHeader(
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
-    view! {
-        <div class=move || {
-            cn!("flex flex-col gap-1.5 pr-8", class.get())
-        }>{children()}</div>
-    }
+    view! { <div class=move || { cn!("flex flex-col gap-1.5 pr-8", class.get()) }>{children()}</div> }
 }
 
 #[component]
@@ -164,8 +196,8 @@ pub fn SheetFooter(
 
 #[component]
 pub fn SheetClose(
-    #[prop(optional)] size: ButtonSize,
-    #[prop(default = ButtonVariant::Outline)] variant: ButtonVariant,
+    #[prop(optional, into)] size: Signal<ButtonSize>,
+    #[prop(default = ButtonVariant::Outline.into(), into)] variant: Signal<ButtonVariant>,
     #[prop(optional, into)] class: Signal<String>,
     children: ChildrenFn,
 ) -> impl IntoView {

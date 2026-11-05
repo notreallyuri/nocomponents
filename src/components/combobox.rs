@@ -7,21 +7,39 @@ use crate::{
         ComboboxTriggerRoot, use_combobox,
     },
     primitives::floating::TriggerRender,
-    utils::types::{Align, Side, SideOffset},
+    utils::{
+        controllable::forward,
+        types::{Align, Side, SideOffset},
+    },
 };
 use leptos::{either::Either, prelude::*};
 
 #[component]
 pub fn Combobox(
-    #[prop(optional, into)] value: RwSignal<Option<String>>,
+    #[prop(default = None, into)] value: Option<RwSignal<Option<String>>>,
+    #[prop(optional, into)] default_value: Option<String>,
+    #[prop(optional, into)] on_value_change: Option<Callback<Option<String>>>,
     #[prop(optional, into)] display_value: RwSignal<Option<String>>,
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] name: Signal<String>,
+    #[prop(optional, into)] form: Signal<String>,
+    #[prop(default = None, into)] open: Option<RwSignal<bool>>,
+    #[prop(optional)] default_open: bool,
+    #[prop(optional, into)] on_open_change: Option<Callback<bool>>,
     children: ChildrenFn,
 ) -> impl IntoView {
+    let value = Some(value.unwrap_or_else(|| RwSignal::new(default_value)));
+
     view! {
         <ComboboxRoot
+            open=open
+            default_open=default_open
+            on_open_change=forward(on_open_change)
             value=value
+            on_value_change=forward(on_value_change)
             display_value=display_value
+            name=name
+            form=form
             class=move || cn!("relative inline-block text-left", class.get())
         >
             {children()}
@@ -31,8 +49,8 @@ pub fn Combobox(
 
 #[component]
 pub fn ComboboxTrigger(
-    #[prop(optional)] size: ButtonSize,
-    #[prop(default = ButtonVariant::Outline)] variant: ButtonVariant,
+    #[prop(optional, into)] size: Signal<ButtonSize>,
+    #[prop(default = ButtonVariant::Outline.into(), into)] variant: Signal<ButtonVariant>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(default = None, into)] render: Option<Callback<TriggerRender, AnyView>>,
@@ -94,10 +112,10 @@ pub fn ComboboxValue(
 
 #[component]
 pub fn ComboboxContent(
-    #[prop(optional)] side: Side,
-    #[prop(optional)] align: Align,
-    #[prop(optional)] side_offset: SideOffset,
-    #[prop(default = true)] should_filter: bool,
+    #[prop(optional, into)] side: Signal<Side>,
+    #[prop(optional, into)] align: Signal<Align>,
+    #[prop(optional, into)] side_offset: Signal<SideOffset>,
+    #[prop(into, default = true.into())] should_filter: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
     children: ChildrenFn,
 ) -> impl IntoView {
@@ -131,10 +149,10 @@ pub fn ComboboxItem(
     #[prop(optional, into)] label: Signal<String>,
     #[prop(optional, into)] keywords: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
-    #[prop(default = None, into)] on_select: Option<Callback<String>>,
-    #[prop(default = true)] deselectable: bool,
+    #[prop(optional, into)] on_select: Option<Callback<String>>,
+    #[prop(into, default = true.into())] deselectable: Signal<bool>,
     #[prop(default = None, into)] selected: Option<Signal<bool>>,
-    #[prop(default = true)] close_on_select: bool,
+    #[prop(into, default = true.into())] close_on_select: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
     children: ChildrenFn,
 ) -> impl IntoView {
@@ -144,7 +162,7 @@ pub fn ComboboxItem(
             label=label
             keywords=keywords
             disabled=disabled
-            on_select=on_select
+            on_select=forward(on_select)
             deselectable=deselectable
             selected=selected
             close_on_select=close_on_select

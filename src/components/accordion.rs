@@ -4,16 +4,19 @@ use crate::{
     primitives::accordion::{
         AccordionContentRoot, AccordionItemRoot, AccordionRoot, AccordionTriggerRoot, AccordionType,
     },
+    utils::controllable::forward,
 };
 use leptos::prelude::*;
 
 #[component]
 pub fn Accordion(
-    #[prop(optional)] kind: AccordionType,
+    #[prop(optional, into)] kind: Signal<AccordionType>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
-    #[prop(default = true)] collapsible: bool,
+    #[prop(into, default = true.into())] collapsible: Signal<bool>,
     #[prop(default = None, into)] value: Option<RwSignal<Vec<String>>>,
+    #[prop(optional, into)] default_value: Vec<String>,
+    #[prop(optional, into)] on_value_change: Option<Callback<Vec<String>>>,
     children: Children,
 ) -> impl IntoView {
     view! {
@@ -22,6 +25,8 @@ pub fn Accordion(
             disabled=disabled
             collapsible=collapsible
             value=value
+            default_value=default_value
+            on_value_change=forward(on_value_change)
             class=move || cn!("w-full", class.get())
         >
             {children()}
@@ -63,7 +68,8 @@ pub fn AccordionTrigger(
                 )
             }
         >
-            {children()} <ChevronDown class="size-4 shrink-0 text-muted-foreground transition-transform duration-200" />
+            {children()}
+            <ChevronDown class="size-4 shrink-0 text-muted-foreground transition-transform duration-200" />
         </AccordionTriggerRoot>
     }
 }
@@ -75,7 +81,9 @@ pub fn AccordionContent(
 ) -> impl IntoView {
     view! {
         <AccordionContentRoot class="overflow-hidden text-sm data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
-            <div class=move || cn!("pt-0 pb-4 text-muted-foreground", class.get())>{children()}</div>
+            <div class=move || {
+                cn!("pt-0 pb-4 text-muted-foreground", class.get())
+            }>{children()}</div>
         </AccordionContentRoot>
     }
 }

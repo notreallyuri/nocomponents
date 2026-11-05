@@ -73,10 +73,10 @@ pub fn DocSearch() -> impl IntoView {
                                         view! {
                                             <CommandItem
                                                 value=item.label
-                                                on_select=Callback::new(move |_| {
+                                                on_select=move |_| {
                                                     open.set(false);
                                                     navigate(target, Default::default());
-                                                })
+                                                }
                                             >
                                                 {item.label}
                                             </CommandItem>
@@ -98,10 +98,10 @@ pub fn DocSearch() -> impl IntoView {
                             view! {
                                 <CommandItem
                                     value=block.title
-                                    on_select=Callback::new(move |_| {
+                                    on_select=move |_| {
                                         open.set(false);
                                         navigate(&format!("/blocks/{target}"), Default::default());
-                                    })
+                                    }
                                 >
                                     {block.title}
                                 </CommandItem>
@@ -118,13 +118,13 @@ pub fn DocSearch() -> impl IntoView {
                             view! {
                                 <CommandItem
                                     value=primitive.name
-                                    on_select=Callback::new(move |_| {
+                                    on_select=move |_| {
                                         open.set(false);
                                         navigate(
                                             &format!("/primitives/{target}"),
                                             Default::default(),
                                         );
-                                    })
+                                    }
                                 >
                                     {primitive.name}
                                 </CommandItem>

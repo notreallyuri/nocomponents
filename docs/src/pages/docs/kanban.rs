@@ -138,7 +138,7 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "index",
-                ty: "usize",
+                ty: "Signal<usize>",
                 default: "",
                 description: "How many cards down this gap sits. 0 is above the first card.",
             },
@@ -223,9 +223,7 @@ pub fn Page() -> impl IntoView {
                                                         view! {
                                                             <KanbanCard
                                                                 id=card.clone()
-                                                                on_select=Callback::new(move |_| {
-                                                                    clicked.set(Some(name.clone()))
-                                                                })
+                                                                on_select=move |_| { clicked.set(Some(name.clone())) }
                                                             >
                                                                 {card.clone()}
                                                             </KanbanCard>

@@ -15,8 +15,14 @@
 //! Here the default is [`ButtonType::Button`] and a submit is asked for by name.
 
 use crate::{primitives::field::field_disabled, utils::types::StyledRender};
-use leptos::{either::Either, ev, prelude::*};
+use leptos::{
+    either::Either,
+    ev,
+    prelude::*,
+    wasm_bindgen::{JsCast, closure::Closure},
+};
 use leptos_node_ref::AnyNodeRef;
+use web_sys::{Element, MouseEvent};
 
 /// What the button does to a form around it.
 #[derive(Default, Clone, Copy, PartialEq)]
@@ -44,7 +50,7 @@ pub fn ButtonRoot(
     /// trigger it hangs off, say.
     #[prop(default = None, into)]
     node_ref: Option<AnyNodeRef>,
-    #[prop(default = None, into)] on_click: Option<Callback<ev::MouseEvent>>,
+    #[prop(optional, into)] on_click: Option<Callback<ev::MouseEvent>>,
     #[prop(optional, into)] class: Signal<String>,
     /// Resolved against any [`crate::primitives::field`] around it, so a button inside a disabled
     /// field is disabled without being told twice.
@@ -83,7 +89,7 @@ pub fn ButtonRoot(
 
     // Refused here rather than left to the styled layer's `disabled:pointer-events-none`: the
     // classes are the caller's to replace, and a button someone else styled has to refuse it too.
-    let on_click = move |ev: ev::MouseEvent| {
+    let handle_click = move |ev: ev::MouseEvent| {
         if disabled.get() {
             ev.prevent_default();
             return;
@@ -93,6 +99,51 @@ pub fn ButtonRoot(
             cb.run(ev);
         }
     };
+
+    // The element is the caller's, so `on_click` and the refusal ride in on a listener rather than
+    // an `on:click` in the markup. Captured, so the refusal comes before any handler the caller put
+    // on the same node, which would otherwise run on a button that is meant to be inert.
+    if render.is_some() {
+        let listener = StoredValue::new_local(None::<(Element, Closure<dyn FnMut(MouseEvent)>)>);
+
+        Effect::new(move |_| {
+            let Some(el) = node_ref.get() else {
+                return;
+            };
+            if listener.with_value(|held| held.is_some()) {
+                return;
+            }
+
+            let closure = Closure::<dyn FnMut(MouseEvent)>::new(move |ev: MouseEvent| {
+                if disabled.get_untracked() {
+                    ev.prevent_default();
+                    ev.stop_immediate_propagation();
+                    return;
+                }
+
+                if let Some(cb) = on_click {
+                    cb.run(ev);
+                }
+            });
+
+            let _ = el.add_event_listener_with_callback_and_bool(
+                "click",
+                closure.as_ref().unchecked_ref(),
+                true,
+            );
+            listener.set_value(Some((el, closure)));
+        });
+
+        on_cleanup(move || {
+            if let Some(Some((el, closure))) = listener.try_update_value(|held| held.take()) {
+                let _ = el.remove_event_listener_with_callback_and_bool(
+                    "click",
+                    closure.as_ref().unchecked_ref(),
+                    true,
+                );
+            }
+        });
+    }
 
     match render {
         Some(render_fn) => Either::Left(render_fn.run(StyledRender {
@@ -107,7 +158,7 @@ pub fn ButtonRoot(
                 node_ref=node_ref
                 disabled=move || disabled.get()
                 data-disabled=move || disabled.get().then_some("true")
-                on:click=on_click
+                on:click=handle_click
                 class=class
             >
                 {children.map(|children| children())}

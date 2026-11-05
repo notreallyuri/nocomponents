@@ -8,7 +8,11 @@ use crate::{
         field::{FieldControl, FieldSetControl},
         roving_focus::use_roving_focus,
     },
-    utils::types::Orientation,
+    utils::{
+        controllable::controllable,
+        form::{FormInput, on_form_reset},
+        types::Orientation,
+    },
 };
 use leptos::{context::Provider, ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
@@ -18,6 +22,11 @@ use web_sys::HtmlElement;
 pub struct RadioGroupContext {
     pub value: RwSignal<Option<String>>,
     pub disabled: Signal<bool>,
+    /// The name every item's native radio is submitted under. Empty leaves the group out of a
+    /// form's data.
+    pub name: Signal<String>,
+    pub required: Signal<bool>,
+    pub form: Signal<String>,
 }
 
 impl RadioGroupContext {
@@ -44,18 +53,42 @@ pub fn RadioGroupRoot(
     /// Omit for an uncontrolled group that owns its own selection.
     #[prop(default = None, into)]
     value: Option<RwSignal<Option<String>>>,
+    /// The value an uncontrolled group starts with. Ignored when `value` is given. Declared
+    /// `optional, into` so that `default_value="a"` compiles: `&str` does not convert into
+    /// `Option<String>`.
+    #[prop(optional, into)]
+    default_value: Option<String>,
+    /// Called with the new value whenever the choice changes, however that came about.
+    #[prop(optional, into)]
+    on_value_change: Option<Callback<Option<String>>>,
+    /// The name the choice is submitted under: the checked item's `value`, through a native radio
+    /// each item keeps beside its button. Empty leaves it out of a form's data.
+    #[prop(optional, into)]
+    name: Signal<String>,
+    /// The browser refuses to submit the form while no item is chosen.
+    #[prop(optional, into)]
+    required: Signal<bool>,
+    /// The `id` of a `<form>` the group belongs to when it is not inside one. Empty means the one
+    /// around it.
+    #[prop(optional, into)]
+    form: Signal<String>,
     children: Children,
 ) -> impl IntoView {
-    let value = value.unwrap_or_else(|| RwSignal::new(None));
+    let value = controllable(value, default_value, on_value_change);
+    let initial = value.get_untracked();
     // A radiogroup is what a `<fieldset>`'s legend names: there is no one control for `for` to
     // point at, so the group points back. Outside a fieldset these read empty.
     let group = FieldSetControl::new(disabled);
     let context = RadioGroupContext {
         value,
         disabled: group.disabled,
+        name,
+        required,
+        form,
     };
 
     let group_ref = AnyNodeRef::new();
+    on_form_reset(group_ref, move || value.set(initial.clone()));
     let roving = use_roving_focus(group_ref, orientation);
     let orientation_str = orientation.as_str();
 
@@ -113,11 +146,14 @@ pub fn RadioGroupItemRoot(
     let field = FieldControl::new(id, disabled);
 
     let item = value.clone();
+    let submitted = value.clone();
+    let node_ref = AnyNodeRef::new();
     let is_checked = Memo::new(move |_| ctx.is_checked(&item));
     let is_disabled = Signal::derive(move || field.disabled.get() || ctx.disabled.get());
 
     view! {
         <button
+            node_ref=node_ref
             type="button"
             id=move || field.id.get()
             role="radio"
@@ -137,5 +173,15 @@ pub fn RadioGroupItemRoot(
         >
             {children.map(|c| c())}
         </button>
+        <FormInput
+            control=node_ref
+            input_type="radio"
+            name=ctx.name
+            value=submitted
+            form=ctx.form
+            checked=is_checked
+            required=ctx.required
+            disabled=is_disabled
+        />
     }
 }

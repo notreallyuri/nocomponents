@@ -1,3 +1,4 @@
+use crate::utils::controllable::forward;
 use crate::{
     cn,
     icons::chevron::ChevronRight,
@@ -41,7 +42,7 @@ pub fn TreeItem(
 pub fn TreeRow(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] active: Signal<bool>,
-    #[prop(default = None, into)] on_select: Option<Callback<ev::MouseEvent>>,
+    #[prop(optional, into)] on_select: Option<Callback<ev::MouseEvent>>,
     children: Children,
 ) -> impl IntoView {
     let item = use_tree_item();
@@ -50,7 +51,7 @@ pub fn TreeRow(
 
     view! {
         <TreeRowRoot
-            on_select=on_select
+            on_select=forward(on_select)
             class=move || {
                 cn!(
                     "group/tree-row flex h-8 min-w-0 cursor-default items-center gap-1.5 rounded-md pr-2 text-sm transition-colors",

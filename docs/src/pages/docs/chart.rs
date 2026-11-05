@@ -19,9 +19,9 @@ let series = Signal::derive(|| vec![
     ChartSeries::new("mobile", "Mobile", vec![80.0, 200.0, 120.0, 190.0, 130.0, 140.0]),
 ]);
 
-view! { <Chart labels=labels series=series /> }"#;
+view! { <Chart labels=labels series=series label="Visitors by month, desktop and mobile" /> }"#;
 
-const BAR: &str = r#"<Chart labels=labels series=series kind=ChartKind::Bar />"#;
+const BAR: &str = r#"<Chart labels=labels series=series kind=ChartKind::Bar label="Visitors by month, desktop and mobile" />"#;
 
 const AREA: &str = r#"// One series needs no key, and a colour can be anything CSS understands.
 <Chart
@@ -31,6 +31,7 @@ const AREA: &str = r#"// One series needs no key, and a colour can be anything C
     ])
     kind=ChartKind::Area
     legend=false
+    label="Visitors by month"
 />"#;
 
 const API: &[ApiEntry] = &[
@@ -52,25 +53,31 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "kind",
-                ty: "ChartKind",
+                ty: "Signal<ChartKind>",
                 default: "Line",
                 description: "`Line`, `Area` or `Bar`. Line and area put their points on the edges of the plot; bars sit in the middle of a band, which is the difference between a value at a moment and a value for a period.",
             },
             Prop {
                 name: "tooltip",
-                ty: "bool",
+                ty: "Signal<bool>",
                 default: "true",
                 description: "The card that follows the pointer, with every series' value at the category nearest it.",
             },
             Prop {
                 name: "legend",
-                ty: "bool",
+                ty: "Signal<bool>",
                 default: "true",
                 description: "The key beneath the plot. Turn it off for a single series, which needs none.",
             },
             Prop {
+                name: "label",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The plot's accessible name, written as `aria-label` on the `role=\"img\"` SVG. Without one a screen reader announces \"image\" and nothing about it.",
+            },
+            Prop {
                 name: "grid",
-                ty: "bool",
+                ty: "Signal<bool>",
                 default: "true",
                 description: "The horizontal grid and its value labels.",
             },
@@ -145,17 +152,14 @@ pub fn Page() -> impl IntoView {
     });
 
     view! {
-        <DocLayout
-            title="Chart"
-            description="Lines, areas and bars, drawn as SVG."
-        >
+        <DocLayout title="Chart" description="Lines, areas and bars, drawn as SVG.">
             <div class="flex flex-col gap-8">
                 <DemoSection
                     title="Line"
                     description="No plotting library and no canvas: a chart is a handful of paths, and the moment it is SVG it inherits the theme's colours and scales with its container. Move the pointer across it — the tooltip reads the category nearest the pointer, which is the one thing here that is measured."
                     code=DEFAULT
                 >
-                    <Chart labels=labels series=two />
+                    <Chart labels=labels series=two label="Visitors by month, desktop and mobile" />
                 </DemoSection>
 
                 <DemoSection
@@ -163,7 +167,12 @@ pub fn Page() -> impl IntoView {
                     description="Bars are grouped inside their category's band, with a gap between bands so the grouping reads. Hovering dims the other categories rather than highlighting one, which keeps the colours honest."
                     code=BAR
                 >
-                    <Chart labels=labels series=two kind=ChartKind::Bar />
+                    <Chart
+                        labels=labels
+                        series=two
+                        kind=ChartKind::Bar
+                        label="Visitors by month, desktop and mobile"
+                    />
                 </DemoSection>
 
                 <DemoSection
@@ -171,7 +180,13 @@ pub fn Page() -> impl IntoView {
                     description="A line with the space below it filled. One series needs no key, and the axis rounds itself up to a number a person would have chosen — never to exactly the largest value, which leaves no headroom and reads as an accident."
                     code=AREA
                 >
-                    <Chart labels=labels series=one kind=ChartKind::Area legend=false />
+                    <Chart
+                        labels=labels
+                        series=one
+                        kind=ChartKind::Area
+                        legend=false
+                        label="Visitors by month"
+                    />
                 </DemoSection>
 
                 <ApiReference entries=API />

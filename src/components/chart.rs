@@ -10,10 +10,11 @@ use leptos::prelude::*;
 pub fn Chart(
     #[prop(into)] labels: Signal<Vec<String>>,
     #[prop(into)] series: Signal<Vec<ChartSeries>>,
-    #[prop(optional)] kind: ChartKind,
-    #[prop(default = true)] tooltip: bool,
-    #[prop(default = true)] legend: bool,
-    #[prop(default = true)] grid: bool,
+    #[prop(optional, into)] kind: Signal<ChartKind>,
+    #[prop(into, default = true.into())] tooltip: Signal<bool>,
+    #[prop(into, default = true.into())] legend: Signal<bool>,
+    #[prop(into, default = true.into())] grid: Signal<bool>,
+    #[prop(optional, into)] label: Signal<String>,
     #[prop(optional, into)] class: Signal<String>,
 ) -> impl IntoView {
     view! {
@@ -26,54 +27,61 @@ pub fn Chart(
             <div class="relative w-full">
                 <ChartPlotRoot
                     grid=grid
+                    label=label
                     class="aspect-[2/1] w-full overflow-visible [&_text]:select-none"
                 />
 
-                {tooltip
+                {move || {
+                    tooltip
+                        .get()
+                        .then(|| {
+                            view! {
+                                <ChartTooltipRoot
+                                    class="pointer-events-none absolute top-2 z-10 min-w-32 rounded-lg border bg-popover px-2.5 py-1.5 text-xs shadow-md [&_[data-slot=chart-tooltip-label]]:mb-1 [&_[data-slot=chart-tooltip-label]]:font-medium"
+                                    row=Callback::new(|(series, value): (ChartSeries, f64)| {
+                                        view! {
+                                            <div class="flex items-center gap-1.5 leading-relaxed">
+                                                <span
+                                                    class="size-2 shrink-0 rounded-[2px]"
+                                                    style=format!("background: {}", series.color)
+                                                />
+                                                <span class="text-muted-foreground">{series.label}</span>
+                                                <span class="ml-auto font-mono font-medium tabular-nums">
+                                                    {format_value(value)}
+                                                </span>
+                                            </div>
+                                        }
+                                            .into_any()
+                                    })
+                                />
+                            }
+                        })
+                }}
+            </div>
+
+            {move || {
+                legend
+                    .get()
                     .then(|| {
                         view! {
-                            <ChartTooltipRoot
-                                class="pointer-events-none absolute top-2 z-10 min-w-32 rounded-lg border bg-popover px-2.5 py-1.5 text-xs shadow-md [&_[data-slot=chart-tooltip-label]]:mb-1 [&_[data-slot=chart-tooltip-label]]:font-medium"
-                                row=Callback::new(|(series, value): (ChartSeries, f64)| {
+                            <ChartLegendRoot
+                                class="flex flex-wrap items-center justify-center gap-4"
+                                item=Callback::new(|series: ChartSeries| {
                                     view! {
-                                        <div class="flex items-center gap-1.5 leading-relaxed">
+                                        <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
                                             <span
                                                 class="size-2 shrink-0 rounded-[2px]"
                                                 style=format!("background: {}", series.color)
                                             />
-                                            <span class="text-muted-foreground">{series.label}</span>
-                                            <span class="ml-auto font-mono font-medium tabular-nums">
-                                                {format_value(value)}
-                                            </span>
+                                            {series.label}
                                         </div>
                                     }
                                         .into_any()
                                 })
                             />
                         }
-                    })}
-            </div>
-
-            {legend
-                .then(|| {
-                    view! {
-                        <ChartLegendRoot
-                            class="flex flex-wrap items-center justify-center gap-4"
-                            item=Callback::new(|series: ChartSeries| {
-                                view! {
-                                    <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                        <span
-                                            class="size-2 shrink-0 rounded-[2px]"
-                                            style=format!("background: {}", series.color)
-                                        />
-                                        {series.label}
-                                    </div>
-                                }
-                                    .into_any()
-                            })
-                        />
-                    }
-                })}
+                    })
+            }}
         </ChartRoot>
     }
 }

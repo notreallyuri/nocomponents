@@ -84,9 +84,9 @@ fn ColorPickerFields() -> impl IntoView {
 #[component]
 pub fn ColorPicker(
     #[prop(optional, into)] value: RwSignal<String>,
-    #[prop(optional)] format: ColorFormat,
-    #[prop(default = false)] with_alpha: bool,
-    #[prop(optional, into)] presets: Vec<&'static str>,
+    #[prop(optional, into)] format: Signal<ColorFormat>,
+    #[prop(optional, into)] with_alpha: Signal<bool>,
+    #[prop(optional, into)] presets: Signal<Vec<&'static str>>,
     #[prop(optional, into)] class: Signal<String>,
 ) -> impl IntoView {
     view! {
@@ -134,49 +134,55 @@ pub fn ColorPicker(
                         })
                     />
 
-                    {with_alpha
-                        .then(|| {
-                            view! {
-                                <div class="rounded-full" style=CHEQUER>
-                                    <ColorPickerRailRoot
-                                        rail=ColorPickerRail::Alpha
-                                        class="relative h-3 w-full cursor-ew-resize rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-                                        thumb=Callback::new(|x: f64| {
-                                            view! {
-                                                <span
-                                                    class="pointer-events-none absolute top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-[0_0_0_1px_rgba(0,0,0,0.4)]"
-                                                    style=format!("left: {x}%;")
-                                                />
-                                            }
-                                                .into_any()
-                                        })
-                                    />
-                                </div>
-                            }
-                        })}
+                    {move || {
+                        with_alpha
+                            .get()
+                            .then(|| {
+                                view! {
+                                    <div class="rounded-full" style=CHEQUER>
+                                        <ColorPickerRailRoot
+                                            rail=ColorPickerRail::Alpha
+                                            class="relative h-3 w-full cursor-ew-resize rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                                            thumb=Callback::new(|x: f64| {
+                                                view! {
+                                                    <span
+                                                        class="pointer-events-none absolute top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-[0_0_0_1px_rgba(0,0,0,0.4)]"
+                                                        style=format!("left: {x}%;")
+                                                    />
+                                                }
+                                                    .into_any()
+                                            })
+                                        />
+                                    </div>
+                                }
+                            })
+                    }}
                 </div>
             </div>
 
             <ColorPickerFields />
 
-            {(!presets.is_empty())
-                .then(|| {
-                    view! {
-                        <div class="flex flex-wrap gap-1.5">
-                            {presets
-                                .into_iter()
-                                .map(|preset| {
-                                    view! {
-                                        <ColorPickerPresetRoot
-                                            value=preset
-                                            class="size-6 rounded-md border transition-transform hover:scale-110 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none data-selected:ring-2 data-selected:ring-ring data-selected:ring-offset-2 data-selected:ring-offset-popover"
-                                        />
-                                    }
-                                })
-                                .collect_view()}
-                        </div>
-                    }
-                })}
+            {move || {
+                (!presets.with(|presets| presets.is_empty()))
+                    .then(|| {
+                        view! {
+                            <div class="flex flex-wrap gap-1.5">
+                                {presets
+                                    .get()
+                                    .into_iter()
+                                    .map(|preset| {
+                                        view! {
+                                            <ColorPickerPresetRoot
+                                                value=preset
+                                                class="size-6 rounded-md border transition-transform hover:scale-110 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none data-selected:ring-2 data-selected:ring-ring data-selected:ring-offset-2 data-selected:ring-offset-popover"
+                                            />
+                                        }
+                                    })
+                                    .collect_view()}
+                            </div>
+                        }
+                    })
+            }}
         </ColorPickerRoot>
     }
 }

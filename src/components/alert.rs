@@ -21,7 +21,7 @@ impl AsClass for AlertVariant {
 
 #[component]
 pub fn Alert(
-    #[prop(optional)] variant: AlertVariant,
+    #[prop(optional, into)] variant: Signal<AlertVariant>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
@@ -32,7 +32,7 @@ pub fn Alert(
             class=move || {
                 cn!(
                     "relative grid w-full grid-cols-[0_1fr] items-start gap-y-0.5 rounded-xl px-4 py-3 text-sm ring-1 ring-foreground/10 has-[>svg]:grid-cols-[calc(var(--spacing)*4)_1fr] has-[>svg]:gap-x-3 [&>svg]:size-4 [&>svg]:translate-y-0.5",
-                    variant.as_class(),
+                    variant.get().as_class(),
                     class.get()
                 )
             }

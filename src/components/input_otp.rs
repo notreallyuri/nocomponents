@@ -3,6 +3,7 @@ use crate::{
     primitives::input_otp::{
         InputOtpGroupRoot, InputOtpRoot, InputOtpSeparatorRoot, InputOtpSlotRoot, OtpPattern,
     },
+    utils::controllable::forward,
 };
 use leptos::prelude::*;
 
@@ -12,8 +13,15 @@ pub fn InputOtp(
     #[prop(optional)] pattern: OtpPattern,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] id: Signal<String>,
+    #[prop(optional, into)] label: Signal<String>,
+    #[prop(optional, into)] name: Signal<String>,
+    #[prop(optional, into)] required: Signal<bool>,
+    #[prop(optional, into)] form: Signal<String>,
     #[prop(default = None, into)] value: Option<RwSignal<String>>,
-    #[prop(default = None, into)] on_complete: Option<Callback<String>>,
+    #[prop(optional, into)] default_value: String,
+    #[prop(optional, into)] on_value_change: Option<Callback<String>>,
+    #[prop(optional, into)] on_complete: Option<Callback<String>>,
     children: Children,
 ) -> impl IntoView {
     view! {
@@ -21,8 +29,15 @@ pub fn InputOtp(
             length=length
             pattern=pattern
             disabled=disabled
+            id=id
+            label=label
+            name=name
+            required=required
+            form=form
             value=value
-            on_complete=on_complete
+            default_value=default_value
+            on_value_change=forward(on_value_change)
+            on_complete=forward(on_complete)
             class=move || {
                 cn!(
                     "relative flex w-fit items-center gap-2 data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50",

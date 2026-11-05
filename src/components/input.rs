@@ -1,4 +1,4 @@
-use crate::{cn, primitives::field::FieldControl};
+use crate::{cn, primitives::field::FieldControl, utils::form::non_empty};
 use leptos::prelude::*;
 
 #[derive(Default, Clone, Copy, PartialEq)]
@@ -26,20 +26,32 @@ impl InputType {
 #[component]
 pub fn Input(
     #[prop(optional, into)] class: Signal<String>,
-    #[prop(optional)] input_type: InputType,
+    #[prop(optional, into)] input_type: Signal<InputType>,
     #[prop(default = None, into)] model: Option<RwSignal<String>>,
     #[prop(optional, into)] value: Signal<String>,
     #[prop(optional, into)] id: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional, into)] name: Signal<String>,
+    #[prop(optional, into)] required: Signal<bool>,
+    #[prop(optional, into)] readonly: Signal<bool>,
+    #[prop(optional, into)] placeholder: Signal<String>,
+    #[prop(optional, into)] autocomplete: Signal<String>,
+    #[prop(optional, into)] form: Signal<String>,
 ) -> impl IntoView {
     let field = FieldControl::new(id, disabled);
 
     view! {
         <input
             data-slot="input"
-            type=input_type.as_str()
+            type=move || input_type.get().as_str()
             id=move || field.id.get()
             disabled=move || field.disabled.get()
+            name=move || non_empty(name)
+            form=move || non_empty(form)
+            required=move || required.get()
+            readonly=move || readonly.get()
+            placeholder=move || non_empty(placeholder)
+            autocomplete=move || non_empty(autocomplete)
             aria-describedby=move || field.described_by.get()
             aria-invalid=move || field.invalid.get().then_some("true")
             prop:value=move || { if let Some(m) = model { m.get() } else { value.get() } }

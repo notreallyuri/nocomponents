@@ -7,7 +7,7 @@ use leptos::prelude::*;
 
 #[component]
 pub fn ResizableGroup(
-    #[prop(default = Orientation::Horizontal)] direction: Orientation,
+    #[prop(into, default = Orientation::Horizontal.into())] direction: Signal<Orientation>,
     #[prop(optional, into)] sizes: RwSignal<Vec<f64>>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
@@ -31,8 +31,8 @@ pub fn ResizableGroup(
 #[component]
 pub fn ResizablePanel(
     #[prop(default = None, into)] default_size: Option<f64>,
-    #[prop(default = 0.0)] min_size: f64,
-    #[prop(default = 100.0)] max_size: f64,
+    #[prop(into, default = 0.0.into())] min_size: Signal<f64>,
+    #[prop(into, default = 100.0.into())] max_size: Signal<f64>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {

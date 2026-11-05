@@ -4,20 +4,18 @@ use leptos::prelude::*;
 #[component]
 pub fn SeparatorRoot(
     #[prop(optional, into)] class: Signal<String>,
-    #[prop(optional)] orientation: Orientation,
+    #[prop(optional, into)] orientation: Signal<Orientation>,
     /// Purely visual separators are hidden from assistive tech; set to `false` when the rule
     /// carries meaning (e.g. it groups unrelated sets of menu items).
-    #[prop(default = true)]
-    decorative: bool,
+    #[prop(default = true.into(), into)]
+    decorative: Signal<bool>,
 ) -> impl IntoView {
-    let orientation_str = orientation.as_str();
-
     view! {
         <div
             data-slot="separator"
-            data-orientation=orientation_str
-            role=if decorative { "none" } else { "separator" }
-            aria-orientation=(!decorative).then_some(orientation_str)
+            data-orientation=move || orientation.get().as_str()
+            role=move || if decorative.get() { "none" } else { "separator" }
+            aria-orientation=move || (!decorative.get()).then(|| orientation.get().as_str())
             class=class
         />
     }

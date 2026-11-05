@@ -76,6 +76,18 @@ const API: &[ApiEntry] = &[
                 description: "Pass one to drive it from outside; omit it and the root owns the signal.",
             },
             Prop {
+                name: "default_open",
+                ty: "bool",
+                default: "false",
+                description: "Whether the dialog starts open. Ignored when `open` is given.",
+            },
+            Prop {
+                name: "on_open_change",
+                ty: "Option<Callback<bool>>",
+                default: "None",
+                description: "Called with the new value whenever the dialog opens or closes, including when the signal passed as `open` is written from outside.",
+            },
+            Prop {
                 name: "children",
                 ty: "Children",
                 default: "",
@@ -89,13 +101,13 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "size",
-                ty: "ButtonSize",
+                ty: "Signal<ButtonSize>",
                 default: "Default",
                 description: "One of: Xs, Sm, Default, Lg, Icon, IconSm, IconXs, IconLg.",
             },
             Prop {
                 name: "variant",
-                ty: "ButtonVariant",
+                ty: "Signal<ButtonVariant>",
                 default: "Default",
                 description: "One of: Default, Outline, Ghost, Secondary, Link, Destructive.",
             },
@@ -113,9 +125,9 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "render",
-                ty: "Option<Callback<Callback<ev::MouseEvent>, AnyView>>",
+                ty: "Option<Callback<TriggerRender, AnyView>>",
                 default: "None",
-                description: "Render the trigger as something else. Handed the click handler, which must reach the element.",
+                description: "Render the trigger as something else. Handed the node ref to attach, the click to run and the resolved `disabled`; the dialog writes its ARIA onto that node.",
             },
             Prop {
                 name: "children",

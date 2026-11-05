@@ -52,13 +52,13 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "orientation",
-                ty: "Orientation",
+                ty: "Signal<Orientation>",
                 default: "Horizontal",
                 description: "Which way the slides run. Vertical needs a height on the content.",
             },
             Prop {
                 name: "wrap",
-                ty: "bool",
+                ty: "Signal<bool>",
                 default: "false",
                 description: "Whether moving past either end comes round the other side. Named `wrap` because `loop` is a Rust keyword.",
             },
@@ -67,6 +67,12 @@ const API: &[ApiEntry] = &[
                 ty: "RwSignal<usize>",
                 default: "0",
                 description: "The slide at the start of the track. Pass one to read the position or to jump elsewhere.",
+            },
+            Prop {
+                name: "label",
+                ty: "Signal<String>",
+                default: "\"Carousel\"",
+                description: "The region's accessible name. A page with two carousels should tell them apart; each slide is announced as \"n of m\" within it.",
             },
             Prop {
                 name: "class",

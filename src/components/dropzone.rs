@@ -1,3 +1,4 @@
+use crate::utils::controllable::forward;
 use crate::{
     cn,
     primitives::dropzone::{DropzoneRoot, use_dropzone},
@@ -10,10 +11,10 @@ use leptos::{prelude::*, web_sys::File};
 pub fn Dropzone(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] accept: Signal<String>,
-    #[prop(default = true)] multiple: bool,
+    #[prop(default = true.into(), into)] multiple: Signal<bool>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(into)] on_files: Callback<Vec<File>>,
-    #[prop(default = None, into)] on_rejected: Option<Callback<Vec<File>>>,
+    #[prop(optional, into)] on_rejected: Option<Callback<Vec<File>>>,
     children: Children,
 ) -> impl IntoView {
     view! {
@@ -22,7 +23,7 @@ pub fn Dropzone(
             multiple=multiple
             disabled=disabled
             on_files=on_files
-            on_rejected=on_rejected
+            on_rejected=forward(on_rejected)
             class=move || {
                 cn!(
                     "flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-input px-6 py-10 text-center transition-colors outline-none",
@@ -75,10 +76,16 @@ pub fn DropzoneTrigger(
 ) -> impl IntoView {
     let ctx = use_dropzone();
 
+    ctx.has_trigger.set(true);
+    on_cleanup(move || {
+        let _ = ctx.has_trigger.try_set(false);
+    });
+
     view! {
         <button
             type="button"
             data-slot="dropzone-trigger"
+            disabled=move || ctx.disabled.get()
             on:click=move |e| {
                 e.stop_propagation();
                 ctx.open();

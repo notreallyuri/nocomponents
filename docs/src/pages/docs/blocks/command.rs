@@ -35,10 +35,10 @@ view! {
             <CommandGroup heading="Appearance">
                 <CommandItem
                     value="Light theme"
-                    on_select=Callback::new(move |_| {
+                    on_select=move |_| {
                         theme.set_theme(Theme::Light);
                         open.set(false);
-                    })
+                    }
                 >
                     "Light theme"
                 </CommandItem>
@@ -48,10 +48,10 @@ view! {
                 // Closes one layer and opens another in the same click.
                 <CommandItem
                     value="Delete project"
-                    on_select=Callback::new(move |_| {
+                    on_select=move |_| {
                         open.set(false);
                         confirming.set(true);
-                    })
+                    }
                 >
                     "Delete project…"
                 </CommandItem>
@@ -99,11 +99,11 @@ fn ActionPalette() -> impl IntoView {
         view! {
             <CommandItem
                 value=label
-                on_select=Callback::new(move |_| {
+                on_select=move |_| {
                     theme.set_theme(choice);
                     last.set(format!("Switched to the {} theme", choice.as_str()));
                     open.set(false);
-                })
+                }
             >
                 {label}
             </CommandItem>
@@ -137,10 +137,10 @@ fn ActionPalette() -> impl IntoView {
                         <CommandItem
                             value="Delete project"
                             keywords="remove destroy"
-                            on_select=Callback::new(move |_| {
+                            on_select=move |_| {
                                 open.set(false);
                                 confirming.set(true);
-                            })
+                            }
                         >
                             "Delete project…"
                         </CommandItem>

@@ -9,7 +9,7 @@ use crate::{
         collapsible::{CollapsibleContentRoot, CollapsibleContext, CollapsibleRoot},
         roving_focus::use_roving_focus,
     },
-    utils::{next_id, types::Orientation},
+    utils::{controllable::controllable, next_id, types::Orientation},
 };
 use leptos::{context::Provider, ev, prelude::*};
 use leptos_node_ref::AnyNodeRef;
@@ -26,10 +26,10 @@ pub enum AccordionType {
 #[derive(Copy, Clone)]
 pub struct AccordionContext {
     pub value: RwSignal<Vec<String>>,
-    pub kind: AccordionType,
+    pub kind: Signal<AccordionType>,
     pub disabled: Signal<bool>,
     /// Whether a `Single` accordion lets you close the open section by clicking its header.
-    pub collapsible: bool,
+    pub collapsible: Signal<bool>,
 }
 
 impl AccordionContext {
@@ -38,7 +38,7 @@ impl AccordionContext {
     }
 
     pub fn toggle(&self, value: &str) {
-        let (kind, collapsible) = (self.kind, self.collapsible);
+        let (kind, collapsible) = (self.kind.get_untracked(), self.collapsible.get_untracked());
 
         self.value.update(|open| {
             let existing = open.iter().position(|v| v == value);
@@ -68,17 +68,23 @@ pub fn use_accordion() -> AccordionContext {
 #[component]
 pub fn AccordionRoot(
     #[prop(optional, into)] class: Signal<String>,
-    #[prop(optional)] kind: AccordionType,
+    #[prop(optional, into)] kind: Signal<AccordionType>,
     #[prop(optional, into)] disabled: Signal<bool>,
     /// Whether a `Single` accordion can be closed entirely. Ignored for `Multiple`.
-    #[prop(default = true)]
-    collapsible: bool,
+    #[prop(into, default = true.into())]
+    collapsible: Signal<bool>,
     /// Omit for an uncontrolled accordion that owns its own selection.
     #[prop(default = None, into)]
     value: Option<RwSignal<Vec<String>>>,
+    /// The open sections an uncontrolled accordion starts with. Ignored when `value` is given.
+    #[prop(optional, into)]
+    default_value: Vec<String>,
+    /// Called with the open sections whenever they change, however that came about.
+    #[prop(optional, into)]
+    on_value_change: Option<Callback<Vec<String>>>,
     children: Children,
 ) -> impl IntoView {
-    let value = value.unwrap_or_else(|| RwSignal::new(Vec::new()));
+    let value = controllable(value, default_value, on_value_change);
     let context = AccordionContext {
         value,
         kind,
@@ -128,7 +134,7 @@ pub fn AccordionItemRoot(
     let ctx = use_accordion();
 
     let item = value.clone();
-    let is_open = RwSignal::new(ctx.is_open(&item));
+    let is_open = RwSignal::new(ctx.value.with_untracked(|open| open.contains(&item)));
     let is_disabled = Signal::derive(move || disabled.get() || ctx.disabled.get());
 
     // One direction only: the group owns the selection and the item mirrors it. The trigger

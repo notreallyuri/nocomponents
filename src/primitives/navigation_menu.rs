@@ -14,7 +14,7 @@ use crate::{
         dismiss::{LayerBounds, use_dismissable_layer},
         roving_focus::use_roving_focus,
     },
-    utils::{next_id, types::Orientation},
+    utils::{controllable::controllable, next_id, types::Orientation},
 };
 use leptos::{context::Provider, ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
@@ -121,14 +121,24 @@ pub fn use_navigation_menu_item() -> NavigationMenuItemContext {
 
 #[component]
 pub fn NavigationMenuRoot(
-    /// Which panel is open, for a caller that wants to drive the menu or watch it.
+    /// Which panel is open, held by the caller. Omit it and the root keeps its own.
+    #[prop(default = None, into)]
+    value: Option<RwSignal<Option<String>>>,
+    /// The value the root starts with. Ignored when `value` is given. Declared `optional, into`
+    /// rather than `default = None, into` so that `default_value="home"` compiles: `&str` does
+    /// not convert into `Option<String>`.
     #[prop(optional, into)]
-    value: RwSignal<Option<String>>,
+    default_value: Option<String>,
+    /// Called with the new value whenever it changes, however that came about.
+    #[prop(optional, into)]
+    on_value_change: Option<Callback<Option<String>>>,
+
     #[prop(default = OPEN_DELAY)] open_delay: u64,
     #[prop(default = CLOSE_DELAY)] close_delay: u64,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
+    let value = controllable(value, default_value, on_value_change);
     let ctx = NavigationMenuContext {
         value,
         root_ref: AnyNodeRef::new(),
@@ -369,6 +379,14 @@ fn focus_trigger(ctx: NavigationMenuContext, item: NavigationMenuItemContext) {
     }
 }
 
+/// What a link rendered as something else is handed: the click handler that closes the menu, the
+/// classes the part would have worn, and the children it would have shown.
+pub struct NavigationMenuLinkRender {
+    pub on_click: Callback<ev::MouseEvent>,
+    pub class: Signal<String>,
+    pub children: AnyView,
+}
+
 #[component]
 pub fn NavigationMenuLinkRoot(
     #[prop(optional, into)] href: Signal<String>,
@@ -378,16 +396,25 @@ pub fn NavigationMenuLinkRoot(
     active: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
     /// Render the link as something else — a router's `A`, which owns its own `href`. The
-    /// callback is handed the click handler that closes the menu.
+    /// callback is handed the click handler that closes the menu, along with the `class` and the
+    /// children, so the node it builds wears what the part would have.
     #[prop(default = None, into)]
-    render: Option<Callback<Callback<ev::MouseEvent>, AnyView>>,
+    render: Option<Callback<NavigationMenuLinkRender, AnyView>>,
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     let ctx = use_navigation_menu();
     let on_click = Callback::new(move |_: ev::MouseEvent| ctx.close_now());
 
     match render {
-        Some(render) => leptos::either::Either::Left(render.run(on_click)),
+        Some(render) => leptos::either::Either::Left(
+            render.run(NavigationMenuLinkRender {
+                on_click,
+                class,
+                children: children
+                    .map(|children| children().into_any())
+                    .unwrap_or_else(|| ().into_any()),
+            }),
+        ),
         None => leptos::either::Either::Right(view! {
             <a
                 href=move || href.get()

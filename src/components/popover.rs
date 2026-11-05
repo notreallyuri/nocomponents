@@ -3,19 +3,31 @@ use crate::{
     components::button::{Button, ButtonSize, ButtonVariant},
     primitives::floating::TriggerRender,
     primitives::popover::{PopoverContentRoot, PopoverPortalRoot, PopoverRoot, PopoverTriggerRoot},
-    utils::types::{Align, Side, SideOffset},
+    utils::{
+        controllable::forward,
+        types::{Align, Side, SideOffset},
+    },
 };
 use leptos::{either::Either, prelude::*};
 
 #[component]
-pub fn Popover(children: ChildrenFn) -> impl IntoView {
-    view! { <PopoverRoot>{children()}</PopoverRoot> }
+pub fn Popover(
+    #[prop(default = None, into)] open: Option<RwSignal<bool>>,
+    #[prop(optional)] default_open: bool,
+    #[prop(optional, into)] on_open_change: Option<Callback<bool>>,
+    children: ChildrenFn,
+) -> impl IntoView {
+    view! {
+        <PopoverRoot open=open default_open=default_open on_open_change=forward(on_open_change)>
+            {children()}
+        </PopoverRoot>
+    }
 }
 
 #[component]
 pub fn PopoverTrigger(
-    #[prop(optional)] size: ButtonSize,
-    #[prop(optional)] variant: ButtonVariant,
+    #[prop(optional, into)] size: Signal<ButtonSize>,
+    #[prop(optional, into)] variant: Signal<ButtonVariant>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] as_child: Option<Callback<TriggerRender, AnyView>>,
@@ -55,9 +67,9 @@ pub fn PopoverPortal(children: ChildrenFn) -> impl IntoView {
 
 #[component]
 pub fn PopoverContent(
-    #[prop(optional)] side: Side,
-    #[prop(optional)] align: Align,
-    #[prop(optional)] side_offset: SideOffset,
+    #[prop(optional, into)] side: Signal<Side>,
+    #[prop(optional, into)] align: Signal<Align>,
+    #[prop(optional, into)] side_offset: Signal<SideOffset>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
@@ -74,9 +86,7 @@ pub fn PopoverContent(
                 cn!(base_class.as_str(), class.get())
             }
         >
-            <div data-slot="popover-content" class="flex flex-col gap-2">
-                {children()}
-            </div>
+            <div class="flex flex-col gap-2">{children()}</div>
         </PopoverContentRoot>
     }
 }

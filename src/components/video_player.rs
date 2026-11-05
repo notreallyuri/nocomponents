@@ -15,11 +15,11 @@ use crate::{
     primitives::{
         dropdown_menu::{DropdownMenuTriggerRoot, use_dropdown},
         video_player::{
-            VideoPlayerCaptionSize, VideoPlayerCaptionsRoot, VideoPlayerControlsRoot,
-            VideoPlayerFullscreenRoot, VideoPlayerMode, VideoPlayerMuteRoot, VideoPlayerPlayRoot,
-            VideoPlayerRail, VideoPlayerRailFillRoot, VideoPlayerRailRoot, VideoPlayerRoot,
-            VideoPlayerSkipRoot, VideoPlayerStep, VideoPlayerSurfaceRoot, VideoPlayerTimeRoot,
-            VideoPlayerVideoRoot, use_video_player,
+            VideoPlayerCaptionSize, VideoPlayerCaptionsRoot, VideoPlayerCaptionsToggleRoot,
+            VideoPlayerControlsRoot, VideoPlayerFullscreenRoot, VideoPlayerMode,
+            VideoPlayerMuteRoot, VideoPlayerPlayRoot, VideoPlayerRail, VideoPlayerRailFillRoot,
+            VideoPlayerRailRoot, VideoPlayerRoot, VideoPlayerSkipRoot, VideoPlayerStep,
+            VideoPlayerSurfaceRoot, VideoPlayerTimeRoot, VideoPlayerVideoRoot, use_video_player,
         },
     },
 };
@@ -37,7 +37,7 @@ pub fn VideoPlayerVideo(
     #[prop(optional, into)] poster: Signal<String>,
     #[prop(default = false)] autoplay: bool,
     #[prop(default = false)] r#loop: bool,
-    #[prop(default = false)] muted: bool,
+    #[prop(optional, into)] muted: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
@@ -285,12 +285,12 @@ pub fn VideoPlayerFullscreenButton(#[prop(optional, into)] class: Signal<String>
 pub fn VideoPlayer(
     #[prop(optional, into)] src: Signal<String>,
     #[prop(optional, into)] poster: Signal<String>,
-    #[prop(optional)] mode: VideoPlayerMode,
+    #[prop(optional, into)] mode: Signal<VideoPlayerMode>,
     #[prop(default = false)] autoplay: bool,
     #[prop(default = false)] r#loop: bool,
-    #[prop(default = false)] muted: bool,
-    #[prop(default = None, into)] on_skip: Option<Callback<VideoPlayerStep>>,
-    #[prop(default = None, into)] controls: Option<Callback<(), AnyView>>,
+    #[prop(optional, into)] muted: Signal<bool>,
+    #[prop(optional, into)] on_skip: Option<Callback<VideoPlayerStep>>,
+    #[prop(optional, into)] controls: Option<Callback<(), AnyView>>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
@@ -302,7 +302,7 @@ pub fn VideoPlayer(
             class=move || {
                 cn!(
                     "relative isolate aspect-video w-full overflow-hidden rounded-xl bg-black outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
-                    if mode.has_controls() {
+                    if mode.get().has_controls() {
                         "cursor-none data-[active=true]:cursor-default"
                     } else {
                         ""
@@ -316,59 +316,68 @@ pub fn VideoPlayer(
             </VideoPlayerVideo>
 
             <VideoPlayerSurface>
-                {mode.interactive().then(|| view! { <VideoPlayerBadge /> })}
+                {move || mode.get().interactive().then(|| view! { <VideoPlayerBadge /> })}
             </VideoPlayerSurface>
 
             <VideoPlayerCaptions />
 
-            {(mode.has_controls() && controls.with_value(|controls| controls.is_some()))
-                .then(|| {
-                    view! {
-                        <VideoPlayerControls>
-                            {move || controls.with_value(|controls| controls.map(|c| c.run(())))}
-                        </VideoPlayerControls>
-                    }
-                })}
+            {move || {
+                (mode.get().has_controls() && controls.with_value(|controls| controls.is_some()))
+                    .then(|| {
+                        view! {
+                            <VideoPlayerControls>
+                                {move || {
+                                    controls.with_value(|controls| controls.map(|c| c.run(())))
+                                }}
+                            </VideoPlayerControls>
+                        }
+                    })
+            }}
 
-            {(mode.has_controls() && controls.with_value(|controls| controls.is_none()))
-                .then(|| {
-                    view! {
-                        <VideoPlayerControls>
-                            <VideoPlayerSeek />
-                            <div class="flex items-center gap-1">
-                                <VideoPlayerPlayButton />
-                                {mode
-                                    .has_skip()
-                                    .then(|| {
-                                        view! {
-                                            <VideoPlayerSkipButton step=VideoPlayerStep::Previous />
-                                            <VideoPlayerSkipButton step=VideoPlayerStep::Next />
-                                        }
-                                    })}
-                                {mode.has_volume().then(|| view! { <VideoPlayerVolumeControl /> })}
-                                {mode.has_timestamp().then(|| view! { <VideoPlayerTime /> })}
-                                <div class="flex-1" />
-                                {mode
-                                    .has_timestamp()
-                                    .then(|| view! { <VideoPlayerCaptionsButton /> })}
-                                {mode
-                                    .has_timestamp()
-                                    .then(|| {
-                                        view! {
-                                            <VideoPlayerMenu>
-                                                <VideoPlayerSpeedItems submenu=true />
-                                                <VideoPlayerCaptionItems submenu=true />
-                                                <VideoPlayerCaptionSizeItems submenu=true />
-                                            </VideoPlayerMenu>
-                                        }
-                                    })}
-                                {mode
-                                    .has_fullscreen()
-                                    .then(|| view! { <VideoPlayerFullscreenButton /> })}
-                            </div>
-                        </VideoPlayerControls>
-                    }
-                })}
+            {move || {
+                let mode = mode.get();
+                (mode.has_controls() && controls.with_value(|controls| controls.is_none()))
+                    .then(|| {
+                        view! {
+                            <VideoPlayerControls>
+                                <VideoPlayerSeek />
+                                <div class="flex items-center gap-1">
+                                    <VideoPlayerPlayButton />
+                                    {mode
+                                        .has_skip()
+                                        .then(|| {
+                                            view! {
+                                                <VideoPlayerSkipButton step=VideoPlayerStep::Previous />
+                                                <VideoPlayerSkipButton step=VideoPlayerStep::Next />
+                                            }
+                                        })}
+                                    {mode
+                                        .has_volume()
+                                        .then(|| view! { <VideoPlayerVolumeControl /> })}
+                                    {mode.has_timestamp().then(|| view! { <VideoPlayerTime /> })}
+                                    <div class="flex-1" />
+                                    {mode
+                                        .has_timestamp()
+                                        .then(|| view! { <VideoPlayerCaptionsButton /> })}
+                                    {mode
+                                        .has_timestamp()
+                                        .then(|| {
+                                            view! {
+                                                <VideoPlayerMenu>
+                                                    <VideoPlayerSpeedItems submenu=true />
+                                                    <VideoPlayerCaptionItems submenu=true />
+                                                    <VideoPlayerCaptionSizeItems submenu=true />
+                                                </VideoPlayerMenu>
+                                            }
+                                        })}
+                                    {mode
+                                        .has_fullscreen()
+                                        .then(|| view! { <VideoPlayerFullscreenButton /> })}
+                                </div>
+                            </VideoPlayerControls>
+                        }
+                    })
+            }}
         </VideoPlayerRoot>
     }
 }
@@ -405,19 +414,18 @@ fn MenuOpenGuard() -> impl IntoView {
 
 #[component]
 pub fn VideoPlayerMenu(
-    #[prop(default = "Settings".to_string(), into)] label: String,
+    #[prop(default = "Settings".into(), into)] label: Signal<String>,
     #[prop(optional, into)] class: Signal<String>,
     children: ChildrenFn,
 ) -> impl IntoView {
     let children = StoredValue::new(children);
-    let label = StoredValue::new(label);
 
     view! {
         <DropdownMenu>
             <MenuOpenGuard />
             <DropdownMenuTriggerRoot
                 class=move || cn!(CONTROL, class.get())
-                attr:aria-label=move || label.get_value()
+                attr:aria-label=move || label.get()
                 attr:data-video-player-menu=""
             >
                 <Settings />
@@ -618,35 +626,17 @@ pub fn VideoPlayerCaptionSizeItems(#[prop(default = false)] submenu: bool) -> im
 #[component]
 pub fn VideoPlayerCaptionsButton(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
     let ctx = use_video_player();
-    let showing = Signal::derive(move || ctx.active_track.get().is_some());
-
     view! {
         <Show when=move || !ctx.tracks.get().is_empty()>
-            <button
-                type="button"
-                data-slot="video-player-captions"
-                data-state=move || if showing.get() { "on" } else { "off" }
-                aria-label=move || {
-                    if showing.get() { "Turn off subtitles" } else { "Turn on subtitles" }
-                }
-                aria-pressed=move || showing.get().then_some("true")
-                on:click=move |_| {
-                    if showing.get_untracked() {
-                        ctx.set_text_track(None);
-                    } else {
-                        ctx.set_text_track(ctx.tracks.get_untracked().first().map(|t| t.index));
-                    }
-                }
-                class=move || {
-                    cn!(
-                        CONTROL,
-                        "relative after:absolute after:inset-x-1.5 after:bottom-1 after:h-px after:bg-current after:opacity-0 data-[state=on]:after:opacity-100",
-                        class.get(),
-                    )
-                }
-            >
+            <VideoPlayerCaptionsToggleRoot class=move || {
+                cn!(
+                    CONTROL,
+                    "relative after:absolute after:inset-x-1.5 after:bottom-1 after:h-px after:bg-current after:opacity-0 data-[state=on]:after:opacity-100",
+                    class.get(),
+                )
+            }>
                 <Captions />
-            </button>
+            </VideoPlayerCaptionsToggleRoot>
         </Show>
     }
 }

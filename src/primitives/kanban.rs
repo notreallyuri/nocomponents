@@ -288,7 +288,7 @@ pub fn KanbanCardRoot(
     /// A prop rather than the caller's own `on:click`, because a card cannot receive one: the
     /// moment it starts following the pointer it goes `pointer-events: none`, so the release
     /// lands on whatever is underneath. Only the gesture knows whether the pointer moved.
-    #[prop(default = None, into)]
+    #[prop(optional, into)]
     on_select: Option<Callback<()>>,
     children: Children,
 ) -> impl IntoView {
@@ -409,7 +409,6 @@ pub fn KanbanCardRoot(
             data-slot="kanban-card"
             data-kanban-card=attribute
             data-dragging=move || dragging().then_some("true")
-            aria-grabbed=move || dragging().then_some("true")
             style=move || {
                 if !dragging() {
                     return String::new();
@@ -479,12 +478,13 @@ fn from_a_control(event: &ev::PointerEvent) -> bool {
 #[component]
 pub fn KanbanSlotRoot(
     /// How many cards down this gap sits.
-    index: usize,
+    #[prop(into)]
+    index: Signal<usize>,
     #[prop(optional, into)] class: Signal<String>,
 ) -> impl IntoView {
     let ctx = use_kanban();
     let column = expect_context::<KanbanColumnContext>().id;
-    let active = move || ctx.slot_in(&column) == Some(index);
+    let active = move || ctx.slot_in(&column) == Some(index.get());
 
     view! {
         <div

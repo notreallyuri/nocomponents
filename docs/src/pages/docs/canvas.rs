@@ -36,9 +36,9 @@ let notes = RwSignal::new(Vec::<(f64, f64)>::new());
 
 view! {
     <Canvas
-        on_surface_click=Callback::new(move |at: CanvasPoint| {
+        on_surface_click=move |at: CanvasPoint| {
             notes.update(|notes| notes.push((at.x, at.y)));
-        })
+        }
         class="h-80"
     >
         <For each=move || notes.get() key=|at| … let:at>
@@ -82,7 +82,7 @@ view! {
         })
         // The two share one press and never both fire: a gesture that stayed
         // within a few pixels was a click, and one that did not was a drag.
-        on_surface_click=Callback::new(move |_| selected.set(Vec::new()))
+        on_surface_click=move |_| selected.set(Vec::new())
         class="h-96"
     >
         <For each=… key=… let:note>
@@ -108,19 +108,19 @@ view! {
         y=Signal::derive(move || box_.get().y)
         width=Signal::derive(move || box_.get().width)
         height=Signal::derive(move || box_.get().height)
-        on_move=Callback::new(move |at: CanvasPoint| {
+        on_move=move |at: CanvasPoint| {
             box_.update(|box_| (box_.x, box_.y) = (at.x, at.y));
-        })
-        on_resize=Callback::new(move |next: WorldBox| box_.set(next))
+        }
+        on_resize=move |next: WorldBox| box_.set(next)
         // Once, when the gesture is over. The two above are the fortieth
         // intermediate frame; this is the one worth telling a peer about,
         // and it carries where the drag began — which the caller cannot
         // keep for itself, having overwritten it on every move since.
         // Silent for a press that changed nothing, so selecting is not an
         // edit and a click does not put an operation on the wire.
-        on_gesture_end=Callback::new(move |gesture: CanvasGesture| {
+        on_gesture_end=move |gesture: CanvasGesture| {
             log.update(|log| log.push(gesture));
-        })
+        }
         // The grips are drawn when this is true; eight on every node is
         // unreadable, and `data-selected` is what the styled layer keys on.
         selected=true
@@ -130,7 +130,7 @@ view! {
         // every drag that began on the words. The input inherits the node's
         // own type — a browser gives one none of that by default, and an
         // editor that changes font halfway through is not one.
-        <CanvasNodeLabel value=label on_change=Callback::new(move |next| label.set(next)) />
+        <CanvasNodeLabel value=label on_change=move |next| label.set(next) />
     </CanvasShape>
 }"#;
 
@@ -168,7 +168,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "pan_on_drag",
-                ty: "bool",
+                ty: "Signal<bool>",
                 default: "false",
                 description: "Whether dragging the surface with the primary button pans it — the hand tool, always on. Off, because a press is the one gesture a caller cannot get back, and a board worth the name has something to click on. Space+drag, the middle button and two fingers pan either way.",
             },
@@ -324,7 +324,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "color",
-                ty: "StickyColor",
+                ty: "Signal<StickyColor>",
                 default: "Yellow",
                 description: "`Yellow`, `Green`, `Blue` or `Pink`.",
             },
@@ -366,7 +366,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "kind",
-                ty: "ShapeKind",
+                ty: "Signal<ShapeKind>",
                 default: "Rectangle",
                 description: "`Rectangle` or `Ellipse` — which is a border radius rather than a different element.",
             },
@@ -550,10 +550,10 @@ pub fn Page() -> impl IntoView {
                 >
                     <div class="flex flex-col gap-3">
                         <Canvas
-                            on_surface_click=Callback::new(move |at: CanvasPoint| {
+                            on_surface_click=move |at: CanvasPoint| {
                                 placed.update(|placed| placed.push((next.get_untracked(), at)));
                                 next.update(|next| *next += 1);
-                            })
+                            }
                             class="h-80"
                         >
                             {move || {
@@ -616,7 +616,7 @@ pub fn Page() -> impl IntoView {
                                     );
                                 band.set((!drag.done).then_some(drag.rect));
                             })
-                            on_surface_click=Callback::new(move |_| banded.set(Vec::new()))
+                            on_surface_click=move |_| banded.set(Vec::new())
                             class="h-96"
                         >
                             {BAND_NOTES
@@ -673,17 +673,17 @@ pub fn Page() -> impl IntoView {
                                 y=Signal::derive(move || shape.get().y)
                                 width=Signal::derive(move || shape.get().width)
                                 height=Signal::derive(move || shape.get().height)
-                                on_move=Callback::new(move |at: CanvasPoint| {
+                                on_move=move |at: CanvasPoint| {
                                     shape.update(|shape| (shape.x, shape.y) = (at.x, at.y));
-                                })
-                                on_resize=Callback::new(move |next: WorldBox| shape.set(next))
+                                }
+                                on_resize=move |next: WorldBox| shape.set(next)
                                 on_gesture_end=record
                                 selected=Signal::derive(move || picked.get() == "shape")
                                 on:pointerdown=move |_| picked.set("shape".into())
                             >
                                 <CanvasNodeLabel
                                     value=shape_label
-                                    on_change=Callback::new(move |next| shape_label.set(next))
+                                    on_change=move |next| shape_label.set(next)
                                     class="text-center"
                                 />
                             </CanvasShape>
@@ -693,10 +693,10 @@ pub fn Page() -> impl IntoView {
                                 y=Signal::derive(move || note.get().y)
                                 size=Signal::derive(move || note.get().width)
                                 color=StickyColor::Yellow
-                                on_move=Callback::new(move |at: CanvasPoint| {
+                                on_move=move |at: CanvasPoint| {
                                     note.update(|note| (note.x, note.y) = (at.x, at.y));
-                                })
-                                on_resize=Callback::new(move |next: WorldBox| note.set(next))
+                                }
+                                on_resize=move |next: WorldBox| note.set(next)
                                 on_gesture_end=record
                                 selected=Signal::derive(move || picked.get() == "note")
                                 on:pointerdown=move |_| picked.set("note".into())
@@ -706,7 +706,7 @@ pub fn Page() -> impl IntoView {
                                 </span>
                                 <CanvasNodeLabel
                                     value=note_label
-                                    on_change=Callback::new(move |next| note_label.set(next))
+                                    on_change=move |next| note_label.set(next)
                                     class="break-words"
                                 />
                             </CanvasSticky>
@@ -715,9 +715,9 @@ pub fn Page() -> impl IntoView {
                                 x=Signal::derive(move || tilted.get().x)
                                 y=Signal::derive(move || tilted.get().y)
                                 angle=Signal::derive(move || tilted.get().angle)
-                                on_move=Callback::new(move |at: CanvasPoint| {
+                                on_move=move |at: CanvasPoint| {
                                     tilted.update(|tilted| (tilted.x, tilted.y) = (at.x, at.y));
-                                })
+                                }
                                 on_gesture_end=record
                                 selected=Signal::derive(move || picked.get() == "tilted")
                                 on:pointerdown=move |_| picked.set("tilted".into())

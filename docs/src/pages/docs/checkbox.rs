@@ -63,9 +63,21 @@ const API: &[ApiEntry] = &[ApiEntry {
         },
         Prop {
             name: "checked",
-            ty: "RwSignal<bool>",
-            default: "",
-            description: "The state, read and written. Required: the checkbox does not own it.",
+            ty: "Option<RwSignal<bool>>",
+            default: "None",
+            description: "The state, held by the caller. Omit it and the checkbox keeps its own.",
+        },
+        Prop {
+            name: "default_checked",
+            ty: "bool",
+            default: "false",
+            description: "Whether it starts checked. Ignored when `checked` is given.",
+        },
+        Prop {
+            name: "on_checked_change",
+            ty: "Option<Callback<bool>>",
+            default: "None",
+            description: "Called with the new value whenever it is checked or unchecked, including when the signal passed as `checked` is written from outside.",
         },
         Prop {
             name: "disabled",
@@ -78,6 +90,30 @@ const API: &[ApiEntry] = &[ApiEntry {
             ty: "Signal<String>",
             default: "\"\"",
             description: "Given to the control, so a `Label` can point `for` at it. Inside a `Field` this is filled in.",
+        },
+        Prop {
+            name: "name",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "The name it is submitted under. A native `<input type=\"checkbox\">` kept beside the button carries it, so `FormData` sees the control; it is only rendered inside a `<form>` or when `name` or `form` is set, and it is `aria-hidden` and not a tab stop. Unchecked, nothing is submitted.",
+        },
+        Prop {
+            name: "value",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "What it submits while checked. Empty is `\"on\"`, as a native checkbox has it.",
+        },
+        Prop {
+            name: "required",
+            ty: "Signal<bool>",
+            default: "false",
+            description: "The browser refuses to submit the form, and says so beside the control, while it is unchecked.",
+        },
+        Prop {
+            name: "form",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "The `id` of a `<form>` it belongs to when it is not inside one. Empty means the one around it.",
         },
     ],
 }];

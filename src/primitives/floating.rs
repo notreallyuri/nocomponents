@@ -1,8 +1,17 @@
 use std::time::Duration;
 
+pub use crate::utils::types::TriggerRender;
 use crate::{
     primitives::dismiss::{LayerBounds, use_dismissable_layer},
-    utils::{next_id, types::TriggerRect},
+    utils::{
+        controllable::controllable,
+        get_placement, next_id,
+        types::{Align, Side, SideOffset, TriggerRect},
+    },
+};
+use floating_ui_leptos::{
+    Flip, FlipOptions, MiddlewareVec, Offset, OffsetOptions, Placement, Shift, ShiftOptions,
+    Strategy, UseFloatingOptions,
 };
 use leptos::{
     context::Provider,
@@ -15,6 +24,7 @@ use leptos::{
     wasm_bindgen::{JsCast, JsValue},
 };
 use leptos_node_ref::AnyNodeRef;
+use send_wrapper::SendWrapper;
 use web_sys::{Element, HtmlElement, KeyboardEvent};
 
 /// A portal that lands inside the fullscreen element when there is one, and in `<body>` otherwise.
@@ -59,6 +69,38 @@ pub fn FloatingPortal(children: ChildrenFn) -> impl IntoView {
             }
         }}
     }
+}
+
+/// The placement `side` and `align` name together, following either as it changes.
+pub fn side_placement(side: Signal<Side>, align: Signal<Align>) -> Signal<Placement> {
+    Signal::derive(move || get_placement(side.get(), align.get()))
+}
+
+/// The options every positioned layer hands to `use_floating`: fixed strategy, auto-update, and
+/// offset/flip/shift middleware.
+///
+/// `placement` and `middleware` are both watched by `use_floating`, which re-positions when either
+/// changes. The middleware is a derived value rather than a vector built once, so a changing
+/// `side_offset` rebuilds it, and a changing `placement` moves the layer, without the root being
+/// created again.
+pub fn floating_options(
+    placement: Signal<Placement>,
+    side_offset: Signal<SideOffset>,
+) -> UseFloatingOptions {
+    let middleware = Signal::derive(move || {
+        let middleware: MiddlewareVec = vec![
+            Box::new(Offset::new(OffsetOptions::Value(side_offset.get().0))),
+            Box::new(Flip::new(FlipOptions::default())),
+            Box::new(Shift::new(ShiftOptions::default())),
+        ];
+        Some(SendWrapper::new(middleware))
+    });
+
+    UseFloatingOptions::default()
+        .placement(Signal::derive(move || Some(placement.get())))
+        .strategy(Strategy::Fixed)
+        .while_elements_mounted_auto_update()
+        .middleware(middleware)
 }
 
 #[derive(Copy, Clone)]
@@ -160,23 +202,6 @@ pub enum TriggerAria {
     Describes,
 }
 
-/// What a trigger's `render` is handed.
-///
-/// A struct rather than a tuple because this is the one shape that has had to grow: it was
-/// `(AnyNodeRef, Callback<MouseEvent>)` until a combobox inside a disabled `Field` needed the
-/// resolved `disabled` as well. Every future addition is a new field, which no caller has to be
-/// rewritten for — destructuring a tuple breaks the moment the tuple gains an element.
-#[derive(Copy, Clone)]
-pub struct TriggerRender {
-    /// Must be attached to whatever is rendered, or the floating layer has nothing to measure
-    /// against and the ARIA has no node to be written onto.
-    pub node_ref: AnyNodeRef,
-    pub on_click: Callback<MouseEvent>,
-    /// The trigger's own `disabled`, already resolved against the `Field` it may sit in — which is
-    /// not the same as the `disabled` the caller passed.
-    pub disabled: Signal<bool>,
-}
-
 /// Whether focus currently sits inside this layer's content.
 fn focus_is_inside_content(context: FloatingContext) -> bool {
     let Some(active) = document().active_element() else {
@@ -254,9 +279,36 @@ pub fn FloatingRoot(
     /// Whether the arrow keys open this layer from its closed trigger, and where they leave focus.
     #[prop(optional)]
     arrow_open: ArrowOpen,
+    /// The caller's signal for whether the layer is open. When given, it replaces the context's own
+    /// `is_open`, and `default_open` is ignored.
+    #[prop(default = None, into)]
+    open: Option<RwSignal<bool>>,
+    /// Whether the layer starts open. Ignored when `open` is given.
+    #[prop(optional)]
+    default_open: bool,
+    /// Called with the new value whenever the layer opens or closes, however that came about.
+    #[prop(optional, into)]
+    on_open_change: Option<Callback<bool>>,
     children: ChildrenFn,
 ) -> impl IntoView {
-    let context = context.unwrap_or_default();
+    let mut context = context.unwrap_or_default();
+
+    // A context a caller built and kept hold of keeps its own `is_open` unless `open` replaces it.
+    let is_open = match open {
+        Some(open) => controllable(Some(open), false, on_open_change),
+        None => {
+            if default_open {
+                context.is_open.set(true);
+            }
+            controllable(Some(context.is_open), false, on_open_change)
+        }
+    };
+    context.is_open = is_open;
+    // Mounted from the first paint when it starts open, rather than a tick later when the effect
+    // below first runs.
+    if is_open.get_untracked() {
+        context.is_mounted.set(true);
+    }
 
     if context.trigger_id.get_untracked().is_empty() {
         context.trigger_id.set(next_id("trigger"));

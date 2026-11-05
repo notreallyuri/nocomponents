@@ -10,24 +10,21 @@
 use crate::{
     primitives::{
         dropdown_menu::{
-            MenuRoot, focus_element, handle_menu_keys, placement_align, placement_side,
+            MenuRoot, focus_element, focus_item_under_pointer, focus_menu_off_item,
+            handle_menu_keys, placement_align, placement_side,
         },
-        floating::{FloatingContext, FloatingRoot},
+        floating::{FloatingContext, FloatingRoot, floating_options, side_placement},
         roving_focus::use_roving_focus,
         typeahead::Typeahead,
     },
     utils::{
-        get_placement,
+        controllable::controllable,
         types::{Align, Orientation, Side, SideOffset},
     },
 };
-use floating_ui_leptos::{
-    Flip, FlipOptions, MiddlewareVec, Offset, OffsetOptions, Shift, ShiftOptions, Strategy,
-    UseFloatingOptions, UseFloatingReturn, use_floating,
-};
+use floating_ui_leptos::{UseFloatingReturn, use_floating};
 use leptos::{context::Provider, ev, prelude::*};
 use leptos_node_ref::AnyNodeRef;
-use send_wrapper::SendWrapper;
 
 pub type ContextMenuContext = FloatingContext;
 
@@ -49,9 +46,21 @@ pub fn use_context_menu_point() -> ContextMenuPoint {
 #[component]
 pub fn ContextMenuRoot(
     #[prop(optional, into)] class: Signal<String>,
+    /// Whether the menu is open, held by the caller. Omit it and the root keeps its own.
+    #[prop(default = None, into)]
+    open: Option<RwSignal<bool>>,
+    /// Whether the menu starts open. Ignored when `open` is given.
+    #[prop(optional)]
+    default_open: bool,
+    /// Called with the new value whenever the menu opens or closes, however that came about.
+    #[prop(optional, into)]
+    on_open_change: Option<Callback<bool>>,
     children: ChildrenFn,
 ) -> impl IntoView {
-    let context = ContextMenuContext::default();
+    let context = ContextMenuContext {
+        is_open: controllable(open, default_open, on_open_change),
+        ..Default::default()
+    };
     let point = ContextMenuPoint {
         x: RwSignal::new(0.0),
         y: RwSignal::new(0.0),
@@ -118,21 +127,15 @@ pub fn ContextMenuTriggerRoot(
 /// `update` below, which is why it is not simply reused.
 #[component]
 pub fn ContextMenuContentRoot(
-    #[prop(default = Side::Bottom)] side: Side,
-    #[prop(default = Align::Start)] align: Align,
-    #[prop(default = SideOffset(0.0))] side_offset: SideOffset,
+    #[prop(into, default = Side::Bottom.into())] side: Signal<Side>,
+    #[prop(into, default = Align::Start.into())] align: Signal<Align>,
+    #[prop(into, default = SideOffset(0.0).into())] side_offset: Signal<SideOffset>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
     let ctx = use_context_menu();
     let point = use_context_menu_point();
     let floating_ref = ctx.content_ref;
-
-    let middleware: MiddlewareVec = vec![
-        Box::new(Offset::new(OffsetOptions::Value(side_offset.0))),
-        Box::new(Flip::new(FlipOptions::default())),
-        Box::new(Shift::new(ShiftOptions::default())),
-    ];
 
     let UseFloatingReturn {
         floating_styles,
@@ -143,11 +146,7 @@ pub fn ContextMenuContentRoot(
     } = use_floating(
         ctx.trigger_ref,
         floating_ref,
-        UseFloatingOptions::default()
-            .placement(get_placement(side, align))
-            .strategy(Strategy::Fixed)
-            .while_elements_mounted_auto_update()
-            .middleware(SendWrapper::new(middleware)),
+        floating_options(side_placement(side, align), side_offset),
     );
 
     // Auto-update watches resizes and scrolls; an anchor that teleports is neither, so without
@@ -186,6 +185,7 @@ pub fn ContextMenuContentRoot(
             <div
                 node_ref=menu_ref
                 id=move || ctx.content_id.get()
+                data-slot="context-menu-content"
                 role="menu"
                 tabindex="-1"
                 on:keydown=move |e| {
@@ -194,6 +194,8 @@ pub fn ContextMenuContentRoot(
                     }
                 }
                 on:focusin=move |_| roving.on_focus_in()
+                on:pointermove=move |e| focus_item_under_pointer(&e, menu_ref)
+                on:pointerleave=move |_| focus_menu_off_item(menu_ref)
                 data-state=move || if ctx.is_open.get() { "open" } else { "closed" }
                 data-align=move || placement_align(placement.get())
                 data-side=move || placement_side(placement.get())

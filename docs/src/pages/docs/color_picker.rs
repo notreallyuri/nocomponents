@@ -54,19 +54,19 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "format",
-                ty: "ColorFormat",
+                ty: "Signal<ColorFormat>",
                 default: "Hex",
-                description: "Which format the fields read and write to start with. The select beside them changes it: HEX, RGB, HSL, HSV, OKLCH.",
+                description: "Which format the fields read and write. The select beside them changes it — HEX, RGB, HSL, HSV, OKLCH — and a change to this prop switches the picker to the new one.",
             },
             Prop {
                 name: "with_alpha",
-                ty: "bool",
+                ty: "Signal<bool>",
                 default: "false",
                 description: "Adds the opacity rail, and lets the formats carry an alpha.",
             },
             Prop {
                 name: "presets",
-                ty: "Vec<&'static str>",
+                ty: "Signal<Vec<&'static str>>",
                 default: "[]",
                 description: "A row of colours under the picker. The one matching the current colour is marked.",
             },

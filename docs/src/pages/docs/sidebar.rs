@@ -219,13 +219,13 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "side",
-                ty: "Side",
+                ty: "Signal<Side>",
                 default: "Side::Left",
                 description: "One of: Left, Right, Bottom, Top.",
             },
             Prop {
                 name: "collapsible",
-                ty: "SidebarCollapsible",
+                ty: "Signal<SidebarCollapsible>",
                 default: "OffCanvas",
                 description: "One of: OffCanvas, Icon, None.",
             },
@@ -240,6 +240,12 @@ const API: &[ApiEntry] = &[
                 ty: "bool",
                 default: "true",
                 description: "Where an uncontrolled sidebar starts, before local storage has anything to say.",
+            },
+            Prop {
+                name: "on_open_change",
+                ty: "Option<Callback<bool>>",
+                default: "None",
+                description: "Called with the new value whenever the wide-viewport state changes, including when the signal passed as `open` is written from outside. The narrow overlay is not reported.",
             },
             Prop {
                 name: "class",
@@ -267,7 +273,7 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "variant",
-                ty: "SidebarVariant",
+                ty: "Signal<SidebarVariant>",
                 default: "Sidebar",
                 description: "One of: Sidebar, Floating, Inset.",
             },
@@ -545,7 +551,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "size",
-                ty: "SidebarMenuSize",
+                ty: "Signal<SidebarMenuSize>",
                 default: "Default",
                 description: "One of: Default, Sm, Lg.",
             },
@@ -695,7 +701,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "size",
-                ty: "SidebarMenuSize",
+                ty: "Signal<SidebarMenuSize>",
                 default: "SidebarMenuSize::Default",
                 description: "One of: Default, Sm, Lg.",
             },

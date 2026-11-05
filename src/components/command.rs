@@ -10,22 +10,32 @@ use crate::{
         },
         dialog::DialogRoot,
     },
+    utils::controllable::forward,
 };
 use leptos::prelude::*;
 
 #[component]
 pub fn Command(
-    #[prop(optional, into)] search: RwSignal<String>,
-    #[prop(optional, into)] value: RwSignal<Option<String>>,
-    #[prop(default = true)] should_filter: bool,
+    #[prop(default = None, into)] search: Option<RwSignal<String>>,
+    #[prop(optional, into)] default_search: String,
+    #[prop(optional, into)] on_search_change: Option<Callback<String>>,
+    #[prop(default = None, into)] value: Option<RwSignal<Option<String>>>,
+    #[prop(optional, into)] default_value: Option<String>,
+    #[prop(optional, into)] on_value_change: Option<Callback<Option<String>>>,
+    #[prop(into, default = true.into())] should_filter: Signal<bool>,
     #[prop(default = None, into)] filter: Option<CommandFilter>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
+    let value = Some(value.unwrap_or_else(|| RwSignal::new(default_value)));
+
     view! {
         <CommandRoot
             search=search
+            default_search=default_search
+            on_search_change=forward(on_search_change)
             value=value
+            on_value_change=forward(on_value_change)
             should_filter=should_filter
             filter=filter
             class=move || {
@@ -110,7 +120,7 @@ pub fn CommandItem(
     #[prop(into)] value: String,
     #[prop(optional, into)] keywords: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
-    #[prop(default = None, into)] on_select: Option<Callback<String>>,
+    #[prop(optional, into)] on_select: Option<Callback<String>>,
     #[prop(optional, into)] class: Signal<String>,
     children: ChildrenFn,
 ) -> impl IntoView {
@@ -119,7 +129,7 @@ pub fn CommandItem(
             value=value
             keywords=keywords
             disabled=disabled
-            on_select=on_select
+            on_select=forward(on_select)
             class=move || {
                 cn!(
                     "relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none select-none data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted-foreground",
@@ -156,18 +166,20 @@ pub fn CommandShortcut(
 
 #[component]
 pub fn CommandDialog(
-    #[prop(optional)] open: Option<RwSignal<bool>>,
+    #[prop(default = None, into)] open: Option<RwSignal<bool>>,
+    #[prop(optional)] default_open: bool,
+    #[prop(optional, into)] on_open_change: Option<Callback<bool>>,
     #[prop(default = Some("k"))] shortcut: Option<&'static str>,
     #[prop(optional, into)] title: Signal<String>,
     #[prop(optional, into)] description: Signal<String>,
     #[prop(optional, into)] search: RwSignal<String>,
     #[prop(optional, into)] value: RwSignal<Option<String>>,
-    #[prop(default = true)] should_filter: bool,
+    #[prop(into, default = true.into())] should_filter: Signal<bool>,
     #[prop(default = None, into)] filter: Option<CommandFilter>,
     #[prop(optional, into)] class: Signal<String>,
     children: ChildrenFn,
 ) -> impl IntoView {
-    let is_open = open.unwrap_or_else(|| RwSignal::new(false));
+    let is_open = open.unwrap_or_else(|| RwSignal::new(default_open));
 
     if let Some(shortcut) = shortcut {
         use_command_shortcut(shortcut, is_open);
@@ -182,7 +194,7 @@ pub fn CommandDialog(
     let children = StoredValue::new(children);
 
     view! {
-        <DialogRoot open=is_open>
+        <DialogRoot open=is_open on_open_change=forward(on_open_change)>
             <DialogPortal
                 show_close=false
                 class=move || { cn!("overflow-hidden p-0 sm:max-w-lg", class.get()) }

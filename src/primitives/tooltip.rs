@@ -7,18 +7,17 @@
 //! the shorter `close_delay` keeps the gap between trigger and content from dismissing it.
 
 use crate::{
-    primitives::floating::{FloatingContext, FloatingRoot, TriggerAria},
+    primitives::floating::{
+        FloatingContext, FloatingPortal, FloatingRoot, TriggerAria, floating_options,
+        side_placement,
+    },
     utils::{
-        get_placement,
+        controllable::controllable,
         types::{Align, AnchorRender, Side, SideOffset},
     },
 };
-use floating_ui_leptos::{
-    Flip, FlipOptions, MiddlewareVec, Offset, OffsetOptions, Placement, Shift, ShiftOptions,
-    Strategy, UseFloatingOptions, UseFloatingReturn, use_floating,
-};
-use leptos::{context::Provider, either::Either, ev, portal::Portal, prelude::*};
-use send_wrapper::SendWrapper;
+use floating_ui_leptos::{Placement, UseFloatingReturn, use_floating};
+use leptos::{context::Provider, either::Either, ev, prelude::*};
 use std::time::Duration;
 
 pub type TooltipContext = FloatingContext;
@@ -30,23 +29,33 @@ pub fn use_tooltip() -> TooltipContext {
 /// The open and close delays, in milliseconds, shared with the trigger through context.
 #[derive(Clone, Copy)]
 struct TooltipDelays {
-    open: u64,
-    close: u64,
+    open: Signal<u64>,
+    close: Signal<u64>,
 }
 
 #[component]
 pub fn TooltipRoot(
     #[prop(optional, into)] class: Signal<String>,
     /// How long the pointer has to rest on the trigger before the tooltip opens.
-    #[prop(default = 400, into)]
-    delay: u64,
+    #[prop(into, default = 400u64.into())]
+    delay: Signal<u64>,
     /// The grace period after leaving, so a gap between trigger and content is survivable.
-    #[prop(default = 100, into)]
-    close_delay: u64,
+    #[prop(into, default = 100u64.into())]
+    close_delay: Signal<u64>,
     #[prop(optional)] context: Option<TooltipContext>,
+    /// Whether the tooltip is open, held by the caller. Omit it and the root keeps its own.
+    #[prop(default = None, into)]
+    open: Option<RwSignal<bool>>,
+    /// Whether the tooltip starts open. Ignored when `open` is given.
+    #[prop(optional)]
+    default_open: bool,
+    /// Called with the new value whenever the tooltip opens or closes, however that came about.
+    #[prop(optional, into)]
+    on_open_change: Option<Callback<bool>>,
     children: ChildrenFn,
 ) -> impl IntoView {
-    let context = context.unwrap_or_default();
+    let mut context = context.unwrap_or_default();
+    context.is_open = controllable(open, default_open, on_open_change);
     let stored_children = StoredValue::new(children);
 
     view! {
@@ -82,7 +91,11 @@ pub fn TooltipTriggerRoot(
 
     let schedule = move |open: bool| {
         cancel();
-        let delay = if open { delays.open } else { delays.close };
+        let delay = if open {
+            delays.open.get_untracked()
+        } else {
+            delays.close.get_untracked()
+        };
         if let Ok(handle) =
             set_timeout_with_handle(move || ctx.is_open.set(open), Duration::from_millis(delay))
         {
@@ -144,28 +157,22 @@ pub fn TooltipPortalRoot(children: ChildrenFn) -> impl IntoView {
     let stored_children = StoredValue::new(children);
 
     view! {
-        <Portal>
+        <FloatingPortal>
             <Show when=move || ctx.is_mounted.get()>{stored_children.with_value(|c| c())}</Show>
-        </Portal>
+        </FloatingPortal>
     }
 }
 
 #[component]
 pub fn TooltipContentRoot(
-    #[prop(default = Side::Top)] side: Side,
-    #[prop(optional)] align: Align,
-    #[prop(default = SideOffset(6.0))] side_offset: SideOffset,
+    #[prop(into, default = Side::Top.into())] side: Signal<Side>,
+    #[prop(optional, into)] align: Signal<Align>,
+    #[prop(into, default = SideOffset(6.0).into())] side_offset: Signal<SideOffset>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
     let ctx = use_tooltip();
     let floating_ref = ctx.content_ref;
-
-    let middleware: MiddlewareVec = vec![
-        Box::new(Offset::new(OffsetOptions::Value(side_offset.0))),
-        Box::new(Flip::new(FlipOptions::default())),
-        Box::new(Shift::new(ShiftOptions::default())),
-    ];
 
     let UseFloatingReturn {
         floating_styles,
@@ -175,11 +182,7 @@ pub fn TooltipContentRoot(
     } = use_floating(
         ctx.trigger_ref,
         floating_ref,
-        UseFloatingOptions::default()
-            .placement(get_placement(side, align))
-            .strategy(Strategy::Fixed)
-            .while_elements_mounted_auto_update()
-            .middleware(SendWrapper::new(middleware)),
+        floating_options(side_placement(side, align), side_offset),
     );
 
     view! {

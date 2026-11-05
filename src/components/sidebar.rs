@@ -15,7 +15,10 @@ use crate::{
         },
         tree::{TreeGroupRoot, TreeItemRoot, TreeRoot, TreeRowRoot, use_tree_item},
     },
-    utils::types::{AsClass, Side, StyledRender},
+    utils::{
+        controllable::forward,
+        types::{AsClass, Side, StyledRender},
+    },
 };
 use leptos::{either::Either, ev, prelude::*};
 use leptos_node_ref::AnyNodeRef;
@@ -72,10 +75,11 @@ impl AsClass for SidebarMenuSize {
 
 #[component]
 pub fn SidebarProvider(
-    #[prop(default = Side::Left)] side: Side,
-    #[prop(optional)] collapsible: SidebarCollapsible,
+    #[prop(into, default = Side::Left.into())] side: Signal<Side>,
+    #[prop(optional, into)] collapsible: Signal<SidebarCollapsible>,
     #[prop(default = None, into)] open: Option<RwSignal<bool>>,
     #[prop(default = true)] default_open: bool,
+    #[prop(optional, into)] on_open_change: Option<Callback<bool>>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] style: Signal<String>,
     children: Children,
@@ -86,6 +90,7 @@ pub fn SidebarProvider(
             collapsible=collapsible
             open=open
             default_open=default_open
+            on_open_change=forward(on_open_change)
             style=style
             class=move || {
                 cn!(
@@ -101,7 +106,7 @@ pub fn SidebarProvider(
 
 #[component]
 pub fn Sidebar(
-    #[prop(optional)] variant: SidebarVariant,
+    #[prop(optional, into)] variant: Signal<SidebarVariant>,
     #[prop(optional, into)] class: Signal<String>,
     children: ChildrenFn,
 ) -> impl IntoView {
@@ -119,19 +124,23 @@ pub fn Sidebar(
         }
     };
 
-    let gap_class = if variant.is_inset() {
-        "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+1rem)]"
-    } else {
-        "group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)]"
+    let gap_class = move || {
+        if variant.get().is_inset() {
+            "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+1rem)]"
+        } else {
+            "group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)]"
+        }
     };
 
-    let fixed_class = if variant.is_inset() {
-        "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+1rem+2px)]"
-    } else {
-        "group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)] group-data-[side=left]:border-r group-data-[side=right]:border-l"
+    let fixed_class = move || {
+        if variant.get().is_inset() {
+            "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+1rem+2px)]"
+        } else {
+            "group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)] group-data-[side=left]:border-r group-data-[side=right]:border-l"
+        }
     };
 
-    let edge_class = match ctx.side {
+    let edge_class = move || match ctx.side.get() {
         Side::Right => {
             "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]"
         }
@@ -144,7 +153,13 @@ pub fn Sidebar(
                 <Sheet open=ctx.open_mobile>
                     <SheetContent
                         side=ctx.side
-                        class="w-[var(--sidebar-width-mobile,18rem)] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+                        id=ctx.content_id.get_untracked()
+                        class=move || {
+                            cn!(
+                                "w-[var(--sidebar-width-mobile,18rem)] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden",
+                                class.get(),
+                            )
+                        }
                     >
                         <SheetTitle class="sr-only">"Sidebar"</SheetTitle>
                         <SheetDescription class="sr-only">
@@ -157,7 +172,7 @@ pub fn Sidebar(
         } else {
             Either::Right(view! {
                 <SidebarRoot
-                    variant=variant.as_str()
+                    variant=move || variant.get().as_str().to_string()
                     class=move || {
                         cn!(
                             "group peer hidden text-sidebar-foreground md:block",
@@ -166,16 +181,20 @@ pub fn Sidebar(
                         )
                     }
                 >
-                    <div class=cn!(
-                        "relative w-[var(--sidebar-width)] bg-transparent transition-[width] duration-200 ease-linear",
-                        "group-data-[collapsible=offcanvas]:w-0 group-data-[side=right]:rotate-180",
-                        gap_class,
-                    ) />
-                    <div class=cn!(
-                        "fixed inset-y-0 z-10 hidden w-[var(--sidebar-width)] transition-[left,right,width] duration-200 ease-linear md:flex",
-                        edge_class,
-                        fixed_class,
-                    )>{panel()}</div>
+                    <div class=move || {
+                        cn!(
+                            "relative w-[var(--sidebar-width)] bg-transparent transition-[width] duration-200 ease-linear",
+                            "group-data-[collapsible=offcanvas]:w-0 group-data-[side=right]:rotate-180",
+                            gap_class(),
+                        )
+                    } />
+                    <div class=move || {
+                        cn!(
+                            "fixed inset-y-0 z-10 hidden w-[var(--sidebar-width)] transition-[left,right,width] duration-200 ease-linear md:flex",
+                            edge_class(),
+                            fixed_class(),
+                        )
+                    }>{panel()}</div>
                 </SidebarRoot>
             })
         }
@@ -419,7 +438,7 @@ pub fn SidebarMenuItem(
 #[component]
 pub fn SidebarMenuButton(
     #[prop(optional, into)] active: Signal<bool>,
-    #[prop(optional)] size: SidebarMenuSize,
+    #[prop(optional, into)] size: Signal<SidebarMenuSize>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(default = None, into)] tooltip: Option<Signal<String>>,
@@ -428,7 +447,6 @@ pub fn SidebarMenuButton(
     #[prop(optional)] children: Option<ChildrenFn>,
 ) -> impl IntoView {
     let ctx = use_sidebar();
-    let size_class = size.as_class();
     let stored_children = StoredValue::new(children);
     let node_ref = node_ref.unwrap_or_default();
 
@@ -437,7 +455,7 @@ pub fn SidebarMenuButton(
         view! {
             <SidebarMenuButtonRoot
                 active=active
-                size=size.as_str()
+                size=move || size.get().as_str().to_string()
                 disabled=disabled
                 render=render
                 node_ref=node_ref
@@ -449,7 +467,7 @@ pub fn SidebarMenuButton(
                         "group-has-data-[slot=sidebar-menu-action]/menu-item:pr-8",
                         "group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-2",
                         "[&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0",
-                        size_class,
+                        size.get().as_class(),
                         class.get(),
                     )
                 }
@@ -585,7 +603,7 @@ pub fn SidebarTreeItem(
 pub fn SidebarTreeRow(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] active: Signal<bool>,
-    #[prop(default = None, into)] on_select: Option<Callback<ev::MouseEvent>>,
+    #[prop(optional, into)] on_select: Option<Callback<ev::MouseEvent>>,
     children: Children,
 ) -> impl IntoView {
     let item = use_tree_item();
@@ -593,7 +611,7 @@ pub fn SidebarTreeRow(
 
     view! {
         <TreeRowRoot
-            on_select=on_select
+            on_select=forward(on_select)
             class=move || {
                 cn!(
                     "group/tree-row flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding]",
@@ -670,21 +688,16 @@ pub fn SidebarMenuSubItem(
 #[component]
 pub fn SidebarMenuSubButton(
     #[prop(optional, into)] active: Signal<bool>,
-    #[prop(default = SidebarMenuSize::Default)] size: SidebarMenuSize,
+    #[prop(optional, into)] size: Signal<SidebarMenuSize>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(default = None, into)] render: Option<Callback<StyledRender, AnyView>>,
     #[prop(optional)] children: Option<ChildrenFn>,
 ) -> impl IntoView {
-    let size_class = match size {
-        SidebarMenuSize::Sm => "text-xs",
-        _ => "text-sm",
-    };
-
     view! {
         <SidebarMenuButtonRoot
             active=active
-            size=size.as_str()
+            size=move || size.get().as_str().to_string()
             disabled=disabled
             render=render
             class=move || {
@@ -692,7 +705,10 @@ pub fn SidebarMenuSubButton(
                     "flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 text-sidebar-foreground outline-none ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50",
                     "data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground",
                     "[&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-sidebar-accent-foreground",
-                    size_class,
+                    match size.get() {
+                        SidebarMenuSize::Sm => "text-xs",
+                        _ => "text-sm",
+                    },
                     class.get(),
                 )
             }

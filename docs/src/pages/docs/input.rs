@@ -7,6 +7,7 @@ use crate::{
 };
 use leptos::prelude::*;
 use nocomponents::components::{
+    button::{Button, ButtonSize, ButtonVariant},
     input::{Input, InputType},
     label::Label,
 };
@@ -41,6 +42,25 @@ const CONTROLLED: &str = r#"{
     }
 }"#;
 
+const REVEAL: &str = r#"{
+    let shown = RwSignal::new(false);
+    let input_type = Signal::derive(move || {
+        if shown.get() { InputType::Text } else { InputType::Password }
+    });
+    view! {
+        <div class="flex max-w-sm gap-2">
+            <Input input_type=input_type attr:placeholder="Password" />
+            <Button
+                variant=ButtonVariant::Outline
+                size=ButtonSize::Sm
+                on_click=move |_| shown.update(|s| *s = !*s)
+            >
+                {move || if shown.get() { "Hide" } else { "Show" }}
+            </Button>
+        </div>
+    }
+}"#;
+
 const DISABLED: &str = r#"<Input attr:disabled=true value="Cannot edit this" class="max-w-sm" />"#;
 
 const FILE: &str = r#"<Input input_type=InputType::File class="max-w-sm" />"#;
@@ -57,7 +77,7 @@ const API: &[ApiEntry] = &[ApiEntry {
         },
         Prop {
             name: "input_type",
-            ty: "InputType",
+            ty: "Signal<InputType>",
             default: "Text",
             description: "One of: Text, Email, Password, Number, File.",
         },
@@ -84,6 +104,42 @@ const API: &[ApiEntry] = &[ApiEntry {
             ty: "Signal<bool>",
             default: "false",
             description: "Stops it taking pointer events and marks it disabled.",
+        },
+        Prop {
+            name: "name",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "The name it is submitted under in a form's data. Empty leaves it out.",
+        },
+        Prop {
+            name: "required",
+            ty: "Signal<bool>",
+            default: "false",
+            description: "The browser refuses to submit the form while it is empty.",
+        },
+        Prop {
+            name: "readonly",
+            ty: "Signal<bool>",
+            default: "false",
+            description: "Focusable and selectable but not editable; still submitted.",
+        },
+        Prop {
+            name: "placeholder",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "Hint text shown while empty.",
+        },
+        Prop {
+            name: "autocomplete",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "A browser autofill hint such as `\"email\"`. Empty leaves the attribute off.",
+        },
+        Prop {
+            name: "form",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "The `id` of a `<form>` it belongs to when it is not inside one. Empty means the one around it.",
         },
     ],
 }];
@@ -138,6 +194,31 @@ pub fn Page() -> impl IntoView {
                                 <p class="text-sm text-muted-foreground">
                                     "Value: " {move || value.get()}
                                 </p>
+                            </div>
+                        }
+                    }
+                </DemoSection>
+
+                <DemoSection
+                    title="Show and hide"
+                    description="input_type takes a signal, so the same field flips between Password and Text without being rebuilt — the caret and what has been typed stay where they are."
+                    code=REVEAL
+                >
+                    {
+                        let shown = RwSignal::new(false);
+                        let input_type = Signal::derive(move || {
+                            if shown.get() { InputType::Text } else { InputType::Password }
+                        });
+                        view! {
+                            <div class="flex max-w-sm gap-2">
+                                <Input input_type=input_type attr:placeholder="Password" />
+                                <Button
+                                    variant=ButtonVariant::Outline
+                                    size=ButtonSize::Sm
+                                    on_click=move |_| shown.update(|s| *s = !*s)
+                                >
+                                    {move || if shown.get() { "Hide" } else { "Show" }}
+                                </Button>
                             </div>
                         }
                     }

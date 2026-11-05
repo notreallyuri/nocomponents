@@ -4,8 +4,8 @@ use leptos::prelude::*;
 #[component]
 pub fn Separator(
     #[prop(optional, into)] class: Signal<String>,
-    #[prop(optional)] orientation: Orientation,
-    #[prop(default = true)] decorative: bool,
+    #[prop(optional, into)] orientation: Signal<Orientation>,
+    #[prop(default = true.into(), into)] decorative: Signal<bool>,
 ) -> impl IntoView {
     view! {
         <SeparatorRoot

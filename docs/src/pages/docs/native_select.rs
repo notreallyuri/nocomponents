@@ -59,7 +59,7 @@ const API: &[ApiEntry] = &[ApiEntry {
     props: &[
         Prop {
             name: "size",
-            ty: "NativeSelectSize",
+            ty: "Signal<NativeSelectSize>",
             default: "Default",
             description: "One of: Sm, Default.",
         },
@@ -92,6 +92,24 @@ const API: &[ApiEntry] = &[ApiEntry {
             ty: "Signal<String>",
             default: "\"\"",
             description: "Overridden by an enclosing `Field`, which mints its own.",
+        },
+        Prop {
+            name: "name",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "The name it is submitted under in a form's data. Empty leaves it out.",
+        },
+        Prop {
+            name: "required",
+            ty: "Signal<bool>",
+            default: "false",
+            description: "The browser refuses to submit the form while the selected option's value is empty.",
+        },
+        Prop {
+            name: "form",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "The `id` of a `<form>` it belongs to when it is not inside one. Empty means the one around it.",
         },
         Prop {
             name: "on_blur",

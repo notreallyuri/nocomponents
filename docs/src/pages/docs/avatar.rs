@@ -60,7 +60,7 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "size",
-                ty: "AvatarSize",
+                ty: "Signal<AvatarSize>",
                 default: "Default",
                 description: "One of: Default, Sm, Lg.",
             },
@@ -84,13 +84,13 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "src",
-                ty: "String",
+                ty: "Signal<String>",
                 default: "",
                 description: "The image URL.",
             },
             Prop {
                 name: "alt",
-                ty: "String",
+                ty: "Signal<String>",
                 default: "\"\"",
                 description: "Alternative text.",
             },

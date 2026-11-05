@@ -97,9 +97,21 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "value",
-                ty: "RwSignal<Option<String>>",
+                ty: "Option<RwSignal<Option<String>>>",
                 default: "None",
-                description: "The chosen value. Pass one to read the selection or to preset it.",
+                description: "The chosen value, held by the caller. Pass one to read the selection or to preset it.",
+            },
+            Prop {
+                name: "default_value",
+                ty: "Option<String>",
+                default: "None",
+                description: "The value to start with, as in `default_value=\"apple\"`. Ignored when `value` is given.",
+            },
+            Prop {
+                name: "on_value_change",
+                ty: "Option<Callback<Option<String>>>",
+                default: "None",
+                description: "Called with the new value whenever it changes, including when the signal passed as `value` is written from outside.",
             },
             Prop {
                 name: "display_value",
@@ -112,6 +124,36 @@ const API: &[ApiEntry] = &[
                 ty: "Signal<String>",
                 default: "\"\"",
                 description: "Merged over the wrapper's classes.",
+            },
+            Prop {
+                name: "name",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The name the chosen value is submitted under, through a hidden input. Empty leaves it out. There is no `required`: a hidden input is exempt from validation.",
+            },
+            Prop {
+                name: "form",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The `id` of a `<form>` it belongs to when it is not inside one. Empty means the one around it.",
+            },
+            Prop {
+                name: "open",
+                ty: "Option<RwSignal<bool>>",
+                default: "None",
+                description: "Pass one to drive the list from outside or to watch it; omit it and the root owns the signal.",
+            },
+            Prop {
+                name: "default_open",
+                ty: "bool",
+                default: "false",
+                description: "Whether the list starts open. Ignored when `open` is given.",
+            },
+            Prop {
+                name: "on_open_change",
+                ty: "Option<Callback<bool>>",
+                default: "None",
+                description: "Called with the new value whenever the list opens or closes, including when the signal passed as `open` is written from outside.",
             },
             Prop {
                 name: "children",
@@ -127,13 +169,13 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "size",
-                ty: "ButtonSize",
+                ty: "Signal<ButtonSize>",
                 default: "Default",
                 description: "Forwarded to the underlying `Button`.",
             },
             Prop {
                 name: "variant",
-                ty: "ButtonVariant",
+                ty: "Signal<ButtonVariant>",
                 default: "Outline",
                 description: "Forwarded to the underlying `Button`.",
             },
@@ -187,25 +229,25 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "side",
-                ty: "Side",
+                ty: "Signal<Side>",
                 default: "Side::Bottom",
                 description: "One of: Left, Right, Bottom, Top.",
             },
             Prop {
                 name: "align",
-                ty: "Align",
+                ty: "Signal<Align>",
                 default: "Start",
                 description: "One of: Start, Center, End.",
             },
             Prop {
                 name: "side_offset",
-                ty: "SideOffset",
+                ty: "Signal<SideOffset>",
                 default: "SideOffset(4.0)",
                 description: "Distance from the trigger, in pixels.",
             },
             Prop {
                 name: "should_filter",
-                ty: "bool",
+                ty: "Signal<bool>",
                 default: "true",
                 description: "Off when the list arrives already narrowed, as an async search does. Forwarded to the command root inside.",
             },
@@ -259,7 +301,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "deselectable",
-                ty: "bool",
+                ty: "Signal<bool>",
                 default: "true",
                 description: "Whether choosing the item again clears the selection, as a filter chip does.",
             },
@@ -271,7 +313,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "close_on_select",
-                ty: "bool",
+                ty: "Signal<bool>",
                 default: "true",
                 description: "Whether choosing an item closes the layer. False for a list several things are picked from, where closing after the first is the bug.",
             },

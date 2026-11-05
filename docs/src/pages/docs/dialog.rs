@@ -97,6 +97,24 @@ const API: &[ApiEntry] = &[
                 description: "Pass one to drive the dialog from outside; omit it and the root owns the signal.",
             },
             Prop {
+                name: "default_open",
+                ty: "bool",
+                default: "false",
+                description: "Whether the dialog starts open. Ignored when `open` is given.",
+            },
+            Prop {
+                name: "on_open_change",
+                ty: "Option<Callback<bool>>",
+                default: "None",
+                description: "Called with the new value whenever the dialog opens or closes, including when the signal passed as `open` is written from outside.",
+            },
+            Prop {
+                name: "modal",
+                ty: "bool",
+                default: "true",
+                description: "Non-modal leaves the page usable underneath: no overlay, no focus trap, and an outside pointer closes it.",
+            },
+            Prop {
                 name: "children",
                 ty: "Children",
                 default: "",
@@ -110,13 +128,13 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "variant",
-                ty: "ButtonVariant",
+                ty: "Signal<ButtonVariant>",
                 default: "Default",
                 description: "Forwarded to the underlying `Button`.",
             },
             Prop {
                 name: "size",
-                ty: "ButtonSize",
+                ty: "Signal<ButtonSize>",
                 default: "Default",
                 description: "Forwarded to the underlying `Button`.",
             },
@@ -134,9 +152,9 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "render",
-                ty: "Option<Callback<Callback<MouseEvent>, AnyView>>",
+                ty: "Option<Callback<TriggerRender, AnyView>>",
                 default: "None",
-                description: "Render the trigger as something else. Handed the click handler, which must reach the element.",
+                description: "Render the trigger as something else. Handed the node ref to attach, the click to run and the resolved `disabled`; the dialog writes its ARIA onto that node.",
             },
             Prop {
                 name: "children",
@@ -158,7 +176,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "show_close",
-                ty: "bool",
+                ty: "Signal<bool>",
                 default: "true",
                 description: "The corner close button. Off for a panel that is itself the control, as the command palette is.",
             },

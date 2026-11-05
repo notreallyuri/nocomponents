@@ -28,6 +28,10 @@ pub struct DropzoneContext {
     pub disabled: Signal<bool>,
     /// The hidden input, so a trigger anywhere inside can open the picker.
     pub input_ref: AnyNodeRef,
+    /// Whether a button inside the zone opens the picker. Set by that button while it is mounted:
+    /// with one present the zone stops being a button itself, since a button inside a button is
+    /// interactive content nested in interactive content.
+    pub has_trigger: RwSignal<bool>,
 }
 
 impl DropzoneContext {
@@ -100,13 +104,13 @@ pub fn DropzoneRoot(
     /// The `accept` grammar: `"image/*"`, `".pdf,.docx"`. Empty takes anything.
     #[prop(optional, into)]
     accept: Signal<String>,
-    #[prop(default = true)] multiple: bool,
+    #[prop(default = true.into(), into)] multiple: Signal<bool>,
     #[prop(optional, into)] disabled: Signal<bool>,
     /// Every arrival, however it arrived. Never called with an empty list.
     #[prop(into)]
     on_files: Callback<Vec<File>>,
     /// Files that were dropped and turned away by `accept`.
-    #[prop(default = None, into)]
+    #[prop(optional, into)]
     on_rejected: Option<Callback<Vec<File>>>,
     children: Children,
 ) -> impl IntoView {
@@ -115,6 +119,7 @@ pub fn DropzoneRoot(
         is_over: RwSignal::new(false),
         disabled,
         input_ref,
+        has_trigger: RwSignal::new(false),
     };
 
     // `dragleave` fires on the way onto a child as well as on the way out, so leaving is the
@@ -122,7 +127,10 @@ pub fn DropzoneRoot(
     let depth = RwSignal::new(0i32);
     let input_id = StoredValue::new(next_id("dropzone"));
 
-    let deliver = move |files: Vec<File>, rejected: Vec<File>| {
+    let deliver = move |mut files: Vec<File>, rejected: Vec<File>| {
+        if !multiple.get_untracked() {
+            files.truncate(1);
+        }
         if !rejected.is_empty()
             && let Some(on_rejected) = on_rejected
         {
@@ -136,9 +144,17 @@ pub fn DropzoneRoot(
     view! {
         <div
             data-slot="dropzone"
-            role="button"
-            tabindex=move || if disabled.get() { "-1" } else { "0" }
-            aria-disabled=move || disabled.get().then_some("true")
+            role=move || (!context.has_trigger.get()).then_some("button")
+            tabindex=move || {
+                if context.has_trigger.get() {
+                    None
+                } else {
+                    Some(if disabled.get() { "-1" } else { "0" })
+                }
+            }
+            aria-disabled=move || {
+                (!context.has_trigger.get() && disabled.get()).then_some("true")
+            }
             data-over=move || context.is_over.get().then_some("true")
             data-disabled=move || disabled.get().then_some("true")
             on:dragenter=move |e: ev::DragEvent| {
@@ -181,7 +197,7 @@ pub fn DropzoneRoot(
             }
             on:click=move |_| context.open()
             on:keydown=move |e: ev::KeyboardEvent| {
-                if matches!(e.key().as_str(), "Enter" | " ") {
+                if !context.has_trigger.get_untracked() && matches!(e.key().as_str(), "Enter" | " ") {
                     e.prevent_default();
                     context.open();
                 }
@@ -195,7 +211,7 @@ pub fn DropzoneRoot(
                 class="sr-only"
                 tabindex="-1"
                 accept=move || accept.get()
-                multiple=multiple
+                multiple=move || multiple.get()
                 disabled=move || disabled.get()
                 on:change=move |e: ev::Event| {
                     let input = e.target().and_then(|t| t.dyn_into::<HtmlInputElement>().ok());

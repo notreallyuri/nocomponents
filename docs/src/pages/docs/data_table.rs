@@ -77,7 +77,7 @@ view! {
     <DataTable
         rows=Signal::derive(|| PAYMENTS.to_vec())
         columns=columns
-        row_id=Callback::new(|row: Payment| row.id.to_string())
+        row_id=|row: Payment| row.id.to_string()
         selection=selection
         sort=TableSort::sorted_by("email", SortDirection::Ascending)
     />
@@ -115,7 +115,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "columns",
-                ty: "Vec<DataTableColumn<T>>",
+                ty: "Signal<Vec<DataTableColumn<T>>>",
                 default: "",
                 description: "The columns, in order.",
             },
@@ -139,7 +139,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "empty",
-                ty: "&'static str",
+                ty: "Signal<String>",
                 default: "\"No results.\"",
                 description: "What to say when there is nothing to show.",
             },
@@ -365,7 +365,7 @@ pub fn Page() -> impl IntoView {
                             <DataTable
                                 rows=rows
                                 columns=columns()
-                                row_id=Callback::new(|row: Payment| row.id.to_string())
+                                row_id=|row: Payment| row.id.to_string()
                                 selection=selection
                                 sort=sort
                                 empty="No payments match that filter."

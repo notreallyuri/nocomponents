@@ -933,9 +933,9 @@ the install story the whole styled layer is designed around does not work outsid
       cannot be thinned by blanking labels without leaving the tooltip with nothing to say. The
       caller's way out is fewer, wider buckets (the chart block does exactly that). A `labels` /
       `tick_labels` split, or drawing every nth, would make the chart's own answer possible.
-- [ ] `data_table` has no pagination of its own; it shows what it is handed. `Pagination` is
-      shipped and the two compose — the data-table block demonstrates it, sorting the whole set
-      before slicing a page out of it.
+- [ ] `data_table` has no pagination of its own; it shows what it is handed. `Pagination` is shipped
+      and the two compose — the data-table block demonstrates it, sorting the whole set before
+      slicing a page out of it.
 - [ ] `utils::gif` re-emits every frame at its clipped size rather than diffing consecutive frames
       for a minimal changed rectangle, so a cropped GIF is a little larger than it needs to be. The
       sample goes 17.5kB → 7.3kB on a crop to a third of the area, which is fine but not optimal.
@@ -944,7 +944,166 @@ the install story the whole styled layer is designed around does not work outsid
 - [ ] The colour picker's square announces itself as `role="application"` with a description of the
       keys. There is no honest ARIA role for a two-axis drag; the rails and the text field are the
       paths that announce themselves properly.
+- [x] **A full API review of the styled layer before noaweb (the Leptos port of immich-front)
+      leans on it.** The port's first header found a hole: `DropdownMenuLabel` (and
+      `DropdownMenuSeparator`) take no `class`, so `<DropdownMenuLabel class=…>` fails with E0599 on
+      the props builder. noaweb patched its installed copy, and that patch belongs here. Go over all
+      66 components, with their primitives, against one checklist:
+      A. every part that renders an element takes `class` and merges it with `cn!`;
+      B. parts and props the shadcn equivalent has and a real app would use (menu Group, Shortcut,
+         CheckboxItem, RadioItem and `inset`; controlled `open`/`on_open_change`, `value`/`on_value_change`);
+      C. props taken as plain values that a caller would change at runtime (should be `Signal`/`MaybeProp`),
+         and signals read in a component body outside a closure;
+      D. `Children` where the content can render more than once (`Show`, a portal that remounts) and needs
+         `ChildrenFn`;
+      E. plain bugs.
+      Record the findings as items here; fixing them comes after.
 
+### Styled-layer API review (2026-11-05)
+
+All 66 components were read against the A–E checklist above, each with its primitive. What follows
+is the findings, cross-cutting ones first because the same defect recurs across components and one
+fix serves them all, then one item per component; fixing comes next. noaweb's patch for
+`DropdownMenuLabel` and `DropdownMenuSeparator` is the first to land.
+
+**Cross-cutting**
+
+- [x] **Controlled and uncontrolled** — every stateful root takes `x`, `default_x` and
+      `on_x_change`, resolved in the primitive by `utils::controllable`; the styled layer forwards.
+- [ ] **A form reset does not reach a `model`-bound native control.** `Input`, `Textarea` and
+      `NativeSelect` reset on screen when the form fires `reset`, but a caller's `model` signal
+      keeps the old value, so the two disagree until the next keystroke. The button-based
+      controls already listen for the form's `reset` (`utils::form::on_form_reset`); the native
+      ones want the same listener writing the default back into `model`.
+- [ ] **A slider has no accessible name inside a `Field`.** `SliderRoot` now takes the field's
+      `id`, `aria-invalid` and `aria-describedby`, but a `<label for>` cannot name a
+      `<span role="slider">` — `for` only labels labelable elements. The thumb wants
+      `aria-labelledby` pointing at the `FieldLabel`'s id, which means the label publishing one.
+- [ ] **`src/components/` still carries comments.** `CLAUDE.md` says none, at all:
+      `components/floating_menu.rs` has 19 comment lines (`///` and `//`), `kanban.rs` 5,
+      `dropzone.rs` 2 and `tree.rs` 2. Their content belongs on the docs pages, or in the
+      primitive where it explains behaviour.
+
+**Per component**
+
+- [ ] `accordion`: `AccordionContent` gives the root a fixed class and puts the caller's `class` on
+      the inner padding div (`components/accordion.rs:72-79`), so the animated panel itself
+      cannot be styled — `class` should land on the element that carries `data-state`, with the
+      padding div a fixed inner.
+- [ ] `alert_dialog`: no `AlertDialogOverlay`/`AlertDialogContent` split — the portal's `class`
+      styles the panel, the overlay is fixed — and no `modal`, which `DialogRoot` has and the styled
+      wrapper hides.
+- [ ] `badge`: a hardcoded `<div>` with no `render`, so a badge cannot be a link
+      (`components/badge.rs:35`), while the variants write `[a&]:hover:…` modifiers
+      (:18-29) that can only match when the badge *is* an `<a>` — on a `<div>` they are dead
+      classes. Either add `render` (the `StyledRender` shape) or drop the modifiers.
+- [ ] `breadcrumb`: `BreadcrumbLink` has no `render`, so it cannot be a router's `A`
+      (`components/breadcrumb.rs:52`).
+- [ ] `button`: no `id`, `name`, `value` or `aria-label` passthrough
+      (`components/button.rs:85`), so a submit button's `name` cannot be set.
+- [ ] `calendar`: no `number_of_months` (`components/calendar.rs:13`).
+- [ ] `checkbox`: no `indeterminate` and no `aria-checked="mixed"` (`primitives/checkbox.rs:25`),
+      which `DataTable`'s select-all needs and fakes with a wrapper `span` at the moment.
+- [ ] `command`: `CommandInput` wraps the `<input>` in a fixed `div`
+      (`components/command.rs:50`), so the caller's `class` reaches the input and nothing reaches
+      the row with the icon — you cannot change its height or border.
+- [ ] `context_menu`: `ContextMenu` takes no `class` (`components/context_menu.rs:16`) though
+      `ContextMenuRoot` is a `FloatingRoot` with one. The content has its own slot now, but the
+      re-exported items, labels and sub parts still carry the dropdown's names —
+      `data-slot="dropdown-menu-item"` (`primitives/dropdown_menu.rs:310`) inside a context menu —
+      so a stylesheet keyed on slot cannot tell the two apart; giving them their own means a slot
+      prefix handed down from the root through context. `Group`, `Shortcut`, `CheckboxItem`,
+      `RadioGroup` and `RadioItem` are now re-exported under `ContextMenu*` names.
+- [ ] `data_table`: the select-all cannot be mixed until `Checkbox` has `indeterminate`, and `empty`
+      is a string, so "No results" cannot be a node.
+- [ ] `date_picker`: no way to disable the picker — its `disabled` is a per-date
+      `Callback<Date, bool>` (`components/date_picker.rs:21`), the same name meaning two things next
+      to every other component's `Signal<bool>` — and no `id` for a `Field` label to point at.
+- [ ] `dialog`: no `modal` on the styled `Dialog` although `DialogRoot` has it
+      (`components/dialog.rs:13`, `primitives/dialog.rs:46-53`). No `DialogClose`: the close button is
+      hardcoded inside `DialogPortal` (:76-87), so a footer "Cancel" has to call `ctx.close()` by
+      hand. No `DialogOverlay`/`DialogContent` split either — the portal's `class` styles the
+      panel and the overlay is fixed (and unconditional, `components/dialog.rs:63-67`, so exposing
+      `modal` means gating it the way `DrawerContent` does).
+- [ ] `drawer`: no `DrawerPortal` or `DrawerOverlay` — the overlay is built inside `DrawerContent` and only when `modal`
+      (:66-75), so a non-default overlay means rewriting the content.
+- [x] `dropdown_menu`: `class` on every part (noaweb's patch), sub-trigger click opens, `data-align`
+      and `disabled` on the submenu, the five missing shadcn parts, `inset` and `data-variant`;
+      checkbox and radio items stay open (`close_on_select`).
+- [ ] `dropzone`: no `max_size` or maximum count either (`components/dropzone.rs:10`).
+- [ ] `field`: no `FieldContent`, `FieldTitle` or `FieldSeparator` (`components/field.rs:12`).
+- [ ] `floating_menu`: the styled layer does not expose the primitive's `style`
+      (`primitives/floating_menu.rs:86`, `components/floating_menu.rs:11`). `FloatingMenuItem`
+      builds its own `<button>`, the `data-compact` rule and the compact-to-tooltip switch
+      (:107-165) in the styled layer, and `FloatingMenuContent` (:77) and `FloatingMenuSeparator`
+      (:169) render their elements directly with no `*Root` behind them — behaviour that belongs in
+      the primitive under the rule in `CLAUDE.md`. The doc comment gives a reason (`ButtonSize` is
+      a value, so an item could not resize with the menu), which is a reason for the enum item
+      above rather than for the layering.
+- [ ] `hover_card`: `delay` is Radix's `open_delay`.
+- [ ] `image_cropper`: `min_size` is on the primitive (`primitives/image_cropper.rs:219`) and not
+      on `ImageCropper` (`components/image_cropper.rs:12`). The resize handles are
+      `aria-hidden="true"` (`primitives/image_cropper.rs:386`) with no keyboard path, so the crop
+      can be moved and not resized without a pointer.
+- [ ] `input`: no `on_input` or `on_change` (`components/input.rs:27`). `InputType` has five
+      variants (:5) and lacks `Tel`, `Url`, `Search` and `Date`.
+- [ ] `input_group`: `InputGroupButton` takes no `disabled` and no `type`
+      (`components/input_group.rs:116`), and `InputGroupInput` and `InputGroupTextarea` forward only
+      the subset of `Input`'s and `Textarea`'s props they list (:49), so whatever `Input` gains
+      does not reach them until someone remembers.
+- [ ] `item`: a hardcoded `<div>` with no `render`, whose classes assume it may be an `<a>`
+      (`[a]:hover:bg-accent/50`, `components/item.rs:88`) — an `Item` that links has to wrap itself.
+      `ItemMediaVariant` lacks shadcn's `Image` (:39-43).
+- [ ] `label`: no `html_for` (`components/label.rs:5`), so a `Label` outside a `Field` — which is
+      most uses of the bare component — cannot be tied to its control without `attr:for=…`.
+- [ ] `menubar`: `MenubarSub` takes no `class` (`components/menubar.rs:157`) and
+      `MenubarSubTrigger` no `disabled` (:162) — see `dropdown_menu`, which this is built on.
+      None of `MenubarGroup`, `MenubarCheckboxItem`, `MenubarRadioGroup`, `MenubarRadioItem` or
+      `inset`, though the dropdown primitive has all of them now and `menubar.rs` only has to wrap
+      them. `MenubarSubContent` mounts into `document.body` rather than `FloatingPortal`
+      (:188), see the cross-cutting item, and that is where it diverges from
+      `DropdownMenuSubContent` — which is the same component with the one word right.
+- [ ] `native_select`: no `NativeSelectOption` or `NativeSelectOptGroup`
+      (`components/native_select.rs:20`); every caller writes bare `<option>`s. No `on_change`
+      (:21).
+- [ ] `navigation_menu`: `NavigationMenu` exposes `value` and not the primitive's
+      `open_delay`/`close_delay` (`components/navigation_menu.rs:13`,
+      `primitives/navigation_menu.rs:127-128`), so the hover timing is fixed.
+- [ ] `pagination`: `PaginationItem` takes no `class` (`components/pagination.rs:56`).
+      `PaginationPrevious` and `PaginationNext` (:82) have no `disabled` or `aria-disabled`, so
+      the first page's "Previous" is a live link to nowhere. `PaginationLink` is a plain `<a>` with
+      no `render`, so a router link has to be wrapped; and an unset `href` writes `href=""`.
+- [ ] `popover`: `Popover` takes no `class` (`components/popover.rs:11`), no `PopoverAnchor`.
+      Opening it leaves focus on the trigger: nothing moves it into the content, so a keyboard user
+      has to Tab their way in, and the content's own controls are not the next stop if the
+      trigger sits mid-page. Radix focuses the first focusable inside (or the content) on open
+      and hands it back on close; the closing half is already there (`primitives/floating.rs:388`).
+- [ ] `resizable`: no `collapsible` or `collapsed_size` (`components/resizable.rs:32`).
+- [ ] `scroll_area`: the styled component always renders a vertical scrollbar and takes only
+      `horizontal` for the other (`components/scroll_area.rs:11-30`) — no `ScrollBar` part and no
+      `orientation`, so a horizontal-only area has an inert vertical track.
+- [ ] `select`: no `disabled` or `size` on
+      `SelectTrigger` (:25) though the root takes `disabled`, no `SelectGroup`, `SelectLabel`,
+      `SelectSeparator` or the scroll buttons, and `SelectValue` takes no `class`.
+- [ ] `sheet`: `SheetContent` has no `modal` (`components/sheet.rs:35`); the close button is
+      hardcoded like the dialog's (:98-103), and is why the sidebar's mobile branch has to hide it
+      with `[&>button]:hidden`.
+- [ ] `slider`: no `inverted` (`components/slider.rs:8`).
+- [ ] `textarea`: no `on_input` (`components/textarea.rs:6`) — the same hole as `input`.
+- [ ] `toast`: `duration` is hardcoded `5000.0` in the provider's defaults
+      (`primitives/toast.rs:223`) with no `default_duration`, and there are no
+      `ToastTitle`/`ToastDescription`/`ToastAction`/`ToastClose` parts: a toast can only be built
+      through the builder, never composed.
+- [ ] `tooltip`: no `TooltipProvider` — shadcn's shared `delayDuration`/`skipDelayDuration`, which
+      is what stops every tooltip in a toolbar waiting out its own delay. `TooltipContent` (:45)
+      has no arrow.
+- [ ] `video_player`: the three menu parts take no `class` and hardcode the item classes
+      (`VideoPlayerSpeedItems` `components/video_player.rs:437`, `VideoPlayerCaptionItems` :479,
+      `VideoPlayerCaptionSizeItems` :556), and `VideoPlayerMenu`'s `class` goes to the trigger
+      (:419) while the content's is fixed (:428). Nothing draws `ctx.waiting` (buffering) or
+      `ctx.ended` (a replay) in the styled player (`primitives/video_player.rs:259-260`, set at
+      :910-919), so the player sits silent over a stalled stream; `idle_delay`, `preload` and
+      `playsinline` are not exposed (:678, :867-869).
 ## Docs site
 
 - [x] Docs pages for alert-dialog, label and spinner; a `code` snippet under every demo (89 blocks
@@ -1200,12 +1359,12 @@ are the menus that both float and rove, and each belongs to whichever batch it g
       declaring the oldest library its rewriting rules still produce valid source for — which
       wants a semver comparison and cannot fire until there are two releases to compare.
 
-- [ ] Neither crate is published yet, so the only working path is still `--from <checkout>`, which
-      is also how the CLI is tested. Everything else is ready: names are free on crates.io, both
-      `cargo package` verify, and `init` + `components add button dialog sidebar` was run against a
-      scratch crate outside this repo — 8 files installed, imports rewritten to `nocomponents::…`,
-      and the result compiles as a foreign crate. What is left is `cargo publish` for the library,
-      the `v0.1.0` tag, then `cargo publish` for the CLI, in that order.
+- [x] Both crates are on crates.io at 0.1.0; 0.2.0 is the first release to carry the catalogue as it is now,
+      and all 66 components install and compile as a foreign crate (`--from` a checkout, wasm32).
+- [ ] `DropdownMenuItemVariant` lives in `primitives::dropdown_menu` and the installed `dropdown_menu.rs`
+      does not re-export it, so a consumer writing `variant=DropdownMenuItemVariant::Destructive` has to
+      import it from `nocomponents::primitives` by hand. `ButtonVariant` and the other styled-layer enums
+      come with the file because they are declared in it.
 - [x] `nocomponents.lock` beside the config records a hash of each file as installed, so `add` now
       says *which* kind of file it left alone — "edited here" against "unchanged, --force refreshes
       it" — and `--force` names what of yours it overwrote. FNV-1a, not a cryptographic hash: the
@@ -1260,8 +1419,13 @@ are the menus that both float and rove, and each belongs to whichever batch it g
       `RuntimeError: unreachable` with no message and no line. It cost an afternoon on the toast
       disposal bug, where the panic was real and the only way to find it was bisecting the call.
       Three lines in `docs/src/main.rs`.
-- [ ] Almost no tests over what renders. `src/utils` is covered, `tests/features.rs` checks the
-      feature table, and `cli/` has unit tests over the import rewriting; nothing exercises a
-      component. `wasm-bindgen-test` smoke tests over the primitives' `data-state` transitions
-      would catch regressions in the floating and toast state machines — the toast one has now been
-      wrong twice.
+- [ ] What renders is covered by `docs/smoke/` (`node docs/smoke/run.mjs`: a console-error sweep of
+      every page and an interaction check per component page), but two things remain.
+      It is not in CI. `ci.yml` already has Rust and the `wasm32-unknown-unknown` target; a job
+      would add `trunk` (`pages.yml` installs it with `jetli/trunk-action`, and it downloads the
+      pinned Tailwind itself) and a browser (Google Chrome is on the runner image, and the suite
+      finds `google-chrome`), then run `node docs/smoke/run.mjs`. The first build is the slow part;
+      `Swatinem/rust-cache` helps.
+      And there are no `wasm-bindgen-test` unit tests over the primitives' `data-state`
+      transitions, which would catch regressions in the floating and toast state machines without a
+      browser session — the toast one has now been wrong twice.

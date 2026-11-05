@@ -9,7 +9,7 @@
 //! The one thing that is registered is how many items match, because [`CommandEmptyRoot`] and a
 //! group's own emptiness cannot be derived from a DOM query without a second pass.
 
-use crate::utils::next_id;
+use crate::utils::{controllable::controllable, next_id};
 use leptos::{context::Provider, ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
 use web_sys::{Element, HtmlElement};
@@ -57,7 +57,7 @@ pub struct CommandContext {
 
     /// Whether items filter themselves at all. Off when the caller has already narrowed the list
     /// — a search that went to a server has no business being filtered again on the way in.
-    pub should_filter: bool,
+    pub should_filter: Signal<bool>,
     /// Replaces [`default_filter`].
     pub filter: Option<CommandFilter>,
 }
@@ -73,7 +73,7 @@ impl Default for CommandContext {
             input_id: RwSignal::new(String::new()),
             list_id: RwSignal::new(String::new()),
             matches: RwSignal::new(0),
-            should_filter: true,
+            should_filter: Signal::stored(true),
             filter: None,
         }
     }
@@ -118,7 +118,7 @@ fn reveal(list: &Element, item: &Element) {
 impl CommandContext {
     /// Whether an item whose value and keywords read as `haystack` survives the current search.
     pub fn matches_search(&self, haystack: &str) -> bool {
-        if !self.should_filter {
+        if !self.should_filter.get() {
             return true;
         }
 
@@ -267,15 +267,29 @@ pub fn use_command_shortcut(key: &'static str, open: RwSignal<bool>) {
 
 #[component]
 pub fn CommandRoot(
-    /// What has been typed, for a caller that wants to read or preset it.
+    /// What has been typed, held by the caller. Omit it and the root keeps its own.
+    #[prop(default = None, into)]
+    search: Option<RwSignal<String>>,
+    /// What the input starts with. Ignored when `search` is given.
     #[prop(optional, into)]
-    search: RwSignal<String>,
-    /// The last activated item's value.
+    default_search: String,
+    /// Called with the new text whenever the search changes, however that came about.
     #[prop(optional, into)]
-    value: RwSignal<Option<String>>,
+    on_search_change: Option<Callback<String>>,
+    /// The last activated item's value, held by the caller. Omit it and the root keeps its own.
+    #[prop(default = None, into)]
+    value: Option<RwSignal<Option<String>>>,
+    /// The value the root starts with. Ignored when `value` is given. Declared `optional, into`
+    /// rather than `default = None, into` so that `default_value="apple"` compiles: `&str` does
+    /// not convert into `Option<String>`.
+    #[prop(optional, into)]
+    default_value: Option<String>,
+    /// Called with the new value whenever it changes, however that came about.
+    #[prop(optional, into)]
+    on_value_change: Option<Callback<Option<String>>>,
     /// Off when the list arrives already filtered.
-    #[prop(default = true)]
-    should_filter: bool,
+    #[prop(into, default = true.into())]
+    should_filter: Signal<bool>,
     /// Replaces the substring match every item is otherwise put through.
     #[prop(default = None, into)]
     filter: Option<CommandFilter>,
@@ -283,8 +297,8 @@ pub fn CommandRoot(
     children: Children,
 ) -> impl IntoView {
     let ctx = CommandContext {
-        search,
-        value,
+        search: controllable(search, default_search, on_search_change),
+        value: controllable(value, default_value, on_value_change),
         should_filter,
         filter,
         input_id: RwSignal::new(next_id("command-input")),
@@ -491,7 +505,7 @@ pub fn CommandItemRoot(
     keywords: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     /// Run when the item is activated, by click or by Enter, with the item's value.
-    #[prop(default = None, into)]
+    #[prop(optional, into)]
     on_select: Option<Callback<String>>,
     /// Whether the item is the one currently *chosen*, which a palette has no notion of but a
     /// combobox does. Left out, the item carries no selected state at all; passed, it is

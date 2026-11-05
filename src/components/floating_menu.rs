@@ -108,7 +108,7 @@ pub fn FloatingMenuItem(
     #[prop(into)] label: Signal<String>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
-    #[prop(default = None, into)] on_click: Option<Callback<ev::MouseEvent>>,
+    #[prop(optional, into)] on_click: Option<Callback<ev::MouseEvent>>,
     /// The icon. A `ChildrenFn` because a compact item renders inside a tooltip and a full one
     /// does not, and the two branches each need their own copy.
     #[prop(optional)]

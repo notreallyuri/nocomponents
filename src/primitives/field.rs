@@ -67,7 +67,9 @@ pub fn use_field_optional() -> Option<FieldContext> {
 /// `id` wins. Outside a field every signal reads empty, so these can be rendered unconditionally.
 #[derive(Copy, Clone)]
 pub struct FieldControl {
-    pub id: Signal<String>,
+    /// `None` when there is nothing to write: no `id` of its own and no field to mint one, so the
+    /// attribute is omitted rather than rendered empty.
+    pub id: Signal<Option<String>>,
     pub described_by: Signal<Option<String>>,
     pub invalid: Signal<bool>,
     pub disabled: Signal<bool>,
@@ -80,13 +82,23 @@ impl FieldControl {
     pub fn new(id: Signal<String>, disabled: Signal<bool>) -> Self {
         let ctx = use_field_optional();
 
+        if let Some(ctx) = ctx {
+            Effect::new(move |_| {
+                let own = id.get();
+                if !own.is_empty() && ctx.control_id.get_untracked() != own {
+                    ctx.control_id.set(own);
+                }
+            });
+        }
+
         Self {
             id: Signal::derive(move || {
                 let own = id.get();
-                match (own.is_empty(), ctx) {
+                let resolved = match (own.is_empty(), ctx) {
                     (true, Some(ctx)) => ctx.control_id.get(),
                     _ => own,
-                }
+                };
+                Some(resolved).filter(|id| !id.is_empty())
             }),
             described_by: Signal::derive(move || ctx.and_then(|ctx| ctx.described_by())),
             invalid: Signal::derive(move || ctx.is_some_and(|ctx| ctx.invalid.get())),

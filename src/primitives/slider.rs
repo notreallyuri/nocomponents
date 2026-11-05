@@ -6,10 +6,21 @@
 //! Dragging goes through [`crate::primitives::drag`], so a pointer that leaves the track mid-drag
 //! still belongs to the drag. Positions are geometry, so this layer writes the inline
 //! `left`/`width`.
+//!
+//! A slider takes part in a native form through `<input type="hidden">`s, one per thumb: a lone
+//! thumb is submitted under `name`, and a range under `name[]` once per thumb, lowest first — the
+//! convention Radix uses and the one a server reading repeated fields expects.
 
 use crate::{
-    primitives::drag::{DragPoint, use_drag},
-    utils::types::Orientation,
+    primitives::{
+        drag::{DragPoint, use_drag},
+        field::FieldControl,
+    },
+    utils::{
+        controllable::controllable,
+        form::{non_empty, on_form_reset},
+        types::Orientation,
+    },
 };
 use leptos::{context::Provider, ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
@@ -18,11 +29,14 @@ use web_sys::{Element, HtmlElement};
 #[derive(Copy, Clone)]
 pub struct SliderContext {
     pub values: RwSignal<Vec<f64>>,
-    pub min: f64,
-    pub max: f64,
-    pub step: f64,
+    pub min: Signal<f64>,
+    pub max: Signal<f64>,
+    pub step: Signal<f64>,
     pub orientation: Orientation,
     pub disabled: Signal<bool>,
+    /// What the surrounding [`crate::primitives::field`] hands a control: the id the label points
+    /// at, which the first thumb wears, and the description and invalid state every thumb wears.
+    pub field: FieldControl,
     /// The thumb currently being dragged, so the styled layer can mark it.
     pub active_thumb: RwSignal<Option<usize>>,
     pub track_ref: AnyNodeRef,
@@ -39,20 +53,22 @@ fn decimals_of(step: f64) -> i32 {
 impl SliderContext {
     /// Where a value sits along the track, 0.0 at `min` and 1.0 at `max`.
     pub fn percent(&self, value: f64) -> f64 {
-        if self.max <= self.min {
+        let (min, max) = (self.min.get(), self.max.get());
+        if max <= min {
             return 0.0;
         }
-        ((value - self.min) / (self.max - self.min)).clamp(0.0, 1.0)
+        ((value - min) / (max - min)).clamp(0.0, 1.0)
     }
 
     fn snap(&self, value: f64) -> f64 {
-        if self.step <= 0.0 {
-            return value.clamp(self.min, self.max);
+        let (min, max, step) = (self.min.get(), self.max.get(), self.step.get());
+        if step <= 0.0 {
+            return value.clamp(min, max);
         }
 
-        let steps = ((value - self.min) / self.step).round();
-        let snapped = (self.min + steps * self.step).clamp(self.min, self.max);
-        let factor = 10f64.powi(decimals_of(self.step));
+        let steps = ((value - min) / step).round();
+        let snapped = (min + steps * step).clamp(min, max);
+        let factor = 10f64.powi(decimals_of(step));
 
         (snapped * factor).round() / factor
     }
@@ -61,12 +77,12 @@ impl SliderContext {
     pub fn bounds(&self, index: usize) -> (f64, f64) {
         self.values.with(|values| {
             let lower = if index == 0 {
-                self.min
+                self.min.get()
             } else {
                 values[index - 1]
             };
             let upper = if index + 1 >= values.len() {
-                self.max
+                self.max.get()
             } else {
                 values[index + 1]
             };
@@ -76,7 +92,7 @@ impl SliderContext {
 
     pub fn value_at(&self, index: usize) -> f64 {
         self.values
-            .with(|values| values.get(index).copied().unwrap_or(self.min))
+            .with(|values| values.get(index).copied().unwrap_or(self.min.get()))
     }
 
     pub fn set_thumb(&self, index: usize, value: f64) {
@@ -94,7 +110,8 @@ impl SliderContext {
 
     /// Nudge a thumb by whole steps, for the keyboard.
     pub fn step_thumb(&self, index: usize, steps: f64) {
-        let step = if self.step > 0.0 { self.step } else { 1.0 };
+        let step = self.step.get();
+        let step = if step > 0.0 { step } else { 1.0 };
         self.set_thumb(index, self.value_at(index) + steps * step);
     }
 
@@ -119,7 +136,8 @@ impl SliderContext {
             }
         };
 
-        Some(self.min + fraction.clamp(0.0, 1.0) * (self.max - self.min))
+        let (min, max) = (self.min.get(), self.max.get());
+        Some(min + fraction.clamp(0.0, 1.0) * (max - min))
     }
 
     /// The thumb a press on the track picks up. Ties go to the lower thumb, except at the top of
@@ -148,19 +166,42 @@ pub fn use_slider() -> SliderContext {
 
 #[component]
 pub fn SliderRoot(
-    #[prop(default = 0.0)] min: f64,
-    #[prop(default = 100.0)] max: f64,
-    #[prop(default = 1.0)] step: f64,
+    #[prop(into, default = 0.0.into())] min: Signal<f64>,
+    #[prop(into, default = 100.0.into())] max: Signal<f64>,
+    #[prop(into, default = 1.0.into())] step: Signal<f64>,
     #[prop(optional)] orientation: Orientation,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
+    /// The id of the first thumb, which a `FieldLabel` points at. Inside a field one is minted.
+    #[prop(optional, into)]
+    id: Signal<String>,
+    /// The name the values are submitted under. Empty leaves them out of a form's data.
+    #[prop(optional, into)]
+    name: Signal<String>,
+    /// The `id` of a `<form>` the slider belongs to when it is not inside one. Empty means the
+    /// one around it.
+    #[prop(optional, into)]
+    form: Signal<String>,
     /// Omit for an uncontrolled slider. The length decides how many thumbs there are.
     #[prop(default = None, into)]
     value: Option<RwSignal<Vec<f64>>>,
-    #[prop(optional)] default_value: Option<Vec<f64>>,
+    /// The values an uncontrolled slider starts with; one `min` thumb when omitted. Ignored when
+    /// `value` is given.
+    #[prop(optional)]
+    default_value: Option<Vec<f64>>,
+    /// Called with the new values whenever a thumb moves, however that came about.
+    #[prop(optional, into)]
+    on_value_change: Option<Callback<Vec<f64>>>,
     children: Children,
 ) -> impl IntoView {
-    let values = value.unwrap_or_else(|| RwSignal::new(default_value.unwrap_or_else(|| vec![min])));
+    let default_value = default_value.unwrap_or_else(|| vec![min.get_untracked()]);
+    let values = controllable(value, default_value, on_value_change);
+    let initial = values.get_untracked();
+    let field = FieldControl::new(id, disabled);
+    let disabled = field.disabled;
+    let root_ref = AnyNodeRef::new();
+    on_form_reset(root_ref, move || values.set(initial.clone()));
+    let count = Memo::new(move |_| values.with(|values| values.len()));
 
     let context = SliderContext {
         values,
@@ -169,6 +210,7 @@ pub fn SliderRoot(
         step,
         orientation,
         disabled,
+        field,
         active_thumb: RwSignal::new(None),
         track_ref: AnyNodeRef::new(),
     };
@@ -207,6 +249,7 @@ pub fn SliderRoot(
     view! {
         <Provider value=context>
             <div
+                node_ref=root_ref
                 data-slot="slider"
                 data-orientation=orientation_str
                 data-disabled=move || disabled.get().then_some("true")
@@ -214,6 +257,26 @@ pub fn SliderRoot(
                 class=class
             >
                 {children()}
+                {move || {
+                    (0..count.get())
+                        .map(|index| {
+                            view! {
+                                <input
+                                    type="hidden"
+                                    name=move || {
+                                        non_empty(name)
+                                            .map(|name| {
+                                                if count.get() > 1 { format!("{name}[]") } else { name }
+                                            })
+                                    }
+                                    form=move || non_empty(form)
+                                    value=move || context.value_at(index).to_string()
+                                    disabled=move || disabled.get()
+                                />
+                            }
+                        })
+                        .collect_view()
+                }}
             </div>
         </Provider>
     }
@@ -264,7 +327,7 @@ pub fn SliderRangeRoot(#[prop(optional, into)] class: Signal<String>) -> impl In
             if values.len() > 1 {
                 (lowest, highest)
             } else {
-                (ctx.min, highest)
+                (ctx.min.get(), highest)
             }
         });
 
@@ -328,11 +391,11 @@ pub fn SliderThumbRoot(
                 true
             }
             "Home" => {
-                ctx.set_thumb(index, ctx.min);
+                ctx.set_thumb(index, ctx.min.get());
                 true
             }
             "End" => {
-                ctx.set_thumb(index, ctx.max);
+                ctx.set_thumb(index, ctx.max.get());
                 true
             }
             _ => false,
@@ -346,10 +409,15 @@ pub fn SliderThumbRoot(
     view! {
         <span
             role="slider"
+            id=move || if index == 0 { ctx.field.id.get() } else { None }
+            aria-describedby=move || ctx.field.described_by.get()
+            aria-invalid=move || ctx.field.invalid.get().then_some("true")
             data-slot="slider-thumb"
             data-orientation=ctx.orientation.as_str()
             data-disabled=move || ctx.disabled.get().then_some("true")
-            data-state=move || if ctx.active_thumb.get() == Some(index) { "dragging" } else { "idle" }
+            data-state=move || {
+                if ctx.active_thumb.get() == Some(index) { "dragging" } else { "idle" }
+            }
             tabindex=move || if ctx.disabled.get() { "-1" } else { "0" }
             aria-orientation=ctx.orientation.as_str()
             // The thumb's own bounds, not the track's: it cannot pass its neighbour.

@@ -38,15 +38,21 @@ const API: &[ApiEntry] = &[ApiEntry {
     props: &[
         Prop {
             name: "variant",
-            ty: "SpinnerVariant",
+            ty: "Signal<SpinnerVariant>",
             default: "Default",
             description: "One of: Default, Lined.",
         },
         Prop {
             name: "size",
-            ty: "SpinnerSize",
+            ty: "Signal<SpinnerSize>",
             default: "Default",
             description: "One of: Xs, Sm, Default, Lg, Icon.",
+        },
+        Prop {
+            name: "label",
+            ty: "Signal<String>",
+            default: "\"Loading\"",
+            description: "The accessible name, written as `aria-label` on the `role=\"status\"` icon. Empty reads as \"Loading\"; name what is loading when the page has more than one.",
         },
         Prop {
             name: "class",

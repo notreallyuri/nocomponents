@@ -7,6 +7,7 @@
 //! on and whether it is open.
 
 use crate::utils::{
+    controllable::controllable,
     types::{Side, StyledRender},
     use_media_query,
 };
@@ -60,8 +61,8 @@ pub struct SidebarContext {
     pub open_mobile: RwSignal<bool>,
     /// Derived from the viewport, so it is read-only: nothing but the window decides it.
     pub is_mobile: Signal<bool>,
-    pub side: Side,
-    pub collapsible: SidebarCollapsible,
+    pub side: Signal<Side>,
+    pub collapsible: Signal<SidebarCollapsible>,
     /// The panel, for the trigger's `aria-controls`. Minted here because the trigger is usually
     /// rendered before the panel it controls.
     pub content_ref: AnyNodeRef,
@@ -81,7 +82,7 @@ impl SidebarContext {
     /// `expanded` or `collapsed`, for `data-state`. One that cannot collapse is always expanded,
     /// whatever is stored, or turning `collapsible` off could leave it stuck shut.
     pub fn state(&self) -> &'static str {
-        if self.collapsible == SidebarCollapsible::None || self.is_open() {
+        if self.collapsible.get() == SidebarCollapsible::None || self.is_open() {
             "expanded"
         } else {
             "collapsed"
@@ -127,19 +128,28 @@ fn stored_open() -> Option<bool> {
 #[component]
 pub fn SidebarProviderRoot(
     /// Which edge the panel is pinned to; `Side::Top` and `Side::Bottom` are treated as left.
-    #[prop(default = Side::Left)]
-    side: Side,
-    #[prop(optional)] collapsible: SidebarCollapsible,
+    #[prop(into, default = Side::Left.into())]
+    side: Signal<Side>,
+    #[prop(optional, into)] collapsible: Signal<SidebarCollapsible>,
     #[prop(default = None, into)] open: Option<RwSignal<bool>>,
     /// Where an uncontrolled sidebar starts, before local storage has anything to say.
     #[prop(default = true)]
     default_open: bool,
+    /// Called with the new value whenever the wide-viewport state changes, however that came
+    /// about.
+    #[prop(optional, into)]
+    on_open_change: Option<Callback<bool>>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] style: Signal<String>,
     children: Children,
 ) -> impl IntoView {
     let controlled = open.is_some();
-    let open = open.unwrap_or_else(|| RwSignal::new(stored_open().unwrap_or(default_open)));
+    let start = if controlled {
+        default_open
+    } else {
+        stored_open().unwrap_or(default_open)
+    };
+    let open = controllable(open, start, on_open_change);
 
     let context = SidebarContext {
         open,
@@ -220,9 +230,9 @@ pub fn SidebarRoot(
             id=move || ctx.content_id.get()
             data-slot="sidebar"
             data-state=move || ctx.state()
-            data-side=ctx.side.as_str()
+            data-side=move || ctx.side.get().as_str()
             data-collapsible=move || {
-                (ctx.state() == "collapsed").then(|| ctx.collapsible.as_str())
+                (ctx.state() == "collapsed").then(|| ctx.collapsible.get().as_str())
             }
             data-variant=move || variant.get()
             data-mobile=move || ctx.is_mobile.get().then_some("true")
@@ -269,7 +279,7 @@ pub fn SidebarRailRoot(#[prop(optional, into)] class: Signal<String>) -> impl In
             type="button"
             data-slot="sidebar-rail"
             data-state=move || ctx.state()
-            data-side=ctx.side.as_str()
+            data-side=move || ctx.side.get().as_str()
             aria-label="Toggle sidebar"
             aria-controls=move || ctx.content_id.get()
             tabindex="-1"

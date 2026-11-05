@@ -29,13 +29,13 @@ const API: &[ApiEntry] = &[ApiEntry {
         },
         Prop {
             name: "orientation",
-            ty: "Orientation",
+            ty: "Signal<Orientation>",
             default: "Horizontal",
             description: "One of: Horizontal, Vertical.",
         },
         Prop {
             name: "decorative",
-            ty: "bool",
+            ty: "Signal<bool>",
             default: "true",
             description: "Hidden from assistive tech. Set false when the rule groups unrelated things rather than decorating.",
         },

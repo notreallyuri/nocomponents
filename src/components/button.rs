@@ -1,3 +1,4 @@
+use crate::utils::controllable::forward;
 use crate::{
     cn,
     primitives::button::ButtonRoot,
@@ -85,8 +86,8 @@ impl AsClass for ButtonVariant {
 pub fn Button(
     #[prop(optional)] node_ref: Option<AnyNodeRef>,
     #[prop(optional, into)] on_click: Option<Callback<ev::MouseEvent>>,
-    #[prop(optional)] variant: ButtonVariant,
-    #[prop(optional)] size: ButtonSize,
+    #[prop(optional, into)] variant: Signal<ButtonVariant>,
+    #[prop(optional, into)] size: Signal<ButtonSize>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional)] r#type: ButtonType,
@@ -96,8 +97,8 @@ pub fn Button(
     let merged_classes = Signal::derive(move || {
         cn!(
             "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-            variant.as_class(),
-            size.as_class(),
+            variant.get().as_class(),
+            size.get().as_class(),
             class.get()
         )
     });
@@ -105,7 +106,7 @@ pub fn Button(
     view! {
         <ButtonRoot
             node_ref=node_ref
-            on_click=on_click
+            on_click=forward(on_click)
             class=merged_classes
             disabled=disabled
             r#type=r#type

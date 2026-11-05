@@ -14,20 +14,18 @@ use crate::{
         command::{CommandItemRoot, CommandRoot},
         field::field_control_for_trigger,
         floating::{
-            ArrowOpen, FloatingContext, FloatingRoot, FloatingTrigger, TriggerAria, TriggerRender,
+            ArrowOpen, FloatingContext, FloatingPortal, FloatingRoot, FloatingTrigger, TriggerAria,
+            TriggerRender, floating_options, side_placement,
         },
     },
     utils::{
-        get_placement,
+        controllable::{controllable, forward},
+        form::non_empty,
         types::{Align, Side, SideOffset},
     },
 };
-use floating_ui_leptos::{
-    Flip, FlipOptions, MiddlewareVec, Offset, OffsetOptions, Placement, Shift, ShiftOptions,
-    Strategy, UseFloatingOptions, UseFloatingReturn, use_floating,
-};
-use leptos::{either::Either, portal::Portal, prelude::*, wasm_bindgen::JsCast};
-use send_wrapper::SendWrapper;
+use floating_ui_leptos::{Placement, UseFloatingReturn, use_floating};
+use leptos::{either::Either, prelude::*, wasm_bindgen::JsCast};
 use web_sys::HtmlElement;
 
 pub type ComboboxContext = FloatingContext;
@@ -38,19 +36,46 @@ pub fn use_combobox() -> ComboboxContext {
 
 #[component]
 pub fn ComboboxRoot(
-    /// The chosen value.
+    /// The chosen value, held by the caller. Omit it and the root keeps its own.
+    #[prop(default = None, into)]
+    value: Option<RwSignal<Option<String>>>,
+    /// The value the root starts with. Ignored when `value` is given. Declared `optional, into`
+    /// rather than `default = None, into` so that `default_value="apple"` compiles: `&str` does
+    /// not convert into `Option<String>`.
     #[prop(optional, into)]
-    value: RwSignal<Option<String>>,
+    default_value: Option<String>,
+    /// Called with the new value whenever the choice changes, however that came about.
+    #[prop(optional, into)]
+    on_value_change: Option<Callback<Option<String>>>,
+
     /// What the trigger shows for that value, when the two differ. An item sets it as it is
     /// chosen; preset it alongside `value` for a selection that arrives from outside, since the
     /// items that know the labels do not exist until the list first opens.
     #[prop(optional, into)]
     display_value: RwSignal<Option<String>>,
     #[prop(optional, into)] class: Signal<String>,
+    /// The name the chosen value is submitted under, through a hidden input. Empty leaves it out
+    /// of a form's data. There is no `required`: a hidden input is exempt from validation, and
+    /// the trigger is a button.
+    #[prop(optional, into)]
+    name: Signal<String>,
+    /// The `id` of a `<form>` the combobox belongs to when it is not inside one. Empty means the
+    /// one around it.
+    #[prop(optional, into)]
+    form: Signal<String>,
+    /// Whether the list is open, held by the caller. Omit it and the root keeps its own.
+    #[prop(default = None, into)]
+    open: Option<RwSignal<bool>>,
+    /// Whether the list starts open. Ignored when `open` is given.
+    #[prop(optional)]
+    default_open: bool,
+    /// Called with the new value whenever the list opens or closes, however that came about.
+    #[prop(optional, into)]
+    on_open_change: Option<Callback<bool>>,
     children: ChildrenFn,
 ) -> impl IntoView {
     let ctx = FloatingContext {
-        value,
+        value: controllable(value, default_value, on_value_change),
         display_value,
         ..Default::default()
     };
@@ -59,10 +84,19 @@ pub fn ComboboxRoot(
         <FloatingRoot
             class=class
             context=ctx
+            open=open
+            default_open=default_open
+            on_open_change=forward(on_open_change)
             trigger_aria=TriggerAria::Popup("listbox")
             arrow_open=ArrowOpen::Open
         >
             {children()}
+            <input
+                type="hidden"
+                name=move || non_empty(name)
+                form=move || non_empty(form)
+                value=move || ctx.value.get().unwrap_or_default()
+            />
         </FloatingRoot>
     }
 }
@@ -101,33 +135,27 @@ pub fn ComboboxPortalRoot(children: ChildrenFn) -> impl IntoView {
     let children = StoredValue::new(children);
 
     view! {
-        <Portal>
+        <FloatingPortal>
             <Show when=move || {
                 ctx.is_mounted.get()
             }>{children.with_value(|children| children())}</Show>
-        </Portal>
+        </FloatingPortal>
     }
 }
 
 #[component]
 pub fn ComboboxContentRoot(
-    #[prop(optional)] side: Side,
-    #[prop(optional)] align: Align,
-    #[prop(optional)] side_offset: SideOffset,
+    #[prop(optional, into)] side: Signal<Side>,
+    #[prop(optional, into)] align: Signal<Align>,
+    #[prop(optional, into)] side_offset: Signal<SideOffset>,
     /// Off when the list arrives already narrowed; forwarded to the command root.
-    #[prop(default = true)]
-    should_filter: bool,
+    #[prop(into, default = true.into())]
+    should_filter: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
     let ctx = use_combobox();
     let floating_ref = ctx.content_ref;
-
-    let middleware: MiddlewareVec = vec![
-        Box::new(Offset::new(OffsetOptions::Value(side_offset.0))),
-        Box::new(Flip::new(FlipOptions::default())),
-        Box::new(Shift::new(ShiftOptions::default())),
-    ];
 
     let UseFloatingReturn {
         floating_styles,
@@ -137,11 +165,7 @@ pub fn ComboboxContentRoot(
     } = use_floating(
         ctx.trigger_ref,
         floating_ref,
-        UseFloatingOptions::default()
-            .placement(get_placement(side, align))
-            .strategy(Strategy::Fixed)
-            .while_elements_mounted_auto_update()
-            .middleware(SendWrapper::new(middleware)),
+        floating_options(side_placement(side, align), side_offset),
     );
 
     // The search box takes focus as soon as the list is up: a combobox that opens and leaves the
@@ -221,11 +245,11 @@ pub fn ComboboxItemRoot(
     #[prop(optional, into)] keywords: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     /// Run after the value has been written, with the item's value.
-    #[prop(default = None, into)]
+    #[prop(optional, into)]
     on_select: Option<Callback<String>>,
     /// Whether choosing the item again clears the selection, as a filter chip does.
-    #[prop(default = true)]
-    deselectable: bool,
+    #[prop(into, default = true.into())]
+    deselectable: Signal<bool>,
     /// What makes this item look chosen, when the combobox's own value is not the answer — a
     /// multi-select keeps a list of its own, and several items are ticked at once.
     ///
@@ -236,8 +260,8 @@ pub fn ComboboxItemRoot(
     selected: Option<Signal<bool>>,
     /// Whether choosing an item closes the layer. False for a list several things are picked
     /// from, where closing after the first is the bug.
-    #[prop(default = true)]
-    close_on_select: bool,
+    #[prop(into, default = true.into())]
+    close_on_select: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
     children: ChildrenFn,
 ) -> impl IntoView {
@@ -254,7 +278,7 @@ pub fn ComboboxItemRoot(
 
     let select = Callback::new(move |value: String| {
         if selected.is_none() {
-            if deselectable && is_selected.get_untracked() {
+            if deselectable.get_untracked() && is_selected.get_untracked() {
                 ctx.value.set(None);
                 ctx.display_value.set(None);
             } else {
@@ -268,7 +292,7 @@ pub fn ComboboxItemRoot(
             }
         }
 
-        if close_on_select {
+        if close_on_select.get_untracked() {
             ctx.close();
         }
 

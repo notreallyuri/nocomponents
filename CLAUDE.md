@@ -18,6 +18,7 @@ cargo check --features full          # type-check the library (default features 
 cargo check -p docs                  # type-check the docs app
 cargo fmt && cargo clippy --features full
 cargo test --features full           # the unit tests, and the feature-table check below
+node docs/smoke/run.mjs              # browser smoke: builds the docs, sweeps every page, runs the interaction checks
 
 cd docs && trunk serve               # dev server on :3000, watches ../src too (see Trunk.toml)
 cd docs && trunk build --release
@@ -34,8 +35,10 @@ cargo-nocli nocli components add sidebar --from /path/to/nocomponents
 ```
 
 Trunk downloads and runs the Tailwind CLI itself (pinned in `docs/Trunk.toml`); there is no
-`tailwind.config.js` and no npm build step. The tests cover `utils` and the feature table, and
-nothing that renders — behaviour is still verified in `trunk serve`.
+`tailwind.config.js` and no npm build step. The cargo tests cover `utils` and the feature table, and
+nothing that renders; that is `docs/smoke/` — zero-dependency Node driving headless Chromium over CDP, with
+a per-page console-error sweep and one interaction check per component page (`docs/smoke/README.md`).
+What a check cannot judge — layout, animation, how it looks — is still verified in `trunk serve`.
 
 `leptosfmt` is what formats `view!` blocks, and `cargo fmt` leaves them alone. Run it on the files
 you changed, never over `src/` or `docs/src/`: 0.1.33 silently **deletes** Rust comments that sit
@@ -210,10 +213,10 @@ floating positioning can measure the trigger, and so the ARIA and `data-slot` th
 the node land somewhere.
 
 There are three of these shapes, and all three are named structs — a tuple must be re-broken every
-time it gains an element, a struct takes a field and leaves callers alone. **`TriggerRender`**
-(`primitives/floating.rs`) for the floating triggers: `node_ref`, `on_click`, and the `disabled`
-already resolved against any `Field` around it. **`StyledRender`** and **`AnchorRender`**
-(`utils/types.rs`) for the rest: the classes a part would have rendered plus its node ref, and the
+time it gains an element, a struct takes a field and leaves callers alone. **`TriggerRender`**,
+**`StyledRender`** and **`AnchorRender`** all live in `utils/types.rs`. `TriggerRender` is for any
+trigger that opens a layer, the floating ones and the dialog family: `node_ref`, `on_click`, and
+the `disabled` already resolved against any `Field` around it. The other two are for the rest: the classes a part would have rendered plus its node ref, and the
 node ref alone. Kept separate rather than merged, because a tooltip trigger has no click to run and
 no classes to wear.
 
@@ -224,9 +227,17 @@ them. The styled `Button` belongs in the `render` the root already takes.
 
 **Prop conventions**: `#[prop(optional, into)] class: Signal<String>`, `#[prop(optional, into)] disabled: Signal<bool>`,
 `children: Option<ChildrenFn>` when children may be re-rendered inside a `Portal` or `Either` branch.
-An optional callback or value prop is `#[prop(default = None, into)] x: Option<T>` — `optional` on an
+An optional *value* prop is `#[prop(default = None, into)] x: Option<T>` — `optional` on an
 `Option<T>` makes the setter take `T`, and `&str` will not coerce into `Option<String>`; where the
-empty string can stand in for "unset" (a label, a heading), prefer `Signal<String>`.
+empty string can stand in for "unset" (a label, a heading), prefer `Signal<String>`. An optional
+*callback* is the reverse, `#[prop(optional, into)] x: Option<Callback<T>>`: the setter takes the
+`Callback<T>` itself, so a caller can pass a bare closure (`on_open_change=move |open: bool| …`)
+instead of wrapping it in `Callback::new`. `render` and `as_child` are the exception and stay
+`#[prop(default = None, into)] x: Option<Callback<…, AnyView>>`: `None` selects the default element,
+so the stand-in `utils::controllable::forward` would supply renders nothing instead. Likewise a
+callback whose *presence* changes behaviour (`on_move` and `on_resize` on a canvas node,
+`on_surface_drag`, `on_skip` on the video player) keeps `default = None, into` and is passed the
+`Option` as it is.
 
 **Pointer gestures** go through `use_drag` (`src/primitives/drag.rs`), never through hand-rolled
 window listeners: it owns the listener lifecycle (including `pointercancel`, which every hand-rolled

@@ -324,14 +324,14 @@ pub fn CanvasRoot(
     /// Off by default, because a press is the one gesture a caller cannot get back: space and
     /// drag, the middle button and two fingers all still pan, and none of them is what anybody
     /// clicks a board with. Turn it on for a board that is only ever looked at.
-    #[prop(default = false)]
-    pan_on_drag: bool,
+    #[prop(optional, into)]
+    pan_on_drag: Signal<bool>,
     /// Run for a click that landed on the board itself rather than on anything placed on it, and
     /// that did not travel far enough to have been a pan.
     ///
     /// The world coordinate is the part the caller cannot work out for itself — it needs the
     /// surface's own box and the current transform, both of which live in here.
-    #[prop(default = None, into)]
+    #[prop(optional, into)]
     on_surface_click: Option<Callback<CanvasPoint>>,
     /// Run while the primary button is dragged across the board itself, and once more when it is
     /// let go — which is what a marquee, a lasso and a shape pulled open all need and a click
@@ -449,7 +449,7 @@ pub fn CanvasRoot(
                 data-pan=move || {
                     if ctx.panning.get() {
                         Some("active")
-                    } else if pan_on_drag || ctx.space_held.get() {
+                    } else if pan_on_drag.get() || ctx.space_held.get() {
                         Some("ready")
                     } else {
                         None
@@ -505,7 +505,7 @@ pub fn CanvasRoot(
                     let middle = e.button() == 1;
                     let primary = e.button() == 0;
                     let with_space = primary && ctx.space_held.get_untracked();
-                    if !(middle || with_space || (primary && pan_on_drag)) {
+                    if !(middle || with_space || (primary && pan_on_drag.get_untracked())) {
                         // The primary button is not the hand tool here, so it is the caller's if
                         // they asked for it and the press landed on the board rather than on a
                         // node or on the controls.
@@ -684,7 +684,7 @@ pub fn CanvasNodeRoot(
     /// telling anybody else about.
     ///
     /// Silent for a press that changed nothing, so selecting a node is not an edit.
-    #[prop(default = None, into)]
+    #[prop(optional, into)]
     on_gesture_end: Option<Callback<CanvasGesture>>,
     /// The smallest a resize may leave it, in world units.
     #[prop(default = 24.0)]
@@ -905,7 +905,7 @@ pub fn CanvasNodeRoot(
 #[component]
 pub fn CanvasNodeLabelRoot(
     #[prop(into)] value: Signal<String>,
-    #[prop(default = None, into)] on_change: Option<Callback<String>>,
+    #[prop(optional, into)] on_change: Option<Callback<String>>,
     /// Whether the input is showing. A signal rather than internal state so a caller can start an
     /// edit from somewhere else — a menu item, a keystroke on the board.
     #[prop(optional, into)]

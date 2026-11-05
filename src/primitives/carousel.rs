@@ -36,9 +36,9 @@ pub struct CarouselContext {
     /// been measured yet would wear it as one — a Next disabled before the first measurement is a
     /// Next that disabled the only gesture that would have measured it again.
     pub last: RwSignal<Option<usize>>,
-    pub orientation: Orientation,
+    pub orientation: Signal<Orientation>,
     /// Whether moving past either end comes round the other side.
-    pub wrap: bool,
+    pub wrap: Signal<bool>,
     /// The scroll container.
     pub track_ref: AnyNodeRef,
 }
@@ -77,7 +77,7 @@ impl CarouselContext {
         let track = self.track_ref.get_untracked()?;
         let rect = track.get_bounding_client_rect();
 
-        let (start, scrolled, extent) = match self.orientation {
+        let (start, scrolled, extent) = match self.orientation.get_untracked() {
             Orientation::Horizontal => (
                 rect.left(),
                 track.scroll_left() as f64,
@@ -95,7 +95,7 @@ impl CarouselContext {
             .iter()
             .map(|item| {
                 let rect = item.get_bounding_client_rect();
-                let edge = match self.orientation {
+                let edge = match self.orientation.get_untracked() {
                     Orientation::Horizontal => rect.left(),
                     Orientation::Vertical => rect.top(),
                 };
@@ -112,21 +112,43 @@ impl CarouselContext {
 
     /// Scrolls slide `index` to the start of the track. The scroll itself is animated by CSS.
     pub fn scroll_to(&self, index: usize) {
-        let (Some(track), Some(m)) = (self.track_ref.get_untracked(), self.measure()) else {
+        if !self.scroll_track(index) {
             return;
-        };
-        let Some(&offset) = m.offsets.get(index) else {
-            return;
-        };
-
-        match self.orientation {
-            Orientation::Horizontal => track.set_scroll_left(offset.round() as i32),
-            Orientation::Vertical => track.set_scroll_top(offset.round() as i32),
         }
 
         // Set straight away rather than waiting for the scroll to report back, so a button
         // disables itself on the press instead of a frame later.
         self.index.set(index);
+    }
+
+    fn scroll_track(&self, index: usize) -> bool {
+        let (Some(track), Some(m)) = (self.track_ref.get_untracked(), self.measure()) else {
+            return false;
+        };
+        let Some(&offset) = m.offsets.get(index) else {
+            return false;
+        };
+
+        match self.orientation.get_untracked() {
+            Orientation::Horizontal => track.set_scroll_left(offset.round() as i32),
+            Orientation::Vertical => track.set_scroll_top(offset.round() as i32),
+        }
+
+        true
+    }
+
+    fn nearest(m: &Measurements) -> usize {
+        m.offsets
+            .iter()
+            .enumerate()
+            .min_by(|(_, a), (_, b)| {
+                (*a - m.scrolled)
+                    .abs()
+                    .partial_cmp(&(*b - m.scrolled).abs())
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
+            .map(|(i, _)| i)
+            .unwrap_or(0)
     }
 
     /// Reads the carousel's state back out of the track: which slide is current, and which is the
@@ -145,18 +167,7 @@ impl CarouselContext {
             return;
         }
 
-        let nearest = m
-            .offsets
-            .iter()
-            .enumerate()
-            .min_by(|(_, a), (_, b)| {
-                (*a - m.scrolled)
-                    .abs()
-                    .partial_cmp(&(*b - m.scrolled).abs())
-                    .unwrap_or(std::cmp::Ordering::Equal)
-            })
-            .map(|(i, _)| i)
-            .unwrap_or(0);
+        let nearest = Self::nearest(&m);
 
         // Loosely, because the last reachable slide lands *on* the extent and sub-pixel layout
         // puts it a fraction past about half the time.
@@ -175,7 +186,7 @@ impl CarouselContext {
     }
 
     pub fn can_scroll_prev(&self) -> bool {
-        self.wrap || self.index.get() > 0
+        self.wrap.get() || self.index.get() > 0
     }
 
     /// The last slide the track can reach, or — until it has been measured — the last slide there
@@ -194,7 +205,7 @@ impl CarouselContext {
     }
 
     pub fn can_scroll_next(&self) -> bool {
-        self.wrap || self.index.get() < self.bound()
+        self.wrap.get() || self.index.get() < self.bound()
     }
 
     pub fn prev(&self) {
@@ -204,7 +215,7 @@ impl CarouselContext {
         }
         let index = self.index.get_untracked();
 
-        match (index, self.wrap) {
+        match (index, self.wrap.get_untracked()) {
             // The end is the last *position*, not the last slide: wrapping backwards onto a slide
             // the track cannot reach would clamp to the same scroll and disagree about the index.
             (0, true) => self.scroll_to(self.bound_untracked()),
@@ -221,7 +232,7 @@ impl CarouselContext {
 
         if index < self.bound_untracked() {
             self.scroll_to(index + 1);
-        } else if self.wrap {
+        } else if self.wrap.get_untracked() {
             self.scroll_to(0);
         }
     }
@@ -231,15 +242,29 @@ pub fn use_carousel() -> CarouselContext {
     expect_context::<CarouselContext>()
 }
 
+/// Whether a key event's target is somewhere the arrows already mean something: a text field, a
+/// select, or anything contenteditable.
+fn is_editable(target: &web_sys::EventTarget) -> bool {
+    let Some(element) = target.dyn_ref::<HtmlElement>() else {
+        return false;
+    };
+
+    element.is_content_editable()
+        || matches!(element.tag_name().as_str(), "INPUT" | "TEXTAREA" | "SELECT")
+}
+
 #[component]
 pub fn CarouselRoot(
-    #[prop(default = Orientation::Horizontal)] orientation: Orientation,
+    #[prop(into, default = Orientation::Horizontal.into())] orientation: Signal<Orientation>,
     /// Whether moving past either end comes round the other side.
-    #[prop(default = false)]
-    wrap: bool,
+    #[prop(optional, into)]
+    wrap: Signal<bool>,
     /// The current slide, for a caller that wants to read it or jump elsewhere.
     #[prop(optional, into)]
     index: RwSignal<usize>,
+    /// The accessible name of the carousel region. Empty reads as "Carousel".
+    #[prop(optional, into)]
+    label: Signal<String>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
@@ -254,16 +279,39 @@ pub fn CarouselRoot(
 
     provide_context(ctx);
 
+    // A write to `index` from outside is a request to go there. The track reports its own moves
+    // back through `sync`, which writes the slide nearest the start; when `index` already names
+    // that slide there is nothing to scroll, so the two directions settle instead of chasing each
+    // other. The scroll goes straight to the track rather than through `scroll_to`, which would
+    // write `index` again and re-run this.
+    Effect::new(move |_| {
+        let index = ctx.index.get();
+        if let Some(m) = ctx.measure()
+            && !m.offsets.is_empty()
+            && CarouselContext::nearest(&m) != index
+        {
+            ctx.scroll_track(index);
+        }
+    });
+
     view! {
         <Provider value=ctx>
             <section
                 data-slot="carousel"
-                data-orientation=orientation.as_str()
+                data-orientation=move || orientation.get().as_str()
+                role="region"
                 aria-roledescription="carousel"
+                aria-label=move || {
+                    let label = label.get();
+                    if label.is_empty() { "Carousel".to_string() } else { label }
+                }
                 // The arrows work from anywhere in the carousel, which is what makes it operable
                 // without reaching for the two buttons.
                 on:keydown=move |e: ev::KeyboardEvent| {
-                    let horizontal = orientation == Orientation::Horizontal;
+                    if e.target().is_some_and(|target| is_editable(&target)) {
+                        return;
+                    }
+                    let horizontal = orientation.get_untracked() == Orientation::Horizontal;
                     match (e.key().as_str(), horizontal) {
                         ("ArrowLeft", true) | ("ArrowUp", false) => {
                             e.prevent_default();
@@ -334,7 +382,7 @@ pub fn CarouselContentRoot(
         <div
             node_ref=ctx.track_ref
             data-slot="carousel-content"
-            data-orientation=ctx.orientation.as_str()
+            data-orientation=move || ctx.orientation.get().as_str()
             aria-live="polite"
             on:scroll=move |_| ctx.sync()
             class=class
@@ -350,6 +398,7 @@ pub fn CarouselItemRoot(
     children: Children,
 ) -> impl IntoView {
     let ctx = use_carousel();
+    let position = ctx.count.get_untracked() + 1;
 
     // Counted rather than measured: the buttons need to know how many there are before anyone
     // has scrolled, and a slide knows when it arrives and when it goes.
@@ -366,6 +415,7 @@ pub fn CarouselItemRoot(
             data-slot="carousel-item"
             role="group"
             aria-roledescription="slide"
+            aria-label=move || format!("{position} of {}", ctx.count.get())
             class=class
         >
             {children()}
@@ -401,7 +451,7 @@ pub fn CarouselButtonRoot(
                 CarouselStep::Previous => "carousel-previous",
                 CarouselStep::Next => "carousel-next",
             }
-            data-orientation=ctx.orientation.as_str()
+            data-orientation=move || ctx.orientation.get().as_str()
             disabled=move || disabled.get() || !available.get()
             on:click=move |_| match step {
                 CarouselStep::Previous => ctx.prev(),

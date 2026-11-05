@@ -5,9 +5,14 @@ use crate::{
     },
     layout::doc_layout::DocLayout,
 };
-use leptos::prelude::*;
+use leptos::{
+    ev,
+    prelude::*,
+    web_sys::{FormData, HtmlFormElement},
+};
 use nocomponents::{
     components::{
+        button::{Button, ButtonType, ButtonVariant},
         checkbox::Checkbox,
         field::{
             Field, FieldDescription, FieldError, FieldGroup, FieldLabel, FieldLegend, FieldSet,
@@ -15,8 +20,12 @@ use nocomponents::{
         input::Input,
         native_select::NativeSelect,
         radio_group::{RadioGroup, RadioGroupItem},
+        select::{Select, SelectContent, SelectItem, SelectPortal, SelectTrigger, SelectValue},
+        slider::Slider,
+        switch::Switch,
         textarea::Textarea,
     },
+    deps::js_sys::{Array, try_iter},
     utils::types::Orientation,
 };
 
@@ -87,6 +96,99 @@ const DISABLED: &str = r#"<Field disabled=true>
     <Input value="acme-corp" />
     <FieldDescription>"Slugs cannot be changed after creation."</FieldDescription>
 </Field>"#;
+
+const NATIVE_FORM: &str = r#"let output = RwSignal::new(String::new());
+
+let on_submit = move |e: ev::SubmitEvent| {
+    e.prevent_default();
+    let form = event_target::<HtmlFormElement>(&e);
+    let Ok(data) = FormData::new_with_form(&form) else {
+        return;
+    };
+    let lines: Vec<String> = try_iter(&data.entries())
+        .ok()
+        .flatten()
+        .into_iter()
+        .flatten()
+        .flatten()
+        .map(|entry| {
+            let entry = Array::from(&entry);
+            let value = entry.get(1).as_string().unwrap_or_default();
+            format!("{}={}", entry.get(0).as_string().unwrap_or_default(), value)
+        })
+        .collect();
+    output.set(lines.join("\n"));
+};
+
+view! {
+    <form
+        class="flex w-full max-w-sm flex-col gap-4"
+        on:submit=on_submit
+        on:reset=move |_| output.set(String::new())
+    >
+        <Field>
+            <FieldLabel>"Project"</FieldLabel>
+            <Input name="project" required=true placeholder="acme" />
+        </Field>
+        <Field>
+            <FieldLabel>"Notes"</FieldLabel>
+            <Textarea name="notes" rows=2 />
+        </Field>
+        <Field>
+            <FieldLabel>"Region"</FieldLabel>
+            <NativeSelect name="region" value="eu">
+                <option value="eu">"Europe"</option>
+                <option value="us">"United States"</option>
+            </NativeSelect>
+        </Field>
+        <Field>
+            <FieldLabel>"Plan"</FieldLabel>
+            <Select name="plan" default_value="free">
+                <SelectTrigger>
+                    <SelectValue placeholder="Pick a plan..." />
+                </SelectTrigger>
+                <SelectPortal>
+                    <SelectContent>
+                        <SelectItem value="free">"Free"</SelectItem>
+                        <SelectItem value="pro">"Pro"</SelectItem>
+                    </SelectContent>
+                </SelectPortal>
+            </Select>
+        </Field>
+        <Field>
+            <FieldLabel>"Volume"</FieldLabel>
+            <Slider name="volume" default_value=vec![30.0] />
+        </Field>
+        <FieldSet>
+            <FieldLegend>"Digest"</FieldLegend>
+            <RadioGroup name="cadence" default_value="weekly">
+                <Field orientation=Orientation::Horizontal>
+                    <RadioGroupItem value="daily" />
+                    <FieldLabel>"Daily"</FieldLabel>
+                </Field>
+                <Field orientation=Orientation::Horizontal>
+                    <RadioGroupItem value="weekly" />
+                    <FieldLabel>"Weekly"</FieldLabel>
+                </Field>
+            </RadioGroup>
+        </FieldSet>
+        <Field orientation=Orientation::Horizontal>
+            <Switch name="beta" />
+            <FieldLabel>"Join the beta"</FieldLabel>
+        </Field>
+        <Field orientation=Orientation::Horizontal>
+            <Checkbox name="terms" value="accepted" required=true />
+            <FieldLabel>"I accept the terms"</FieldLabel>
+        </Field>
+        <div class="flex gap-2">
+            <Button r#type=ButtonType::Submit>"Submit"</Button>
+            <Button r#type=ButtonType::Reset variant=ButtonVariant::Outline>"Reset"</Button>
+        </div>
+        <pre data-form-output class="min-h-16 rounded-md bg-muted p-3 text-xs">
+            {move || output.get()}
+        </pre>
+    </form>
+}"#;
 
 const API: &[ApiEntry] = &[
     ApiEntry {
@@ -253,6 +355,28 @@ pub fn Page() -> impl IntoView {
     let notify = RwSignal::new(true);
     let notify_about = RwSignal::new(Some("failures".to_string()));
     let invalid = Signal::derive(move || !email.get().contains('@'));
+    let output = RwSignal::new(String::new());
+
+    let on_submit = move |e: ev::SubmitEvent| {
+        e.prevent_default();
+        let form = event_target::<HtmlFormElement>(&e);
+        let Ok(data) = FormData::new_with_form(&form) else {
+            return;
+        };
+        let lines: Vec<String> = try_iter(&data.entries())
+            .ok()
+            .flatten()
+            .into_iter()
+            .flatten()
+            .flatten()
+            .map(|entry| {
+                let entry = Array::from(&entry);
+                let value = entry.get(1).as_string().unwrap_or_default();
+                format!("{}={}", entry.get(0).as_string().unwrap_or_default(), value)
+            })
+            .collect();
+        output.set(lines.join("\n"));
+    };
 
     view! {
         <DocLayout
@@ -379,6 +503,82 @@ pub fn Page() -> impl IntoView {
                             </FieldDescription>
                         </Field>
                     </div>
+                </DemoSection>
+
+                <DemoSection
+                    title="Native form"
+                    description="Every control here submits through a plain <form>: a checkbox, switch or radio keeps a native input beside its button, a select a native <select>, a slider a hidden input per thumb. Submit with the terms unticked and the browser refuses, pointing at the checkbox; reset puts every control back."
+                    code=NATIVE_FORM
+                >
+                    <form
+                        class="flex w-full max-w-sm flex-col gap-4"
+                        on:submit=on_submit
+                        on:reset=move |_| output.set(String::new())
+                    >
+                        <Field>
+                            <FieldLabel>"Project"</FieldLabel>
+                            <Input name="project" required=true placeholder="acme" />
+                        </Field>
+                        <Field>
+                            <FieldLabel>"Notes"</FieldLabel>
+                            <Textarea name="notes" rows=2 />
+                        </Field>
+                        <Field>
+                            <FieldLabel>"Region"</FieldLabel>
+                            <NativeSelect name="region" value="eu">
+                                <option value="eu">"Europe"</option>
+                                <option value="us">"United States"</option>
+                            </NativeSelect>
+                        </Field>
+                        <Field>
+                            <FieldLabel>"Plan"</FieldLabel>
+                            <Select name="plan" default_value="free">
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Pick a plan..." />
+                                </SelectTrigger>
+                                <SelectPortal>
+                                    <SelectContent>
+                                        <SelectItem value="free">"Free"</SelectItem>
+                                        <SelectItem value="pro">"Pro"</SelectItem>
+                                    </SelectContent>
+                                </SelectPortal>
+                            </Select>
+                        </Field>
+                        <Field>
+                            <FieldLabel>"Volume"</FieldLabel>
+                            <Slider name="volume" default_value=vec![30.0] />
+                        </Field>
+                        <FieldSet>
+                            <FieldLegend>"Digest"</FieldLegend>
+                            <RadioGroup name="cadence" default_value="weekly">
+                                <Field orientation=Orientation::Horizontal>
+                                    <RadioGroupItem value="daily" />
+                                    <FieldLabel>"Daily"</FieldLabel>
+                                </Field>
+                                <Field orientation=Orientation::Horizontal>
+                                    <RadioGroupItem value="weekly" />
+                                    <FieldLabel>"Weekly"</FieldLabel>
+                                </Field>
+                            </RadioGroup>
+                        </FieldSet>
+                        <Field orientation=Orientation::Horizontal>
+                            <Switch name="beta" />
+                            <FieldLabel>"Join the beta"</FieldLabel>
+                        </Field>
+                        <Field orientation=Orientation::Horizontal>
+                            <Checkbox name="terms" value="accepted" required=true />
+                            <FieldLabel>"I accept the terms"</FieldLabel>
+                        </Field>
+                        <div class="flex gap-2">
+                            <Button r#type=ButtonType::Submit>"Submit"</Button>
+                            <Button r#type=ButtonType::Reset variant=ButtonVariant::Outline>
+                                "Reset"
+                            </Button>
+                        </div>
+                        <pre data-form-output class="min-h-16 rounded-md bg-muted p-3 text-xs">
+                            {move || output.get()}
+                        </pre>
+                    </form>
                 </DemoSection>
 
                 <ApiReference entries=API />

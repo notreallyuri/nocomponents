@@ -11,6 +11,7 @@
 //! in-between days derived rather than stored.
 
 use crate::utils::{
+    controllable::controllable,
     date::{Date, DateNames, month_grid},
     next_id,
 };
@@ -64,11 +65,11 @@ pub struct CalendarContext {
     /// Every selected date, in order. One in `Single`, two in `Range`.
     pub selected: RwSignal<Vec<Date>>,
 
-    pub mode: CalendarMode,
+    pub mode: Signal<CalendarMode>,
     /// 0 is Sunday.
-    pub week_starts_on: u32,
-    pub min: Option<Date>,
-    pub max: Option<Date>,
+    pub week_starts_on: Signal<u32>,
+    pub min: MaybeProp<Date>,
+    pub max: MaybeProp<Date>,
     /// Anything else that cannot be picked — weekends, days that are already booked.
     pub disabled: Option<Callback<Date, bool>>,
 
@@ -86,7 +87,9 @@ pub struct CalendarContext {
 
 impl CalendarContext {
     pub fn is_disabled(&self, date: Date) -> bool {
-        if self.min.is_some_and(|min| date < min) || self.max.is_some_and(|max| date > max) {
+        if self.min.get().is_some_and(|min| date < min)
+            || self.max.get().is_some_and(|max| date > max)
+        {
             return true;
         }
 
@@ -94,7 +97,7 @@ impl CalendarContext {
     }
 
     pub fn is_selected(&self, date: Date) -> bool {
-        match self.mode {
+        match self.mode.get() {
             CalendarMode::Range => self.range_position(date) != RangePosition::Outside,
             _ => self.selected.with(|selected| selected.contains(&date)),
         }
@@ -132,7 +135,7 @@ impl CalendarContext {
             return;
         }
 
-        match self.mode {
+        match self.mode.get() {
             CalendarMode::Single => self.selected.update(|selected| {
                 if selected.first() == Some(&date) {
                     selected.clear();
@@ -201,18 +204,19 @@ impl CalendarContext {
             Date::days_in_month(target.year, target.month),
         );
 
-        !(self.min.is_some_and(|min| last < min) || self.max.is_some_and(|max| target > max))
+        !(self.min.get().is_some_and(|min| last < min)
+            || self.max.get().is_some_and(|max| target > max))
     }
 
     /// The 42 dates on show, always six weeks so the grid never changes height.
     pub fn days(&self) -> Vec<Date> {
-        month_grid(self.month.get(), self.week_starts_on)
+        month_grid(self.month.get(), self.week_starts_on.get())
     }
 
     /// The weekday indices in column order, so a Monday-first calendar labels its columns right.
     pub fn weekdays(&self) -> Vec<u32> {
         (0..7)
-            .map(|column| (self.week_starts_on + column) % 7)
+            .map(|column| (self.week_starts_on.get() + column) % 7)
             .collect()
     }
 }
@@ -223,20 +227,34 @@ pub fn use_calendar() -> CalendarContext {
 
 #[component]
 pub fn CalendarRoot(
-    #[prop(optional)] mode: CalendarMode,
-    /// The selected dates. One for `Single`, two for `Range`, any number for `Multiple`.
+    #[prop(optional, into)] mode: Signal<CalendarMode>,
+    /// The selected dates, held by the caller. One for `Single`, two for `Range`, any number for
+    /// `Multiple`. Omit it and the root keeps its own.
+    #[prop(default = None, into)]
+    selected: Option<RwSignal<Vec<Date>>>,
+    /// The dates an uncontrolled calendar starts with. Ignored when `selected` is given.
     #[prop(optional, into)]
-    selected: RwSignal<Vec<Date>>,
-    /// The month on show. Defaults to the month of the first selected date, or today's.
+    default_selected: Vec<Date>,
+    /// Called with the new dates whenever the selection changes, however that came about.
+    #[prop(optional, into)]
+    on_selected_change: Option<Callback<Vec<Date>>>,
+    /// The month on show, held by the caller. Omit it and the root keeps its own.
     #[prop(default = None, into)]
     month: Option<RwSignal<Date>>,
-    /// 0 is Sunday, 1 Monday.
-    #[prop(default = 0)]
-    week_starts_on: u32,
-    #[prop(default = None, into)] min: Option<Date>,
-    #[prop(default = None, into)] max: Option<Date>,
-    /// Anything else that cannot be picked.
+    /// The month an uncontrolled calendar starts on; the month of the first selected date, or
+    /// today's, when omitted. Ignored when `month` is given.
     #[prop(default = None, into)]
+    default_month: Option<Date>,
+    /// Called with the new month whenever the one on show changes, however that came about.
+    #[prop(optional, into)]
+    on_month_change: Option<Callback<Date>>,
+    /// 0 is Sunday, 1 Monday.
+    #[prop(into, default = 0.into())]
+    week_starts_on: Signal<u32>,
+    #[prop(optional, into)] min: MaybeProp<Date>,
+    #[prop(optional, into)] max: MaybeProp<Date>,
+    /// Anything else that cannot be picked.
+    #[prop(optional, into)]
     disabled: Option<Callback<Date, bool>>,
     /// A BCP 47 tag — `"pt-BR"`, `"ja"` — for the month caption, the weekday headers and every
     /// day's accessible name. Empty is English, and so is anything the browser cannot read.
@@ -245,13 +263,18 @@ pub fn CalendarRoot(
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
+    let selected = controllable(selected, default_selected, on_selected_change);
     let today = Date::today();
     let opening = selected
         .with_untracked(|selected| selected.first().copied())
         .unwrap_or(today);
 
     let ctx = CalendarContext {
-        month: month.unwrap_or_else(|| RwSignal::new(opening.first_of_month())),
+        month: controllable(
+            month,
+            default_month.unwrap_or(opening).first_of_month(),
+            on_month_change,
+        ),
         focused: RwSignal::new(opening),
         selected,
         mode,
@@ -279,7 +302,7 @@ pub fn CalendarRoot(
         <Provider value=ctx>
             <div
                 data-slot="calendar"
-                data-mode=match mode {
+                data-mode=move || match mode.get() {
                     CalendarMode::Single => "single",
                     CalendarMode::Multiple => "multiple",
                     CalendarMode::Range => "range",
@@ -376,12 +399,12 @@ pub fn CalendarGridRoot(
             "ArrowDown" => 7,
             "Home" => {
                 let focused = ctx.focused.get_untracked();
-                let column = (focused.weekday() + 7 - ctx.week_starts_on % 7) % 7;
+                let column = (focused.weekday() + 7 - ctx.week_starts_on.get_untracked() % 7) % 7;
                 -(column as i64)
             }
             "End" => {
                 let focused = ctx.focused.get_untracked();
-                let column = (focused.weekday() + 7 - ctx.week_starts_on % 7) % 7;
+                let column = (focused.weekday() + 7 - ctx.week_starts_on.get_untracked() % 7) % 7;
                 6 - column as i64
             }
             "PageUp" => {
@@ -452,7 +475,11 @@ pub fn CalendarGridRoot(
                                         .map(|date| {
                                             let date = *date;
                                             view! {
-                                                <td role="gridcell" class=move || cell_class.get()>
+                                                <td
+                                                    role="gridcell"
+                                                    aria-selected=move || ctx.is_selected(date).to_string()
+                                                    class=move || cell_class.get()
+                                                >
                                                     {day.run(date)}
                                                 </td>
                                             }
@@ -489,18 +516,20 @@ pub fn CalendarDayRoot(date: Date, #[prop(optional, into)] class: Signal<String>
             data-today=(date == today).then_some("")
             data-selected=move || selected.get().then_some("")
             data-range=move || {
-                (ctx.mode == CalendarMode::Range).then(|| ctx.range_position(date).as_str())
+                (ctx.mode.get() == CalendarMode::Range).then(|| ctx.range_position(date).as_str())
             }
             aria-label=move || ctx.names.with(|names| names.long_form(date))
-            aria-selected=move || selected.get().to_string()
+            data-disabled=move || disabled.get().then_some("")
+            // `aria-disabled` rather than `disabled`: a disabled button cannot take focus, so
+            // the arrow keys would lose the grid on a day that cannot be picked, and the one tab
+            // stop could land on a day that holds it for nobody.
             aria-disabled=move || disabled.get().then_some("true")
-            disabled=move || disabled.get()
             // One tab stop for the whole grid, on whichever date the keyboard is on.
             tabindex=move || if focused.get() { "0" } else { "-1" }
             on:click=move |_| ctx.select(date)
             on:focus=move |_| ctx.focused.set(date)
             on:pointerenter=move |_| {
-                if ctx.mode == CalendarMode::Range
+                if ctx.mode.get() == CalendarMode::Range && !disabled.get_untracked()
                     && ctx.selected.with_untracked(|selected| selected.len() == 1)
                 {
                     ctx.preview.set(Some(date));

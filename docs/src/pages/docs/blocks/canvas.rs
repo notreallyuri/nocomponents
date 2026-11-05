@@ -69,7 +69,7 @@ let drop_at = move |x: f64, y: f64| {
     // A press on the board is a click, and a click on nothing is a
     // deselection. A press that travelled is a band instead — the two share
     // one press and never both fire.
-    on_surface_click=Callback::new(move |_| selected.set(Vec::new()))
+    on_surface_click=move |_| selected.set(Vec::new())
     on_surface_drag=Callback::new(move |drag: CanvasDrag| {
         // The first report of a gesture is the one with no band yet, which is
         // where the selection to add to gets remembered. Empty unless shift is
@@ -138,7 +138,7 @@ fn Nodes(/* … */) -> impl IntoView {
                     // delta is divided by lives in the canvas' context, so the
                     // node does the arithmetic — and this turns it into the
                     // distance everything else selected has to go too.
-                    on_move=Callback::new(move |at: CanvasPoint| {
+                    on_move=move |at: CanvasPoint| {
                         let held = held.get_value();
                         let (_, anchor) = held.iter().find(|(other, _)| *other == id)?;
                         let (dx, dy) = (at.x - anchor.x, at.y - anchor.y);
@@ -147,10 +147,10 @@ fn Nodes(/* … */) -> impl IntoView {
                                 item.set_box(was.moved_by(dx, dy));
                             }
                         });
-                    })
+                    }
                     // A resize is one node's, always: the grips that scale a
                     // whole selection are on the frame drawn around it.
-                    on_resize=Callback::new(move |box_: WorldBox| write(id, |i| i.set_box(box_)))
+                    on_resize=move |box_: WorldBox| write(id, |i| i.set_box(box_))
                     // Depth as a number rather than a position in the list.
                     // "To front" used to be a move to the end, which changes
                     // the keys and rebuilds every node after it.
@@ -170,7 +170,7 @@ fn Nodes(/* … */) -> impl IntoView {
                     // only gesture that outranks the node's.
                     <CanvasNodeLabel
                         value=label
-                        on_change=Callback::new(move |next| write(id, |i| i.label = next))
+                        on_change=move |next| write(id, |i| i.label = next)
                     />
                 </CanvasSticky>
             }
@@ -947,9 +947,9 @@ fn editor() -> AnyView {
                         // A press on the board is a click, and a click on nothing is a
                         // deselection — a gesture a surface that panned on press has nowhere
                         // to put.
-                        on_surface_click=Callback::new(move |_: CanvasPoint| {
+                        on_surface_click=move |_: CanvasPoint| {
                             selected.set(Vec::new())
-                        })
+                        }
                         // And a press that travelled is a band. The two share one press and
                         // never both fire, so a click still clears and a drag still selects.
                         on_surface_drag=marquee
@@ -977,7 +977,7 @@ fn editor() -> AnyView {
                                     frame.get().map_or(0.0, |box_| box_.height)
                                 })
                                 on_resize=scale_group
-                                on_gesture_end=Callback::new(move |_| scaling.set_value(Vec::new()))
+                                on_gesture_end=move |_| scaling.set_value(Vec::new())
                                 z=FRAME_Z
                                 selected=true
                                 min_size=8.0

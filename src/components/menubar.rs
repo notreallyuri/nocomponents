@@ -5,21 +5,30 @@ use crate::{
             DropdownMenuContentRoot, DropdownMenuItemRoot, DropdownMenuPortalRoot,
             DropdownMenuSubContentRoot, DropdownMenuSubRoot, DropdownMenuSubTriggerRoot,
         },
+        floating::FloatingPortal,
         menubar::{MenubarMenuRoot, MenubarRoot, MenubarTriggerRoot, use_menubar},
     },
-    utils::types::{Align, Side, SideOffset},
+    utils::{
+        controllable::forward,
+        types::{Align, Side, SideOffset},
+    },
 };
-use leptos::{ev, portal::Portal, prelude::*};
+use leptos::{ev, prelude::*};
 
 #[component]
 pub fn Menubar(
-    #[prop(optional, into)] open: RwSignal<Option<String>>,
+    #[prop(default = None, into)] value: Option<RwSignal<Option<String>>>,
+    #[prop(optional, into)] default_value: Option<String>,
+    #[prop(optional, into)] on_value_change: Option<Callback<Option<String>>>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
+    let value = Some(value.unwrap_or_else(|| RwSignal::new(default_value)));
+
     view! {
         <MenubarRoot
-            open=open
+            value=value
+            on_value_change=forward(on_value_change)
             class=move || {
                 cn!(
                     "flex h-9 items-center gap-1 rounded-lg border bg-background p-1 shadow-xs",
@@ -73,9 +82,9 @@ pub fn MenubarPortal(children: ChildrenFn) -> impl IntoView {
 
 #[component]
 pub fn MenubarContent(
-    #[prop(optional)] side: Side,
-    #[prop(optional)] align: Align,
-    #[prop(optional)] side_offset: SideOffset,
+    #[prop(optional, into)] side: Signal<Side>,
+    #[prop(optional, into)] align: Signal<Align>,
+    #[prop(optional, into)] side_offset: Signal<SideOffset>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
@@ -105,13 +114,13 @@ pub fn MenubarContent(
 pub fn MenubarItem(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
-    #[prop(default = None, into)] on_click: Option<Callback<ev::MouseEvent>>,
+    #[prop(optional, into)] on_click: Option<Callback<ev::MouseEvent>>,
     children: Children,
 ) -> impl IntoView {
     view! {
         <DropdownMenuItemRoot
             disabled=disabled
-            on_click=on_click
+            on_click=forward(on_click)
             class=move || {
                 cn!(
                     "relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm font-medium outline-none transition-colors focus:bg-accent focus:text-accent-foreground hover:bg-accent hover:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50",
@@ -177,7 +186,7 @@ pub fn MenubarSubTrigger(
 
 #[component]
 pub fn MenubarSubContent(
-    #[prop(optional)] side_offset: SideOffset,
+    #[prop(optional, into)] side_offset: Signal<SideOffset>,
     #[prop(optional, into)] class: Signal<String>,
     children: ChildrenFn,
 ) -> impl IntoView {
@@ -185,7 +194,7 @@ pub fn MenubarSubContent(
     let children = StoredValue::new(children);
 
     view! {
-        <Portal>
+        <FloatingPortal>
             <Show when=move || ctx.is_mounted.get()>
                 <DropdownMenuSubContentRoot
                     side_offset=side_offset
@@ -199,6 +208,6 @@ pub fn MenubarSubContent(
                     {children.with_value(|children| children())}
                 </DropdownMenuSubContentRoot>
             </Show>
-        </Portal>
+        </FloatingPortal>
     }
 }

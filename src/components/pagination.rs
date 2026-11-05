@@ -118,13 +118,12 @@ pub fn PaginationNext(
 pub fn PaginationEllipsis(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
     view! {
         <span
-            aria-hidden="true"
             data-slot="pagination-ellipsis"
             class=move || {
                 cn!("flex size-8 items-center justify-center text-muted-foreground", class.get())
             }
         >
-            "…"
+            <span aria-hidden="true">"…"</span>
             <span class="sr-only">"More pages"</span>
         </span>
     }

@@ -83,13 +83,13 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "variant",
-                ty: "ToggleVariant",
+                ty: "Signal<ToggleVariant>",
                 default: "Default",
                 description: "One of: Default, Outline.",
             },
             Prop {
                 name: "size",
-                ty: "ToggleSize",
+                ty: "Signal<ToggleSize>",
                 default: "Default",
                 description: "One of: Xs, Sm, Default, Lg.",
             },
@@ -103,13 +103,25 @@ const API: &[ApiEntry] = &[
                 name: "disabled",
                 ty: "Signal<bool>",
                 default: "false",
-                description: "Disables every item in the group.",
+                description: "Disables every item in the group, as does a `Field` around it.",
             },
             Prop {
                 name: "value",
                 ty: "Option<RwSignal<Vec<String>>>",
                 default: "None",
                 description: "Omit for an uncontrolled group. `Single` keeps at most one entry in the vector.",
+            },
+            Prop {
+                name: "default_value",
+                ty: "Vec<String>",
+                default: "[]",
+                description: "The items an uncontrolled group starts with. Ignored when `value` is given.",
+            },
+            Prop {
+                name: "on_value_change",
+                ty: "Option<Callback<Vec<String>>>",
+                default: "None",
+                description: "Called with the pressed items whenever they change, including when the signal passed as `value` is written from outside.",
             },
             Prop {
                 name: "children",
@@ -131,13 +143,13 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "variant",
-                ty: "Option<ToggleVariant>",
+                ty: "MaybeProp<ToggleVariant>",
                 default: "None",
                 description: "Defaults to the variant set on the enclosing `ToggleGroup`.",
             },
             Prop {
                 name: "size",
-                ty: "Option<ToggleSize>",
+                ty: "MaybeProp<ToggleSize>",
                 default: "None",
                 description: "Defaults to the size set on the enclosing `ToggleGroup`.",
             },
@@ -151,7 +163,7 @@ const API: &[ApiEntry] = &[
                 name: "disabled",
                 ty: "Signal<bool>",
                 default: "false",
-                description: "Disables this item only.",
+                description: "Disables this item only. A `Field` around it disables it too.",
             },
             Prop {
                 name: "children",

@@ -103,6 +103,36 @@ const API: &[ApiEntry] = &[
                 description: "Omit for an uncontrolled group that owns its own selection.",
             },
             Prop {
+                name: "default_value",
+                ty: "Option<String>",
+                default: "None",
+                description: "The option an uncontrolled group starts on. Ignored when `value` is given.",
+            },
+            Prop {
+                name: "name",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The name the choice is submitted under: each item keeps a native `<input type=\"radio\">` beside its button, and the checked one submits its `value`. Only rendered inside a `<form>` or when `name` or `form` is set; `aria-hidden` and not a tab stop. Empty leaves the group out.",
+            },
+            Prop {
+                name: "required",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "The browser refuses to submit the form while no item is chosen.",
+            },
+            Prop {
+                name: "form",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The `id` of a `<form>` it belongs to when it is not inside one. Empty means the one around it.",
+            },
+            Prop {
+                name: "on_value_change",
+                ty: "Option<Callback<Option<String>>>",
+                default: "None",
+                description: "Called with the new value whenever the choice changes, including when the signal passed as `value` is written from outside.",
+            },
+            Prop {
                 name: "children",
                 ty: "Children",
                 default: "",

@@ -1,19 +1,28 @@
 use crate::{
     cn,
     primitives::tooltip::{TooltipContentRoot, TooltipPortalRoot, TooltipRoot, TooltipTriggerRoot},
-    utils::types::{Align, AnchorRender, Side, SideOffset},
+    utils::{
+        controllable::forward,
+        types::{Align, AnchorRender, Side, SideOffset},
+    },
 };
 use leptos::prelude::*;
 
 #[component]
 pub fn Tooltip(
     #[prop(optional, into)] class: Signal<String>,
-    #[prop(default = 400, into)] delay: u64,
-    #[prop(default = 100, into)] close_delay: u64,
+    #[prop(into, default = 400u64.into())] delay: Signal<u64>,
+    #[prop(into, default = 100u64.into())] close_delay: Signal<u64>,
+    #[prop(default = None, into)] open: Option<RwSignal<bool>>,
+    #[prop(optional)] default_open: bool,
+    #[prop(optional, into)] on_open_change: Option<Callback<bool>>,
     children: ChildrenFn,
 ) -> impl IntoView {
     view! {
         <TooltipRoot
+            open=open
+            default_open=default_open
+            on_open_change=forward(on_open_change)
             delay=delay
             close_delay=close_delay
             class=move || cn!("inline-block", class.get())
@@ -43,9 +52,9 @@ pub fn TooltipTrigger(
 
 #[component]
 pub fn TooltipContent(
-    #[prop(default = Side::Top)] side: Side,
-    #[prop(optional)] align: Align,
-    #[prop(default = SideOffset(6.0))] side_offset: SideOffset,
+    #[prop(into, default = Side::Top.into())] side: Signal<Side>,
+    #[prop(optional, into)] align: Signal<Align>,
+    #[prop(into, default = SideOffset(6.0).into())] side_offset: Signal<SideOffset>,
     #[prop(optional, into)] class: Signal<String>,
     children: ChildrenFn,
 ) -> impl IntoView {

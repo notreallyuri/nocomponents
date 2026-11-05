@@ -70,6 +70,24 @@ const API: &[ApiEntry] = &[
                 description: "Pass one to drive it from outside; omit it and the root owns the signal.",
             },
             Prop {
+                name: "default_open",
+                ty: "bool",
+                default: "false",
+                description: "Whether the sheet starts open. Ignored when `open` is given.",
+            },
+            Prop {
+                name: "on_open_change",
+                ty: "Option<Callback<bool>>",
+                default: "None",
+                description: "Called with the new value whenever the sheet opens or closes, including when the signal passed as `open` is written from outside.",
+            },
+            Prop {
+                name: "modal",
+                ty: "bool",
+                default: "true",
+                description: "Non-modal leaves the page usable underneath: no overlay, no focus trap, and an outside pointer closes it.",
+            },
+            Prop {
                 name: "children",
                 ty: "Children",
                 default: "",
@@ -83,13 +101,13 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "size",
-                ty: "ButtonSize",
+                ty: "Signal<ButtonSize>",
                 default: "Default",
                 description: "One of: Xs, Sm, Default, Lg, Icon, IconSm, IconXs, IconLg.",
             },
             Prop {
                 name: "variant",
-                ty: "ButtonVariant",
+                ty: "Signal<ButtonVariant>",
                 default: "Default",
                 description: "One of: Default, Outline, Ghost, Secondary, Link, Destructive.",
             },
@@ -107,9 +125,9 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "render",
-                ty: "Option<Callback<Callback<ev::MouseEvent>, AnyView>>",
+                ty: "Option<Callback<TriggerRender, AnyView>>",
                 default: "None",
-                description: "Render the trigger as something else. Handed the click handler, which must reach the element.",
+                description: "Render the trigger as something else. Handed the node ref to attach, the click to run and the resolved `disabled`; the dialog writes its ARIA onto that node.",
             },
             Prop {
                 name: "children",
@@ -125,7 +143,7 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "side",
-                ty: "Side",
+                ty: "Signal<Side>",
                 default: "Side::Right",
                 description: "One of: Left, Right, Bottom, Top.",
             },
@@ -134,6 +152,12 @@ const API: &[ApiEntry] = &[
                 ty: "Signal<String>",
                 default: "\"\"",
                 description: "Merged over the panel's classes.",
+            },
+            Prop {
+                name: "id",
+                ty: "Option<String>",
+                default: "None",
+                description: "The id the panel wears, which the trigger's `aria-controls` names. A dialog mints its own; `Sidebar` passes the one its trigger already points at.",
             },
             Prop {
                 name: "children",
@@ -221,13 +245,13 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "size",
-                ty: "ButtonSize",
+                ty: "Signal<ButtonSize>",
                 default: "Default",
                 description: "One of: Xs, Sm, Default, Lg, Icon, IconSm, IconXs, IconLg.",
             },
             Prop {
                 name: "variant",
-                ty: "ButtonVariant",
+                ty: "Signal<ButtonVariant>",
                 default: "ButtonVariant::Outline",
                 description: "One of: Default, Outline, Ghost, Secondary, Link, Destructive.",
             },

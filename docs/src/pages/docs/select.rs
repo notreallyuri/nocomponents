@@ -33,11 +33,14 @@ const DEFAULT: &str = r#"{
 }"#;
 
 const WITH_LABEL_AND_DEFAULT_VALUE: &str = r#"{
-    let value = RwSignal::new(Some("dark".to_string()));
+    let last = RwSignal::new("nothing yet".to_string());
     view! {
         <div class="flex flex-col gap-1.5 w-48">
             <Label>"Theme"</Label>
-            <Select value=value>
+            <Select
+                default_value="dark"
+                on_value_change={move |value: Option<String>| last.set(value.unwrap_or_default())}
+            >
                 <SelectTrigger>
                     <SelectValue placeholder="Pick a theme..." />
                 </SelectTrigger>
@@ -49,6 +52,7 @@ const WITH_LABEL_AND_DEFAULT_VALUE: &str = r#"{
                     </SelectContent>
                 </SelectPortal>
             </Select>
+            <p class="text-sm text-muted-foreground">"Last change: " {move || last.get()}</p>
         </div>
     }
 }"#;
@@ -84,15 +88,69 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "value",
-                ty: "RwSignal<Option<String>>",
+                ty: "Option<RwSignal<Option<String>>>",
                 default: "None",
-                description: "The chosen value. Empty until something is picked.",
+                description: "The chosen value, held by the caller. Empty until something is picked; omit it and the root owns the signal.",
+            },
+            Prop {
+                name: "default_value",
+                ty: "Option<String>",
+                default: "None",
+                description: "The value to start with, as in `default_value=\"apple\"`. Ignored when `value` is given.",
+            },
+            Prop {
+                name: "on_value_change",
+                ty: "Option<Callback<Option<String>>>",
+                default: "None",
+                description: "Called with the new value whenever it changes, including when the signal passed as `value` is written from outside.",
             },
             Prop {
                 name: "class",
                 ty: "Signal<String>",
                 default: "\"\"",
                 description: "Merged over the wrapper's classes.",
+            },
+            Prop {
+                name: "name",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The name the choice is submitted under, written on the hidden native `<select>`. Empty submits nothing.",
+            },
+            Prop {
+                name: "required",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "The browser refuses to submit the form while nothing is chosen.",
+            },
+            Prop {
+                name: "disabled",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Disables the trigger, and keeps the choice out of a form's data.",
+            },
+            Prop {
+                name: "form",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The `id` of a `<form>` it belongs to when it is not inside one. Empty means the one around it.",
+            },
+            Prop {
+                name: "open",
+                ty: "Option<RwSignal<bool>>",
+                default: "None",
+                description: "Pass one to drive the list from outside or to watch it; omit it and the root owns the signal.",
+            },
+            Prop {
+                name: "default_open",
+                ty: "bool",
+                default: "false",
+                description: "Whether the list starts open. Ignored when `open` is given.",
+            },
+            Prop {
+                name: "on_open_change",
+                ty: "Option<Callback<bool>>",
+                default: "None",
+                description: "Called with the new value whenever the list opens or closes, including when the signal passed as `open` is written from outside.",
             },
             Prop {
                 name: "children",
@@ -125,7 +183,7 @@ const API: &[ApiEntry] = &[
         description: "The current value, or a placeholder when there is none. Renders the value itself, so an item's value and its text should read the same.",
         props: &[Prop {
             name: "placeholder",
-            ty: "String",
+            ty: "Signal<String>",
             default: "",
             description: "Shown while nothing is chosen.",
         }],
@@ -167,6 +225,18 @@ const API: &[ApiEntry] = &[
                 ty: "String",
                 default: "",
                 description: "What committing this option sets the value to.",
+            },
+            Prop {
+                name: "label",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "What `SelectValue` shows once this option is chosen. Empty means the option's own text. Labels are kept after the list unmounts, and a value chosen before the list has ever opened is resolved by building the content once off-screen.",
+            },
+            Prop {
+                name: "disabled",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Skipped by the arrow keys and typeahead, refuses a click, and is marked `data-disabled` and `aria-disabled`.",
             },
             Prop {
                 name: "class",
@@ -221,15 +291,18 @@ pub fn Page() -> impl IntoView {
 
                 <DemoSection
                     title="With label and default value"
-                    description="Seed the signal with a value to preselect an item."
+                    description="default_value preselects an item without a signal to hold, and on_value_change hears each pick."
                     code=WITH_LABEL_AND_DEFAULT_VALUE
                 >
                     {
-                        let value = RwSignal::new(Some("dark".to_string()));
+                        let last = RwSignal::new("nothing yet".to_string());
                         view! {
                             <div class="flex flex-col gap-1.5 w-48">
                                 <Label>"Theme"</Label>
-                                <Select value=value>
+                                <Select
+                                    default_value="dark"
+                                    on_value_change={move |value: Option<String>| last.set(value.unwrap_or_default())}
+                                >
                                     <SelectTrigger>
                                         <SelectValue placeholder="Pick a theme..." />
                                     </SelectTrigger>
@@ -241,6 +314,9 @@ pub fn Page() -> impl IntoView {
                                         </SelectContent>
                                     </SelectPortal>
                                 </Select>
+                                <p class="text-sm text-muted-foreground">
+                                    "Last change: " {move || last.get()}
+                                </p>
                             </div>
                         }
                     }

@@ -323,6 +323,15 @@ pub fn ToastRoot(
     view! {
         <div
             data-slot="toast"
+            role=match toast.variant {
+                ToastVariant::Destructive => "alert",
+                ToastVariant::Default => "status",
+            }
+            aria-live=match toast.variant {
+                ToastVariant::Destructive => "assertive",
+                ToastVariant::Default => "polite",
+            }
+            aria-atomic="true"
             data-state=move || if toast.is_open.get() { "open" } else { "closed" }
             data-dragging=move || if is_dragging.get() { "true" } else { "false" }
             data-size=toast.size.as_str()

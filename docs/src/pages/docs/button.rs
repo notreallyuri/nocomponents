@@ -71,13 +71,13 @@ const API: &[ApiEntry] = &[ApiEntry {
     props: &[
         Prop {
             name: "variant",
-            ty: "ButtonVariant",
+            ty: "Signal<ButtonVariant>",
             default: "Default",
             description: "Default, Secondary, Outline, Ghost, Link or Destructive.",
         },
         Prop {
             name: "size",
-            ty: "ButtonSize",
+            ty: "Signal<ButtonSize>",
             default: "Default",
             description: "Xs, Sm, Default, Lg, or the four Icon sizes for a square button.",
         },

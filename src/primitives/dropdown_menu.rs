@@ -2,23 +2,19 @@ use crate::{
     primitives::{
         floating::{
             ArrowOpen, FloatingContext, FloatingPortal, FloatingRoot, FloatingTrigger, OpenFocus,
-            TriggerAria, TriggerRender,
+            TriggerAria, TriggerRender, floating_options, side_placement,
         },
         roving_focus::{RovingFocus, use_roving_focus},
         typeahead::Typeahead,
     },
     utils::{
-        get_placement,
+        controllable::controllable,
         types::{Align, Direction, Orientation, Side, SideOffset},
     },
 };
-use floating_ui_leptos::{
-    Flip, FlipOptions, MiddlewareVec, Offset, OffsetOptions, Placement, Shift, ShiftOptions,
-    Strategy, UseFloatingOptions, UseFloatingReturn, use_floating,
-};
+use floating_ui_leptos::{Placement, UseFloatingReturn, use_floating};
 use leptos::{context::Provider, either::Either, ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
-use send_wrapper::SendWrapper;
 use std::time::Duration;
 use web_sys::HtmlElement;
 
@@ -36,9 +32,21 @@ pub(crate) struct MenuRoot(pub(crate) DropdownMenuContext);
 #[component]
 pub fn DropdownMenuRoot(
     #[prop(optional, into)] class: Signal<String>,
+    /// Whether the menu is open, held by the caller. Omit it and the root keeps its own.
+    #[prop(default = None, into)]
+    open: Option<RwSignal<bool>>,
+    /// Whether the menu starts open. Ignored when `open` is given.
+    #[prop(optional)]
+    default_open: bool,
+    /// Called with the new value whenever the menu opens or closes, however that came about.
+    #[prop(optional, into)]
+    on_open_change: Option<Callback<bool>>,
     children: ChildrenFn,
 ) -> impl IntoView {
-    let context = DropdownMenuContext::default();
+    let context = DropdownMenuContext {
+        is_open: controllable(open, default_open, on_open_change),
+        ..Default::default()
+    };
     let stored_children = StoredValue::new(children);
 
     view! {
@@ -85,6 +93,48 @@ pub(crate) fn focus_element(node_ref: AnyNodeRef) {
         && let Ok(el) = el.dyn_into::<HtmlElement>()
     {
         let _ = el.focus();
+    }
+}
+
+/// Moves focus to the item under the pointer, so hovering and the arrow keys are one highlight
+/// rather than two: without it, hovering "Right" and pressing Enter activates whatever the keys
+/// last reached. A disabled item is not focused, and neither is the gap between items.
+pub(crate) fn focus_item_under_pointer(e: &ev::PointerEvent, menu_ref: AnyNodeRef) {
+    let Some(menu) = menu_ref.get_untracked() else {
+        return;
+    };
+    let Some(target) = e
+        .target()
+        .and_then(|target| target.dyn_into::<web_sys::Element>().ok())
+    else {
+        return;
+    };
+    let Ok(Some(item)) = target.closest("[data-roving-item]") else {
+        return;
+    };
+    if !menu.contains(Some(&item))
+        || item.has_attribute("disabled")
+        || item.has_attribute("data-disabled")
+        || item.get_attribute("aria-disabled").as_deref() == Some("true")
+    {
+        return;
+    }
+    if document().active_element().as_ref() == Some(&item) {
+        return;
+    }
+    if let Ok(item) = item.dyn_into::<HtmlElement>() {
+        let _ = item.focus();
+    }
+}
+
+/// When the pointer leaves the surface while an item holds focus, hands focus back to the surface
+/// itself: the highlight the pointer was driving goes out with it.
+pub(crate) fn focus_menu_off_item(menu_ref: AnyNodeRef) {
+    let on_item = document()
+        .active_element()
+        .is_some_and(|active| active.has_attribute("data-roving-item"));
+    if on_item {
+        focus_element(menu_ref);
     }
 }
 
@@ -172,24 +222,18 @@ pub fn DropdownMenuPortalRoot(children: ChildrenFn) -> impl IntoView {
 
 #[component]
 pub fn DropdownMenuContentRoot(
-    #[prop(optional)] side: Side,
-    #[prop(optional)] align: Align,
-    #[prop(optional)] side_offset: SideOffset,
+    #[prop(optional, into)] side: Signal<Side>,
+    #[prop(optional, into)] align: Signal<Align>,
+    #[prop(optional, into)] side_offset: Signal<SideOffset>,
     /// What Left and Right do inside this surface. A dropdown ignores them; a menubar's menu
     /// steps to the menu beside it, which is why this is a callback rather than a rule here.
-    #[prop(default = None, into)]
+    #[prop(optional, into)]
     on_arrow_horizontal: Option<Callback<Direction>>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
     let ctx = use_dropdown();
     let floating_ref = ctx.content_ref;
-
-    let middleware: MiddlewareVec = vec![
-        Box::new(Offset::new(OffsetOptions::Value(side_offset.0))),
-        Box::new(Flip::new(FlipOptions::default())),
-        Box::new(Shift::new(ShiftOptions::default())),
-    ];
 
     let UseFloatingReturn {
         floating_styles,
@@ -199,11 +243,7 @@ pub fn DropdownMenuContentRoot(
     } = use_floating(
         ctx.trigger_ref,
         floating_ref,
-        UseFloatingOptions::default()
-            .placement(get_placement(side, align))
-            .strategy(Strategy::Fixed)
-            .while_elements_mounted_auto_update()
-            .middleware(SendWrapper::new(middleware)),
+        floating_options(side_placement(side, align), side_offset),
     );
 
     let menu_ref = AnyNodeRef::new();
@@ -263,6 +303,8 @@ pub fn DropdownMenuContentRoot(
                     }
                 }
                 on:focusin=move |_| roving.on_focus_in()
+                on:pointermove=move |e| focus_item_under_pointer(&e, menu_ref)
+                on:pointerleave=move |_| focus_menu_off_item(menu_ref)
                 data-state=move || if ctx.is_open.get() { "open" } else { "closed" }
                 data-align=move || placement_align(placement.get())
                 data-side=move || placement_side(placement.get())
@@ -274,11 +316,57 @@ pub fn DropdownMenuContentRoot(
     }
 }
 
+/// How an item reads, written as `data-variant` so the styled layer can key a destructive row off
+/// the attribute instead of a class the caller types by hand.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub enum DropdownMenuItemVariant {
+    #[default]
+    Default,
+    Destructive,
+}
+
+impl DropdownMenuItemVariant {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Default => "default",
+            Self::Destructive => "destructive",
+        }
+    }
+}
+
+/// Closes the panel an item lives in and, from inside a submenu, the whole tree above it.
+fn close_tree(ctx: DropdownMenuContext, menu_root: Option<MenuRoot>) {
+    ctx.close();
+    if let Some(root) = menu_root {
+        root.0.close();
+    }
+}
+
+/// What follows a selection: close the tree, or, when `close_on_select` is off, leave it open with
+/// focus on the item just chosen (a click already focuses it; this covers a pointer that did not).
+fn finish_select(
+    target: Option<web_sys::EventTarget>,
+    close_on_select: Signal<bool>,
+    ctx: DropdownMenuContext,
+    menu_root: Option<MenuRoot>,
+) {
+    if close_on_select.get_untracked() {
+        close_tree(ctx, menu_root);
+    } else if let Some(item) = target.and_then(|t| t.dyn_into::<HtmlElement>().ok()) {
+        let _ = item.focus();
+    }
+}
+
 #[component]
 pub fn DropdownMenuItemRoot(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
-    #[prop(default = None, into)] on_click: Option<Callback<ev::MouseEvent>>,
+    #[prop(optional, into)] inset: Signal<bool>,
+    #[prop(optional, into)] variant: Signal<DropdownMenuItemVariant>,
+    /// Whether choosing this closes the menu. Read when the choice is made.
+    #[prop(default = true.into(), into)]
+    close_on_select: Signal<bool>,
+    #[prop(optional, into)] on_click: Option<Callback<ev::MouseEvent>>,
     children: Children,
 ) -> impl IntoView {
     let ctx = use_dropdown();
@@ -293,13 +381,11 @@ pub fn DropdownMenuItemRoot(
             return;
         }
 
+        let target = e.current_target();
         if let Some(cb) = on_click {
             cb.run(e);
         }
-        ctx.close();
-        if let Some(root) = menu_root {
-            root.0.close();
-        }
+        finish_select(target, close_on_select, ctx, menu_root);
     };
 
     view! {
@@ -313,9 +399,166 @@ pub fn DropdownMenuItemRoot(
             data-roving-item=""
             data-disabled=move || disabled.get().then_some("true")
             aria-disabled=move || disabled.get().then_some("true")
+            data-inset=move || inset.get().then_some("")
+            data-variant=move || variant.get().as_str()
             on:click=handle_click
             class=class
         >
+            {children()}
+        </div>
+    }
+}
+
+/// A row that holds an on/off choice. Takes part in the menu's keys exactly as an item does
+/// (`data-roving-item`). Choosing one leaves the menu open unless `close_on_select` is set.
+#[component]
+pub fn DropdownMenuCheckboxItemRoot(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional, into)] inset: Signal<bool>,
+    #[prop(optional, into)] checked: RwSignal<bool>,
+    /// Whether choosing this closes the menu. Read when the choice is made.
+    #[prop(optional, into)]
+    close_on_select: Signal<bool>,
+    #[prop(optional, into)] on_checked_change: Option<Callback<bool>>,
+    #[prop(optional, into)] on_click: Option<Callback<ev::MouseEvent>>,
+    children: Children,
+) -> impl IntoView {
+    let ctx = use_dropdown();
+    let menu_root = use_context::<MenuRoot>();
+
+    let handle_click = move |e: ev::MouseEvent| {
+        if disabled.get_untracked() {
+            return;
+        }
+
+        let next = !checked.get_untracked();
+        checked.set(next);
+        if let Some(cb) = on_checked_change {
+            cb.run(next);
+        }
+        let target = e.current_target();
+        if let Some(cb) = on_click {
+            cb.run(e);
+        }
+        finish_select(target, close_on_select, ctx, menu_root);
+    };
+
+    view! {
+        <div
+            data-slot="dropdown-menu-checkbox-item"
+            role="menuitemcheckbox"
+            tabindex="-1"
+            data-roving-item=""
+            aria-checked=move || checked.get().to_string()
+            data-state=move || if checked.get() { "checked" } else { "unchecked" }
+            data-disabled=move || disabled.get().then_some("true")
+            aria-disabled=move || disabled.get().then_some("true")
+            data-inset=move || inset.get().then_some("")
+            on:click=handle_click
+            class=class
+        >
+            {children()}
+        </div>
+    }
+}
+
+#[derive(Clone)]
+struct RadioGroupContext {
+    value: RwSignal<String>,
+    on_value_change: Option<Callback<String>>,
+}
+
+/// A set of radio items sharing one value. Publishes the value to the items below it.
+#[component]
+pub fn DropdownMenuRadioGroupRoot(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] value: RwSignal<String>,
+    #[prop(optional, into)] on_value_change: Option<Callback<String>>,
+    children: Children,
+) -> impl IntoView {
+    provide_context(RadioGroupContext {
+        value,
+        on_value_change,
+    });
+
+    view! {
+        <div data-slot="dropdown-menu-radio-group" role="group" class=class>
+            {children()}
+        </div>
+    }
+}
+
+/// One choice of a radio group. Selecting it sets the group's value and leaves the menu open unless `close_on_select` is set.
+#[component]
+pub fn DropdownMenuRadioItemRoot(
+    #[prop(into)] value: String,
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional, into)] inset: Signal<bool>,
+    /// Whether choosing this closes the menu. Read when the choice is made.
+    #[prop(optional, into)]
+    close_on_select: Signal<bool>,
+    #[prop(optional, into)] on_click: Option<Callback<ev::MouseEvent>>,
+    children: Children,
+) -> impl IntoView {
+    let ctx = use_dropdown();
+    let menu_root = use_context::<MenuRoot>();
+    let group = expect_context::<RadioGroupContext>();
+
+    let item_value = value.clone();
+    let is_checked = move || group.value.get() == item_value;
+
+    let handle_click = {
+        let value = value.clone();
+        let group = group.clone();
+        move |e: ev::MouseEvent| {
+            if disabled.get_untracked() {
+                return;
+            }
+
+            group.value.set(value.clone());
+            if let Some(cb) = group.on_value_change {
+                cb.run(value.clone());
+            }
+            let target = e.current_target();
+            if let Some(cb) = on_click {
+                cb.run(e);
+            }
+            finish_select(target, close_on_select, ctx, menu_root);
+        }
+    };
+
+    view! {
+        <div
+            data-slot="dropdown-menu-radio-item"
+            role="menuitemradio"
+            tabindex="-1"
+            data-roving-item=""
+            aria-checked={
+                let is_checked = is_checked.clone();
+                move || is_checked().to_string()
+            }
+            data-state=move || if is_checked() { "checked" } else { "unchecked" }
+            data-disabled=move || disabled.get().then_some("true")
+            aria-disabled=move || disabled.get().then_some("true")
+            data-inset=move || inset.get().then_some("")
+            on:click=handle_click
+            class=class
+        >
+            {children()}
+        </div>
+    }
+}
+
+/// A labelled-by-nothing cluster of items; `role="group"` is all it adds.
+#[component]
+pub fn DropdownMenuGroupRoot(
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <div data-slot="dropdown-menu-group" role="group" class=class>
             {children()}
         </div>
     }
@@ -337,6 +580,7 @@ pub fn DropdownMenuSubRoot(
 pub fn DropdownMenuSubTriggerRoot(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional, into)] inset: Signal<bool>,
     children: Children,
 ) -> impl IntoView {
     let ctx = use_dropdown();
@@ -352,6 +596,7 @@ pub fn DropdownMenuSubTriggerRoot(
             tabindex="-1"
             data-roving-item=""
             disabled=disabled
+            data-inset=move || inset.get().then_some("")
             node_ref=ctx.trigger_ref
             class=class
             data-state=move || if ctx.is_open.get() { "open" } else { "closed" }
@@ -368,7 +613,7 @@ pub fn DropdownMenuSubTriggerRoot(
             }
             on:click=move |e| {
                 e.stop_propagation();
-                ctx.toggle();
+                ctx.open();
             }
             on:pointerenter=move |_| {
                 hover.0.set(true);
@@ -393,19 +638,13 @@ pub fn DropdownMenuSubTriggerRoot(
 
 #[component]
 pub fn DropdownMenuSubContentRoot(
-    #[prop(optional)] side_offset: SideOffset,
+    #[prop(optional, into)] side_offset: Signal<SideOffset>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
     let ctx = use_dropdown();
     let floating_ref = ctx.content_ref;
     let hover = expect_context::<SubHoverState>();
-
-    let middleware: MiddlewareVec = vec![
-        Box::new(Offset::new(OffsetOptions::Value(side_offset.0))),
-        Box::new(Flip::new(FlipOptions::default())),
-        Box::new(Shift::new(ShiftOptions::default())),
-    ];
 
     let menu_ref = AnyNodeRef::new();
     let roving = use_roving_focus(menu_ref, Orientation::Vertical);
@@ -419,11 +658,7 @@ pub fn DropdownMenuSubContentRoot(
     } = use_floating(
         ctx.trigger_ref,
         floating_ref,
-        UseFloatingOptions::default()
-            .placement(Placement::RightStart)
-            .strategy(Strategy::Fixed)
-            .while_elements_mounted_auto_update()
-            .middleware(SendWrapper::new(middleware)),
+        floating_options(Signal::derive(|| Placement::RightStart), side_offset),
     );
 
     view! {
@@ -473,13 +708,10 @@ pub fn DropdownMenuSubContentRoot(
                     }
                 }
                 on:focusin=move |_| roving.on_focus_in()
+                on:pointermove=move |e| focus_item_under_pointer(&e, menu_ref)
                 data-state=move || if ctx.is_open.get() { "open" } else { "closed" }
-                data-side=move || match placement.get() {
-                    Placement::Top | Placement::TopStart | Placement::TopEnd => "top",
-                    Placement::Bottom | Placement::BottomStart | Placement::BottomEnd => "bottom",
-                    Placement::Left | Placement::LeftStart | Placement::LeftEnd => "left",
-                    Placement::Right | Placement::RightStart | Placement::RightEnd => "right",
-                }
+                data-align=move || placement_align(placement.get())
+                data-side=move || placement_side(placement.get())
                 class=class
             >
                 {children()}

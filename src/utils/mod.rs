@@ -1,6 +1,8 @@
 pub mod cn;
 pub mod color;
+pub mod controllable;
 pub mod date;
+pub mod form;
 pub mod gif;
 pub mod image;
 pub mod types;

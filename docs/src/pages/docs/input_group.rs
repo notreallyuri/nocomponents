@@ -108,7 +108,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "input_type",
-                ty: "InputType",
+                ty: "Signal<InputType>",
                 default: "Text",
                 description: "One of: Text, Email, Password, Number, File.",
             },
@@ -204,13 +204,13 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "variant",
-                ty: "ButtonVariant",
+                ty: "Signal<ButtonVariant>",
                 default: "ButtonVariant::Ghost",
                 description: "One of: Default, Outline, Ghost, Secondary, Link, Destructive.",
             },
             Prop {
                 name: "size",
-                ty: "ButtonSize",
+                ty: "Signal<ButtonSize>",
                 default: "ButtonSize::Xs",
                 description: "One of: Xs, Sm, Default, Lg, Icon, IconSm, IconXs, IconLg.",
             },
