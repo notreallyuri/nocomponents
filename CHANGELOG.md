@@ -1,0 +1,126 @@
+# Changelog
+
+The styled layer is installed, not depended on, so a release has two halves: the crate, which this
+file is about, and the files `cargo nocli` copied into your project, which are yours and which an
+upgrade does not touch. After bumping the dependency, run `cargo nocli components add <name>
+--force` for each component you have not edited, and diff the ones you have.
+
+## 0.2.0
+
+Every stateful root is now controlled *or* uncontrolled, plain values take signals, and controls
+reach a native `<form>`. Most of it is source-compatible, and the list below is what is not.
+
+### Breaking
+
+- **`Some(callback)` no longer compiles for an optional callback.** `on_click`, `on_select`,
+  `on_complete`, `on_rejected`, `on_blur`, `on_skip` and the rest are declared
+  `#[prop(optional, into)] x: Option<Callback<T>>`, so the setter takes the callback itself.
+  Migration: write `on_click=move |e| …`, or `on_click=Callback::new(…)`, and drop the `Some(…)`.
+  `render` and `as_child`, and the canvas, kanban-card and video-player callbacks whose presence
+  changes behaviour (`on_move`, `on_resize`, `on_surface_drag`, `on_skip`), still take the `Option`.
+- **A trigger's `render` / `as_child` is handed a `TriggerRender`, not a `Callback<MouseEvent>`.**
+  This is `DialogTrigger`, `SheetTrigger`, `AlertDialogTrigger` and `DialogTriggerRoot`. Migration:
+  take `|t: TriggerRender|` and attach `t.node_ref`, call `t.on_click` and honour `t.disabled`. The
+  struct is `nocomponents::utils::types::TriggerRender`, still re-exported from
+  `primitives::floating`.
+- **`NavigationMenuLink`'s `render` takes a `NavigationMenuLinkRender`**, a struct, instead of the
+  bare click callback.
+- **`Menubar`: `open` is now `value`.** It is `Option<RwSignal<Option<String>>>`, with
+  `default_value` and `on_value_change` beside it. Rename the prop.
+- **`Toggle`: `on_change` is now `on_pressed_change`.** `ToggleRoot` also resolves `disabled`
+  against a surrounding `Field`.
+- **Contexts hold signals where they held plain values.** `use_accordion()`, `use_calendar()`,
+  `use_carousel()`, `use_chart()`, `use_code()`, `use_color_picker()`, `use_command()`,
+  `use_image_cropper()`, `use_resizable_group()`, `use_sidebar()`, `use_slider()`, `use_tabs()`,
+  `use_timeline()` and `use_video_player()` fields such as `kind`, `collapsible`, `mode`,
+  `orientation`, `wrap`, `with_alpha`, `should_filter`, `aspect`, `circular`, `direction`, `side`,
+  `min`/`max`/`step`, `alternate` and `index` are `Signal<T>` (`MaybeProp<T>` for an optional one).
+  Migration: `.get()` them. `CodeContext::code` went from `StoredValue<String>` to `Signal<String>`,
+  and `FieldControl::id` from `Signal<String>` to `Signal<Option<String>>`, `None` meaning "write no
+  `id`".
+- **Props the caller would change at runtime are signals** — `side`, `align`, `side_offset`,
+  `variant`, `size`, `orientation`, `kind`, `delay`, `src`, `alt`, `code`, `label`, `columns`,
+  `empty`, `show_close` and the like. Passing a plain value or a closure still compiles; only a
+  caller that named the type, or that read the prop back, has to change. `KanbanSlot`'s `index` and
+  `Code`'s `label: Option<String>` (now an empty `Signal<String>` for "none") are the two that
+  change what you write.
+- **`checked`, `value` and `open` are `Option<RwSignal<_>>`.** `Checkbox`, `Switch`, `Tabs`,
+  `Select`, `Combobox`, `Command`, `NavigationMenu`, `Calendar` and `DatePicker` no longer require
+  the signal; `checked=sig` still works. `Tabs`' `default_value` is optional too.
+- **`SelectValue`'s `placeholder` is a `Signal<String>`**, not a `String`. Plain strings still
+  convert; only a caller that named the type changes.
+- **`Field` ids.** A control outside a field and given no `id` renders no `id` attribute rather than
+  `id=""`; a `FieldLabel` pointing at it needs one.
+
+### Added
+
+- **Controlled and uncontrolled everywhere.** Every stateful root takes `x`, `default_x` and
+  `on_x_change`, resolved by `utils::controllable::{controllable, forward}`. New where there was
+  nothing: `Popover`, `ContextMenu`, `Sheet`, `Dialog`, `AlertDialog`, `Drawer`, `Collapsible`,
+  `Accordion` (`default_value`, `on_value_change`), `Slider`, `ToggleGroup`, `Toggle` (`pressed`,
+  `default_pressed`), `Command`,
+  `Calendar` (`default_month`, `on_month_change`) and the rest of that shape.
+- **Native forms.** `Checkbox`, `Switch`, `RadioGroup`, `Select`, `Slider` and `Combobox` render
+  hidden inputs and take `name`, `value`, `required` and `form`; they reset with the form (`reset`
+  event) and are submitted by it. A range slider submits `name[]` once per thumb. `Toggle`,
+  `ToggleGroup` and `Slider` resolve `disabled` against a surrounding `Field`. The plumbing is
+  `utils::form`.
+- **`DropdownMenu`'s missing parts** — `DropdownMenuGroup`, `DropdownMenuShortcut`,
+  `DropdownMenuCheckboxItem`, `DropdownMenuRadioGroup`, `DropdownMenuRadioItem`, `inset` on items,
+  labels and sub-triggers, and `variant=Destructive` — and `class` on every part. `ContextMenu*`
+  re-exports them. Checkbox and radio items stay open (`close_on_select`).
+- **`modal`** on `Dialog` and `Sheet`; `aria-haspopup`, `aria-expanded` and `aria-controls` on
+  dialog triggers, and a `role` on the dialog panel.
+- **`Select`** takes `name`, `required`, `disabled`, `form` and `default_value`; the trigger shows
+  a chosen item's label even before the list has first opened.
+- **`docs/smoke/`**, a browser suite for the docs site (`node docs/smoke/run.mjs`). Not shipped.
+
+### Fixed
+
+- **Triggers go through their `*Root`.** `DialogTrigger`, `SheetTrigger`, `AlertDialogTrigger` and
+  `DrawerTrigger` went around it (the drawer's was a raw button), so `data-slot`, the ARIA and the
+  `Field` wiring were missing and the node ref was never set. A non-modal drawer closed on the
+  trigger's pointerdown and the click reopened it; `DrawerTrigger` also takes `disabled` now.
+- **Dialogs.** `AlertDialogAction` closes the dialog, and the panel is `role="alertdialog"`.
+- **`Select`.** The trigger shows the chosen item's label rather than its value, including a
+  `default_value` chosen before the list has ever opened. A `SelectItem` can be `disabled`.
+- **`DataTable`.** Selected rows highlight, and sortable headers keep `scope="col"` and
+  `data-sorted`. `TableRow` no longer writes `data-state=""` on an unselected row.
+- **`Toast`.** `data-[size=lg]:text-base` was written `data=[size=lg]`, so a large toast kept small
+  text. Toasts are announced: the regions are labelled, and each toast carries a role and live
+  region (`status` or `alert` by variant).
+- **`FieldLabel`'s `for` follows the control's own `id`**, so `<Input id="email">` inside a field is
+  no longer labelled by an id nothing carries.
+- **`Code`.** The copy button says "Copied" only once the clipboard write succeeded, and its reset
+  timer is cleared; `code` and `label` follow changes.
+- **`Dropzone`** with `multiple=false` keeps one file on a drop, not only in the picker.
+- **`Carousel`** reacts to writes to `index`, and ignores arrow keys in editable targets.
+- **`Progress`** no longer yields `NaN` at `max=0`, and takes a `label`.
+- **`Accordion`** no longer logs Leptos's untracked-read warning once per item.
+- **Menus.** Clicking a sub-trigger opens its submenu and a hover-opened one stays open; the
+  submenu writes `data-align`; the item under the pointer takes focus. `MenubarSubContent` mounts
+  through `FloatingPortal`, as the other floating layers do. `ContextMenu` content and `Popover`
+  content write their own `data-slot`.
+- **`Timeline`** orders events by document position, so inserting or removing one no longer breaks
+  the alternating sides.
+- **`Avatar`** returns to the fallback when `src` changes, and clears its delay timer on cleanup.
+- **`Button`** with `render` runs `on_click` and the disabled refusal.
+- **`Sidebar`**'s mobile branch merges the caller's `class` and carries the `id` the trigger's
+  `aria-controls` names.
+- **A control with no `id`** outside a `Field` no longer renders `id=""`; `InputOtp` takes `id`,
+  `label` and the field's `aria-describedby` and `aria-invalid`.
+- **Accessibility.**
+  - `Tabs`: triggers and panels have ids and point at each other with `aria-controls` and
+    `aria-labelledby`.
+  - `Calendar`: `aria-selected` sits on the cell, and there is always one tab stop, even when the
+    focused day is disabled.
+  - `Carousel`: a labelled region, and each slide is named "n of m".
+  - `Chart` takes a `label`; `Spinner` is `role="status"` and named (default "Loading"); `Canvas`
+    and `ColorPicker` buttons keep their visible text in their names.
+  - Video player: Mute, Fullscreen and Subtitles keep a fixed label and write
+    `aria-pressed="true"|"false"`.
+  - `PaginationEllipsis` and `BreadcrumbEllipsis` hide the `…`, not their `sr-only` text;
+    `BreadcrumbLink` omits an empty `href`, and the `<nav>` label can be set.
+  - `HoverCard`'s trigger describes rather than claiming a popup; `ScrollArea`'s viewport is
+    focusable; a `Dropzone` with a trigger button is no longer a button itself; `Kanban` drops the
+    deprecated `aria-grabbed`; `ItemGroup` no longer claims `role="list"` without list items.

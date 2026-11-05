@@ -1359,12 +1359,12 @@ are the menus that both float and rove, and each belongs to whichever batch it g
       declaring the oldest library its rewriting rules still produce valid source for — which
       wants a semver comparison and cannot fire until there are two releases to compare.
 
-- [ ] Neither crate is published yet, so the only working path is still `--from <checkout>`, which
-      is also how the CLI is tested. Everything else is ready: names are free on crates.io, both
-      `cargo package` verify, and `init` + `components add button dialog sidebar` was run against a
-      scratch crate outside this repo — 8 files installed, imports rewritten to `nocomponents::…`,
-      and the result compiles as a foreign crate. What is left is `cargo publish` for the library,
-      the `v0.1.0` tag, then `cargo publish` for the CLI, in that order.
+- [x] Both crates are on crates.io at 0.1.0; 0.2.0 is the first release to carry the catalogue as it is now,
+      and all 66 components install and compile as a foreign crate (`--from` a checkout, wasm32).
+- [ ] `DropdownMenuItemVariant` lives in `primitives::dropdown_menu` and the installed `dropdown_menu.rs`
+      does not re-export it, so a consumer writing `variant=DropdownMenuItemVariant::Destructive` has to
+      import it from `nocomponents::primitives` by hand. `ButtonVariant` and the other styled-layer enums
+      come with the file because they are declared in it.
 - [x] `nocomponents.lock` beside the config records a hash of each file as installed, so `add` now
       says *which* kind of file it left alone — "edited here" against "unchanged, --force refreshes
       it" — and `--force` names what of yours it overwrote. FNV-1a, not a cryptographic hash: the
