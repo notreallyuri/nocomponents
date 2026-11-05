@@ -5,6 +5,7 @@ use crate::{
             DropdownMenuContentRoot, DropdownMenuItemRoot, DropdownMenuPortalRoot,
             DropdownMenuSubContentRoot, DropdownMenuSubRoot, DropdownMenuSubTriggerRoot,
         },
+        floating::FloatingPortal,
         menubar::{MenubarMenuRoot, MenubarRoot, MenubarTriggerRoot, use_menubar},
     },
     utils::{
@@ -12,7 +13,7 @@ use crate::{
         types::{Align, Side, SideOffset},
     },
 };
-use leptos::{ev, portal::Portal, prelude::*};
+use leptos::{ev, prelude::*};
 
 #[component]
 pub fn Menubar(
@@ -193,7 +194,7 @@ pub fn MenubarSubContent(
     let children = StoredValue::new(children);
 
     view! {
-        <Portal>
+        <FloatingPortal>
             <Show when=move || ctx.is_mounted.get()>
                 <DropdownMenuSubContentRoot
                     side_offset=side_offset
@@ -207,6 +208,6 @@ pub fn MenubarSubContent(
                     {children.with_value(|children| children())}
                 </DropdownMenuSubContentRoot>
             </Show>
-        </Portal>
+        </FloatingPortal>
     }
 }

@@ -111,6 +111,12 @@ const API: &[ApiEntry] = &[
                 description: "Merged over the wrapper's classes.",
             },
             Prop {
+                name: "name",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The name the choice is submitted under, written on the hidden native `<select>`. Empty submits nothing.",
+            },
+            Prop {
                 name: "open",
                 ty: "Option<RwSignal<bool>>",
                 default: "None",
@@ -201,6 +207,18 @@ const API: &[ApiEntry] = &[
                 ty: "String",
                 default: "",
                 description: "What committing this option sets the value to.",
+            },
+            Prop {
+                name: "label",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "What `SelectValue` shows once this option is chosen. Empty means the option's own text. Labels are kept after the list unmounts, and a value chosen before the list has ever opened is resolved by building the content once off-screen.",
+            },
+            Prop {
+                name: "disabled",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Skipped by the arrow keys and typeahead, refuses a click, and is marked `data-disabled` and `aria-disabled`.",
             },
             Prop {
                 name: "class",

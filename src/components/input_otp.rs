@@ -13,6 +13,8 @@ pub fn InputOtp(
     #[prop(optional)] pattern: OtpPattern,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] id: Signal<String>,
+    #[prop(optional, into)] label: Signal<String>,
     #[prop(default = None, into)] value: Option<RwSignal<String>>,
     #[prop(optional, into)] default_value: String,
     #[prop(optional, into)] on_value_change: Option<Callback<String>>,
@@ -24,6 +26,8 @@ pub fn InputOtp(
             length=length
             pattern=pattern
             disabled=disabled
+            id=id
+            label=label
             value=value
             default_value=default_value
             on_value_change=forward(on_value_change)

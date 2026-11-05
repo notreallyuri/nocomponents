@@ -11,11 +11,13 @@ use nocomponents::components::{
     progress::Progress,
 };
 
-const DEFAULT: &str = r#"<Progress value=default_val class="w-full max-w-md" />"#;
+const DEFAULT: &str =
+    r#"<Progress value=default_val label="Upload progress" class="w-full max-w-md" />"#;
 
-const INDETERMINATE: &str = r#"<Progress value=none_val class="w-full max-w-md" />"#;
+const INDETERMINATE: &str =
+    r#"<Progress value=none_val label="Loading" class="w-full max-w-md" />"#;
 
-const CONTROLLED: &str = r#"<Progress value=progress />
+const CONTROLLED: &str = r#"<Progress value=progress label="Task progress" />
 <Button
     variant=ButtonVariant::Outline
     class="w-fit cursor-pointer"
@@ -48,6 +50,12 @@ const API: &[ApiEntry] = &[ApiEntry {
             description: "The value that counts as full.",
         },
         Prop {
+            name: "label",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "The accessible name, written as `aria-label` on the progressbar. Empty leaves it unnamed.",
+        },
+        Prop {
             name: "class",
             ty: "Signal<String>",
             default: "\"\"",
@@ -73,7 +81,7 @@ pub fn Page() -> impl IntoView {
                     description="value is read against max, which defaults to 100."
                     code=DEFAULT
                 >
-                    <Progress value=default_val class="w-full max-w-md" />
+                    <Progress value=default_val label="Upload progress" class="w-full max-w-md" />
                 </DemoSection>
 
                 <DemoSection
@@ -81,7 +89,7 @@ pub fn Page() -> impl IntoView {
                     description="When the exact progress is unknown, the track pulses."
                     code=INDETERMINATE
                 >
-                    <Progress value=none_val class="w-full max-w-md" />
+                    <Progress value=none_val label="Loading" class="w-full max-w-md" />
                 </DemoSection>
 
                 <DemoSection
@@ -90,7 +98,7 @@ pub fn Page() -> impl IntoView {
                     code=CONTROLLED
                 >
                     <div class="flex flex-col gap-4 w-full max-w-md">
-                        <Progress value=progress />
+                        <Progress value=progress label="Task progress" />
                         <Button
                             variant=ButtonVariant::Outline
                             class="w-fit cursor-pointer"

@@ -9,7 +9,7 @@
 //! that move it — collapsing selections instead would also kill select-all, and then pasting over
 //! a full field would do nothing.
 
-use crate::utils::controllable::controllable;
+use crate::{primitives::field::FieldControl, utils::controllable::controllable};
 use leptos::{context::Provider, ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
 use web_sys::HtmlInputElement;
@@ -84,6 +84,13 @@ pub fn InputOtpRoot(
     #[prop(optional)] pattern: OtpPattern,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
+    /// The id of the real `<input>`, which a `FieldLabel` points at. Inside a field one is minted.
+    #[prop(optional, into)]
+    id: Signal<String>,
+    /// The accessible name of the real `<input>`, written as `aria-label`. Empty leaves it to a
+    /// surrounding field's label.
+    #[prop(optional, into)]
+    label: Signal<String>,
     /// The code, held by the caller. Omit it and the root keeps its own.
     #[prop(default = None, into)]
     value: Option<RwSignal<String>>,
@@ -100,6 +107,8 @@ pub fn InputOtpRoot(
 ) -> impl IntoView {
     let value = controllable(value, default_value, on_value_change);
     let input_ref = AnyNodeRef::new();
+    let field = FieldControl::new(id, disabled);
+    let disabled = field.disabled;
 
     let context = InputOtpContext {
         value,
@@ -173,6 +182,10 @@ pub fn InputOtpRoot(
                 {children()}
                 <input
                     node_ref=input_ref
+                    id=move || field.id.get()
+                    aria-label=move || Some(label.get()).filter(|label| !label.is_empty())
+                    aria-describedby=move || field.described_by.get()
+                    aria-invalid=move || field.invalid.get().then_some("true")
                     // A real, focusable, pasteable input, merely invisible; the slots draw
                     // their own cursor.
                     style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; caret-color: transparent; background: transparent; border: 0; outline: none; padding: 0; cursor: default;"
@@ -181,7 +194,7 @@ pub fn InputOtpRoot(
                     spellcheck="false"
                     // No `maxlength`: it truncates the raw text, so "12-34-56" would be cut to
                     // "12-34-" and then filtered to four digits. The cap comes after filtering.
-                    disabled=disabled
+                    disabled=move || disabled.get()
                     prop:value=move || value.get()
                     on:input=handle_input
                     on:focus=move |_| {
@@ -235,5 +248,7 @@ pub fn InputOtpSlotRoot(
 
 #[component]
 pub fn InputOtpSeparatorRoot(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
-    view! { <div data-slot="input-otp-separator" role="separator" aria-hidden="true" class=class></div> }
+    view! {
+        <div data-slot="input-otp-separator" role="separator" aria-hidden="true" class=class></div>
+    }
 }

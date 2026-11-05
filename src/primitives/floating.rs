@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+pub use crate::utils::types::TriggerRender;
 use crate::{
     primitives::dismiss::{LayerBounds, use_dismissable_layer},
     utils::{controllable::controllable, next_id, types::TriggerRect},
@@ -158,23 +159,6 @@ pub enum TriggerAria {
     /// The content describes the trigger rather than being opened by it: `aria-describedby` while
     /// open, and no `aria-expanded`, which would be a lie.
     Describes,
-}
-
-/// What a trigger's `render` is handed.
-///
-/// A struct rather than a tuple because this is the one shape that has had to grow: it was
-/// `(AnyNodeRef, Callback<MouseEvent>)` until a combobox inside a disabled `Field` needed the
-/// resolved `disabled` as well. Every future addition is a new field, which no caller has to be
-/// rewritten for — destructuring a tuple breaks the moment the tuple gains an element.
-#[derive(Copy, Clone)]
-pub struct TriggerRender {
-    /// Must be attached to whatever is rendered, or the floating layer has nothing to measure
-    /// against and the ARIA has no node to be written onto.
-    pub node_ref: AnyNodeRef,
-    pub on_click: Callback<MouseEvent>,
-    /// The trigger's own `disabled`, already resolved against the `Field` it may sit in — which is
-    /// not the same as the `disabled` the caller passed.
-    pub disabled: Signal<bool>,
 }
 
 /// Whether focus currently sits inside this layer's content.

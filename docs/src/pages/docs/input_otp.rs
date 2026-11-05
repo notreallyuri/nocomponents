@@ -96,6 +96,18 @@ const API: &[ApiEntry] = &[
                 description: "Merged over the wrapper's classes.",
             },
             Prop {
+                name: "id",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The id of the real `<input>`, which a `FieldLabel` points at. Inside a `Field` one is minted for you.",
+            },
+            Prop {
+                name: "label",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The accessible name of the real `<input>`, written as `aria-label`. Needed outside a `Field`, where nothing else names it.",
+            },
+            Prop {
                 name: "value",
                 ty: "Option<RwSignal<String>>",
                 default: "None",

@@ -15,6 +15,9 @@ pub fn ProgressRoot(
     #[prop(optional, into)] value: Signal<Option<f64>>,
     #[prop(default = 100.0.into(), into)] max: Signal<f64>,
     #[prop(optional, into)] class: Signal<String>,
+    /// The accessible name, written as `aria-label`. Empty leaves the bar unnamed.
+    #[prop(optional, into)]
+    label: Signal<String>,
     children: Children,
 ) -> impl IntoView {
     provide_context(ProgressContext { value, max });
@@ -29,6 +32,7 @@ pub fn ProgressRoot(
         <div
             data-slot="progress"
             role="progressbar"
+            aria-label=move || Some(label.get()).filter(|label| !label.is_empty())
             aria-valuemin="0"
             aria-valuemax=move || max.get().to_string()
             aria-valuenow=move || value.get().map(|v| v.to_string())

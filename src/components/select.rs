@@ -3,7 +3,7 @@ use crate::{
     icons::{check::Check, chevron::ChevronDown},
     primitives::select::{
         SelectContentRoot, SelectItemRoot, SelectPortalRoot, SelectRoot, SelectTriggerRoot,
-        use_select,
+        use_select_label,
     },
     utils::controllable::forward,
 };
@@ -15,6 +15,7 @@ pub fn Select(
     #[prop(optional, into)] default_value: Option<String>,
     #[prop(optional, into)] on_value_change: Option<Callback<Option<String>>>,
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] name: Signal<String>,
     #[prop(default = None, into)] open: Option<RwSignal<bool>>,
     #[prop(optional)] default_open: bool,
     #[prop(optional, into)] on_open_change: Option<Callback<bool>>,
@@ -28,6 +29,7 @@ pub fn Select(
             default_open=default_open
             on_open_change=forward(on_open_change)
             value=value
+            name=name
             on_value_change=forward(on_value_change)
             class=move || cn!("relative w-full", class.get())
         >
@@ -54,13 +56,9 @@ pub fn SelectTrigger(
 
 #[component]
 pub fn SelectValue(#[prop(into)] placeholder: String) -> impl IntoView {
-    let ctx = use_select();
+    let label = use_select_label();
 
-    view! {
-        <span class="truncate">
-            {move || ctx.value.get().unwrap_or_else(|| placeholder.clone())}
-        </span>
-    }
+    view! { <span class="truncate">{move || label.get().unwrap_or_else(|| placeholder.clone())}</span> }
 }
 
 #[component]
@@ -89,12 +87,16 @@ pub fn SelectContent(
 #[component]
 pub fn SelectItem(
     #[prop(into)] value: String,
+    #[prop(optional, into)] label: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
     view! {
         <SelectItemRoot
             value=value
+            label=label
+            disabled=disabled
             class=move || {
                 cn!(
                     "group relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50",

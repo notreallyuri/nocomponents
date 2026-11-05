@@ -10,7 +10,8 @@
 use crate::{
     primitives::{
         dropdown_menu::{
-            MenuRoot, focus_element, handle_menu_keys, placement_align, placement_side,
+            MenuRoot, focus_element, focus_item_under_pointer, focus_menu_off_item,
+            handle_menu_keys, placement_align, placement_side,
         },
         floating::{FloatingContext, FloatingRoot},
         roving_focus::use_roving_focus,
@@ -207,6 +208,8 @@ pub fn ContextMenuContentRoot(
                     }
                 }
                 on:focusin=move |_| roving.on_focus_in()
+                on:pointermove=move |e| focus_item_under_pointer(&e, menu_ref)
+                on:pointerleave=move |_| focus_menu_off_item(menu_ref)
                 data-state=move || if ctx.is_open.get() { "open" } else { "closed" }
                 data-align=move || placement_align(placement.get())
                 data-side=move || placement_side(placement.get())

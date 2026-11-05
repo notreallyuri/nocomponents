@@ -5,7 +5,7 @@
 //! and the card keeps `pointer-events`, which a tooltip drops.
 
 use crate::{
-    primitives::floating::{FloatingContext, FloatingRoot, TriggerAria},
+    primitives::floating::{FloatingContext, FloatingPortal, FloatingRoot, TriggerAria},
     utils::{
         controllable::controllable,
         get_placement,
@@ -16,7 +16,7 @@ use floating_ui_leptos::{
     Flip, FlipOptions, MiddlewareVec, Offset, OffsetOptions, Placement, Shift, ShiftOptions,
     Strategy, UseFloatingOptions, UseFloatingReturn, use_floating,
 };
-use leptos::{context::Provider, either::Either, portal::Portal, prelude::*};
+use leptos::{context::Provider, either::Either, prelude::*};
 use send_wrapper::SendWrapper;
 use std::time::Duration;
 
@@ -150,9 +150,9 @@ pub fn HoverCardPortalRoot(children: ChildrenFn) -> impl IntoView {
     let stored_children = StoredValue::new(children);
 
     view! {
-        <Portal>
+        <FloatingPortal>
             <Show when=move || ctx.is_mounted.get()>{stored_children.with_value(|c| c())}</Show>
-        </Portal>
+        </FloatingPortal>
     }
 }
 

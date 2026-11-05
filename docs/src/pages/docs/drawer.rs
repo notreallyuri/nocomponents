@@ -195,6 +195,12 @@ const API: &[ApiEntry] = &[
                 description: "The trigger is unstyled: everything it looks like comes from here.",
             },
             Prop {
+                name: "disabled",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Stops the trigger opening the drawer, and resolves against any `Field` around it.",
+            },
+            Prop {
                 name: "children",
                 ty: "Children",
                 default: "",

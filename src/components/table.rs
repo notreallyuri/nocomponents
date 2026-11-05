@@ -65,7 +65,7 @@ pub fn TableRow(
     view! {
         <tr
             data-slot="table-row"
-            data-state=move || if selected.get() { "selected" } else { "" }
+            data-state=move || selected.get().then_some("selected")
             class=move || {
                 cn!(
                     "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",

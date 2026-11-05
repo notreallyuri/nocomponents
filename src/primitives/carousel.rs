@@ -112,11 +112,21 @@ impl CarouselContext {
 
     /// Scrolls slide `index` to the start of the track. The scroll itself is animated by CSS.
     pub fn scroll_to(&self, index: usize) {
-        let (Some(track), Some(m)) = (self.track_ref.get_untracked(), self.measure()) else {
+        if !self.scroll_track(index) {
             return;
+        }
+
+        // Set straight away rather than waiting for the scroll to report back, so a button
+        // disables itself on the press instead of a frame later.
+        self.index.set(index);
+    }
+
+    fn scroll_track(&self, index: usize) -> bool {
+        let (Some(track), Some(m)) = (self.track_ref.get_untracked(), self.measure()) else {
+            return false;
         };
         let Some(&offset) = m.offsets.get(index) else {
-            return;
+            return false;
         };
 
         match self.orientation {
@@ -124,9 +134,21 @@ impl CarouselContext {
             Orientation::Vertical => track.set_scroll_top(offset.round() as i32),
         }
 
-        // Set straight away rather than waiting for the scroll to report back, so a button
-        // disables itself on the press instead of a frame later.
-        self.index.set(index);
+        true
+    }
+
+    fn nearest(m: &Measurements) -> usize {
+        m.offsets
+            .iter()
+            .enumerate()
+            .min_by(|(_, a), (_, b)| {
+                (*a - m.scrolled)
+                    .abs()
+                    .partial_cmp(&(*b - m.scrolled).abs())
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
+            .map(|(i, _)| i)
+            .unwrap_or(0)
     }
 
     /// Reads the carousel's state back out of the track: which slide is current, and which is the
@@ -145,18 +167,7 @@ impl CarouselContext {
             return;
         }
 
-        let nearest = m
-            .offsets
-            .iter()
-            .enumerate()
-            .min_by(|(_, a), (_, b)| {
-                (*a - m.scrolled)
-                    .abs()
-                    .partial_cmp(&(*b - m.scrolled).abs())
-                    .unwrap_or(std::cmp::Ordering::Equal)
-            })
-            .map(|(i, _)| i)
-            .unwrap_or(0);
+        let nearest = Self::nearest(&m);
 
         // Loosely, because the last reachable slide lands *on* the extent and sub-pixel layout
         // puts it a fraction past about half the time.
@@ -231,6 +242,17 @@ pub fn use_carousel() -> CarouselContext {
     expect_context::<CarouselContext>()
 }
 
+/// Whether a key event's target is somewhere the arrows already mean something: a text field, a
+/// select, or anything contenteditable.
+fn is_editable(target: &web_sys::EventTarget) -> bool {
+    let Some(element) = target.dyn_ref::<HtmlElement>() else {
+        return false;
+    };
+
+    element.is_content_editable()
+        || matches!(element.tag_name().as_str(), "INPUT" | "TEXTAREA" | "SELECT")
+}
+
 #[component]
 pub fn CarouselRoot(
     #[prop(default = Orientation::Horizontal)] orientation: Orientation,
@@ -254,6 +276,21 @@ pub fn CarouselRoot(
 
     provide_context(ctx);
 
+    // A write to `index` from outside is a request to go there. The track reports its own moves
+    // back through `sync`, which writes the slide nearest the start; when `index` already names
+    // that slide there is nothing to scroll, so the two directions settle instead of chasing each
+    // other. The scroll goes straight to the track rather than through `scroll_to`, which would
+    // write `index` again and re-run this.
+    Effect::new(move |_| {
+        let index = ctx.index.get();
+        if let Some(m) = ctx.measure()
+            && !m.offsets.is_empty()
+            && CarouselContext::nearest(&m) != index
+        {
+            ctx.scroll_track(index);
+        }
+    });
+
     view! {
         <Provider value=ctx>
             <section
@@ -263,6 +300,9 @@ pub fn CarouselRoot(
                 // The arrows work from anywhere in the carousel, which is what makes it operable
                 // without reaching for the two buttons.
                 on:keydown=move |e: ev::KeyboardEvent| {
+                    if e.target().is_some_and(|target| is_editable(&target)) {
+                        return;
+                    }
                     let horizontal = orientation == Orientation::Horizontal;
                     match (e.key().as_str(), horizontal) {
                         ("ArrowLeft", true) | ("ArrowUp", false) => {

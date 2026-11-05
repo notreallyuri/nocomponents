@@ -134,7 +134,7 @@ pub fn AccordionItemRoot(
     let ctx = use_accordion();
 
     let item = value.clone();
-    let is_open = RwSignal::new(ctx.is_open(&item));
+    let is_open = RwSignal::new(ctx.value.with_untracked(|open| open.contains(&item)));
     let is_disabled = Signal::derive(move || disabled.get() || ctx.disabled.get());
 
     // One direction only: the group owns the selection and the item mirrors it. The trigger

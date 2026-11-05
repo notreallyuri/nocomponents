@@ -101,6 +101,48 @@ pub(crate) fn focus_element(node_ref: AnyNodeRef) {
     }
 }
 
+/// Moves focus to the item under the pointer, so hovering and the arrow keys are one highlight
+/// rather than two: without it, hovering "Right" and pressing Enter activates whatever the keys
+/// last reached. A disabled item is not focused, and neither is the gap between items.
+pub(crate) fn focus_item_under_pointer(e: &ev::PointerEvent, menu_ref: AnyNodeRef) {
+    let Some(menu) = menu_ref.get_untracked() else {
+        return;
+    };
+    let Some(target) = e
+        .target()
+        .and_then(|target| target.dyn_into::<web_sys::Element>().ok())
+    else {
+        return;
+    };
+    let Ok(Some(item)) = target.closest("[data-roving-item]") else {
+        return;
+    };
+    if !menu.contains(Some(&item))
+        || item.has_attribute("disabled")
+        || item.has_attribute("data-disabled")
+        || item.get_attribute("aria-disabled").as_deref() == Some("true")
+    {
+        return;
+    }
+    if document().active_element().as_ref() == Some(&item) {
+        return;
+    }
+    if let Ok(item) = item.dyn_into::<HtmlElement>() {
+        let _ = item.focus();
+    }
+}
+
+/// When the pointer leaves the surface while an item holds focus, hands focus back to the surface
+/// itself: the highlight the pointer was driving goes out with it.
+pub(crate) fn focus_menu_off_item(menu_ref: AnyNodeRef) {
+    let on_item = document()
+        .active_element()
+        .is_some_and(|active| active.has_attribute("data-roving-item"));
+    if on_item {
+        focus_element(menu_ref);
+    }
+}
+
 /// Focuses the first item of a menu surface, used when stepping into a submenu.
 fn focus_first_item(content_ref: AnyNodeRef) {
     if let Some(content) = content_ref.get_untracked()
@@ -276,6 +318,8 @@ pub fn DropdownMenuContentRoot(
                     }
                 }
                 on:focusin=move |_| roving.on_focus_in()
+                on:pointermove=move |e| focus_item_under_pointer(&e, menu_ref)
+                on:pointerleave=move |_| focus_menu_off_item(menu_ref)
                 data-state=move || if ctx.is_open.get() { "open" } else { "closed" }
                 data-align=move || placement_align(placement.get())
                 data-side=move || placement_side(placement.get())
@@ -689,6 +733,7 @@ pub fn DropdownMenuSubContentRoot(
                     }
                 }
                 on:focusin=move |_| roving.on_focus_in()
+                on:pointermove=move |e| focus_item_under_pointer(&e, menu_ref)
                 data-state=move || if ctx.is_open.get() { "open" } else { "closed" }
                 data-align=move || placement_align(placement.get())
                 data-side=move || placement_side(placement.get())

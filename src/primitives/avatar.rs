@@ -61,8 +61,23 @@ pub fn AvatarFallbackRoot(
     let show = RwSignal::new(delay_ms.is_none());
 
     if let Some(delay) = delay_ms {
+        let pending = StoredValue::new(None::<TimeoutHandle>);
+
         Effect::new(move |_| {
-            set_timeout(move || show.set(true), Duration::from_millis(delay));
+            if let Some(handle) = pending.try_update_value(|handle| handle.take()).flatten() {
+                handle.clear();
+            }
+            if let Ok(handle) =
+                set_timeout_with_handle(move || show.set(true), Duration::from_millis(delay))
+            {
+                pending.set_value(Some(handle));
+            }
+        });
+
+        on_cleanup(move || {
+            if let Some(handle) = pending.try_update_value(|handle| handle.take()).flatten() {
+                handle.clear();
+            }
         });
     }
 

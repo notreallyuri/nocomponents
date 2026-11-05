@@ -2,7 +2,7 @@ use crate::{
     cn,
     icons::x::X,
     primitives::{
-        dialog::{DialogPortalRoot, use_dialog},
+        dialog::{DialogPortalRoot, DialogTriggerRoot, use_dialog},
         drawer::{DrawerContentRoot, DrawerHandleRoot, DrawerRoot, use_drawer},
     },
     utils::{
@@ -131,13 +131,12 @@ pub fn DrawerHandle(#[prop(optional, into)] class: Signal<String>) -> impl IntoV
 #[component]
 pub fn DrawerTrigger(
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
     children: Children,
 ) -> impl IntoView {
-    let ctx = use_dialog();
-
     view! {
-        <button type="button" on:click=move |_| ctx.toggle() class=class>
+        <DialogTriggerRoot class=class disabled=disabled>
             {children()}
-        </button>
+        </DialogTriggerRoot>
     }
 }

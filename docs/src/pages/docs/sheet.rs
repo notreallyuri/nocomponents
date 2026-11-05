@@ -125,9 +125,9 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "render",
-                ty: "Option<Callback<Callback<ev::MouseEvent>, AnyView>>",
+                ty: "Option<Callback<TriggerRender, AnyView>>",
                 default: "None",
-                description: "Render the trigger as something else. Handed the click handler, which must reach the element.",
+                description: "Render the trigger as something else. Handed the node ref to attach, the click to run and the resolved `disabled`; the dialog writes its ARIA onto that node.",
             },
             Prop {
                 name: "children",
@@ -152,6 +152,12 @@ const API: &[ApiEntry] = &[
                 ty: "Signal<String>",
                 default: "\"\"",
                 description: "Merged over the panel's classes.",
+            },
+            Prop {
+                name: "id",
+                ty: "Option<String>",
+                default: "None",
+                description: "The id the panel wears, which the trigger's `aria-controls` names. A dialog mints its own; `Sidebar` passes the one its trigger already points at.",
             },
             Prop {
                 name: "children",

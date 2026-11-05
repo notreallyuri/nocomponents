@@ -933,9 +933,9 @@ the install story the whole styled layer is designed around does not work outsid
       cannot be thinned by blanking labels without leaving the tooltip with nothing to say. The
       caller's way out is fewer, wider buckets (the chart block does exactly that). A `labels` /
       `tick_labels` split, or drawing every nth, would make the chart's own answer possible.
-- [ ] `data_table` has no pagination of its own; it shows what it is handed. `Pagination` is
-      shipped and the two compose — the data-table block demonstrates it, sorting the whole set
-      before slicing a page out of it.
+- [ ] `data_table` has no pagination of its own; it shows what it is handed. `Pagination` is shipped
+      and the two compose — the data-table block demonstrates it, sorting the whole set before
+      slicing a page out of it.
 - [ ] `utils::gif` re-emits every frame at its clipped size rather than diffing consecutive frames
       for a minimal changed rectangle, so a cropped GIF is a little larger than it needs to be. The
       sample goes 17.5kB → 7.3kB on a crop to a third of the area, which is fine but not optimal.
@@ -999,8 +999,8 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
 - [ ] **Nothing here submits with a form.** `Checkbox`, `RadioGroupItem` and `Switch` are
       `<button role=…>` with no hidden `<input>`, so a native `<form>` sees nothing, and none of
       them takes `name`, `value` or `required`. `Select` has a hidden `<select>`
-      (`primitives/select.rs:45`) but it has no `name` either, and its only `<option>` is the
-      current value. `Slider`, `InputOtp` (its real `<input>`, `primitives/input_otp.rs:173`),
+      (`primitives/select.rs`) that takes a `name` now, but its only `<option>` is the current
+      value. `Slider`, `InputOtp` (its real `<input>`, `primitives/input_otp.rs`),
       `Textarea`, `NativeSelect`, `Input` and `Combobox` take no `name`/`required` too. The
       project's stance is that forms are `noform`'s, but `noform` reads signals and a plain
       `<form method=post>` or a `FormData` reader gets an empty set; a hidden input driven from
@@ -1009,27 +1009,8 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       own.** A `<Field disabled>` disables `Button`, `Checkbox`, `Switch`, `Input`, `Textarea`,
       `NativeSelect`, `Select`, `Combobox` and `RadioGroupItem`, but `ToggleRoot`
       (`primitives/toggle.rs:30`) and `ToggleGroupItemRoot` (`primitives/toggle_group.rs:111`)
-      read only their own `disabled`, and `Slider` and `InputOtp` have no `Field` wiring at all —
-      no `FieldControl`, so no `id` for the label, no `aria-invalid` and no `aria-describedby`.
-- [ ] **Bare `leptos::portal::Portal` where `FloatingPortal` belongs.** `PopoverPortalRoot`
-      (`primitives/popover.rs:65`), `HoverCardPortalRoot` (:142), `TooltipPortalRoot`
-      (`primitives/tooltip.rs:147`), `SelectPortalRoot` (`primitives/select.rs:84`),
-      `ComboboxPortalRoot` (`primitives/combobox.rs:104`) and the styled `MenubarSubContent`
-      (`components/menubar.rs:188`) all mount into `document.body`, so each vanishes the moment
-      anything goes fullscreen — the exact bug `DropdownMenuSubContent` had and `FloatingPortal`
-      fixed, in the closed item above. One-word change per file.
-- [ ] **Three styled triggers go around their `*Root`, and a fourth wrote it by hand.**
-      `DialogTrigger` (`components/dialog.rs:18`), `AlertDialogTrigger` (`:20`) and `SheetTrigger`
-      (`:40`) render a `Button` and run `ctx.toggle()` themselves instead of rendering
-      `DialogTriggerRoot`; `DrawerTrigger` (`components/drawer.rs:122`) is a raw `<button>`. That
-      is the pattern `CLAUDE.md` forbids, and it costs what it says: `trigger_ref` is never set
-      (the dialog's `LayerBounds`, `primitives/dialog.rs:120`, and the dismiss stack that counts
-      the trigger as inside, `primitives/dismiss.rs:40`, both read it), so a non-modal drawer
-      closes on the trigger's pointerdown and the click reopens it. `DialogTriggerRoot` itself
-      (`primitives/dialog.rs:155`) sets no `aria-haspopup="dialog"`, `aria-expanded` or
-      `aria-controls` even when it is used, and its `as_child` is handed the click and not the
-      node ref. Fix the root first — give it a `TriggerRender` like the floating triggers have —
-      then make all four render it.
+      read only their own `disabled`, and `Slider` has no `Field` wiring at all — no
+      `FieldControl`, so no `id` for the label, no `aria-invalid` and no `aria-describedby`.
 - [ ] **`aria-pressed` on a button whose label flips.** `VideoPlayerMuteRoot`
       (`primitives/video_player.rs:1104`), `VideoPlayerFullscreenRoot` (:1293) and the styled
       `VideoPlayerCaptionsButton` (`components/video_player.rs:632`) write `aria-pressed` only
@@ -1085,23 +1066,13 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
 - [ ] `accordion`: `AccordionContent` gives the root a fixed class and puts the caller's `class` on
       the inner padding div (`components/accordion.rs:72-79`), so the animated panel itself
       cannot be styled — `class` should land on the element that carries `data-state`, with the
-      padding div a fixed inner. Every item also reads the open sections outside a tracking context
-      — `AccordionItemRoot` seeds its state with `ctx.is_open(&item)` in the component body
-      (`primitives/accordion.rs:131`), which logs Leptos's untracked-read warning once per item on
-      every page with an accordion. It wants `with_untracked`, or the seed derived in a closure.
-- [ ] `alert_dialog`: **`AlertDialogAction` runs `on_click` and never closes the dialog**
-      (`components/alert_dialog.rs:136-145`), where shadcn's closes it; every confirm button needs
-      its own `ctx.close()`, and one that forgets leaves the dialog open over a finished action.
-      The content is built on `DialogContentRoot`, so it carries `role="dialog"` where an alert
-      dialog is `role="alertdialog"` (`primitives/dialog.rs:298` hardcodes it). No
-      `AlertDialogOverlay`/`AlertDialogContent` split — the portal's `class` styles the panel,
-      the overlay is fixed — and no `modal`, which `DialogRoot` has and the styled wrapper hides.
+      padding div a fixed inner.
+- [ ] `alert_dialog`: no `AlertDialogOverlay`/`AlertDialogContent` split — the portal's `class`
+      styles the panel, the overlay is fixed — and no `modal`, which `DialogRoot` has and the styled
+      wrapper hides.
 - [ ] `avatar`: `AvatarImage` takes `src` and `alt` as plain `String`s
       (`components/avatar.rs:50`, `primitives/avatar.rs:31`), so a changed URL never reaches the
-      `<img>` — an account switcher keeps the first user's face. And the fallback delay is an
-      uncancelled `set_timeout` writing `show` (`primitives/avatar.rs:65`): a fallback that
-      unmounts inside its delay writes to a disposed signal, which is the same bug the delayed
-      unmount in the closed list above was.
+      `<img>` — an account switcher keeps the first user's face.
 - [ ] `badge`: a hardcoded `<div>` with no `render`, so a badge cannot be a link
       (`components/badge.rs:35`), while the variants write `[a&]:hover:…` modifiers
       (:18-29) that can only match when the badge *is* an `<a>` — on a `<div>` they are dead
@@ -1111,12 +1082,7 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       current page rather than no link. The `aria-label="breadcrumb"` on the `<nav>` (:10) is
       lowercase and not overridable; a page with two breadcrumbs, or one in another language,
       cannot change it.
-- [ ] `button`: with `render`, `ButtonRoot` never attaches `on_click` and never runs the
-      disabled-click refusal (`primitives/button.rs:97`, the handler is built at :86-95 and used
-      only in the `None` arm), so a `Button` given both `render` and `on_click` drops the click
-      without saying so; `StyledRender` carries no handler, so the caller has to know. Either put
-      the handler on the node from the same effect that writes `data-slot`, or say in the prop's
-      doc that `render` owns the click. No `id`, `name`, `value` or `aria-label` passthrough
+- [ ] `button`: no `id`, `name`, `value` or `aria-label` passthrough
       (`components/button.rs:85`), so a submit button's `name` cannot be set.
 - [ ] `calendar`: no `number_of_months` (`components/calendar.rs:13`).
       `aria-selected` sits on the `<button>` inside a `role="gridcell"` `<td>`
@@ -1130,25 +1096,16 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       voice-control user saying "100%" gets nothing. `aria-label="Reset zoom (100%)"` or
       `title`, and drop the label. `StickyColor` and `ShapeKind` are plain values like the rest of
       the enums; see the cross-cutting item.
-- [ ] `carousel`: **`index` is documented as the way to jump, and nothing reacts to a write**
-      (`primitives/carousel.rs:29`). The only effect tracks `count` (:304); `scroll_to` runs from
-      Prev and Next alone, so `index.set(3)` changes the signal and not the track. The root's
-      `section` has `aria-roledescription="carousel"` with no `role="region"` and no label (:262),
-      so the description attaches to nothing a screen reader will announce. And the arrow keys are
-      handled on the whole `<section>` (:265) with no check on the target: ArrowLeft in an `<input>`
-      inside a slide moves the slides.
+- [ ] `carousel`: the root's `section` has `aria-roledescription="carousel"` with no `role="region"`
+      and no label (:262), so the description attaches to nothing a screen reader will announce.
 - [ ] `chart`: the plot is `role="img"` with no accessible name (`primitives/chart.rs:313`), so a
       screen reader announces "image" and nothing about it. A `label` prop on `Chart`, written
       as `aria-label`.
 - [ ] `checkbox`: no `indeterminate` and no `aria-checked="mixed"` (`primitives/checkbox.rs:25`),
       which `DataTable`'s select-all needs and fakes with a wrapper `span` at the moment.
-- [ ] `code`: **the copy button shows "Copied" whether or not the write succeeded**
-      (`primitives/code.rs:16`: the clipboard promise is dropped), so on an insecure origin or a
-      denied permission the reader is told something that did not happen. And every copy starts a
-      new reset `set_timeout` without cancelling the last (:21): copy twice in a second and the
-      first timer clears "Copied" early. `CodeBlock`'s `code` is a `String` frozen into a
-      `StoredValue` and read through `get_value` (:42, :65), so a block whose source changes
-      does not re-render; `label` and `has_header` (`components/code.rs:31,36`) are read once.
+- [ ] `code`: `CodeBlock`'s `code` is a `String` frozen into a `StoredValue` and read through
+      `get_value` (:42, :65), so a block whose source changes does not re-render; `label` and
+      `has_header` (`components/code.rs:31,36`) are read once.
 - [ ] `color_picker`: `ColorPickerRoot` copies `format` into its own `RwSignal`
       (`primitives/color_picker.rs:291`), so changing the prop later changes nothing; `presets` is
       a `Vec<&'static str>` whose `is_empty()` is evaluated once (:162), so presets that arrive
@@ -1172,17 +1129,10 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       `data-slot="dropdown-menu-item"` (`primitives/dropdown_menu.rs:310`) inside a context menu —
       so a stylesheet keyed on slot cannot tell the two apart. `Group`, `Shortcut`, `CheckboxItem`,
       `RadioGroup` and `RadioItem` are now re-exported under `ContextMenu*` names.
-- [ ] `data_table`: **a selected row is never highlighted.** The row is given
-      `attr:data-selected` (`components/data_table.rs:229`) but `TableRow` styles
-      `data-[state=selected]`, which it writes from its own `selected` prop, which `DataTable`
-      never passes — so the selection state exists, the checkbox shows it, and the row does not.
-      Pass `selected=picked`. The sortable header re-implements `TableSortHeaderRoot`
-      (`:160-190`) by hand and drops what the primitive writes: `data-sorted` and the primitive's
-      own `scope="col"`; the styled layer has no wrapper for it either (`primitives/table.rs:187`),
-      so the two can drift. The select-all cannot be mixed until `Checkbox` has `indeterminate`.
-      `columns` is moved into a `StoredValue` once (:57), so a column list that changes
-      (a user hiding a column) is not seen; and `empty` is `&'static str` (:50), so "No results"
-      cannot be a translated or computed string, never mind a node.
+- [ ] `data_table`: the select-all cannot be mixed until `Checkbox` has `indeterminate`. `columns`
+      is moved into a `StoredValue` once (:57), so a column list that changes (a user hiding a
+      column) is not seen; and `empty` is `&'static str` (:50), so "No results" cannot be a
+      translated or computed string, never mind a node.
 - [ ] `date_picker`: no way to disable the picker — its `disabled` is a per-date
       `Callback<Date, bool>` (`components/date_picker.rs:21`), the same name meaning two things next
       to every other component's `Signal<bool>` — and no `id` for a `Field` label to point at.
@@ -1191,35 +1141,17 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       (:76-87), gated by `show_close` read once, so a footer "Cancel" has to call `ctx.close()` by
       hand. No `DialogOverlay`/`DialogContent` split either — the portal's `class` styles the
       panel and the overlay is fixed (and unconditional, `components/dialog.rs:63-67`, so exposing
-      `modal` means gating it the way `DrawerContent` does). The content's `role` is hardcoded `"dialog"`
-      (`primitives/dialog.rs:298`), which is what `alert_dialog` inherits wrongly.
+      `modal` means gating it the way `DrawerContent` does).
 - [ ] `drawer`: no `DrawerPortal` or `DrawerOverlay` — the overlay is built inside `DrawerContent` and only when `modal`
-      (:66-75), so a non-default overlay means rewriting the content. `DrawerTrigger` takes no
-      `disabled` (:122), on top of the trigger bypass above.
+      (:66-75), so a non-default overlay means rewriting the content.
 - [x] `dropdown_menu`: `class` on every part (noaweb's patch), sub-trigger click opens, `data-align`
       and `disabled` on the submenu, the five missing shadcn parts, `inset` and `data-variant`;
       checkbox and radio items stay open (`close_on_select`).
-- [ ] `dropdown_menu`: the pointer and the keyboard keep two different highlights. Hovering an
-      item paints it (`hover:bg-accent`) but leaves focus where it was, so hovering "Right" and
-      pressing Enter activates whatever the arrows last reached. Radix focuses the item under the
-      pointer on `pointermove`, which makes the two one highlight; every menu built on these
-      parts — context menu, menubar — inherits the fix.
-- [ ] `dropzone`: `multiple=false` sets only the `<input>`'s attribute
-      (`primitives/dropzone.rs:198`); a drop delivers every file regardless, so the setting is
-      honoured by the picker and ignored by the thing people actually do. No `max_size` or
-      maximum count either (`components/dropzone.rs:10`). `DropzoneTrigger` is a `<button>`
-      (:72) inside the zone that is itself `role="button"` (`primitives/dropzone.rs:139`):
-      interactive content nested in a button, which assistive tech does not handle well and
-      which is why the trigger has to `stop_propagation`.
-- [ ] `field`: **`FieldLabelRoot` always writes `for=ctx.control_id`**
-      (`primitives/field.rs:418`), but `FieldControl::new` lets the control's own `id` win
-      (:80-88), so `<Field><FieldLabel/><Input id="email"/></Field>` has a label pointing at an id
-      nothing carries — and clicking it focuses nothing. The label has to follow whichever id the
-      control adopted. No `FieldContent`, `FieldTitle` or `FieldSeparator`
-      (`components/field.rs:12`).
-- [ ] `field`: a control with no `id` outside a `Field` renders `id=""` — `FieldControl::new`
-      resolves an absent id to the empty string and the controls write it unconditionally (seen
-      on the switch page). An empty `id` is invalid HTML; it should be omitted when there is none.
+- [ ] `dropzone`: no `max_size` or maximum count either (`components/dropzone.rs:10`).
+      `DropzoneTrigger` is a `<button>` (:72) inside the zone that is itself `role="button"`
+      (`primitives/dropzone.rs:139`): interactive content nested in a button, which assistive tech
+      does not handle well and which is why the trigger has to `stop_propagation`.
+- [ ] `field`: no `FieldContent`, `FieldTitle` or `FieldSeparator` (`components/field.rs:12`).
 - [ ] `floating_menu`: the styled layer does not expose the primitive's `style`
       (`primitives/floating_menu.rs:86`, `components/floating_menu.rs:11`). `FloatingMenuItem`
       builds its own `<button>`, the `data-compact` rule and the compact-to-tooltip switch
@@ -1247,10 +1179,6 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       (`components/input_group.rs:116`), and `InputGroupInput` and `InputGroupTextarea` forward only
       the subset of `Input`'s and `Textarea`'s props they list (:49), so whatever `Input` gains
       does not reach them until someone remembers.
-- [ ] `input_otp`: **the real `<input>` has no accessible name**
-      (`primitives/input_otp.rs:167-185`): no `id`, no `aria-label`, no `FieldControl` — and the
-      slots that draw the digits are `aria-hidden`. A screen reader finds an unlabelled text box.
-      No `name` or `id` on the styled `InputOtp` (`components/input_otp.rs:10`).
 - [ ] `item`: a hardcoded `<div>` with no `render`, whose classes assume it may be an `<a>`
       (`[a]:hover:bg-accent/50`, `components/item.rs:88`) — an `Item` that links has to wrap itself.
       `ItemGroup` is `role="list"` (:64) and `Item` has no `role="listitem"`, so the list has no
@@ -1288,10 +1216,6 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       (`primitives/popover.rs:123`) — the styled layer's inner div is the one called
       `popover-content` (`components/popover.rs:77`), so a slot-keyed selector for the content
       matches the inner wrapper and the real `role="dialog"` is called a portal.
-- [ ] `progress`: the `progressbar` has no accessible name (`primitives/progress.rs:31`), so it is
-      announced as "progress bar, 40%" with no subject; a `label` prop for `aria-label`. A `max`
-      of zero with a value of zero is `0/0`, `NaN`, and a `translateX(-NaN%)`
-      (`components/progress.rs:34`).
 - [ ] `resizable`: no `collapsible` or `collapsed_size` (`components/resizable.rs:32`), the
       panel's `min_size`/`max_size` are read once at registration (`primitives/resizable.rs:199`),
       so a panel that should be wider on a larger viewport cannot say so.
@@ -1300,13 +1224,7 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       `orientation`, so a horizontal-only area has an inert vertical track. The viewport has no
       `tabindex` (`primitives/scroll_area.rs:178`), and with its native bars removed a keyboard
       user cannot scroll content that has nothing focusable in it.
-- [ ] `select`: **the trigger shows the option's value, not its label.** `SelectValue` renders
-      `ctx.value` as it stands (`components/select.rs:41-46`) — `apple` for an item reading
-      "Apple" — because `SelectItemRoot` registers nothing about its text; `Combobox` has a
-      `display_value` signal for this, `Select` has no equivalent, and the placeholder is a plain
-      `String` read once. **`SelectItemRoot` takes no `disabled`** (`primitives/select.rs:200`), so
-      the `data-disabled:` classes `SelectItem` writes (`components/select.rs:85`) can never
-      apply and an option cannot be disabled. The styled `SelectContent` wraps its children in a
+- [ ] `select`: the placeholder is a plain `String` read once. The styled `SelectContent` wraps its children in a
       hardcoded `max-h-96 overflow-y-auto` div (:69) while the caller's `class` goes on the outer
       listbox (`primitives/select.rs:150-200`), so `class="max-h-48"` clips the list rather than
       scrolling it. No `disabled` or `size` on `SelectTrigger` (:25) though the root takes
@@ -1316,11 +1234,7 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       and has no `modal` (:35); the close button is hardcoded
       like the dialog's (:98-103), and is why the sidebar's mobile branch has to hide it with
       `[&>button]:hidden`.
-- [ ] `sidebar`: **the mobile branch drops the caller's `class`** (`components/sidebar.rs:142-158`
-      builds a `Sheet` with a fixed class; the merge happens only in the desktop `SidebarRoot`,
-      :161-166). And the mobile branch never renders `SidebarRoot`, which is the only element
-      carrying `id=content_id` (`primitives/sidebar.rs:220`), so `SidebarTriggerRoot`'s
-      `aria-controls` (:250) points at nothing on mobile. `variant` is captured once and `gap_class`
+- [ ] `sidebar`: `variant` is captured once and `gap_class`
       and `fixed_class` (:122-132) never update; `side` and `collapsible` are copied once into
       `SidebarContext` on the provider.
 - [ ] `slider`: `min`, `max` and `step` are plain `f64` and are copied into `SliderContext` at
@@ -1332,30 +1246,18 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
 - [ ] `spinner`: no `role="status"` and no accessible name (`components/spinner.rs:37-56`), so a
       spinner announces nothing — and it is the thing most often swapped in for content that has
       not arrived. `role="status"` with an `aria-label` that defaults to "Loading".
-- [ ] `table`: **`TableRow` writes `data-state=""` when unselected** (`components/table.rs:68`)
-      rather than omitting the attribute, so `[data-state]` is true on every row and a selector
-      for "has a state" matches them all; `then_some("selected")` is the shape the rest of the
-      library uses.
 - [ ] `tabs`: the tab buttons carry no `id` and no `aria-controls` (`primitives/tabs.rs:112-124`)
       and the tabpanel carries no `id` and no `aria-labelledby` (:138-146), so a screen reader
       cannot walk from a tab to its panel. They need ids minted per value, the way
       `FloatingRoot` mints its trigger and content ids.
 - [ ] `textarea`: no `placeholder`, `name`, `rows`, `required`, `readonly` or `on_input`
       (`components/textarea.rs:6`) — the same hole as `input`, and the same `attr:` workaround.
-- [ ] `timeline`: **an item's index and alternating side are fixed at mount**
-      (`primitives/timeline.rs:152-165`): the count is decremented when an item unmounts, but the
-      items that remain keep the index they took, so removing the first of three leaves two items
-      at indices 1 and 2 under a count of 2 — both pass `index + 1 >= count` and both believe they
-      are the last, which hides both connectors. Inserting into the middle of a keyed list is the
-      same defect in the other direction: parity does not move, and two neighbours land on the
-      same side. `orientation`, `alternate` and `side` are copied into the context once
+- [ ] `timeline`: `orientation`, `alternate` and `side` are copied into the context once
       (`components/timeline.rs:12`).
-- [ ] `toast`: **`data=[size=lg]:text-base` is a typo** (`components/toast.rs:287`) — an `=` where
-      the variant needs `-`, so the class matches nothing and a large toast keeps small text. The
-      regions are plain `div`s (:48-88) with no `role="status"` or `aria-live`, and `ToastRoot`
-      (`primitives/toast.rs:325`) has no role either, so a toast appears and is never announced —
-      the whole point of one. `duration` is hardcoded `5000.0` in the provider's defaults
-      (`primitives/toast.rs:223`) with no `default_duration`, and there are no
+- [ ] `toast`: the regions are plain `div`s (:48-88) with no `role="status"` or `aria-live`, and
+      `ToastRoot` (`primitives/toast.rs:325`) has no role either, so a toast appears and is never
+      announced — the whole point of one. `duration` is hardcoded `5000.0` in the provider's
+      defaults (`primitives/toast.rs:223`) with no `default_duration`, and there are no
       `ToastTitle`/`ToastDescription`/`ToastAction`/`ToastClose` parts: a toast can only be built
       through the builder, never composed.
 - [ ] `toggle`: the `field_disabled` point is in the cross-cutting items.

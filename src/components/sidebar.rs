@@ -149,7 +149,13 @@ pub fn Sidebar(
                 <Sheet open=ctx.open_mobile>
                     <SheetContent
                         side=ctx.side
-                        class="w-[var(--sidebar-width-mobile,18rem)] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+                        id=ctx.content_id.get_untracked()
+                        class=move || {
+                            cn!(
+                                "w-[var(--sidebar-width-mobile,18rem)] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden",
+                                class.get(),
+                            )
+                        }
                     >
                         <SheetTitle class="sr-only">"Sidebar"</SheetTitle>
                         <SheetDescription class="sr-only">

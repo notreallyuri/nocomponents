@@ -5,7 +5,9 @@ use crate::{
         table::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow},
     },
     icons::chevron::{ChevronDown, ChevronUp},
-    primitives::table::{SelectionState, SortDirection, TableSelection, TableSort},
+    primitives::table::{
+        SelectionState, SortDirection, TableSelection, TableSort, TableSortHeaderRoot,
+    },
 };
 use leptos::prelude::*;
 use std::cmp::Ordering;
@@ -157,32 +159,30 @@ where
                                         }
                                         Some(_) => {
                                             view! {
-                                                <TableHead
-                                                    class=class
-                                                    attr:aria-sort=move || sort.aria_sort(key)
+                                                <TableSortHeaderRoot
+                                                    sort=sort
+                                                    column=key
+                                                    class=cn!(
+                                                        "h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground", class
+                                                    )
+                                                    button_class="group/sort -ml-2 inline-flex h-7 items-center gap-1 rounded-md px-2 text-left transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
                                                 >
-                                                    <button
-                                                        type="button"
-                                                        on:click=move |_| sort.toggle(key)
-                                                        class="group/sort -ml-2 inline-flex h-7 items-center gap-1 rounded-md px-2 text-left transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                                                    {header}
+                                                    <span
+                                                        class="text-muted-foreground opacity-0 transition-opacity group-hover/sort:opacity-60 data-[active]:opacity-100"
+                                                        data-active=move || sort.is_sorted_by(key).then_some("")
                                                     >
-                                                        {header}
-                                                        <span
-                                                            class="text-muted-foreground opacity-0 transition-opacity group-hover/sort:opacity-60 data-[active]:opacity-100"
-                                                            data-active=move || sort.is_sorted_by(key).then_some("")
-                                                        >
-                                                            {move || {
-                                                                if sort.is_sorted_by(key)
-                                                                    && sort.direction.get() == SortDirection::Descending
-                                                                {
-                                                                    view! { <ChevronDown class="size-3.5" /> }.into_any()
-                                                                } else {
-                                                                    view! { <ChevronUp class="size-3.5" /> }.into_any()
-                                                                }
-                                                            }}
-                                                        </span>
-                                                    </button>
-                                                </TableHead>
+                                                        {move || {
+                                                            if sort.is_sorted_by(key)
+                                                                && sort.direction.get() == SortDirection::Descending
+                                                            {
+                                                                view! { <ChevronDown class="size-3.5" /> }.into_any()
+                                                            } else {
+                                                                view! { <ChevronUp class="size-3.5" /> }.into_any()
+                                                            }
+                                                        }}
+                                                    </span>
+                                                </TableSortHeaderRoot>
                                             }
                                                 .into_any()
                                         }
@@ -199,8 +199,7 @@ where
                     let width = columns.with_value(|columns| columns.len())
                         + usize::from(selecting);
                     if rows.is_empty() {
-                        return
-                        view! {
+                        return view! {
                             <TableRow>
                                 <TableCell
                                     attr:colspan=width.to_string()
@@ -226,9 +225,7 @@ where
                             };
 
                             view! {
-                                <TableRow attr:data-selected=move || {
-                                    picked.get().then_some("")
-                                }>
+                                <TableRow selected=picked>
                                     {selecting
                                         .then(|| {
                                             let id = id.clone().expect("checked by `selecting`");

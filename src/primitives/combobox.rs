@@ -14,7 +14,8 @@ use crate::{
         command::{CommandItemRoot, CommandRoot},
         field::field_control_for_trigger,
         floating::{
-            ArrowOpen, FloatingContext, FloatingRoot, FloatingTrigger, TriggerAria, TriggerRender,
+            ArrowOpen, FloatingContext, FloatingPortal, FloatingRoot, FloatingTrigger, TriggerAria,
+            TriggerRender,
         },
     },
     utils::{
@@ -27,7 +28,7 @@ use floating_ui_leptos::{
     Flip, FlipOptions, MiddlewareVec, Offset, OffsetOptions, Placement, Shift, ShiftOptions,
     Strategy, UseFloatingOptions, UseFloatingReturn, use_floating,
 };
-use leptos::{either::Either, portal::Portal, prelude::*, wasm_bindgen::JsCast};
+use leptos::{either::Either, prelude::*, wasm_bindgen::JsCast};
 use send_wrapper::SendWrapper;
 use web_sys::HtmlElement;
 
@@ -123,11 +124,11 @@ pub fn ComboboxPortalRoot(children: ChildrenFn) -> impl IntoView {
     let children = StoredValue::new(children);
 
     view! {
-        <Portal>
+        <FloatingPortal>
             <Show when=move || {
                 ctx.is_mounted.get()
             }>{children.with_value(|children| children())}</Show>
-        </Portal>
+        </FloatingPortal>
     }
 }
 

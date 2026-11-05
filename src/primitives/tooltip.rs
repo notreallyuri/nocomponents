@@ -7,7 +7,7 @@
 //! the shorter `close_delay` keeps the gap between trigger and content from dismissing it.
 
 use crate::{
-    primitives::floating::{FloatingContext, FloatingRoot, TriggerAria},
+    primitives::floating::{FloatingContext, FloatingPortal, FloatingRoot, TriggerAria},
     utils::{
         controllable::controllable,
         get_placement,
@@ -18,7 +18,7 @@ use floating_ui_leptos::{
     Flip, FlipOptions, MiddlewareVec, Offset, OffsetOptions, Placement, Shift, ShiftOptions,
     Strategy, UseFloatingOptions, UseFloatingReturn, use_floating,
 };
-use leptos::{context::Provider, either::Either, ev, portal::Portal, prelude::*};
+use leptos::{context::Provider, either::Either, ev, prelude::*};
 use send_wrapper::SendWrapper;
 use std::time::Duration;
 
@@ -155,9 +155,9 @@ pub fn TooltipPortalRoot(children: ChildrenFn) -> impl IntoView {
     let stored_children = StoredValue::new(children);
 
     view! {
-        <Portal>
+        <FloatingPortal>
             <Show when=move || ctx.is_mounted.get()>{stored_children.with_value(|c| c())}</Show>
-        </Portal>
+        </FloatingPortal>
     }
 }
 

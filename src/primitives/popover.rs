@@ -1,6 +1,6 @@
 use crate::{
     primitives::floating::{
-        FloatingContext, FloatingRoot, FloatingTrigger, TriggerAria, TriggerRender,
+        FloatingContext, FloatingPortal, FloatingRoot, FloatingTrigger, TriggerAria, TriggerRender,
     },
     utils::{
         controllable::forward,
@@ -12,7 +12,7 @@ use floating_ui_leptos::{
     Flip, FlipOptions, MiddlewareVec, Offset, OffsetOptions, Placement, Shift, ShiftOptions,
     Strategy, UseFloatingOptions, UseFloatingReturn, use_floating,
 };
-use leptos::{either::Either, portal::Portal, prelude::*};
+use leptos::{either::Either, prelude::*};
 use send_wrapper::SendWrapper;
 
 pub type PopoverContext = FloatingContext;
@@ -78,9 +78,9 @@ pub fn PopoverPortalRoot(children: ChildrenFn) -> impl IntoView {
     let stored_children = StoredValue::new(children);
 
     view! {
-        <Portal>
+        <FloatingPortal>
             <Show when=move || ctx.is_mounted.get()>{stored_children.with_value(|c| c())}</Show>
-        </Portal>
+        </FloatingPortal>
     }
 }
 

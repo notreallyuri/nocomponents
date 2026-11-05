@@ -210,10 +210,10 @@ floating positioning can measure the trigger, and so the ARIA and `data-slot` th
 the node land somewhere.
 
 There are three of these shapes, and all three are named structs — a tuple must be re-broken every
-time it gains an element, a struct takes a field and leaves callers alone. **`TriggerRender`**
-(`primitives/floating.rs`) for the floating triggers: `node_ref`, `on_click`, and the `disabled`
-already resolved against any `Field` around it. **`StyledRender`** and **`AnchorRender`**
-(`utils/types.rs`) for the rest: the classes a part would have rendered plus its node ref, and the
+time it gains an element, a struct takes a field and leaves callers alone. **`TriggerRender`**,
+**`StyledRender`** and **`AnchorRender`** all live in `utils/types.rs`. `TriggerRender` is for any
+trigger that opens a layer, the floating ones and the dialog family: `node_ref`, `on_click`, and
+the `disabled` already resolved against any `Field` around it. The other two are for the rest: the classes a part would have rendered plus its node ref, and the
 node ref alone. Kept separate rather than merged, because a tooltip trigger has no click to run and
 no classes to wear.
 

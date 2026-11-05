@@ -3,12 +3,12 @@ use crate::{
     components::button::{Button, ButtonSize, ButtonVariant},
     icons::x::X,
     primitives::dialog::{
-        DialogContentRoot, DialogPart, DialogPortalRoot, DialogRoot, use_dialog,
+        DialogContentRoot, DialogPart, DialogPortalRoot, DialogRoot, DialogTriggerRoot, use_dialog,
         use_dialog_label_id,
     },
-    utils::controllable::forward,
+    utils::{controllable::forward, types::TriggerRender},
 };
-use leptos::{either::Either, ev, prelude::*};
+use leptos::{either::Either, prelude::*};
 
 #[component]
 pub fn Dialog(
@@ -19,7 +19,12 @@ pub fn Dialog(
     children: Children,
 ) -> impl IntoView {
     view! {
-        <DialogRoot open=open default_open=default_open on_open_change=forward(on_open_change) modal=modal>
+        <DialogRoot
+            open=open
+            default_open=default_open
+            on_open_change=forward(on_open_change)
+            modal=modal
+        >
             {children()}
         </DialogRoot>
     }
@@ -31,32 +36,34 @@ pub fn DialogTrigger(
     #[prop(optional)] variant: ButtonVariant,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
-    #[prop(optional, into)] render: Option<Callback<Callback<ev::MouseEvent>, AnyView>>,
+    #[prop(optional, into)] render: Option<Callback<TriggerRender, AnyView>>,
     #[prop(optional)] children: Option<ChildrenFn>,
 ) -> impl IntoView {
-    let ctx = use_dialog();
-    let on_click = Callback::new(move |_: ev::MouseEvent| ctx.toggle());
+    let children = StoredValue::new(children);
 
-    match render {
-        Some(render_fn) => Either::Left(render_fn.run(on_click)),
-        None => Either::Right(view! {
+    let styled = Callback::new(move |trigger: TriggerRender| {
+        view! {
             <Button
                 size=size
                 variant=variant
+                node_ref=trigger.node_ref
+                on_click=trigger.on_click
+                disabled=trigger.disabled
                 class=class
-                disabled=disabled
-                on:click=move |e| on_click.run(e)
             >
-                {
-                    let children = children.clone();
-                    move || match &children {
-                        Some(child) => Either::Left(child()),
-                        None => Either::Right(view! { "" }.into_any()),
-                    }
-                }
+                {move || {
+                    children
+                        .with_value(|children| match children {
+                            Some(child) => Either::Left(child()),
+                            None => Either::Right(view! { "" }.into_any()),
+                        })
+                }}
             </Button>
-        }),
-    }
+        }
+        .into_any()
+    });
+
+    view! { <DialogTriggerRoot disabled=disabled as_child=render.unwrap_or(styled) /> }
 }
 
 #[component]
@@ -76,13 +83,14 @@ pub fn DialogPortal(
                     .then(|| {
                         view! {
                             <div
-                                data-state=move || if context.is_open.get() { "open" } else { "closed" }
+                                data-state=move || {
+                                    if context.is_open.get() { "open" } else { "closed" }
+                                }
                                 class="fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:pointer-events-none"
                                 on:click=move |_| context.close()
                             />
                         }
                     })}
-
                 <DialogContentRoot class=move || {
                     cn!(
                         "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=closed]:pointer-events-none",

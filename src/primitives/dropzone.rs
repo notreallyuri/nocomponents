@@ -122,7 +122,10 @@ pub fn DropzoneRoot(
     let depth = RwSignal::new(0i32);
     let input_id = StoredValue::new(next_id("dropzone"));
 
-    let deliver = move |files: Vec<File>, rejected: Vec<File>| {
+    let deliver = move |mut files: Vec<File>, rejected: Vec<File>| {
+        if !multiple {
+            files.truncate(1);
+        }
         if !rejected.is_empty()
             && let Some(on_rejected) = on_rejected
         {

@@ -1,6 +1,9 @@
 use crate::{
-    primitives::dismiss::{LayerBounds, use_dismissable_layer},
-    utils::{controllable::controllable, next_id},
+    primitives::{
+        dismiss::{LayerBounds, use_dismissable_layer},
+        field::field_disabled,
+    },
+    utils::{controllable::controllable, next_id, types::TriggerRender},
 };
 use leptos::{
     context::Provider, either::Either, ev, portal::Portal, prelude::*, wasm_bindgen::JsCast,
@@ -27,6 +30,9 @@ pub struct DialogContext {
     /// description does not claim to have one.
     pub title_id: RwSignal<String>,
     pub description_id: RwSignal<String>,
+
+    /// The id the panel wears, which the trigger's `aria-controls` names.
+    pub content_id: RwSignal<String>,
 }
 
 impl DialogContext {
@@ -68,6 +74,7 @@ pub fn DialogRoot(
         is_mounted,
         title_id: RwSignal::new(String::new()),
         description_id: RwSignal::new(String::new()),
+        content_id: RwSignal::new(next_id("dialog-content")),
     };
 
     // What had focus before the dialog took it, so it can be handed back on close.
@@ -157,25 +164,61 @@ pub enum DialogPart {
     Description,
 }
 
+/// The button that opens the dialog.
+///
+/// Writes `aria-haspopup="dialog"`, `aria-expanded` and, while the panel is mounted,
+/// `aria-controls` onto whatever node it ends up on, through `trigger_ref`: the element is this
+/// `<button>` in one place and whatever `as_child` returned in another. The same node ref is what
+/// the non-modal layer counts as inside, so a click on the trigger is not also an outside press.
 #[component]
 pub fn DialogTriggerRoot(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
-    #[prop(optional, into)] as_child: Option<Callback<Callback<ev::MouseEvent>, AnyView>>,
+    /// Render as something else. Handed the node ref to attach, the click to run, and the
+    /// `disabled` already resolved against any `Field` around it.
+    #[prop(optional, into)]
+    as_child: Option<Callback<TriggerRender, AnyView>>,
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     let ctx = use_dialog();
+    let disabled = field_disabled(disabled);
     let on_click = Callback::new(move |_: ev::MouseEvent| ctx.toggle());
 
+    Effect::new(move |_| {
+        let Some(trigger) = ctx.trigger_ref.get() else {
+            return;
+        };
+
+        let _ = trigger.set_attribute("aria-haspopup", "dialog");
+        let _ = trigger.set_attribute(
+            "aria-expanded",
+            if ctx.is_open.get() { "true" } else { "false" },
+        );
+        let _ = trigger.set_attribute(
+            "data-state",
+            if ctx.is_open.get() { "open" } else { "closed" },
+        );
+
+        if ctx.is_mounted.get() {
+            let _ = trigger.set_attribute("aria-controls", &ctx.content_id.get());
+        } else {
+            let _ = trigger.remove_attribute("aria-controls");
+        }
+    });
+
     match as_child {
-        Some(render_fn) => Either::Left(render_fn.run(on_click)),
+        Some(render_fn) => Either::Left(render_fn.run(TriggerRender {
+            node_ref: ctx.trigger_ref,
+            on_click,
+            disabled,
+        })),
         None => Either::Right(view! {
             <button
                 type="button"
                 node_ref=ctx.trigger_ref
                 class=class
-                disabled=disabled
-                on:click=move |_| ctx.toggle()
+                disabled=move || disabled.get()
+                on:click=move |e| on_click.run(e)
             >
                 {match children {
                     Some(child) => Either::Left(child()),
@@ -229,6 +272,9 @@ pub fn DialogContentRoot(
     /// cannot live in a class.
     #[prop(optional, into)]
     style: Signal<String>,
+    /// The ARIA role of the panel: `"dialog"`, or `"alertdialog"` for one that interrupts.
+    #[prop(default = "dialog", into)]
+    role: &'static str,
     children: Children,
 ) -> impl IntoView {
     let ctx = use_dialog();
@@ -299,9 +345,10 @@ pub fn DialogContentRoot(
     view! {
         <div
             node_ref=content_ref
+            id=move || ctx.content_id.get()
             class=class
             style=style
-            role="dialog"
+            role=role
             aria-modal=move || ctx.modal.then_some("true")
             aria-labelledby=move || Some(ctx.title_id.get()).filter(|id| !id.is_empty())
             aria-describedby=move || Some(ctx.description_id.get()).filter(|id| !id.is_empty())

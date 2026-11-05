@@ -284,7 +284,7 @@ fn ToastItem(
                     exit_classes,
                     "data-[dragging=false]:cursor-grab data-[dragging=true]:cursor-grabbing data-[dragging=true]:transition-none",
                     "text-popover-foreground touch-none select-none",
-                    "py-3 px-4 text-sm data-[size=lg]:py-6 data-[size=lg]:px-8 data=[size=lg]:text-base",
+                    "py-3 px-4 text-sm data-[size=lg]:py-6 data-[size=lg]:px-8 data-[size=lg]:text-base",
                     variant_class(toast.variant),
                 )
             }
