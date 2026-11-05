@@ -56,8 +56,8 @@ pub fn Sheet(
 
 #[component]
 pub fn SheetTrigger(
-    #[prop(optional)] size: ButtonSize,
-    #[prop(optional)] variant: ButtonVariant,
+    #[prop(optional, into)] size: Signal<ButtonSize>,
+    #[prop(optional, into)] variant: Signal<ButtonVariant>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] render: Option<Callback<TriggerRender, AnyView>>,
@@ -98,7 +98,7 @@ pub fn SheetTrigger(
 
 #[component]
 pub fn SheetContent(
-    #[prop(default = Side::Right)] side: Side,
+    #[prop(default = Side::Right.into(), into)] side: Signal<Side>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] id: Option<String>,
     children: ChildrenFn,
@@ -108,7 +108,6 @@ pub fn SheetContent(
         context.content_id.set(id);
     }
     let stored_children = StoredValue::new(children);
-    let side_class = SheetSide(side).as_class();
 
     view! {
         <DialogPortalRoot>
@@ -129,7 +128,7 @@ pub fn SheetContent(
                 <DialogContentRoot class=move || {
                     cn!(
                         "fixed z-50 flex flex-col gap-4 bg-popover p-4 text-sm text-popover-foreground shadow-lg duration-200 outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:pointer-events-none",
-                        side_class,
+                        SheetSide(side.get()).as_class(),
                         class.get()
                     )
                 }>
@@ -197,8 +196,8 @@ pub fn SheetFooter(
 
 #[component]
 pub fn SheetClose(
-    #[prop(optional)] size: ButtonSize,
-    #[prop(default = ButtonVariant::Outline)] variant: ButtonVariant,
+    #[prop(optional, into)] size: Signal<ButtonSize>,
+    #[prop(default = ButtonVariant::Outline.into(), into)] variant: Signal<ButtonVariant>,
     #[prop(optional, into)] class: Signal<String>,
     children: ChildrenFn,
 ) -> impl IntoView {

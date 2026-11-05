@@ -26,10 +26,10 @@ pub enum AccordionType {
 #[derive(Copy, Clone)]
 pub struct AccordionContext {
     pub value: RwSignal<Vec<String>>,
-    pub kind: AccordionType,
+    pub kind: Signal<AccordionType>,
     pub disabled: Signal<bool>,
     /// Whether a `Single` accordion lets you close the open section by clicking its header.
-    pub collapsible: bool,
+    pub collapsible: Signal<bool>,
 }
 
 impl AccordionContext {
@@ -38,7 +38,7 @@ impl AccordionContext {
     }
 
     pub fn toggle(&self, value: &str) {
-        let (kind, collapsible) = (self.kind, self.collapsible);
+        let (kind, collapsible) = (self.kind.get_untracked(), self.collapsible.get_untracked());
 
         self.value.update(|open| {
             let existing = open.iter().position(|v| v == value);
@@ -68,11 +68,11 @@ pub fn use_accordion() -> AccordionContext {
 #[component]
 pub fn AccordionRoot(
     #[prop(optional, into)] class: Signal<String>,
-    #[prop(optional)] kind: AccordionType,
+    #[prop(optional, into)] kind: Signal<AccordionType>,
     #[prop(optional, into)] disabled: Signal<bool>,
     /// Whether a `Single` accordion can be closed entirely. Ignored for `Multiple`.
-    #[prop(default = true)]
-    collapsible: bool,
+    #[prop(into, default = true.into())]
+    collapsible: Signal<bool>,
     /// Omit for an uncontrolled accordion that owns its own selection.
     #[prop(default = None, into)]
     value: Option<RwSignal<Vec<String>>>,

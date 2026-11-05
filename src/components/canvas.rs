@@ -54,7 +54,7 @@ impl AsClass for ShapeKind {
 pub fn Canvas(
     #[prop(optional, into)] viewport: RwSignal<Viewport>,
     #[prop(optional)] limits: ZoomLimits,
-    #[prop(default = false)] pan_on_drag: bool,
+    #[prop(optional, into)] pan_on_drag: Signal<bool>,
     #[prop(optional, into)] on_surface_click: Option<Callback<CanvasPoint>>,
     #[prop(optional, into)] on_surface_drag: Option<Callback<CanvasDrag>>,
     #[prop(default = true)] controls: bool,
@@ -255,7 +255,7 @@ pub fn CanvasSticky(
     #[prop(into)] x: Signal<f64>,
     #[prop(into)] y: Signal<f64>,
     #[prop(default = Signal::stored(160.0), into)] size: Signal<f64>,
-    #[prop(optional)] color: StickyColor,
+    #[prop(optional, into)] color: Signal<StickyColor>,
     #[prop(optional, into)] on_move: Option<Callback<CanvasPoint>>,
     #[prop(optional, into)] on_resize: Option<Callback<WorldBox>>,
     #[prop(optional, into)] on_gesture_end: Option<Callback<CanvasGesture>>,
@@ -283,7 +283,7 @@ pub fn CanvasSticky(
             class=move || {
                 cn!(
                     "flex flex-col gap-1 rounded-sm p-3 text-sm leading-snug shadow-md",
-                    color.as_class(),
+                    color.get().as_class(),
                     class.get(),
                 )
             }
@@ -299,7 +299,7 @@ pub fn CanvasShape(
     #[prop(into)] y: Signal<f64>,
     #[prop(default = Signal::stored(160.0), into)] width: Signal<f64>,
     #[prop(default = Signal::stored(100.0), into)] height: Signal<f64>,
-    #[prop(optional)] kind: ShapeKind,
+    #[prop(optional, into)] kind: Signal<ShapeKind>,
     #[prop(optional, into)] on_move: Option<Callback<CanvasPoint>>,
     #[prop(optional, into)] on_resize: Option<Callback<WorldBox>>,
     #[prop(optional, into)] on_gesture_end: Option<Callback<CanvasGesture>>,
@@ -328,7 +328,7 @@ pub fn CanvasShape(
             class=move || {
                 cn!(
                     "flex items-center justify-center border-2 border-primary/60 bg-primary/10 p-2 text-center text-sm text-foreground",
-                    kind.as_class(),
+                    kind.get().as_class(),
                     class.get(),
                 )
             }

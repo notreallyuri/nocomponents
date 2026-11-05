@@ -28,8 +28,11 @@ pub fn AvatarRoot(children: Children) -> impl IntoView {
 
 #[component]
 pub fn AvatarImageRoot(
-    #[prop(into)] src: String,
-    #[prop(optional, into)] alt: String,
+    /// Changing it starts loading again: the status resets, so the fallback comes back until the
+    /// new image has arrived.
+    #[prop(into)]
+    src: Signal<String>,
+    #[prop(optional, into)] alt: Signal<String>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] data_slot: &'static str,
 ) -> impl IntoView {
@@ -37,10 +40,17 @@ pub fn AvatarImageRoot(
 
     ctx.status.set(ImageStatus::Loading);
 
+    Effect::new(move |previous: Option<()>| {
+        src.track();
+        if previous.is_some() {
+            ctx.status.set(ImageStatus::Loading);
+        }
+    });
+
     view! {
         <img
-            src=src
-            alt=alt
+            src=move || src.get()
+            alt=move || alt.get()
             class=class
             data-slot=data_slot
             on:load=move |_| ctx.status.set(ImageStatus::Loaded)

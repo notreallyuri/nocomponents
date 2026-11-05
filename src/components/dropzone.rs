@@ -11,7 +11,7 @@ use leptos::{prelude::*, web_sys::File};
 pub fn Dropzone(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] accept: Signal<String>,
-    #[prop(default = true)] multiple: bool,
+    #[prop(default = true.into(), into)] multiple: Signal<bool>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(into)] on_files: Callback<Vec<File>>,
     #[prop(optional, into)] on_rejected: Option<Callback<Vec<File>>>,

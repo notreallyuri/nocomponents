@@ -94,15 +94,15 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "code",
-                ty: "String",
+                ty: "Signal<String>",
                 default: "",
                 description: "The snippet, rendered as it is written.",
             },
             Prop {
                 name: "label",
-                ty: "Option<String>",
-                default: "None",
-                description: "Shown in the header — usually a file name or a short caption.",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Shown in the header — usually a file name or a short caption. Empty draws no header.",
             },
             Prop {
                 name: "language",

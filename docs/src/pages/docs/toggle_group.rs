@@ -83,13 +83,13 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "variant",
-                ty: "ToggleVariant",
+                ty: "Signal<ToggleVariant>",
                 default: "Default",
                 description: "One of: Default, Outline.",
             },
             Prop {
                 name: "size",
-                ty: "ToggleSize",
+                ty: "Signal<ToggleSize>",
                 default: "Default",
                 description: "One of: Xs, Sm, Default, Lg.",
             },
@@ -143,13 +143,13 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "variant",
-                ty: "Option<ToggleVariant>",
+                ty: "MaybeProp<ToggleVariant>",
                 default: "None",
                 description: "Defaults to the variant set on the enclosing `ToggleGroup`.",
             },
             Prop {
                 name: "size",
-                ty: "Option<ToggleSize>",
+                ty: "MaybeProp<ToggleSize>",
                 default: "None",
                 description: "Defaults to the size set on the enclosing `ToggleGroup`.",
             },

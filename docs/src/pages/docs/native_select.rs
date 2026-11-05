@@ -59,7 +59,7 @@ const API: &[ApiEntry] = &[ApiEntry {
     props: &[
         Prop {
             name: "size",
-            ty: "NativeSelectSize",
+            ty: "Signal<NativeSelectSize>",
             default: "Default",
             description: "One of: Sm, Default.",
         },

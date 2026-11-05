@@ -58,7 +58,7 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "direction",
-                ty: "Orientation",
+                ty: "Signal<Orientation>",
                 default: "Horizontal",
                 description: "`Horizontal` lays the panels side by side, `Vertical` stacks them.",
             },
@@ -94,13 +94,13 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "min_size",
-                ty: "f64",
+                ty: "Signal<f64>",
                 default: "0.0",
                 description: "How small this panel may be dragged, as a percentage.",
             },
             Prop {
                 name: "max_size",
-                ty: "f64",
+                ty: "Signal<f64>",
                 default: "100.0",
                 description: "How large this panel may be dragged, as a percentage.",
             },

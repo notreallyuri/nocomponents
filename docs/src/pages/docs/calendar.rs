@@ -58,7 +58,7 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "mode",
-                ty: "CalendarMode",
+                ty: "Signal<CalendarMode>",
                 default: "Single",
                 description: "`Single` picks one date and clicking it again clears it; `Multiple` toggles each; `Range` takes two clicks and fills in between.",
             },
@@ -100,19 +100,19 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "week_starts_on",
-                ty: "u32",
+                ty: "Signal<u32>",
                 default: "0",
                 description: "0 is Sunday, 1 Monday. The weekday header follows.",
             },
             Prop {
                 name: "min",
-                ty: "Option<Date>",
+                ty: "MaybeProp<Date>",
                 default: "None",
                 description: "The earliest date that can be picked. Also disables the paging button once a month is entirely below it.",
             },
             Prop {
                 name: "max",
-                ty: "Option<Date>",
+                ty: "MaybeProp<Date>",
                 default: "None",
                 description: "The latest date that can be picked.",
             },

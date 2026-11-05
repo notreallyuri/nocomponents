@@ -13,8 +13,8 @@ use leptos::prelude::*;
 #[component]
 pub fn HoverCard(
     #[prop(optional, into)] class: Signal<String>,
-    #[prop(default = 600, into)] delay: u64,
-    #[prop(default = 250, into)] close_delay: u64,
+    #[prop(into, default = 600u64.into())] delay: Signal<u64>,
+    #[prop(into, default = 250u64.into())] close_delay: Signal<u64>,
     #[prop(default = None, into)] open: Option<RwSignal<bool>>,
     #[prop(optional)] default_open: bool,
     #[prop(optional, into)] on_open_change: Option<Callback<bool>>,
@@ -49,9 +49,9 @@ pub fn HoverCardTrigger(
 
 #[component]
 pub fn HoverCardContent(
-    #[prop(default = Side::Bottom)] side: Side,
-    #[prop(optional)] align: Align,
-    #[prop(default = SideOffset(8.0))] side_offset: SideOffset,
+    #[prop(into, default = Side::Bottom.into())] side: Signal<Side>,
+    #[prop(optional, into)] align: Signal<Align>,
+    #[prop(into, default = SideOffset(8.0).into())] side_offset: Signal<SideOffset>,
     #[prop(optional, into)] class: Signal<String>,
     children: ChildrenFn,
 ) -> impl IntoView {

@@ -157,13 +157,13 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "size",
-                ty: "ButtonSize",
+                ty: "Signal<ButtonSize>",
                 default: "Default",
                 description: "Forwarded to the underlying `Button`.",
             },
             Prop {
                 name: "variant",
-                ty: "ButtonVariant",
+                ty: "Signal<ButtonVariant>",
                 default: "Outline",
                 description: "Forwarded to the underlying `Button`.",
             },
@@ -217,25 +217,25 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "side",
-                ty: "Side",
+                ty: "Signal<Side>",
                 default: "Side::Bottom",
                 description: "One of: Left, Right, Bottom, Top.",
             },
             Prop {
                 name: "align",
-                ty: "Align",
+                ty: "Signal<Align>",
                 default: "Start",
                 description: "One of: Start, Center, End.",
             },
             Prop {
                 name: "side_offset",
-                ty: "SideOffset",
+                ty: "Signal<SideOffset>",
                 default: "SideOffset(4.0)",
                 description: "Distance from the trigger, in pixels.",
             },
             Prop {
                 name: "should_filter",
-                ty: "bool",
+                ty: "Signal<bool>",
                 default: "true",
                 description: "Off when the list arrives already narrowed, as an async search does. Forwarded to the command root inside.",
             },
@@ -289,7 +289,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "deselectable",
-                ty: "bool",
+                ty: "Signal<bool>",
                 default: "true",
                 description: "Whether choosing the item again clears the selection, as a filter chip does.",
             },
@@ -301,7 +301,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "close_on_select",
-                ty: "bool",
+                ty: "Signal<bool>",
                 default: "true",
                 description: "Whether choosing an item closes the layer. False for a list several things are picked from, where closing after the first is the bug.",
             },

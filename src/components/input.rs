@@ -26,7 +26,7 @@ impl InputType {
 #[component]
 pub fn Input(
     #[prop(optional, into)] class: Signal<String>,
-    #[prop(optional)] input_type: InputType,
+    #[prop(optional, into)] input_type: Signal<InputType>,
     #[prop(default = None, into)] model: Option<RwSignal<String>>,
     #[prop(optional, into)] value: Signal<String>,
     #[prop(optional, into)] id: Signal<String>,
@@ -37,7 +37,7 @@ pub fn Input(
     view! {
         <input
             data-slot="input"
-            type=input_type.as_str()
+            type=move || input_type.get().as_str()
             id=move || field.id.get()
             disabled=move || field.disabled.get()
             aria-describedby=move || field.described_by.get()

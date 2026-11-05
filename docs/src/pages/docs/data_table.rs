@@ -115,7 +115,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "columns",
-                ty: "Vec<DataTableColumn<T>>",
+                ty: "Signal<Vec<DataTableColumn<T>>>",
                 default: "",
                 description: "The columns, in order.",
             },
@@ -139,7 +139,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "empty",
-                ty: "&'static str",
+                ty: "Signal<String>",
                 default: "\"No results.\"",
                 description: "What to say when there is nothing to show.",
             },

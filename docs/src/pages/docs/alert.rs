@@ -42,7 +42,7 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "variant",
-                ty: "AlertVariant",
+                ty: "Signal<AlertVariant>",
                 default: "Default",
                 description: "One of: Default, Destructive.",
             },

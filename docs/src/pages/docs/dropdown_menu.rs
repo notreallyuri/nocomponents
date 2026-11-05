@@ -138,13 +138,13 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "size",
-                ty: "ButtonSize",
+                ty: "Signal<ButtonSize>",
                 default: "Default",
                 description: "One of: Xs, Sm, Default, Lg, Icon, IconSm, IconXs, IconLg.",
             },
             Prop {
                 name: "variant",
-                ty: "ButtonVariant",
+                ty: "Signal<ButtonVariant>",
                 default: "Default",
                 description: "One of: Default, Outline, Ghost, Secondary, Link, Destructive.",
             },
@@ -190,19 +190,19 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "side",
-                ty: "Side",
+                ty: "Signal<Side>",
                 default: "Bottom",
                 description: "One of: Left, Right, Bottom, Top.",
             },
             Prop {
                 name: "align",
-                ty: "Align",
+                ty: "Signal<Align>",
                 default: "Start",
                 description: "One of: Start, Center, End.",
             },
             Prop {
                 name: "side_offset",
-                ty: "SideOffset",
+                ty: "Signal<SideOffset>",
                 default: "SideOffset(4.0)",
                 description: "Distance from the trigger, in pixels.",
             },
@@ -250,7 +250,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "variant",
-                ty: "DropdownMenuItemVariant",
+                ty: "Signal<DropdownMenuItemVariant>",
                 default: "Default",
                 description: "One of: Default, Destructive. Written as `data-variant`.",
             },
@@ -512,7 +512,7 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "side_offset",
-                ty: "SideOffset",
+                ty: "Signal<SideOffset>",
                 default: "SideOffset(4.0)",
                 description: "Distance from the trigger, in pixels.",
             },

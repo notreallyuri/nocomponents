@@ -175,19 +175,19 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "orientation",
-                ty: "Orientation",
+                ty: "Signal<Orientation>",
                 default: "Vertical",
                 description: "Which way the axis runs. Horizontal drops the content below the axis and shares the width evenly between events; it overflows rather than wraps.",
             },
             Prop {
                 name: "alternate",
-                ty: "bool",
+                ty: "Signal<bool>",
                 default: "false",
                 description: "Whether events fall on alternating sides of the axis — left and right when the timeline runs down, above and below when it runs across. It starts on whichever side `side` names and flips from there.",
             },
             Prop {
                 name: "side",
-                ty: "TimelineSide",
+                ty: "Signal<TimelineSide>",
                 default: "End",
                 description: "Which side of the axis content sits on: `Start` is left when vertical and above when horizontal, `End` the other way. Also where an alternating timeline begins.",
             },

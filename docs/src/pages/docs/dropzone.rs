@@ -60,7 +60,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "multiple",
-                ty: "bool",
+                ty: "Signal<bool>",
                 default: "true",
                 description: "Whether the picker takes more than one file. A drop of several is still several.",
             },

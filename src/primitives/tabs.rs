@@ -17,7 +17,7 @@ pub enum TabsListVariants {
 pub struct TabsContext {
     pub current_tab: RwSignal<String>,
     /// Which arrow keys walk the tab list, and what `aria-orientation` it reports.
-    pub orientation: Orientation,
+    pub orientation: Signal<Orientation>,
     /// The prefix every tab and panel id is minted from, so a trigger and its panel can point at
     /// each other without the caller naming either.
     pub id_prefix: StoredValue<String>,
@@ -66,11 +66,10 @@ pub fn TabsRoot(
     #[prop(optional, into)]
     on_value_change: Option<Callback<String>>,
     #[prop(optional, into)] class: Signal<String>,
-    #[prop(optional, into)] orientation: Orientation,
+    #[prop(optional, into)] orientation: Signal<Orientation>,
     children: Children,
 ) -> impl IntoView {
     let current_tab = controllable(value, default_value, on_value_change);
-    let orientation_str = orientation.as_str();
 
     provide_context(TabsContext {
         current_tab,
@@ -79,7 +78,7 @@ pub fn TabsRoot(
     });
 
     view! {
-        <div class=class data-orientation=orientation_str data-slot="tabs">
+        <div class=class data-orientation=move || orientation.get().as_str() data-slot="tabs">
             {children()}
         </div>
     }
@@ -111,7 +110,7 @@ pub fn TabsListRoot(
             node_ref=list_ref
             data-variant=variant_str
             role="tablist"
-            aria-orientation=ctx.orientation.as_str()
+            aria-orientation=move || ctx.orientation.get().as_str()
             on:keydown=move |e: ev::KeyboardEvent| {
                 if roving.on_keydown(&e.key()) {
                     e.prevent_default();

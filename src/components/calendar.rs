@@ -11,16 +11,16 @@ use leptos::prelude::*;
 
 #[component]
 pub fn Calendar(
-    #[prop(optional)] mode: CalendarMode,
+    #[prop(optional, into)] mode: Signal<CalendarMode>,
     #[prop(default = None, into)] selected: Option<RwSignal<Vec<Date>>>,
     #[prop(optional, into)] default_selected: Vec<Date>,
     #[prop(optional, into)] on_selected_change: Option<Callback<Vec<Date>>>,
     #[prop(default = None, into)] month: Option<RwSignal<Date>>,
     #[prop(default = None, into)] default_month: Option<Date>,
     #[prop(optional, into)] on_month_change: Option<Callback<Date>>,
-    #[prop(default = 0)] week_starts_on: u32,
-    #[prop(default = None, into)] min: Option<Date>,
-    #[prop(default = None, into)] max: Option<Date>,
+    #[prop(into, default = 0.into())] week_starts_on: Signal<u32>,
+    #[prop(optional, into)] min: MaybeProp<Date>,
+    #[prop(optional, into)] max: MaybeProp<Date>,
     #[prop(optional, into)] disabled: Option<Callback<Date, bool>>,
     #[prop(optional, into)] locale: Signal<String>,
     #[prop(optional, into)] class: Signal<String>,

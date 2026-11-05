@@ -46,7 +46,7 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "kind",
-                ty: "AccordionType",
+                ty: "Signal<AccordionType>",
                 default: "Single",
                 description: "One of: Single, Multiple.",
             },
@@ -64,7 +64,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "collapsible",
-                ty: "bool",
+                ty: "Signal<bool>",
                 default: "true",
                 description: "Whether a `Single` accordion can be closed entirely. Ignored for `Multiple`.",
             },

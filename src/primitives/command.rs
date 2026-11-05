@@ -57,7 +57,7 @@ pub struct CommandContext {
 
     /// Whether items filter themselves at all. Off when the caller has already narrowed the list
     /// — a search that went to a server has no business being filtered again on the way in.
-    pub should_filter: bool,
+    pub should_filter: Signal<bool>,
     /// Replaces [`default_filter`].
     pub filter: Option<CommandFilter>,
 }
@@ -73,7 +73,7 @@ impl Default for CommandContext {
             input_id: RwSignal::new(String::new()),
             list_id: RwSignal::new(String::new()),
             matches: RwSignal::new(0),
-            should_filter: true,
+            should_filter: Signal::stored(true),
             filter: None,
         }
     }
@@ -118,7 +118,7 @@ fn reveal(list: &Element, item: &Element) {
 impl CommandContext {
     /// Whether an item whose value and keywords read as `haystack` survives the current search.
     pub fn matches_search(&self, haystack: &str) -> bool {
-        if !self.should_filter {
+        if !self.should_filter.get() {
             return true;
         }
 
@@ -288,8 +288,8 @@ pub fn CommandRoot(
     #[prop(optional, into)]
     on_value_change: Option<Callback<Option<String>>>,
     /// Off when the list arrives already filtered.
-    #[prop(default = true)]
-    should_filter: bool,
+    #[prop(into, default = true.into())]
+    should_filter: Signal<bool>,
     /// Replaces the substring match every item is otherwise put through.
     #[prop(default = None, into)]
     filter: Option<CommandFilter>,

@@ -37,7 +37,7 @@ pub fn VideoPlayerVideo(
     #[prop(optional, into)] poster: Signal<String>,
     #[prop(default = false)] autoplay: bool,
     #[prop(default = false)] r#loop: bool,
-    #[prop(default = false)] muted: bool,
+    #[prop(optional, into)] muted: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
@@ -285,10 +285,10 @@ pub fn VideoPlayerFullscreenButton(#[prop(optional, into)] class: Signal<String>
 pub fn VideoPlayer(
     #[prop(optional, into)] src: Signal<String>,
     #[prop(optional, into)] poster: Signal<String>,
-    #[prop(optional)] mode: VideoPlayerMode,
+    #[prop(optional, into)] mode: Signal<VideoPlayerMode>,
     #[prop(default = false)] autoplay: bool,
     #[prop(default = false)] r#loop: bool,
-    #[prop(default = false)] muted: bool,
+    #[prop(optional, into)] muted: Signal<bool>,
     #[prop(optional, into)] on_skip: Option<Callback<VideoPlayerStep>>,
     #[prop(optional, into)] controls: Option<Callback<(), AnyView>>,
     #[prop(optional, into)] class: Signal<String>,
@@ -302,7 +302,7 @@ pub fn VideoPlayer(
             class=move || {
                 cn!(
                     "relative isolate aspect-video w-full overflow-hidden rounded-xl bg-black outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
-                    if mode.has_controls() {
+                    if mode.get().has_controls() {
                         "cursor-none data-[active=true]:cursor-default"
                     } else {
                         ""
@@ -316,59 +316,68 @@ pub fn VideoPlayer(
             </VideoPlayerVideo>
 
             <VideoPlayerSurface>
-                {mode.interactive().then(|| view! { <VideoPlayerBadge /> })}
+                {move || mode.get().interactive().then(|| view! { <VideoPlayerBadge /> })}
             </VideoPlayerSurface>
 
             <VideoPlayerCaptions />
 
-            {(mode.has_controls() && controls.with_value(|controls| controls.is_some()))
-                .then(|| {
-                    view! {
-                        <VideoPlayerControls>
-                            {move || controls.with_value(|controls| controls.map(|c| c.run(())))}
-                        </VideoPlayerControls>
-                    }
-                })}
+            {move || {
+                (mode.get().has_controls() && controls.with_value(|controls| controls.is_some()))
+                    .then(|| {
+                        view! {
+                            <VideoPlayerControls>
+                                {move || {
+                                    controls.with_value(|controls| controls.map(|c| c.run(())))
+                                }}
+                            </VideoPlayerControls>
+                        }
+                    })
+            }}
 
-            {(mode.has_controls() && controls.with_value(|controls| controls.is_none()))
-                .then(|| {
-                    view! {
-                        <VideoPlayerControls>
-                            <VideoPlayerSeek />
-                            <div class="flex items-center gap-1">
-                                <VideoPlayerPlayButton />
-                                {mode
-                                    .has_skip()
-                                    .then(|| {
-                                        view! {
-                                            <VideoPlayerSkipButton step=VideoPlayerStep::Previous />
-                                            <VideoPlayerSkipButton step=VideoPlayerStep::Next />
-                                        }
-                                    })}
-                                {mode.has_volume().then(|| view! { <VideoPlayerVolumeControl /> })}
-                                {mode.has_timestamp().then(|| view! { <VideoPlayerTime /> })}
-                                <div class="flex-1" />
-                                {mode
-                                    .has_timestamp()
-                                    .then(|| view! { <VideoPlayerCaptionsButton /> })}
-                                {mode
-                                    .has_timestamp()
-                                    .then(|| {
-                                        view! {
-                                            <VideoPlayerMenu>
-                                                <VideoPlayerSpeedItems submenu=true />
-                                                <VideoPlayerCaptionItems submenu=true />
-                                                <VideoPlayerCaptionSizeItems submenu=true />
-                                            </VideoPlayerMenu>
-                                        }
-                                    })}
-                                {mode
-                                    .has_fullscreen()
-                                    .then(|| view! { <VideoPlayerFullscreenButton /> })}
-                            </div>
-                        </VideoPlayerControls>
-                    }
-                })}
+            {move || {
+                let mode = mode.get();
+                (mode.has_controls() && controls.with_value(|controls| controls.is_none()))
+                    .then(|| {
+                        view! {
+                            <VideoPlayerControls>
+                                <VideoPlayerSeek />
+                                <div class="flex items-center gap-1">
+                                    <VideoPlayerPlayButton />
+                                    {mode
+                                        .has_skip()
+                                        .then(|| {
+                                            view! {
+                                                <VideoPlayerSkipButton step=VideoPlayerStep::Previous />
+                                                <VideoPlayerSkipButton step=VideoPlayerStep::Next />
+                                            }
+                                        })}
+                                    {mode
+                                        .has_volume()
+                                        .then(|| view! { <VideoPlayerVolumeControl /> })}
+                                    {mode.has_timestamp().then(|| view! { <VideoPlayerTime /> })}
+                                    <div class="flex-1" />
+                                    {mode
+                                        .has_timestamp()
+                                        .then(|| view! { <VideoPlayerCaptionsButton /> })}
+                                    {mode
+                                        .has_timestamp()
+                                        .then(|| {
+                                            view! {
+                                                <VideoPlayerMenu>
+                                                    <VideoPlayerSpeedItems submenu=true />
+                                                    <VideoPlayerCaptionItems submenu=true />
+                                                    <VideoPlayerCaptionSizeItems submenu=true />
+                                                </VideoPlayerMenu>
+                                            }
+                                        })}
+                                    {mode
+                                        .has_fullscreen()
+                                        .then(|| view! { <VideoPlayerFullscreenButton /> })}
+                                </div>
+                            </VideoPlayerControls>
+                        }
+                    })
+            }}
         </VideoPlayerRoot>
     }
 }
@@ -405,19 +414,18 @@ fn MenuOpenGuard() -> impl IntoView {
 
 #[component]
 pub fn VideoPlayerMenu(
-    #[prop(default = "Settings".to_string(), into)] label: String,
+    #[prop(default = "Settings".into(), into)] label: Signal<String>,
     #[prop(optional, into)] class: Signal<String>,
     children: ChildrenFn,
 ) -> impl IntoView {
     let children = StoredValue::new(children);
-    let label = StoredValue::new(label);
 
     view! {
         <DropdownMenu>
             <MenuOpenGuard />
             <DropdownMenuTriggerRoot
                 class=move || cn!(CONTROL, class.get())
-                attr:aria-label=move || label.get_value()
+                attr:aria-label=move || label.get()
                 attr:data-video-player-menu=""
             >
                 <Settings />

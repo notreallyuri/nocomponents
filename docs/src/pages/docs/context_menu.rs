@@ -130,19 +130,19 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "side",
-                ty: "Side",
+                ty: "Signal<Side>",
                 default: "Side::Bottom",
                 description: "One of: Left, Right, Bottom, Top.",
             },
             Prop {
                 name: "align",
-                ty: "Align",
+                ty: "Signal<Align>",
                 default: "Align::Start",
                 description: "One of: Start, Center, End.",
             },
             Prop {
                 name: "side_offset",
-                ty: "SideOffset",
+                ty: "Signal<SideOffset>",
                 default: "SideOffset(0.0)",
                 description: "Distance from the pointer, in pixels.",
             },

@@ -38,13 +38,13 @@ const API: &[ApiEntry] = &[ApiEntry {
     props: &[
         Prop {
             name: "variant",
-            ty: "SpinnerVariant",
+            ty: "Signal<SpinnerVariant>",
             default: "Default",
             description: "One of: Default, Lined.",
         },
         Prop {
             name: "size",
-            ty: "SpinnerSize",
+            ty: "Signal<SpinnerSize>",
             default: "Default",
             description: "One of: Xs, Sm, Default, Lg, Icon.",
         },

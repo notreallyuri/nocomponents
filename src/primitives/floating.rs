@@ -3,7 +3,15 @@ use std::time::Duration;
 pub use crate::utils::types::TriggerRender;
 use crate::{
     primitives::dismiss::{LayerBounds, use_dismissable_layer},
-    utils::{controllable::controllable, next_id, types::TriggerRect},
+    utils::{
+        controllable::controllable,
+        get_placement, next_id,
+        types::{Align, Side, SideOffset, TriggerRect},
+    },
+};
+use floating_ui_leptos::{
+    Flip, FlipOptions, MiddlewareVec, Offset, OffsetOptions, Placement, Shift, ShiftOptions,
+    Strategy, UseFloatingOptions,
 };
 use leptos::{
     context::Provider,
@@ -16,6 +24,7 @@ use leptos::{
     wasm_bindgen::{JsCast, JsValue},
 };
 use leptos_node_ref::AnyNodeRef;
+use send_wrapper::SendWrapper;
 use web_sys::{Element, HtmlElement, KeyboardEvent};
 
 /// A portal that lands inside the fullscreen element when there is one, and in `<body>` otherwise.
@@ -60,6 +69,38 @@ pub fn FloatingPortal(children: ChildrenFn) -> impl IntoView {
             }
         }}
     }
+}
+
+/// The placement `side` and `align` name together, following either as it changes.
+pub fn side_placement(side: Signal<Side>, align: Signal<Align>) -> Signal<Placement> {
+    Signal::derive(move || get_placement(side.get(), align.get()))
+}
+
+/// The options every positioned layer hands to `use_floating`: fixed strategy, auto-update, and
+/// offset/flip/shift middleware.
+///
+/// `placement` and `middleware` are both watched by `use_floating`, which re-positions when either
+/// changes. The middleware is a derived value rather than a vector built once, so a changing
+/// `side_offset` rebuilds it, and a changing `placement` moves the layer, without the root being
+/// created again.
+pub fn floating_options(
+    placement: Signal<Placement>,
+    side_offset: Signal<SideOffset>,
+) -> UseFloatingOptions {
+    let middleware = Signal::derive(move || {
+        let middleware: MiddlewareVec = vec![
+            Box::new(Offset::new(OffsetOptions::Value(side_offset.get().0))),
+            Box::new(Flip::new(FlipOptions::default())),
+            Box::new(Shift::new(ShiftOptions::default())),
+        ];
+        Some(SendWrapper::new(middleware))
+    });
+
+    UseFloatingOptions::default()
+        .placement(Signal::derive(move || Some(placement.get())))
+        .strategy(Strategy::Fixed)
+        .while_elements_mounted_auto_update()
+        .middleware(middleware)
 }
 
 #[derive(Copy, Clone)]

@@ -20,7 +20,7 @@ const API: &[ApiEntry] = &[ApiEntry {
     props: &[
         Prop {
             name: "variant",
-            ty: "BadgeVariant",
+            ty: "Signal<BadgeVariant>",
             default: "Default",
             description: "One of: Default, Secondary, Destructive, Outline, Ghost, Link.",
         },

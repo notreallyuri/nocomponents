@@ -43,7 +43,7 @@ const API: &[ApiEntry] = &[ApiEntry {
     props: &[
         Prop {
             name: "mode",
-            ty: "CalendarMode",
+            ty: "Signal<CalendarMode>",
             default: "Single",
             description: "As on `Calendar`. `Single` closes on the first click, `Range` on the second, `Multiple` stays open.",
         },
@@ -109,19 +109,19 @@ const API: &[ApiEntry] = &[ApiEntry {
         },
         Prop {
             name: "week_starts_on",
-            ty: "u32",
+            ty: "Signal<u32>",
             default: "0",
             description: "0 is Sunday, 1 Monday.",
         },
         Prop {
             name: "min",
-            ty: "Option<Date>",
+            ty: "MaybeProp<Date>",
             default: "None",
             description: "The earliest date that can be picked.",
         },
         Prop {
             name: "max",
-            ty: "Option<Date>",
+            ty: "MaybeProp<Date>",
             default: "None",
             description: "The latest date that can be picked.",
         },
@@ -133,19 +133,19 @@ const API: &[ApiEntry] = &[ApiEntry {
         },
         Prop {
             name: "side",
-            ty: "Side",
+            ty: "Signal<Side>",
             default: "Side::Bottom",
             description: "Which side of the button the calendar opens on.",
         },
         Prop {
             name: "align",
-            ty: "Align",
+            ty: "Signal<Align>",
             default: "Start",
             description: "How it lines up with the button.",
         },
         Prop {
             name: "side_offset",
-            ty: "SideOffset",
+            ty: "Signal<SideOffset>",
             default: "SideOffset(4.0)",
             description: "Distance from the button, in pixels.",
         },

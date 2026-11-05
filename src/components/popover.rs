@@ -26,8 +26,8 @@ pub fn Popover(
 
 #[component]
 pub fn PopoverTrigger(
-    #[prop(optional)] size: ButtonSize,
-    #[prop(optional)] variant: ButtonVariant,
+    #[prop(optional, into)] size: Signal<ButtonSize>,
+    #[prop(optional, into)] variant: Signal<ButtonVariant>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] as_child: Option<Callback<TriggerRender, AnyView>>,
@@ -67,9 +67,9 @@ pub fn PopoverPortal(children: ChildrenFn) -> impl IntoView {
 
 #[component]
 pub fn PopoverContent(
-    #[prop(optional)] side: Side,
-    #[prop(optional)] align: Align,
-    #[prop(optional)] side_offset: SideOffset,
+    #[prop(optional, into)] side: Signal<Side>,
+    #[prop(optional, into)] align: Signal<Align>,
+    #[prop(optional, into)] side_offset: Signal<SideOffset>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {

@@ -478,12 +478,13 @@ fn from_a_control(event: &ev::PointerEvent) -> bool {
 #[component]
 pub fn KanbanSlotRoot(
     /// How many cards down this gap sits.
-    index: usize,
+    #[prop(into)]
+    index: Signal<usize>,
     #[prop(optional, into)] class: Signal<String>,
 ) -> impl IntoView {
     let ctx = use_kanban();
     let column = expect_context::<KanbanColumnContext>().id;
-    let active = move || ctx.slot_in(&column) == Some(index);
+    let active = move || ctx.slot_in(&column) == Some(index.get());
 
     view! {
         <div

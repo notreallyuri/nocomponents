@@ -11,8 +11,8 @@ use leptos::prelude::*;
 
 #[component]
 pub fn Carousel(
-    #[prop(default = Orientation::Horizontal)] orientation: Orientation,
-    #[prop(default = false)] wrap: bool,
+    #[prop(into, default = Orientation::Horizontal.into())] orientation: Signal<Orientation>,
+    #[prop(optional, into)] wrap: Signal<bool>,
     #[prop(optional, into)] index: RwSignal<usize>,
     #[prop(optional, into)] label: Signal<String>,
     #[prop(optional, into)] class: Signal<String>,
@@ -100,7 +100,7 @@ fn CarouselButton(
                 )
             }
         >
-            {match (previous, ctx.orientation) {
+            {move || match (previous, ctx.orientation.get()) {
                 (true, Orientation::Horizontal) => view! { <ChevronLeft /> }.into_any(),
                 (false, Orientation::Horizontal) => view! { <ChevronRight /> }.into_any(),
                 (true, Orientation::Vertical) => view! { <ChevronUp /> }.into_any(),

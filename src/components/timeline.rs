@@ -10,9 +10,9 @@ use leptos::{either::Either, prelude::*};
 
 #[component]
 pub fn Timeline(
-    #[prop(default = Orientation::Vertical)] orientation: Orientation,
-    #[prop(default = false)] alternate: bool,
-    #[prop(optional)] side: TimelineSide,
+    #[prop(into, default = Orientation::Vertical.into())] orientation: Signal<Orientation>,
+    #[prop(optional, into)] alternate: Signal<bool>,
+    #[prop(optional, into)] side: Signal<TimelineSide>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {

@@ -31,7 +31,7 @@ const API: &[ApiEntry] = &[ApiEntry {
     props: &[
         Prop {
             name: "ratio",
-            ty: "f64",
+            ty: "Signal<f64>",
             default: "1.0",
             description: "Width divided by height — `16.0 / 9.0` for widescreen, `1.0` for a square.",
         },

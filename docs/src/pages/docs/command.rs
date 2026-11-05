@@ -145,7 +145,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "should_filter",
-                ty: "bool",
+                ty: "Signal<bool>",
                 default: "true",
                 description: "Off when the list arrives already narrowed — a search that went to a server has no business being filtered again on the way in.",
             },
@@ -377,7 +377,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "should_filter",
-                ty: "bool",
+                ty: "Signal<bool>",
                 default: "true",
                 description: "As on `Command`.",
             },

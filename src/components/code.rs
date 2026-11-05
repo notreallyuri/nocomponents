@@ -27,13 +27,13 @@ const TOKEN_COLORS: &str = "[&_[data-token=keyword]]:text-rose-600 dark:[&_[data
 
 #[component]
 pub fn CodeBlock(
-    #[prop(into)] code: String,
-    #[prop(optional, into)] label: Option<String>,
+    #[prop(into)] code: Signal<String>,
+    #[prop(optional, into)] label: Signal<String>,
     #[prop(optional)] language: Language,
     #[prop(default = true)] copyable: bool,
     #[prop(optional, into)] class: Signal<String>,
 ) -> impl IntoView {
-    let has_header = label.is_some();
+    let has_header = move || !label.with(|label| label.is_empty());
 
     view! {
         <CodeBlockRoot
@@ -45,21 +45,27 @@ pub fn CodeBlock(
                 )
             }
         >
-            {label
-                .map(|label| {
-                    view! {
-                        <div
-                            data-slot="code-block-header"
-                            class="flex items-center justify-between gap-2 border-b border-foreground/10 px-4 py-2 font-mono text-xs text-muted-foreground"
-                        >
-                            <span>{label}</span>
-                        </div>
-                    }
-                })}
+            {move || {
+                has_header()
+                    .then(|| {
+                        view! {
+                            <div
+                                data-slot="code-block-header"
+                                class="flex items-center justify-between gap-2 border-b border-foreground/10 px-4 py-2 font-mono text-xs text-muted-foreground"
+                            >
+                                <span>{move || label.get()}</span>
+                            </div>
+                        }
+                    })
+            }}
 
             {copyable
                 .then(|| {
-                    view! { <CodeCopyButton class=if has_header { "top-0.5" } else { "top-3" } /> }
+                    view! {
+                        <CodeCopyButton class=move || {
+                            if has_header() { "top-0.5" } else { "top-3" }
+                        } />
+                    }
                 })}
 
             <CodeBlockContentRoot

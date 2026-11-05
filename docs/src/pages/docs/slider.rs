@@ -38,19 +38,19 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "min",
-                ty: "f64",
+                ty: "Signal<f64>",
                 default: "0.0",
                 description: "The value at the start of the track.",
             },
             Prop {
                 name: "max",
-                ty: "f64",
+                ty: "Signal<f64>",
                 default: "100.0",
                 description: "The value at the end of the track.",
             },
             Prop {
                 name: "step",
-                ty: "f64",
+                ty: "Signal<f64>",
                 default: "1.0",
                 description: "What the value snaps to, rounded at the step's own precision.",
             },

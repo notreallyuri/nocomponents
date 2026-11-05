@@ -219,13 +219,13 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "side",
-                ty: "Side",
+                ty: "Signal<Side>",
                 default: "Side::Left",
                 description: "One of: Left, Right, Bottom, Top.",
             },
             Prop {
                 name: "collapsible",
-                ty: "SidebarCollapsible",
+                ty: "Signal<SidebarCollapsible>",
                 default: "OffCanvas",
                 description: "One of: OffCanvas, Icon, None.",
             },
@@ -273,7 +273,7 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "variant",
-                ty: "SidebarVariant",
+                ty: "Signal<SidebarVariant>",
                 default: "Sidebar",
                 description: "One of: Sidebar, Floating, Inset.",
             },
@@ -551,7 +551,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "size",
-                ty: "SidebarMenuSize",
+                ty: "Signal<SidebarMenuSize>",
                 default: "Default",
                 description: "One of: Default, Sm, Lg.",
             },
@@ -701,7 +701,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "size",
-                ty: "SidebarMenuSize",
+                ty: "Signal<SidebarMenuSize>",
                 default: "SidebarMenuSize::Default",
                 description: "One of: Default, Sm, Lg.",
             },

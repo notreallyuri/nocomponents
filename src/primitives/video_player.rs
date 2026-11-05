@@ -289,7 +289,7 @@ pub struct VideoPlayerContext {
     /// Whether a menu is open over the controls. The idle timer has to know: a bar that fades
     /// out from under an open menu leaves the menu hanging over nothing.
     pub menu_open: RwSignal<bool>,
-    pub mode: VideoPlayerMode,
+    pub mode: Signal<VideoPlayerMode>,
     pub video_ref: AnyNodeRef,
     /// The element that goes fullscreen, which is the whole player rather than the video: a
     /// `<video>` in fullscreen draws the browser's own controls over ours.
@@ -670,7 +670,7 @@ pub fn format_timestamp(seconds: f64) -> String {
 
 #[component]
 pub fn VideoPlayerRoot(
-    #[prop(optional)] mode: VideoPlayerMode,
+    #[prop(optional, into)] mode: Signal<VideoPlayerMode>,
     /// Where Previous and Next report to. Without it there is no playlist and both disable.
     #[prop(default = None, into)]
     on_skip: Option<Callback<VideoPlayerStep>>,
@@ -795,7 +795,7 @@ pub fn VideoPlayerRoot(
     let on_keydown = move |e: ev::KeyboardEvent| {
         // A rail handles its own arrows and says so by preventing the default; without this the
         // root would seek again on top of it.
-        if !mode.interactive() || e.default_prevented() {
+        if !mode.get_untracked().interactive() || e.default_prevented() {
             return;
         }
 
@@ -823,13 +823,13 @@ pub fn VideoPlayerRoot(
             <div
                 node_ref=root_ref
                 data-slot="video-player"
-                data-mode=mode.as_str()
+                data-mode=move || mode.get().as_str()
                 data-state=move || if ctx.playing.get() { "playing" } else { "paused" }
                 data-active=move || ctx.controls_visible().then_some("true")
                 data-fullscreen=move || ctx.fullscreen.get().then_some("true")
                 // A player is one tab stop and the keys work from anywhere inside it, which is
                 // what makes it operable without tabbing through six buttons first.
-                tabindex=move || mode.interactive().then_some("0")
+                tabindex=move || mode.get().interactive().then_some("0")
                 on:keydown=on_keydown
                 on:pointermove=move |_| wake()
                 on:pointerdown=move |_| wake()
@@ -859,9 +859,9 @@ pub fn VideoPlayerVideoRoot(
     #[prop(default = false)] autoplay: bool,
     #[prop(default = false)] r#loop: bool,
     /// The element's own starting mute. Autoplay is refused unless the video is muted, so the two
-    /// almost always go together.
-    #[prop(default = false)]
-    muted: bool,
+    /// almost always go together. Follows the prop after mount: a change is written to the element.
+    #[prop(optional, into)]
+    muted: Signal<bool>,
     /// Inline rather than the phone's own fullscreen player, which is what a styled player wants
     /// and is not the platform default.
     #[prop(default = true)]
@@ -872,6 +872,15 @@ pub fn VideoPlayerVideoRoot(
 ) -> impl IntoView {
     let ctx = use_video_player();
     let sync = move |_| ctx.sync();
+
+    Effect::new(move |_| {
+        let wanted = muted.get();
+        if let Some(media) = ctx.media()
+            && media.muted() != wanted
+        {
+            media.set_muted(wanted);
+        }
+    });
 
     view! {
         <video
@@ -887,7 +896,7 @@ pub fn VideoPlayerVideoRoot(
             }
             autoplay=autoplay
             loop=r#loop
-            muted=muted
+            muted=move || muted.get()
             playsinline=playsinline
             preload=preload
             // Never the browser's own bar: it would sit on top of ours, and in fullscreen it is
@@ -937,16 +946,16 @@ pub fn VideoPlayerSurfaceRoot(
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     let ctx = use_video_player();
-    let interactive = ctx.mode.interactive();
+    let interactive = move || ctx.mode.get().interactive();
 
     view! {
         <div
             data-slot="video-player-surface"
             data-state=move || if ctx.playing.get() { "playing" } else { "paused" }
             // Nothing to press in the uncontrolled mode, so nothing to stand in the way either.
-            style=(!interactive).then_some("pointer-events: none;")
+            style=move || (!interactive()).then_some("pointer-events: none;")
             on:click=move |_| {
-                if interactive {
+                if interactive() {
                     ctx.toggle();
                 }
             }
@@ -967,7 +976,7 @@ pub fn VideoPlayerControlsRoot(
     view! {
         <div
             data-slot="video-player-controls"
-            data-mode=ctx.mode.as_str()
+            data-mode=move || ctx.mode.get().as_str()
             data-active=move || ctx.controls_visible().then_some("true")
             data-state=move || if ctx.playing.get() { "playing" } else { "paused" }
             class=class

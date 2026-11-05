@@ -53,19 +53,19 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "kind",
-                ty: "ChartKind",
+                ty: "Signal<ChartKind>",
                 default: "Line",
                 description: "`Line`, `Area` or `Bar`. Line and area put their points on the edges of the plot; bars sit in the middle of a band, which is the difference between a value at a moment and a value for a period.",
             },
             Prop {
                 name: "tooltip",
-                ty: "bool",
+                ty: "Signal<bool>",
                 default: "true",
                 description: "The card that follows the pointer, with every series' value at the category nearest it.",
             },
             Prop {
                 name: "legend",
-                ty: "bool",
+                ty: "Signal<bool>",
                 default: "true",
                 description: "The key beneath the plot. Turn it off for a single series, which needs none.",
             },
@@ -77,7 +77,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "grid",
-                ty: "bool",
+                ty: "Signal<bool>",
                 default: "true",
                 description: "The horizontal grid and its value labels.",
             },

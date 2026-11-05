@@ -46,7 +46,7 @@ pub struct ImageCropperContext {
     /// The image's natural size, once it has loaded. `(0, 0)` until then.
     pub natural: RwSignal<(f64, f64)>,
     /// The ratio the crop is held to, as width over height *in pixels*. `None` is free-form.
-    pub aspect: Option<f64>,
+    pub aspect: MaybeProp<f64>,
     pub min_size: f64,
     /// The box the image is drawn in, which is what a pointer's pixels are measured against.
     pub frame_ref: AnyNodeRef,
@@ -55,7 +55,7 @@ pub struct ImageCropperContext {
     pub dragging: RwSignal<Option<Option<CropHandle>>>,
     /// Whether the crop is *shown* as an ellipse. Purely a preview — the rectangle underneath is
     /// the same one, and it is still what gets cut.
-    pub circular: bool,
+    pub circular: Signal<bool>,
 }
 
 impl ImageCropperContext {
@@ -64,6 +64,7 @@ impl ImageCropperContext {
     pub fn normalised_aspect(&self) -> Option<f64> {
         let (width, height) = self.natural.get();
         self.aspect
+            .get()
             .map(|aspect| normalised_aspect(aspect, width, height))
     }
 
@@ -214,13 +215,13 @@ pub fn ImageCropperRoot(
     #[prop(optional, into)]
     crop: RwSignal<Crop>,
     /// The ratio to hold, as width over height in pixels. `None` is free-form.
-    #[prop(default = None, into)]
-    aspect: Option<f64>,
+    #[prop(optional, into)]
+    aspect: MaybeProp<f64>,
     #[prop(default = MIN_SIZE)] min_size: f64,
     /// Draws the crop as an ellipse rather than a rectangle. What gets cut is unchanged — this is
     /// a preview, for the avatars and stamps that will be shown in a circle later.
-    #[prop(default = false)]
-    circular: bool,
+    #[prop(optional, into)]
+    circular: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
@@ -235,11 +236,19 @@ pub fn ImageCropperRoot(
         circular,
     };
 
+    // A ratio is a promise the component keeps, so a new one reshapes the crop already showing.
+    Effect::new(move |previous: Option<()>| {
+        ctx.aspect.track();
+        if previous.is_some() {
+            untrack(|| ctx.conform());
+        }
+    });
+
     view! {
         <Provider value=ctx>
             <div
                 data-slot="image-cropper"
-                data-circular=circular.then_some("")
+                data-circular=move || circular.get().then_some("")
                 data-dragging=move || ctx.dragging.get().is_some().then_some("")
                 class=class
             >

@@ -45,8 +45,8 @@ pub fn Combobox(
 
 #[component]
 pub fn ComboboxTrigger(
-    #[prop(optional)] size: ButtonSize,
-    #[prop(default = ButtonVariant::Outline)] variant: ButtonVariant,
+    #[prop(optional, into)] size: Signal<ButtonSize>,
+    #[prop(default = ButtonVariant::Outline.into(), into)] variant: Signal<ButtonVariant>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(default = None, into)] render: Option<Callback<TriggerRender, AnyView>>,
@@ -108,10 +108,10 @@ pub fn ComboboxValue(
 
 #[component]
 pub fn ComboboxContent(
-    #[prop(optional)] side: Side,
-    #[prop(optional)] align: Align,
-    #[prop(optional)] side_offset: SideOffset,
-    #[prop(default = true)] should_filter: bool,
+    #[prop(optional, into)] side: Signal<Side>,
+    #[prop(optional, into)] align: Signal<Align>,
+    #[prop(optional, into)] side_offset: Signal<SideOffset>,
+    #[prop(into, default = true.into())] should_filter: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
     children: ChildrenFn,
 ) -> impl IntoView {
@@ -146,9 +146,9 @@ pub fn ComboboxItem(
     #[prop(optional, into)] keywords: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] on_select: Option<Callback<String>>,
-    #[prop(default = true)] deselectable: bool,
+    #[prop(into, default = true.into())] deselectable: Signal<bool>,
     #[prop(default = None, into)] selected: Option<Signal<bool>>,
-    #[prop(default = true)] close_on_select: bool,
+    #[prop(into, default = true.into())] close_on_select: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
     children: ChildrenFn,
 ) -> impl IntoView {

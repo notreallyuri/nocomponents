@@ -75,7 +75,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "size",
-                ty: "CardSize",
+                ty: "Signal<CardSize>",
                 default: "Default",
                 description: "One of: Default, Sm.",
             },

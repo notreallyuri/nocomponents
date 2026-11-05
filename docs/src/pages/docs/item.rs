@@ -102,13 +102,13 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "variant",
-                ty: "ItemVariant",
+                ty: "Signal<ItemVariant>",
                 default: "Default",
                 description: "One of: Default, Outline, Muted.",
             },
             Prop {
                 name: "size",
-                ty: "ItemSize",
+                ty: "Signal<ItemSize>",
                 default: "Default",
                 description: "One of: Default, Sm.",
             },
@@ -132,7 +132,7 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "variant",
-                ty: "ItemMediaVariant",
+                ty: "Signal<ItemMediaVariant>",
                 default: "Plain",
                 description: "One of: Plain, Icon.",
             },

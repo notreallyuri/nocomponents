@@ -1,19 +1,15 @@
 use crate::{
     primitives::floating::{
         FloatingContext, FloatingPortal, FloatingRoot, FloatingTrigger, TriggerAria, TriggerRender,
+        floating_options, side_placement,
     },
     utils::{
         controllable::forward,
-        get_placement,
         types::{Align, Side, SideOffset},
     },
 };
-use floating_ui_leptos::{
-    Flip, FlipOptions, MiddlewareVec, Offset, OffsetOptions, Placement, Shift, ShiftOptions,
-    Strategy, UseFloatingOptions, UseFloatingReturn, use_floating,
-};
+use floating_ui_leptos::{Placement, UseFloatingReturn, use_floating};
 use leptos::{either::Either, prelude::*};
-use send_wrapper::SendWrapper;
 
 pub type PopoverContext = FloatingContext;
 
@@ -86,20 +82,14 @@ pub fn PopoverPortalRoot(children: ChildrenFn) -> impl IntoView {
 
 #[component]
 pub fn PopoverContentRoot(
-    #[prop(optional)] side: Side,
-    #[prop(optional)] align: Align,
-    #[prop(optional)] side_offset: SideOffset,
+    #[prop(optional, into)] side: Signal<Side>,
+    #[prop(optional, into)] align: Signal<Align>,
+    #[prop(optional, into)] side_offset: Signal<SideOffset>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
     let ctx = use_popover();
     let floating_ref = ctx.content_ref;
-
-    let middleware: MiddlewareVec = vec![
-        Box::new(Offset::new(OffsetOptions::Value(side_offset.0))),
-        Box::new(Flip::new(FlipOptions::default())),
-        Box::new(Shift::new(ShiftOptions::default())),
-    ];
 
     let UseFloatingReturn {
         floating_styles,
@@ -109,11 +99,7 @@ pub fn PopoverContentRoot(
     } = use_floating(
         ctx.trigger_ref,
         floating_ref,
-        UseFloatingOptions::default()
-            .placement(get_placement(side, align))
-            .strategy(Strategy::Fixed)
-            .while_elements_mounted_auto_update()
-            .middleware(SendWrapper::new(middleware)),
+        floating_options(side_placement(side, align), side_offset),
     );
 
     view! {

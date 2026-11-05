@@ -52,13 +52,13 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "orientation",
-                ty: "Orientation",
+                ty: "Signal<Orientation>",
                 default: "Horizontal",
                 description: "Which way the slides run. Vertical needs a height on the content.",
             },
             Prop {
                 name: "wrap",
-                ty: "bool",
+                ty: "Signal<bool>",
                 default: "false",
                 description: "Whether moving past either end comes round the other side. Named `wrap` because `loop` is a Rust keyword.",
             },

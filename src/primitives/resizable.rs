@@ -21,15 +21,15 @@ const KEYBOARD_STEP: f64 = 5.0;
 /// What a panel will accept, in percentage points.
 #[derive(Clone, Copy, Debug)]
 struct PanelLimits {
-    min: f64,
-    max: f64,
+    min: Signal<f64>,
+    max: Signal<f64>,
     /// The size asked for at mount. `None` shares out whatever the sized panels left over.
     default: Option<f64>,
 }
 
 #[derive(Copy, Clone)]
 pub struct ResizableGroupContext {
-    pub direction: Orientation,
+    pub direction: Signal<Orientation>,
     /// One percentage per panel, in the order the panels registered — which is document order,
     /// since that is the order they mount in.
     pub sizes: RwSignal<Vec<f64>>,
@@ -44,7 +44,7 @@ pub struct ResizableGroupContext {
 impl ResizableGroupContext {
     /// Adds a panel and returns its index. Called during render, so registration order is
     /// document order.
-    fn register(&self, min: f64, max: f64, default: Option<f64>) -> usize {
+    fn register(&self, min: Signal<f64>, max: Signal<f64>, default: Option<f64>) -> usize {
         let mut index = 0;
         self.limits.update(|limits| {
             index = limits.len();
@@ -100,7 +100,7 @@ impl ResizableGroupContext {
             .get_untracked()
             .map(|group| {
                 let rect = group.get_bounding_client_rect();
-                match self.direction {
+                match self.direction.get_untracked() {
                     Orientation::Horizontal => rect.width(),
                     Orientation::Vertical => rect.height(),
                 }
@@ -121,9 +121,11 @@ impl ResizableGroupContext {
 
         // Clamp against the panel that is growing *and* the one that is shrinking: whichever
         // gives out first is what the divider can actually do.
-        let wanted = (start_before + delta).clamp(before.min, before.max);
+        let (before_min, before_max) = (before.min.get_untracked(), before.max.get_untracked());
+        let (after_min, after_max) = (after.min.get_untracked(), after.max.get_untracked());
+        let wanted = (start_before + delta).clamp(before_min, before_max.max(before_min));
         let applied = wanted - start_before;
-        let other = (start_after - applied).clamp(after.min, after.max);
+        let other = (start_after - applied).clamp(after_min, after_max.max(after_min));
         let applied = start_after - other;
 
         self.sizes.update(|sizes| {
@@ -144,8 +146,8 @@ pub fn use_resizable_group() -> ResizableGroupContext {
 #[component]
 pub fn ResizableGroupRoot(
     /// Which way the panels are laid out: `Horizontal` puts them side by side.
-    #[prop(default = Orientation::Horizontal)]
-    direction: Orientation,
+    #[prop(into, default = Orientation::Horizontal.into())]
+    direction: Signal<Orientation>,
     /// The panel sizes, as percentages. Read it to persist a layout; write it to restore one.
     #[prop(optional, into)]
     sizes: RwSignal<Vec<f64>>,
@@ -176,7 +178,7 @@ pub fn ResizableGroupRoot(
             <div
                 node_ref=ctx.group_ref
                 data-slot="resizable-group"
-                data-orientation=direction.as_str()
+                data-orientation=move || direction.get().as_str()
                 class=class
             >
                 {children()}
@@ -190,8 +192,8 @@ pub fn ResizablePanelRoot(
     /// The size to open at, as a percentage. Panels without one share whatever is left.
     #[prop(default = None, into)]
     default_size: Option<f64>,
-    #[prop(default = 0.0)] min_size: f64,
-    #[prop(default = 100.0)] max_size: f64,
+    #[prop(into, default = 0.0.into())] min_size: Signal<f64>,
+    #[prop(into, default = 100.0.into())] max_size: Signal<f64>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
@@ -235,7 +237,7 @@ pub fn ResizableHandleRoot(
             return;
         }
 
-        let travel = match ctx.direction {
+        let travel = match ctx.direction.get_untracked() {
             Orientation::Horizontal => point.dx,
             Orientation::Vertical => point.dy,
         };
@@ -265,7 +267,7 @@ pub fn ResizableHandleRoot(
             return;
         }
 
-        let horizontal = ctx.direction == Orientation::Horizontal;
+        let horizontal = ctx.direction.get_untracked() == Orientation::Horizontal;
         let step = match (e.key().as_str(), horizontal) {
             ("ArrowLeft", true) | ("ArrowUp", false) => -KEYBOARD_STEP,
             ("ArrowRight", true) | ("ArrowDown", false) => KEYBOARD_STEP,
@@ -280,11 +282,11 @@ pub fn ResizableHandleRoot(
         <div
             data-slot="resizable-handle"
             data-handle-index=index.to_string()
-            data-orientation=ctx.direction.as_str()
+            data-orientation=move || ctx.direction.get().as_str()
             data-dragging=move || (ctx.dragging.get() == Some(index)).then_some("")
             data-disabled=move || disabled.get().then_some("")
             role="separator"
-            aria-orientation=match ctx.direction {
+            aria-orientation=move || match ctx.direction.get() {
                 // A separator between two panels laid out side by side is itself vertical, which
                 // is the opposite of the group's own orientation.
                 Orientation::Horizontal => "vertical",

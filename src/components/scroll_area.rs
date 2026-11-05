@@ -10,7 +10,7 @@ use leptos::prelude::*;
 #[component]
 pub fn ScrollArea(
     #[prop(optional, into)] class: Signal<String>,
-    #[prop(default = false)] horizontal: bool,
+    #[prop(optional, into)] horizontal: Signal<bool>,
     children: Children,
 ) -> impl IntoView {
     view! {
@@ -21,14 +21,17 @@ pub fn ScrollArea(
             <ScrollAreaScrollbar orientation=Orientation::Vertical>
                 <ScrollAreaThumb orientation=Orientation::Vertical />
             </ScrollAreaScrollbar>
-            {horizontal
-                .then(|| {
-                    view! {
-                        <ScrollAreaScrollbar orientation=Orientation::Horizontal>
-                            <ScrollAreaThumb orientation=Orientation::Horizontal />
-                        </ScrollAreaScrollbar>
-                    }
-                })}
+            {move || {
+                horizontal
+                    .get()
+                    .then(|| {
+                        view! {
+                            <ScrollAreaScrollbar orientation=Orientation::Horizontal>
+                                <ScrollAreaThumb orientation=Orientation::Horizontal />
+                            </ScrollAreaScrollbar>
+                        }
+                    })
+            }}
         </ScrollAreaRoot>
     }
 }

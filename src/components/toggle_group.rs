@@ -11,16 +11,16 @@ use leptos::{context::Provider, prelude::*};
 
 #[derive(Copy, Clone, Default)]
 struct ToggleGroupStyle {
-    variant: ToggleVariant,
-    size: ToggleSize,
+    variant: Signal<ToggleVariant>,
+    size: Signal<ToggleSize>,
 }
 
 #[component]
 pub fn ToggleGroup(
     #[prop(optional)] kind: ToggleGroupType,
     #[prop(optional)] orientation: Orientation,
-    #[prop(optional)] variant: ToggleVariant,
-    #[prop(optional)] size: ToggleSize,
+    #[prop(optional, into)] variant: Signal<ToggleVariant>,
+    #[prop(optional, into)] size: Signal<ToggleSize>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(default = None, into)] value: Option<RwSignal<Vec<String>>>,
@@ -53,15 +53,15 @@ pub fn ToggleGroup(
 #[component]
 pub fn ToggleGroupItem(
     #[prop(into)] value: String,
-    #[prop(optional)] variant: Option<ToggleVariant>,
-    #[prop(optional)] size: Option<ToggleSize>,
+    #[prop(optional, into)] variant: MaybeProp<ToggleVariant>,
+    #[prop(optional, into)] size: MaybeProp<ToggleSize>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     let inherited = use_context::<ToggleGroupStyle>().unwrap_or_default();
-    let variant = variant.unwrap_or(inherited.variant);
-    let size = size.unwrap_or(inherited.size);
+    let variant = Signal::derive(move || variant.get().unwrap_or_else(|| inherited.variant.get()));
+    let size = Signal::derive(move || size.get().unwrap_or_else(|| inherited.size.get()));
 
     view! {
         <ToggleGroupItemRoot
@@ -70,8 +70,8 @@ pub fn ToggleGroupItem(
             class=move || {
                 cn!(
                     TOGGLE_BASE,
-                    variant.as_class(),
-                    size.as_class(),
+                    variant.get().as_class(),
+                    size.get().as_class(),
                     "rounded-none first:rounded-l-lg last:rounded-r-lg group-data-[orientation=vertical]/toggle-group:first:rounded-t-lg group-data-[orientation=vertical]/toggle-group:last:rounded-b-lg group-data-[orientation=vertical]/toggle-group:first:rounded-r-lg group-data-[orientation=vertical]/toggle-group:last:rounded-l-lg",
                     class.get()
                 )

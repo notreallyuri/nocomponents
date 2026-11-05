@@ -104,7 +104,7 @@ pub fn DropzoneRoot(
     /// The `accept` grammar: `"image/*"`, `".pdf,.docx"`. Empty takes anything.
     #[prop(optional, into)]
     accept: Signal<String>,
-    #[prop(default = true)] multiple: bool,
+    #[prop(default = true.into(), into)] multiple: Signal<bool>,
     #[prop(optional, into)] disabled: Signal<bool>,
     /// Every arrival, however it arrived. Never called with an empty list.
     #[prop(into)]
@@ -128,7 +128,7 @@ pub fn DropzoneRoot(
     let input_id = StoredValue::new(next_id("dropzone"));
 
     let deliver = move |mut files: Vec<File>, rejected: Vec<File>| {
-        if !multiple {
+        if !multiple.get_untracked() {
             files.truncate(1);
         }
         if !rejected.is_empty()
@@ -211,7 +211,7 @@ pub fn DropzoneRoot(
                 class="sr-only"
                 tabindex="-1"
                 accept=move || accept.get()
-                multiple=multiple
+                multiple=move || multiple.get()
                 disabled=move || disabled.get()
                 on:change=move |e: ev::Event| {
                     let input = e.target().and_then(|t| t.dyn_into::<HtmlInputElement>().ok());

@@ -55,10 +55,10 @@ pub fn SelectTrigger(
 }
 
 #[component]
-pub fn SelectValue(#[prop(into)] placeholder: String) -> impl IntoView {
+pub fn SelectValue(#[prop(into)] placeholder: Signal<String>) -> impl IntoView {
     let label = use_select_label();
 
-    view! { <span class="truncate">{move || label.get().unwrap_or_else(|| placeholder.clone())}</span> }
+    view! { <span class="truncate">{move || label.get().unwrap_or_else(|| placeholder.get())}</span> }
 }
 
 #[component]

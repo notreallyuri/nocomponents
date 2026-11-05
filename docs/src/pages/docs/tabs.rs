@@ -135,7 +135,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "orientation",
-                ty: "Orientation",
+                ty: "Signal<Orientation>",
                 default: "Horizontal",
                 description: "One of: Horizontal, Vertical.",
             },

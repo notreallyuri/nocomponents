@@ -98,7 +98,10 @@ pub fn KanbanCard(
 
 /// The line a card would land on. Render one between each pair of cards, and one after the last.
 #[component]
-pub fn KanbanSlot(index: usize, #[prop(optional, into)] class: Signal<String>) -> impl IntoView {
+pub fn KanbanSlot(
+    #[prop(into)] index: Signal<usize>,
+    #[prop(optional, into)] class: Signal<String>,
+) -> impl IntoView {
     view! {
         <KanbanSlotRoot
             index=index

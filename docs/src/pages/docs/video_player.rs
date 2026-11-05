@@ -105,7 +105,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "mode",
-                ty: "VideoPlayerMode",
+                ty: "Signal<VideoPlayerMode>",
                 default: "Full",
                 description: "How much of the player the reader is given. A value rather than a signal: changing it remounts the player.",
             },
@@ -123,9 +123,9 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "muted",
-                ty: "bool",
+                ty: "Signal<bool>",
                 default: "false",
-                description: "The element's starting mute. The mute control writes to the element from then on.",
+                description: "Whether the element is muted. A change is written to the element; the mute control writes to it too.",
             },
             Prop {
                 name: "on_skip",
@@ -183,9 +183,9 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "muted",
-                ty: "bool",
+                ty: "Signal<bool>",
                 default: "false",
-                description: "The element's starting mute.",
+                description: "Whether the element is muted. A change is written to the element.",
             },
             Prop {
                 name: "class",
@@ -347,7 +347,7 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "label",
-                ty: "String",
+                ty: "Signal<String>",
                 default: "\"Settings\"",
                 description: "The trigger's `aria-label`, since the trigger is an icon.",
             },

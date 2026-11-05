@@ -64,13 +64,13 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "delay",
-                ty: "u64",
+                ty: "Signal<u64>",
                 default: "400",
                 description: "How long the pointer has to rest on the trigger before the tooltip opens.",
             },
             Prop {
                 name: "close_delay",
-                ty: "u64",
+                ty: "Signal<u64>",
                 default: "100",
                 description: "The grace period after leaving, long enough to cross the gap to the content.",
             },
@@ -136,19 +136,19 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "side",
-                ty: "Side",
+                ty: "Signal<Side>",
                 default: "Side::Top",
                 description: "One of: Left, Right, Bottom, Top.",
             },
             Prop {
                 name: "align",
-                ty: "Align",
+                ty: "Signal<Align>",
                 default: "Start",
                 description: "One of: Start, Center, End.",
             },
             Prop {
                 name: "side_offset",
-                ty: "SideOffset",
+                ty: "Signal<SideOffset>",
                 default: "SideOffset(6.0)",
                 description: "Distance from the trigger, in pixels.",
             },

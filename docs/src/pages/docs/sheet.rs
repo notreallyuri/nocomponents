@@ -101,13 +101,13 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "size",
-                ty: "ButtonSize",
+                ty: "Signal<ButtonSize>",
                 default: "Default",
                 description: "One of: Xs, Sm, Default, Lg, Icon, IconSm, IconXs, IconLg.",
             },
             Prop {
                 name: "variant",
-                ty: "ButtonVariant",
+                ty: "Signal<ButtonVariant>",
                 default: "Default",
                 description: "One of: Default, Outline, Ghost, Secondary, Link, Destructive.",
             },
@@ -143,7 +143,7 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "side",
-                ty: "Side",
+                ty: "Signal<Side>",
                 default: "Side::Right",
                 description: "One of: Left, Right, Bottom, Top.",
             },
@@ -245,13 +245,13 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "size",
-                ty: "ButtonSize",
+                ty: "Signal<ButtonSize>",
                 default: "Default",
                 description: "One of: Xs, Sm, Default, Lg, Icon, IconSm, IconXs, IconLg.",
             },
             Prop {
                 name: "variant",
-                ty: "ButtonVariant",
+                ty: "Signal<ButtonVariant>",
                 default: "ButtonVariant::Outline",
                 description: "One of: Default, Outline, Ghost, Secondary, Link, Destructive.",
             },

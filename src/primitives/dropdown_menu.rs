@@ -2,24 +2,19 @@ use crate::{
     primitives::{
         floating::{
             ArrowOpen, FloatingContext, FloatingPortal, FloatingRoot, FloatingTrigger, OpenFocus,
-            TriggerAria, TriggerRender,
+            TriggerAria, TriggerRender, floating_options, side_placement,
         },
         roving_focus::{RovingFocus, use_roving_focus},
         typeahead::Typeahead,
     },
     utils::{
         controllable::controllable,
-        get_placement,
         types::{Align, Direction, Orientation, Side, SideOffset},
     },
 };
-use floating_ui_leptos::{
-    Flip, FlipOptions, MiddlewareVec, Offset, OffsetOptions, Placement, Shift, ShiftOptions,
-    Strategy, UseFloatingOptions, UseFloatingReturn, use_floating,
-};
+use floating_ui_leptos::{Placement, UseFloatingReturn, use_floating};
 use leptos::{context::Provider, either::Either, ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
-use send_wrapper::SendWrapper;
 use std::time::Duration;
 use web_sys::HtmlElement;
 
@@ -227,9 +222,9 @@ pub fn DropdownMenuPortalRoot(children: ChildrenFn) -> impl IntoView {
 
 #[component]
 pub fn DropdownMenuContentRoot(
-    #[prop(optional)] side: Side,
-    #[prop(optional)] align: Align,
-    #[prop(optional)] side_offset: SideOffset,
+    #[prop(optional, into)] side: Signal<Side>,
+    #[prop(optional, into)] align: Signal<Align>,
+    #[prop(optional, into)] side_offset: Signal<SideOffset>,
     /// What Left and Right do inside this surface. A dropdown ignores them; a menubar's menu
     /// steps to the menu beside it, which is why this is a callback rather than a rule here.
     #[prop(optional, into)]
@@ -240,12 +235,6 @@ pub fn DropdownMenuContentRoot(
     let ctx = use_dropdown();
     let floating_ref = ctx.content_ref;
 
-    let middleware: MiddlewareVec = vec![
-        Box::new(Offset::new(OffsetOptions::Value(side_offset.0))),
-        Box::new(Flip::new(FlipOptions::default())),
-        Box::new(Shift::new(ShiftOptions::default())),
-    ];
-
     let UseFloatingReturn {
         floating_styles,
         is_positioned,
@@ -254,11 +243,7 @@ pub fn DropdownMenuContentRoot(
     } = use_floating(
         ctx.trigger_ref,
         floating_ref,
-        UseFloatingOptions::default()
-            .placement(get_placement(side, align))
-            .strategy(Strategy::Fixed)
-            .while_elements_mounted_auto_update()
-            .middleware(SendWrapper::new(middleware)),
+        floating_options(side_placement(side, align), side_offset),
     );
 
     let menu_ref = AnyNodeRef::new();
@@ -377,7 +362,7 @@ pub fn DropdownMenuItemRoot(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] inset: Signal<bool>,
-    #[prop(optional)] variant: DropdownMenuItemVariant,
+    #[prop(optional, into)] variant: Signal<DropdownMenuItemVariant>,
     /// Whether choosing this closes the menu. Read when the choice is made.
     #[prop(default = true.into(), into)]
     close_on_select: Signal<bool>,
@@ -415,7 +400,7 @@ pub fn DropdownMenuItemRoot(
             data-disabled=move || disabled.get().then_some("true")
             aria-disabled=move || disabled.get().then_some("true")
             data-inset=move || inset.get().then_some("")
-            data-variant=variant.as_str()
+            data-variant=move || variant.get().as_str()
             on:click=handle_click
             class=class
         >
@@ -653,19 +638,13 @@ pub fn DropdownMenuSubTriggerRoot(
 
 #[component]
 pub fn DropdownMenuSubContentRoot(
-    #[prop(optional)] side_offset: SideOffset,
+    #[prop(optional, into)] side_offset: Signal<SideOffset>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
     let ctx = use_dropdown();
     let floating_ref = ctx.content_ref;
     let hover = expect_context::<SubHoverState>();
-
-    let middleware: MiddlewareVec = vec![
-        Box::new(Offset::new(OffsetOptions::Value(side_offset.0))),
-        Box::new(Flip::new(FlipOptions::default())),
-        Box::new(Shift::new(ShiftOptions::default())),
-    ];
 
     let menu_ref = AnyNodeRef::new();
     let roving = use_roving_focus(menu_ref, Orientation::Vertical);
@@ -679,11 +658,7 @@ pub fn DropdownMenuSubContentRoot(
     } = use_floating(
         ctx.trigger_ref,
         floating_ref,
-        UseFloatingOptions::default()
-            .placement(Placement::RightStart)
-            .strategy(Strategy::Fixed)
-            .while_elements_mounted_auto_update()
-            .middleware(SendWrapper::new(middleware)),
+        floating_options(Signal::derive(|| Placement::RightStart), side_offset),
     );
 
     view! {

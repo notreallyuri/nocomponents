@@ -5,19 +5,17 @@
 //! and the card keeps `pointer-events`, which a tooltip drops.
 
 use crate::{
-    primitives::floating::{FloatingContext, FloatingPortal, FloatingRoot, TriggerAria},
+    primitives::floating::{
+        FloatingContext, FloatingPortal, FloatingRoot, TriggerAria, floating_options,
+        side_placement,
+    },
     utils::{
         controllable::controllable,
-        get_placement,
         types::{Align, AnchorRender, Side, SideOffset},
     },
 };
-use floating_ui_leptos::{
-    Flip, FlipOptions, MiddlewareVec, Offset, OffsetOptions, Placement, Shift, ShiftOptions,
-    Strategy, UseFloatingOptions, UseFloatingReturn, use_floating,
-};
+use floating_ui_leptos::{Placement, UseFloatingReturn, use_floating};
 use leptos::{context::Provider, either::Either, prelude::*};
-use send_wrapper::SendWrapper;
 use std::time::Duration;
 
 pub type HoverCardContext = FloatingContext;
@@ -30,8 +28,8 @@ pub fn use_hover_card() -> HoverCardContext {
 #[derive(Clone, Copy)]
 struct HoverIntent {
     context: HoverCardContext,
-    open_delay: u64,
-    close_delay: u64,
+    open_delay: Signal<u64>,
+    close_delay: Signal<u64>,
     pending: StoredValue<Option<TimeoutHandle>>,
 }
 
@@ -47,9 +45,9 @@ impl HoverIntent {
         self.cancel();
         let context = self.context;
         let delay = if open {
-            self.open_delay
+            self.open_delay.get_untracked()
         } else {
-            self.close_delay
+            self.close_delay.get_untracked()
         };
 
         if let Ok(handle) = set_timeout_with_handle(
@@ -65,11 +63,11 @@ impl HoverIntent {
 pub fn HoverCardRoot(
     #[prop(optional, into)] class: Signal<String>,
     /// How long the pointer has to rest before the card opens.
-    #[prop(default = 600, into)]
-    delay: u64,
+    #[prop(into, default = 600u64.into())]
+    delay: Signal<u64>,
     /// The grace period after leaving, long enough to cross the gap into the card.
-    #[prop(default = 250, into)]
-    close_delay: u64,
+    #[prop(into, default = 250u64.into())]
+    close_delay: Signal<u64>,
     #[prop(optional)] context: Option<HoverCardContext>,
     /// Whether the card is open, held by the caller. Omit it and the root keeps its own.
     #[prop(default = None, into)]
@@ -158,21 +156,15 @@ pub fn HoverCardPortalRoot(children: ChildrenFn) -> impl IntoView {
 
 #[component]
 pub fn HoverCardContentRoot(
-    #[prop(default = Side::Bottom)] side: Side,
-    #[prop(optional)] align: Align,
-    #[prop(default = SideOffset(8.0))] side_offset: SideOffset,
+    #[prop(into, default = Side::Bottom.into())] side: Signal<Side>,
+    #[prop(optional, into)] align: Signal<Align>,
+    #[prop(into, default = SideOffset(8.0).into())] side_offset: Signal<SideOffset>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
     let ctx = use_hover_card();
     let intent = expect_context::<HoverIntent>();
     let floating_ref = ctx.content_ref;
-
-    let middleware: MiddlewareVec = vec![
-        Box::new(Offset::new(OffsetOptions::Value(side_offset.0))),
-        Box::new(Flip::new(FlipOptions::default())),
-        Box::new(Shift::new(ShiftOptions::default())),
-    ];
 
     let UseFloatingReturn {
         floating_styles,
@@ -182,11 +174,7 @@ pub fn HoverCardContentRoot(
     } = use_floating(
         ctx.trigger_ref,
         floating_ref,
-        UseFloatingOptions::default()
-            .placement(get_placement(side, align))
-            .strategy(Strategy::Fixed)
-            .while_elements_mounted_auto_update()
-            .middleware(SendWrapper::new(middleware)),
+        floating_options(side_placement(side, align), side_offset),
     );
 
     view! {

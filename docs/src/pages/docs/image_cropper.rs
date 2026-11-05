@@ -81,7 +81,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "aspect",
-                ty: "Option<f64>",
+                ty: "MaybeProp<f64>",
                 default: "None",
                 description: "A ratio to hold, width over height *in pixels*. The component converts it against the image's natural size, so 1.0 is square on any photograph. Applied when the image loads — until then nobody knows how many pixels there are per fraction — and the crop you supplied is conformed to it rather than replaced. With one set, the edge handles are dropped: an edge cannot honour a ratio without moving a side the pointer is not on.",
             },
@@ -93,7 +93,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "circular",
-                ty: "bool",
+                ty: "Signal<bool>",
                 default: "false",
                 description: "Shows the crop as a circle, for something that will be displayed in one later. A preview only — the rectangle underneath is unchanged and is still what gets cut, so pair it with `aspect=Some(1.0)` unless an ellipse is what you meant. Exposed as `data-circular` on the root for anyone styling the unstyled layer.",
             },

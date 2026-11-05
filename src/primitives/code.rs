@@ -5,7 +5,7 @@ use wasm_bindgen_futures::JsFuture;
 
 #[derive(Copy, Clone)]
 pub struct CodeContext {
-    pub code: StoredValue<String>,
+    pub code: Signal<String>,
     /// True for a short window after a successful copy, so the trigger can acknowledge it.
     pub copied: RwSignal<bool>,
     reset_after: u64,
@@ -16,7 +16,7 @@ impl CodeContext {
     /// Writes the code to the clipboard. `copied` is raised only once the write has succeeded, so
     /// a denied permission or an insecure origin leaves the trigger as it was.
     pub fn copy(&self) {
-        let text = self.code.get_value();
+        let text = self.code.get_untracked();
         let ctx = *self;
 
         spawn_local(async move {
@@ -55,7 +55,7 @@ pub fn use_code() -> CodeContext {
 
 #[component]
 pub fn CodeBlockRoot(
-    #[prop(into)] code: String,
+    #[prop(into)] code: Signal<String>,
     #[prop(optional, into)] class: Signal<String>,
     /// How long the copied acknowledgement stays up, in milliseconds.
     #[prop(default = 1500)]
@@ -63,7 +63,7 @@ pub fn CodeBlockRoot(
     children: Children,
 ) -> impl IntoView {
     let context = CodeContext {
-        code: StoredValue::new(code),
+        code,
         copied: RwSignal::new(false),
         reset_after,
         reset: StoredValue::new(None),
@@ -89,7 +89,7 @@ pub fn CodeBlockContentRoot(
 
     view! {
         <pre data-slot="code-block-content" data-language=language.as_str() class=class>
-            <code>{move || render_code(ctx.code.get_value(), language)}</code>
+            <code>{move || render_code(ctx.code.get(), language)}</code>
         </pre>
     }
 }

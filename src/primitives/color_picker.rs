@@ -40,7 +40,7 @@ pub struct ColorPickerContext {
     /// The format the text field reads and writes.
     pub format: RwSignal<ColorFormat>,
     /// Whether the picker offers an alpha channel at all.
-    pub with_alpha: bool,
+    pub with_alpha: Signal<bool>,
 }
 
 impl ColorPickerContext {
@@ -115,7 +115,7 @@ impl ColorPickerContext {
     pub fn channels(&self) -> Vec<ColorChannel> {
         let mut channels = self.format.get().channels().to_vec();
 
-        if self.with_alpha && !channels.is_empty() {
+        if self.with_alpha.get() && !channels.is_empty() {
             channels.push(ALPHA_CHANNEL);
         }
 
@@ -277,10 +277,13 @@ pub fn ColorPickerRoot(
     /// The colour as text, in the current format. Read it for a form; write it to set the picker.
     #[prop(optional, into)]
     value: RwSignal<String>,
-    #[prop(optional)] format: ColorFormat,
+    /// The format the text field starts in, and follows: when this changes the picker switches to
+    /// it. The format button can still move away from it in between.
+    #[prop(optional, into)]
+    format: Signal<ColorFormat>,
     /// Whether to offer an alpha channel.
-    #[prop(default = false)]
-    with_alpha: bool,
+    #[prop(optional, into)]
+    with_alpha: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
@@ -288,9 +291,16 @@ pub fn ColorPickerRoot(
 
     let ctx = ColorPickerContext {
         hsva: RwSignal::new(Hsva::from(opening)),
-        format: RwSignal::new(format),
+        format: RwSignal::new(format.get_untracked()),
         with_alpha,
     };
+
+    Effect::new(move |_| {
+        let wanted = format.get();
+        if ctx.format.get_untracked() != wanted {
+            ctx.format.set(wanted);
+        }
+    });
 
     // Out: the caller's signal always holds what the picker is showing.
     Effect::new(move |_| {
@@ -530,7 +540,7 @@ pub fn ColorPickerSwatchRoot(#[prop(optional, into)] class: Signal<String>) -> i
 #[component]
 pub fn ColorPickerInputRoot(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
     let ctx = use_color_picker();
-    let draft = RwSignal::new(ctx.text());
+    let draft = RwSignal::new(untrack(|| ctx.text()));
     let invalid = RwSignal::new(false);
 
     // Anything that changes the colour elsewhere — the square, a preset — rewrites the field,
@@ -595,7 +605,7 @@ pub fn ColorPickerChannelRoot(
     let ctx = use_color_picker();
 
     let written = move || format!("{:.*}", channel.decimals, ctx.channel(channel));
-    let draft = RwSignal::new(written());
+    let draft = RwSignal::new(untrack(written));
     // While the box has focus its own text wins: rewriting it under the caret would renumber
     // what is being typed, and `0.5` would become `0.500` between the point and the five.
     let editing = RwSignal::new(false);

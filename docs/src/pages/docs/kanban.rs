@@ -138,7 +138,7 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "index",
-                ty: "usize",
+                ty: "Signal<usize>",
                 default: "",
                 description: "How many cards down this gap sits. 0 is above the first card.",
             },

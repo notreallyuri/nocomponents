@@ -18,9 +18,9 @@ use web_sys::{Element, HtmlElement};
 #[derive(Copy, Clone)]
 pub struct SliderContext {
     pub values: RwSignal<Vec<f64>>,
-    pub min: f64,
-    pub max: f64,
-    pub step: f64,
+    pub min: Signal<f64>,
+    pub max: Signal<f64>,
+    pub step: Signal<f64>,
     pub orientation: Orientation,
     pub disabled: Signal<bool>,
     /// The thumb currently being dragged, so the styled layer can mark it.
@@ -39,20 +39,22 @@ fn decimals_of(step: f64) -> i32 {
 impl SliderContext {
     /// Where a value sits along the track, 0.0 at `min` and 1.0 at `max`.
     pub fn percent(&self, value: f64) -> f64 {
-        if self.max <= self.min {
+        let (min, max) = (self.min.get(), self.max.get());
+        if max <= min {
             return 0.0;
         }
-        ((value - self.min) / (self.max - self.min)).clamp(0.0, 1.0)
+        ((value - min) / (max - min)).clamp(0.0, 1.0)
     }
 
     fn snap(&self, value: f64) -> f64 {
-        if self.step <= 0.0 {
-            return value.clamp(self.min, self.max);
+        let (min, max, step) = (self.min.get(), self.max.get(), self.step.get());
+        if step <= 0.0 {
+            return value.clamp(min, max);
         }
 
-        let steps = ((value - self.min) / self.step).round();
-        let snapped = (self.min + steps * self.step).clamp(self.min, self.max);
-        let factor = 10f64.powi(decimals_of(self.step));
+        let steps = ((value - min) / step).round();
+        let snapped = (min + steps * step).clamp(min, max);
+        let factor = 10f64.powi(decimals_of(step));
 
         (snapped * factor).round() / factor
     }
@@ -61,12 +63,12 @@ impl SliderContext {
     pub fn bounds(&self, index: usize) -> (f64, f64) {
         self.values.with(|values| {
             let lower = if index == 0 {
-                self.min
+                self.min.get()
             } else {
                 values[index - 1]
             };
             let upper = if index + 1 >= values.len() {
-                self.max
+                self.max.get()
             } else {
                 values[index + 1]
             };
@@ -76,7 +78,7 @@ impl SliderContext {
 
     pub fn value_at(&self, index: usize) -> f64 {
         self.values
-            .with(|values| values.get(index).copied().unwrap_or(self.min))
+            .with(|values| values.get(index).copied().unwrap_or(self.min.get()))
     }
 
     pub fn set_thumb(&self, index: usize, value: f64) {
@@ -94,7 +96,8 @@ impl SliderContext {
 
     /// Nudge a thumb by whole steps, for the keyboard.
     pub fn step_thumb(&self, index: usize, steps: f64) {
-        let step = if self.step > 0.0 { self.step } else { 1.0 };
+        let step = self.step.get();
+        let step = if step > 0.0 { step } else { 1.0 };
         self.set_thumb(index, self.value_at(index) + steps * step);
     }
 
@@ -119,7 +122,8 @@ impl SliderContext {
             }
         };
 
-        Some(self.min + fraction.clamp(0.0, 1.0) * (self.max - self.min))
+        let (min, max) = (self.min.get(), self.max.get());
+        Some(min + fraction.clamp(0.0, 1.0) * (max - min))
     }
 
     /// The thumb a press on the track picks up. Ties go to the lower thumb, except at the top of
@@ -148,9 +152,9 @@ pub fn use_slider() -> SliderContext {
 
 #[component]
 pub fn SliderRoot(
-    #[prop(default = 0.0)] min: f64,
-    #[prop(default = 100.0)] max: f64,
-    #[prop(default = 1.0)] step: f64,
+    #[prop(into, default = 0.0.into())] min: Signal<f64>,
+    #[prop(into, default = 100.0.into())] max: Signal<f64>,
+    #[prop(into, default = 1.0.into())] step: Signal<f64>,
     #[prop(optional)] orientation: Orientation,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
@@ -168,7 +172,7 @@ pub fn SliderRoot(
 ) -> impl IntoView {
     let values = controllable(
         value,
-        default_value.unwrap_or_else(|| vec![min]),
+        default_value.unwrap_or_else(|| vec![min.get_untracked()]),
         on_value_change,
     );
 
@@ -274,7 +278,7 @@ pub fn SliderRangeRoot(#[prop(optional, into)] class: Signal<String>) -> impl In
             if values.len() > 1 {
                 (lowest, highest)
             } else {
-                (ctx.min, highest)
+                (ctx.min.get(), highest)
             }
         });
 
@@ -338,11 +342,11 @@ pub fn SliderThumbRoot(
                 true
             }
             "Home" => {
-                ctx.set_thumb(index, ctx.min);
+                ctx.set_thumb(index, ctx.min.get());
                 true
             }
             "End" => {
-                ctx.set_thumb(index, ctx.max);
+                ctx.set_thumb(index, ctx.max.get());
                 true
             }
             _ => false,
@@ -359,7 +363,9 @@ pub fn SliderThumbRoot(
             data-slot="slider-thumb"
             data-orientation=ctx.orientation.as_str()
             data-disabled=move || ctx.disabled.get().then_some("true")
-            data-state=move || if ctx.active_thumb.get() == Some(index) { "dragging" } else { "idle" }
+            data-state=move || {
+                if ctx.active_thumb.get() == Some(index) { "dragging" } else { "idle" }
+            }
             tabindex=move || if ctx.disabled.get() { "-1" } else { "0" }
             aria-orientation=ctx.orientation.as_str()
             // The thumb's own bounds, not the track's: it cannot pass its neighbour.

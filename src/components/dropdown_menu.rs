@@ -39,8 +39,8 @@ pub fn DropdownMenu(
 
 #[component]
 pub fn DropdownMenuTrigger(
-    #[prop(optional)] size: ButtonSize,
-    #[prop(optional)] variant: ButtonVariant,
+    #[prop(optional, into)] size: Signal<ButtonSize>,
+    #[prop(optional, into)] variant: Signal<ButtonVariant>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] render: Option<Callback<TriggerRender, AnyView>>,
@@ -80,9 +80,9 @@ pub fn DropdownMenuPortal(children: ChildrenFn) -> impl IntoView {
 
 #[component]
 pub fn DropdownMenuContent(
-    #[prop(optional)] side: Side,
-    #[prop(optional)] align: Align,
-    #[prop(optional)] side_offset: SideOffset,
+    #[prop(optional, into)] side: Signal<Side>,
+    #[prop(optional, into)] align: Signal<Align>,
+    #[prop(optional, into)] side_offset: Signal<SideOffset>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
@@ -112,7 +112,7 @@ pub fn DropdownMenuItem(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] inset: Signal<bool>,
-    #[prop(optional)] variant: DropdownMenuItemVariant,
+    #[prop(optional, into)] variant: Signal<DropdownMenuItemVariant>,
     #[prop(default = true.into(), into)] close_on_select: Signal<bool>,
     #[prop(optional, into)] on_click: Option<Callback<ev::MouseEvent>>,
     children: Children,
@@ -306,7 +306,7 @@ pub fn DropdownMenuSubTrigger(
 
 #[component]
 pub fn DropdownMenuSubContent(
-    #[prop(optional)] side_offset: SideOffset,
+    #[prop(optional, into)] side_offset: Signal<SideOffset>,
     #[prop(optional, into)] class: Signal<String>,
     children: ChildrenFn,
 ) -> impl IntoView {

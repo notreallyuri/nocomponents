@@ -324,8 +324,8 @@ pub fn CanvasRoot(
     /// Off by default, because a press is the one gesture a caller cannot get back: space and
     /// drag, the middle button and two fingers all still pan, and none of them is what anybody
     /// clicks a board with. Turn it on for a board that is only ever looked at.
-    #[prop(default = false)]
-    pan_on_drag: bool,
+    #[prop(optional, into)]
+    pan_on_drag: Signal<bool>,
     /// Run for a click that landed on the board itself rather than on anything placed on it, and
     /// that did not travel far enough to have been a pan.
     ///
@@ -449,7 +449,7 @@ pub fn CanvasRoot(
                 data-pan=move || {
                     if ctx.panning.get() {
                         Some("active")
-                    } else if pan_on_drag || ctx.space_held.get() {
+                    } else if pan_on_drag.get() || ctx.space_held.get() {
                         Some("ready")
                     } else {
                         None
@@ -505,7 +505,7 @@ pub fn CanvasRoot(
                     let middle = e.button() == 1;
                     let primary = e.button() == 0;
                     let with_space = primary && ctx.space_held.get_untracked();
-                    if !(middle || with_space || (primary && pan_on_drag)) {
+                    if !(middle || with_space || (primary && pan_on_drag.get_untracked())) {
                         // The primary button is not the hand tool here, so it is the caller's if
                         // they asked for it and the press landed on the board rather than on a
                         // node or on the controls.

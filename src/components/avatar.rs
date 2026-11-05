@@ -24,7 +24,7 @@ impl AvatarSize {
 
 #[component]
 pub fn Avatar(
-    #[prop(optional)] size: AvatarSize,
+    #[prop(optional, into)] size: Signal<AvatarSize>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
@@ -32,7 +32,7 @@ pub fn Avatar(
         <AvatarRoot>
             <span
                 data-slot="avatar"
-                data-size=size.as_str()
+                data-size=move || size.get().as_str()
                 class=move || {
                     cn!(
                         "group/avatar relative flex size-8 shrink-0 overflow-hidden rounded-full select-none data-[size=lg]:size-10 data-[size=sm]:size-6",
@@ -48,8 +48,8 @@ pub fn Avatar(
 
 #[component]
 pub fn AvatarImage(
-    #[prop(into)] src: String,
-    #[prop(optional, into)] alt: String,
+    #[prop(into)] src: Signal<String>,
+    #[prop(optional, into)] alt: Signal<String>,
     #[prop(optional, into)] class: Signal<String>,
 ) -> impl IntoView {
     view! {

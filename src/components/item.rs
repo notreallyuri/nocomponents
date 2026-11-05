@@ -75,18 +75,15 @@ pub fn ItemSeparator(#[prop(optional, into)] class: Signal<String>) -> impl Into
 
 #[component]
 pub fn Item(
-    #[prop(optional)] variant: ItemVariant,
-    #[prop(optional)] size: ItemSize,
+    #[prop(optional, into)] variant: Signal<ItemVariant>,
+    #[prop(optional, into)] size: Signal<ItemSize>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
-    let variant_class = variant.as_class();
-    let size_class = size.as_class();
-
     view! {
         <div
             data-slot="item"
-            data-variant=match variant {
+            data-variant=move || match variant.get() {
                 ItemVariant::Default => "default",
                 ItemVariant::Outline => "outline",
                 ItemVariant::Muted => "muted",
@@ -94,8 +91,8 @@ pub fn Item(
             class=move || {
                 cn!(
                     "group/item flex flex-wrap items-center rounded-lg border border-transparent text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 [a]:hover:bg-accent/50",
-                    variant_class,
-                    size_class,
+                    variant.get().as_class(),
+                    size.get().as_class(),
                     class.get()
                 )
             }
@@ -107,19 +104,17 @@ pub fn Item(
 
 #[component]
 pub fn ItemMedia(
-    #[prop(optional)] variant: ItemMediaVariant,
+    #[prop(optional, into)] variant: Signal<ItemMediaVariant>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
-    let variant_class = variant.as_class();
-
     view! {
         <div
             data-slot="item-media"
             class=move || {
                 cn!(
                     "flex shrink-0 items-center justify-center gap-2 self-start text-muted-foreground [&_svg]:pointer-events-none",
-                    variant_class,
+                    variant.get().as_class(),
                     class.get()
                 )
             }

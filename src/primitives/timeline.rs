@@ -77,11 +77,11 @@ impl TimelineSide {
 
 #[derive(Copy, Clone)]
 pub struct TimelineContext {
-    pub orientation: Orientation,
+    pub orientation: Signal<Orientation>,
     /// Whether events alternate sides of the axis.
-    pub alternate: bool,
+    pub alternate: Signal<bool>,
     /// Which side content sits on, and the side event zero takes when alternating.
-    pub side: TimelineSide,
+    pub side: Signal<TimelineSide>,
     /// How many events there are, kept by the events themselves.
     pub count: RwSignal<usize>,
     /// The `<ol>`, which an item reads its position out of.
@@ -99,10 +99,10 @@ pub struct TimelineItemContext {
     pub state: Signal<TimelineState>,
     /// Whether this is the final event, so a connector knows it has nothing to point at.
     pub is_last: Signal<bool>,
-    pub orientation: Orientation,
+    pub orientation: Signal<Orientation>,
     /// Which side of the axis this event's content is on. See [`TimelineSide`].
     pub side: Signal<TimelineSide>,
-    pub alternate: bool,
+    pub alternate: Signal<bool>,
 }
 
 pub fn use_timeline() -> TimelineContext {
@@ -115,14 +115,14 @@ pub fn use_timeline_item() -> TimelineItemContext {
 
 #[component]
 pub fn TimelineRoot(
-    #[prop(default = Orientation::Vertical)] orientation: Orientation,
+    #[prop(into, default = Orientation::Vertical.into())] orientation: Signal<Orientation>,
     /// Whether events fall on alternating sides of the axis — left and right of a vertical
     /// timeline, above and below a horizontal one.
-    #[prop(default = false)]
-    alternate: bool,
+    #[prop(optional, into)]
+    alternate: Signal<bool>,
     /// Which side of the axis content sits on, and where an alternating timeline starts.
-    #[prop(optional)]
-    side: TimelineSide,
+    #[prop(optional, into)]
+    side: Signal<TimelineSide>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
@@ -140,8 +140,8 @@ pub fn TimelineRoot(
             <ol
                 node_ref=ctx.root
                 data-slot="timeline"
-                data-orientation=orientation.as_str()
-                data-alternate=move || if alternate { "true" } else { "false" }
+                data-orientation=move || orientation.get().as_str()
+                data-alternate=move || if alternate.get() { "true" } else { "false" }
                 class=class
             >
                 {children()}
@@ -216,9 +216,9 @@ pub fn TimelineItemRoot(
         Some((index, total)) => index + 1 >= total,
         None => initial + 1 >= ctx.count.get(),
     });
-    let side = Signal::derive(move || match (ctx.alternate, index.get() % 2) {
-        (true, 1) => ctx.side.flip(),
-        _ => ctx.side,
+    let side = Signal::derive(move || match (ctx.alternate.get(), index.get() % 2) {
+        (true, 1) => ctx.side.get().flip(),
+        _ => ctx.side.get(),
     });
     let item = TimelineItemContext {
         index,
@@ -235,9 +235,9 @@ pub fn TimelineItemRoot(
                 node_ref=item_ref
                 data-slot="timeline-item"
                 data-side=move || side.get().as_str()
-                data-alternate=move || if ctx.alternate { "true" } else { "false" }
+                data-alternate=move || if ctx.alternate.get() { "true" } else { "false" }
                 data-state=move || state.get().as_str()
-                data-orientation=ctx.orientation.as_str()
+                data-orientation=move || ctx.orientation.get().as_str()
                 data-last=move || is_last.get().then_some("true")
                 aria-current=move || (state.get() == TimelineState::Current).then_some("step")
                 class=class
@@ -266,9 +266,9 @@ pub fn TimelineMarkerRoot(
         <span
             data-slot="timeline-marker"
             data-side=move || item.side.get().as_str()
-            data-alternate=move || if item.alternate { "true" } else { "false" }
+            data-alternate=move || if item.alternate.get() { "true" } else { "false" }
             data-state=move || item.state.get().as_str()
-            data-orientation=item.orientation.as_str()
+            data-orientation=move || item.orientation.get().as_str()
             aria-hidden=decorative
             class=class
         >
@@ -290,9 +290,9 @@ pub fn TimelineConnectorRoot(#[prop(optional, into)] class: Signal<String>) -> i
         <span
             data-slot="timeline-connector"
             data-side=move || item.side.get().as_str()
-            data-alternate=move || if item.alternate { "true" } else { "false" }
+            data-alternate=move || if item.alternate.get() { "true" } else { "false" }
             data-state=move || item.state.get().as_str()
-            data-orientation=item.orientation.as_str()
+            data-orientation=move || item.orientation.get().as_str()
             data-last=move || item.is_last.get().then_some("true")
             aria-hidden="true"
             class=class
@@ -311,9 +311,9 @@ pub fn TimelineContentRoot(
         <div
             data-slot="timeline-content"
             data-side=move || item.side.get().as_str()
-            data-alternate=move || if item.alternate { "true" } else { "false" }
+            data-alternate=move || if item.alternate.get() { "true" } else { "false" }
             data-state=move || item.state.get().as_str()
-            data-orientation=item.orientation.as_str()
+            data-orientation=move || item.orientation.get().as_str()
             data-last=move || item.is_last.get().then_some("true")
             class=class
         >

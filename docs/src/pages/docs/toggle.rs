@@ -41,13 +41,13 @@ const API: &[ApiEntry] = &[ApiEntry {
     props: &[
         Prop {
             name: "variant",
-            ty: "ToggleVariant",
+            ty: "Signal<ToggleVariant>",
             default: "Default",
             description: "One of: Default, Outline.",
         },
         Prop {
             name: "size",
-            ty: "ToggleSize",
+            ty: "Signal<ToggleSize>",
             default: "Default",
             description: "One of: Xs, Sm, Default, Lg.",
         },

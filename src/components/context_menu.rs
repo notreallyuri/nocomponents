@@ -47,9 +47,9 @@ pub fn ContextMenuTrigger(
 
 #[component]
 pub fn ContextMenuContent(
-    #[prop(default = Side::Bottom)] side: Side,
-    #[prop(default = Align::Start)] align: Align,
-    #[prop(default = SideOffset(0.0))] side_offset: SideOffset,
+    #[prop(into, default = Side::Bottom.into())] side: Signal<Side>,
+    #[prop(into, default = Align::Start.into())] align: Signal<Align>,
+    #[prop(into, default = SideOffset(0.0).into())] side_offset: Signal<SideOffset>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {

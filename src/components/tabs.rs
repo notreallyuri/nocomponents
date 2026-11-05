@@ -20,7 +20,7 @@ pub fn Tabs(
     #[prop(optional, into)] default_value: String,
     #[prop(optional, into)] on_value_change: Option<Callback<String>>,
     #[prop(optional, into)] class: Signal<String>,
-    #[prop(optional, into)] orientation: Orientation,
+    #[prop(optional, into)] orientation: Signal<Orientation>,
     children: Children,
 ) -> impl IntoView {
     view! {

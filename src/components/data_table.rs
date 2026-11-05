@@ -45,26 +45,24 @@ impl<T: Send + Sync + 'static> DataTableColumn<T> {
 #[component]
 pub fn DataTable<T>(
     #[prop(into)] rows: Signal<Vec<T>>,
-    columns: Vec<DataTableColumn<T>>,
+    #[prop(into)] columns: Signal<Vec<DataTableColumn<T>>>,
     #[prop(optional, into)] row_id: Option<Callback<T, String>>,
     #[prop(default = None, into)] selection: Option<TableSelection>,
     #[prop(default = None, into)] sort: Option<TableSort>,
-    #[prop(default = "No results.", into)] empty: &'static str,
+    #[prop(default = "No results.".into(), into)] empty: Signal<String>,
     #[prop(optional, into)] class: Signal<String>,
 ) -> impl IntoView
 where
     T: Clone + PartialEq + Send + Sync + 'static,
 {
     let sort = sort.unwrap_or_default();
-    let columns = StoredValue::new(columns);
-
     let sorted = Memo::new(move |_| {
         let mut rows = rows.get();
         let Some(column) = sort.column.get() else {
             return rows;
         };
 
-        let compare = columns.with_value(|columns| {
+        let compare = columns.with(|columns| {
             columns
                 .iter()
                 .find(|candidate| candidate.key == column)
@@ -92,13 +90,6 @@ where
     });
 
     let selecting = row_id.is_some() && selection.is_some();
-
-    let cells = StoredValue::new(columns.with_value(|columns| {
-        columns
-            .iter()
-            .map(|column| (column.class, column.cell))
-            .collect::<Vec<_>>()
-    }));
 
     view! {
         <Table attr:data-slot="data-table" class=class>
@@ -143,61 +134,69 @@ where
                                 }
                             })
                     }}
-                    {columns
-                        .with_value(|columns| {
-                            columns
-                                .iter()
-                                .map(|column| {
-                                    let key = column.key;
-                                    let header = column.header;
-                                    let class = column.class;
-                                    match column.compare {
-                                        None => {
+                    {move || {
+                        columns
+                            .with(|columns| {
+                                columns
+                                    .iter()
+                                    .map(|column| {
+                                        let key = column.key;
+                                        let header = column.header;
+                                        let class = column.class;
+                                        match column.compare {
+                                            None => {
 
-                                            view! { <TableHead class=class>{header}</TableHead> }
-                                                .into_any()
-                                        }
-                                        Some(_) => {
-                                            view! {
-                                                <TableSortHeaderRoot
-                                                    sort=sort
-                                                    column=key
-                                                    class=cn!(
-                                                        "h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground", class
-                                                    )
-                                                    button_class="group/sort -ml-2 inline-flex h-7 items-center gap-1 rounded-md px-2 text-left transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-                                                >
-                                                    {header}
-                                                    <span
-                                                        class="text-muted-foreground opacity-0 transition-opacity group-hover/sort:opacity-60 data-[active]:opacity-100"
-                                                        data-active=move || sort.is_sorted_by(key).then_some("")
-                                                    >
-                                                        {move || {
-                                                            if sort.is_sorted_by(key)
-                                                                && sort.direction.get() == SortDirection::Descending
-                                                            {
-                                                                view! { <ChevronDown class="size-3.5" /> }.into_any()
-                                                            } else {
-                                                                view! { <ChevronUp class="size-3.5" /> }.into_any()
-                                                            }
-                                                        }}
-                                                    </span>
-                                                </TableSortHeaderRoot>
+                                                view! { <TableHead class=class>{header}</TableHead> }
+                                                    .into_any()
                                             }
-                                                .into_any()
+                                            Some(_) => {
+                                                view! {
+                                                    <TableSortHeaderRoot
+                                                        sort=sort
+                                                        column=key
+                                                        class=cn!(
+                                                            "h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground", class
+                                                        )
+                                                        button_class="group/sort -ml-2 inline-flex h-7 items-center gap-1 rounded-md px-2 text-left transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                                                    >
+                                                        {header}
+                                                        <span
+                                                            class="text-muted-foreground opacity-0 transition-opacity group-hover/sort:opacity-60 data-[active]:opacity-100"
+                                                            data-active=move || sort.is_sorted_by(key).then_some("")
+                                                        >
+                                                            {move || {
+                                                                if sort.is_sorted_by(key)
+                                                                    && sort.direction.get() == SortDirection::Descending
+                                                                {
+                                                                    view! { <ChevronDown class="size-3.5" /> }.into_any()
+                                                                } else {
+                                                                    view! { <ChevronUp class="size-3.5" /> }.into_any()
+                                                                }
+                                                            }}
+                                                        </span>
+                                                    </TableSortHeaderRoot>
+                                                }
+                                                    .into_any()
+                                            }
                                         }
-                                    }
-                                })
-                                .collect_view()
-                        })}
+                                    })
+                                    .collect_view()
+                            })
+                    }}
                 </TableRow>
             </TableHeader>
 
             <TableBody>
                 {move || {
                     let rows = sorted.get();
-                    let width = columns.with_value(|columns| columns.len())
-                        + usize::from(selecting);
+                    let width = columns.with(|columns| columns.len()) + usize::from(selecting);
+                    let cells = columns
+                        .with(|columns| {
+                            columns
+                                .iter()
+                                .map(|column| (column.class, column.cell))
+                                .collect::<Vec<_>>()
+                        });
                     if rows.is_empty() {
                         return view! {
                             <TableRow>
@@ -205,7 +204,7 @@ where
                                     attr:colspan=width.to_string()
                                     class="h-24 text-center text-muted-foreground"
                                 >
-                                    {empty}
+                                    {move || empty.get()}
                                 </TableCell>
                             </TableRow>
                         }
@@ -213,6 +212,7 @@ where
                     }
                     rows.into_iter()
                         .map(|row| {
+                            let cells = cells.clone();
                             let id = row_id.map(|row_id| row_id.run(row.clone()));
                             let picked = {
                                 let id = id.clone();
@@ -249,9 +249,8 @@ where
                                             }
                                         })}
                                     {cells
-                                        .get_value()
-                                        .into_iter()
-                                        .map(|(class, cell)| {
+                                        .iter()
+                                        .map(|&(class, cell)| {
                                             let value = cell.run(row.clone());
                                             view! { <TableCell class=class>{value}</TableCell> }
                                         })

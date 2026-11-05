@@ -970,32 +970,6 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
 
 - [x] **Controlled and uncontrolled** — every stateful root takes `x`, `default_x` and
       `on_x_change`, resolved in the primitive by `utils::controllable`; the styled layer forwards.
-- [ ] **`side`, `align` and `side_offset` are read once.** `DropdownMenuContent`,
-      `ContextMenuContent`, `MenubarContent`, `PopoverContent`, `HoverCardContent`,
-      `TooltipContent`, `ComboboxContent` and `DatePicker` take them as plain values, and the
-      primitive hands them straight to `use_floating` (`primitives/dropdown_menu.rs:199-207` is the
-      shape; the others copy it). Wrapping the props in `Signal` is the easy half; the hard half is
-      that `UseFloatingOptions::placement` is built once, so a signal would need the options
-      rebuilt or the placement fed from one. A primitive change, not a prop-type one — a
-      responsive layout that flips a popover from `Right` to `Bottom` at a breakpoint is the case
-      that would notice.
-- [ ] **`variant`, `size` and the other enums are plain values.** Taken as `ButtonVariant`,
-      `ButtonSize`, `ToggleVariant`, `ToggleSize` and the rest, then resolved once into a class
-      string outside any closure, so none of them can follow a signal. Affects `Button`
-      (`components/button.rs:88-89`), `DropdownMenuTrigger` and `PopoverTrigger`, `Toggle`,
-      `ToggleGroup` and `ToggleGroupItem` (resolved once through `unwrap_or`, :56-57), `Alert`,
-      `Badge`, `Card` (`data-size` written once), `Item` (`data-variant` outside the closure),
-      `Spinner`, `Separator` (`orientation` and `decorative`), `NativeSelect` (`size_class`, :31),
-      `Tabs` (`orientation`), `Accordion` (`kind`, `collapsible`), `Carousel`, `Timeline`,
-      `Resizable` (`direction`), `Chart` (`kind`, and the `tooltip`/`legend`/`grid` bools),
-      `Calendar` and `DatePicker` (`mode`, `week_starts_on`, `min`, `max`), `ColorPicker`
-      (`format`, `with_alpha`), `ImageCropper` (`aspect`, `circular`), `Canvas` (`pan_on_drag`),
-      `Dropzone` (`multiple`), `ScrollArea` (`horizontal`), `Input` and `InputGroupInput`
-      (`input_type`), and `SidebarMenuButton` / `SidebarMenuSubButton` (`size`). Where the
-      primitive reads the value inside a closure the styled prop can become a `Signal` at no
-      cost; where it copies it into a context at mount (`Accordion`, `Timeline`, `Calendar`,
-      `Slider`) the primitive has to change first, as above. `Input`'s is the one a caller hits
-      first: a show/hide-password toggle cannot switch `Password` to `Text`.
 - [ ] **Nothing here submits with a form.** `Checkbox`, `RadioGroupItem` and `Switch` are
       `<button role=…>` with no hidden `<input>`, so a native `<form>` sees nothing, and none of
       them takes `name`, `value` or `required`. `Select` has a hidden `<select>`
@@ -1025,9 +999,6 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
 - [ ] `alert_dialog`: no `AlertDialogOverlay`/`AlertDialogContent` split — the portal's `class`
       styles the panel, the overlay is fixed — and no `modal`, which `DialogRoot` has and the styled
       wrapper hides.
-- [ ] `avatar`: `AvatarImage` takes `src` and `alt` as plain `String`s
-      (`components/avatar.rs:50`, `primitives/avatar.rs:31`), so a changed URL never reaches the
-      `<img>` — an account switcher keeps the first user's face.
 - [ ] `badge`: a hardcoded `<div>` with no `render`, so a badge cannot be a link
       (`components/badge.rs:35`), while the variants write `[a&]:hover:…` modifiers
       (:18-29) that can only match when the badge *is* an `<a>` — on a `<div>` they are dead
@@ -1037,27 +1008,11 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
 - [ ] `button`: no `id`, `name`, `value` or `aria-label` passthrough
       (`components/button.rs:85`), so a submit button's `name` cannot be set.
 - [ ] `calendar`: no `number_of_months` (`components/calendar.rs:13`).
-- [ ] `canvas`: `StickyColor` and `ShapeKind` are plain values like the rest of the enums; see the
-      cross-cutting item.
 - [ ] `checkbox`: no `indeterminate` and no `aria-checked="mixed"` (`primitives/checkbox.rs:25`),
       which `DataTable`'s select-all needs and fakes with a wrapper `span` at the moment.
-- [ ] `code`: `CodeBlock`'s `code` is a `String` frozen into a `StoredValue` and read through
-      `get_value` (:42, :65), so a block whose source changes does not re-render; `label` and
-      `has_header` (`components/code.rs:31,36`) are read once.
-- [ ] `color_picker`: `ColorPickerRoot` copies `format` into its own `RwSignal`
-      (`primitives/color_picker.rs:291`), so changing the prop later changes nothing; `presets` is
-      a `Vec<&'static str>` whose `is_empty()` is evaluated once (:162), so presets that arrive
-      late never show the row.
-- [ ] `combobox`: `should_filter` on `ComboboxContent` is a plain `bool` handed to
-      `CommandRoot`, which keeps it in
-      `CommandContext` and reads it with no tracking (`primitives/command.rs:121`), so a combobox
-      that goes from client-filtered to server-filtered while open keeps filtering.
-      `ComboboxItem`'s `deselectable` and `close_on_select` (`components/combobox.rs:135`) are
-      plain for the same reason.
 - [ ] `command`: `CommandInput` wraps the `<input>` in a fixed `div`
       (`components/command.rs:50`), so the caller's `class` reaches the input and nothing reaches
-      the row with the icon — you cannot change its height or border. `should_filter` is plain on
-      both (:20, :165); see `combobox`.
+      the row with the icon — you cannot change its height or border.
 - [ ] `context_menu`: `ContextMenu` takes no `class` (`components/context_menu.rs:16`) though
       `ContextMenuRoot` is a `FloatingRoot` with one. The content has its own slot now, but the
       re-exported items, labels and sub parts still carry the dropdown's names —
@@ -1065,16 +1020,14 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       so a stylesheet keyed on slot cannot tell the two apart; giving them their own means a slot
       prefix handed down from the root through context. `Group`, `Shortcut`, `CheckboxItem`,
       `RadioGroup` and `RadioItem` are now re-exported under `ContextMenu*` names.
-- [ ] `data_table`: the select-all cannot be mixed until `Checkbox` has `indeterminate`. `columns`
-      is moved into a `StoredValue` once (:57), so a column list that changes (a user hiding a
-      column) is not seen; and `empty` is `&'static str` (:50), so "No results" cannot be a
-      translated or computed string, never mind a node.
+- [ ] `data_table`: the select-all cannot be mixed until `Checkbox` has `indeterminate`, and `empty`
+      is a string, so "No results" cannot be a node.
 - [ ] `date_picker`: no way to disable the picker — its `disabled` is a per-date
       `Callback<Date, bool>` (`components/date_picker.rs:21`), the same name meaning two things next
       to every other component's `Signal<bool>` — and no `id` for a `Field` label to point at.
 - [ ] `dialog`: no `modal` on the styled `Dialog` although `DialogRoot` has it
-      (`components/dialog.rs:13`, `primitives/dialog.rs:46-53`). No `DialogClose`: the close button is hardcoded inside `DialogPortal`
-      (:76-87), gated by `show_close` read once, so a footer "Cancel" has to call `ctx.close()` by
+      (`components/dialog.rs:13`, `primitives/dialog.rs:46-53`). No `DialogClose`: the close button is
+      hardcoded inside `DialogPortal` (:76-87), so a footer "Cancel" has to call `ctx.close()` by
       hand. No `DialogOverlay`/`DialogContent` split either — the portal's `class` styles the
       panel and the overlay is fixed (and unconditional, `components/dialog.rs:63-67`, so exposing
       `modal` means gating it the way `DrawerContent` does).
@@ -1093,9 +1046,7 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       the primitive under the rule in `CLAUDE.md`. The doc comment gives a reason (`ButtonSize` is
       a value, so an item could not resize with the menu), which is a reason for the enum item
       above rather than for the layering.
-- [ ] `hover_card`: `delay` and `close_delay` are plain `u64`s read once into `HoverIntent`
-      (`components/hover_card.rs:13`, `primitives/hover_card.rs:78-83`), and `delay` is Radix's
-      `open_delay`.
+- [ ] `hover_card`: `delay` is Radix's `open_delay`.
 - [ ] `image_cropper`: `min_size` is on the primitive (`primitives/image_cropper.rs:219`) and not
       on `ImageCropper` (`components/image_cropper.rs:12`). The resize handles are
       `aria-hidden="true"` (`primitives/image_cropper.rs:386`) with no keyboard path, so the crop
@@ -1111,8 +1062,6 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
 - [ ] `item`: a hardcoded `<div>` with no `render`, whose classes assume it may be an `<a>`
       (`[a]:hover:bg-accent/50`, `components/item.rs:88`) — an `Item` that links has to wrap itself.
       `ItemMediaVariant` lacks shadcn's `Image` (:39-43).
-- [ ] `kanban`: `KanbanSlot`'s `index` is a plain `usize` (`components/kanban.rs:100`), so a slot
-      between cards whose order changes keeps the position it mounted with.
 - [ ] `label`: no `html_for` (`components/label.rs:5`), so a `Label` outside a `Field` — which is
       most uses of the bare component — cannot be tied to its control without `attr:for=…`.
 - [ ] `menubar`: `MenubarSub` takes no `class` (`components/menubar.rs:157`) and
@@ -1124,7 +1073,7 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       `DropdownMenuSubContent` — which is the same component with the one word right.
 - [ ] `native_select`: no `NativeSelectOption` or `NativeSelectOptGroup`
       (`components/native_select.rs:20`); every caller writes bare `<option>`s. No
-      `name`, `required` or `on_change` (:21). `size_class` is computed once (:31).
+      `name`, `required` or `on_change` (:21).
 - [ ] `navigation_menu`: `NavigationMenu` exposes `value` and not the primitive's
       `open_delay`/`close_delay` (`components/navigation_menu.rs:13`,
       `primitives/navigation_menu.rs:127-128`), so the hover timing is fixed.
@@ -1137,47 +1086,32 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       has to Tab their way in, and the content's own controls are not the next stop if the
       trigger sits mid-page. Radix focuses the first focusable inside (or the content) on open
       and hands it back on close; the closing half is already there (`primitives/floating.rs:388`).
-- [ ] `resizable`: no `collapsible` or `collapsed_size` (`components/resizable.rs:32`), the
-      panel's `min_size`/`max_size` are read once at registration (`primitives/resizable.rs:199`),
-      so a panel that should be wider on a larger viewport cannot say so.
+- [ ] `resizable`: no `collapsible` or `collapsed_size` (`components/resizable.rs:32`).
 - [ ] `scroll_area`: the styled component always renders a vertical scrollbar and takes only
       `horizontal` for the other (`components/scroll_area.rs:11-30`) — no `ScrollBar` part and no
       `orientation`, so a horizontal-only area has an inert vertical track.
-- [ ] `select`: the placeholder is a plain `String` read once. No `disabled` or `size` on
+- [ ] `select`: no `disabled` or `size` on
       `SelectTrigger` (:25) though the root takes `disabled`, no `SelectGroup`, `SelectLabel`,
       `SelectSeparator` or the scroll buttons, and `SelectValue` takes no `class`.
-- [ ] `sheet`: `SheetContent` resolves `side` once into `side_class` (`components/sheet.rs:81`),
-      and has no `modal` (:35); the close button is hardcoded
-      like the dialog's (:98-103), and is why the sidebar's mobile branch has to hide it with
-      `[&>button]:hidden`.
-- [ ] `sidebar`: `variant` is captured once and `gap_class`
-      and `fixed_class` (:122-132) never update; `side` and `collapsible` are copied once into
-      `SidebarContext` on the provider.
-- [ ] `slider`: `min`, `max` and `step` are plain `f64` and are copied into `SliderContext` at
-      mount (`primitives/slider.rs:165-174`), so a range whose bounds depend on other state is
-      stuck at the first ones. **The thumb count is read with `with_untracked`**
-      (`components/slider.rs:20`), so a `value` that grows from one to two entries never gains a
-      thumb, and a range slider cannot be switched from a single. No `name` or `inverted`
-      (:8); see the cross-cutting items for the `Field` wiring.
+- [ ] `sheet`: `SheetContent` has no `modal` (`components/sheet.rs:35`); the close button is
+      hardcoded like the dialog's (:98-103), and is why the sidebar's mobile branch has to hide it
+      with `[&>button]:hidden`.
+- [ ] `slider`: no `name` or `inverted` (`components/slider.rs:8`); see the cross-cutting items for
+      the `Field` wiring.
 - [ ] `textarea`: no `placeholder`, `name`, `rows`, `required`, `readonly` or `on_input`
       (`components/textarea.rs:6`) — the same hole as `input`, and the same `attr:` workaround.
-- [ ] `timeline`: `orientation`, `alternate` and `side` are copied into the context once
-      (`components/timeline.rs:12`).
 - [ ] `toast`: `duration` is hardcoded `5000.0` in the provider's defaults
       (`primitives/toast.rs:223`) with no `default_duration`, and there are no
       `ToastTitle`/`ToastDescription`/`ToastAction`/`ToastClose` parts: a toast can only be built
       through the builder, never composed.
 - [ ] `toggle`: the `field_disabled` point is in the cross-cutting items.
 - [ ] `tooltip`: no `TooltipProvider` — shadcn's shared `delayDuration`/`skipDelayDuration`, which
-      is what stops every tooltip in a toolbar waiting out its own delay — and `delay` and
-      `close_delay` are plain `u64`s (`components/tooltip.rs:11-12`). `TooltipContent` (:45) has
-      no arrow.
+      is what stops every tooltip in a toolbar waiting out its own delay. `TooltipContent` (:45)
+      has no arrow.
 - [ ] `video_player`: the three menu parts take no `class` and hardcode the item classes
       (`VideoPlayerSpeedItems` `components/video_player.rs:437`, `VideoPlayerCaptionItems` :479,
       `VideoPlayerCaptionSizeItems` :556), and `VideoPlayerMenu`'s `class` goes to the trigger
-      (:419) while the content's is fixed (:428). `muted` is a plain `bool` the primitive seeds the
-      element with once (`primitives/video_player.rs:889`), `mode` is read once (:702), and `label`
-      is a `String` in a `StoredValue` (:413). Nothing draws `ctx.waiting` (buffering) or
+      (:419) while the content's is fixed (:428). Nothing draws `ctx.waiting` (buffering) or
       `ctx.ended` (a replay) in the styled player (`primitives/video_player.rs:259-260`, set at
       :910-919), so the player sits silent over a stalled stream; `idle_delay`, `preload` and
       `playsinline` are not exposed (:678, :867-869).

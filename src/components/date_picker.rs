@@ -20,7 +20,7 @@ use leptos::{ev, prelude::*};
 
 #[component]
 pub fn DatePicker(
-    #[prop(optional)] mode: CalendarMode,
+    #[prop(optional, into)] mode: Signal<CalendarMode>,
     #[prop(default = None, into)] selected: Option<RwSignal<Vec<Date>>>,
     #[prop(optional, into)] default_selected: Vec<Date>,
     #[prop(optional, into)] on_selected_change: Option<Callback<Vec<Date>>>,
@@ -31,14 +31,14 @@ pub fn DatePicker(
     #[prop(default = None, into)] open: Option<RwSignal<bool>>,
     #[prop(optional)] default_open: bool,
     #[prop(optional, into)] on_open_change: Option<Callback<bool>>,
-    #[prop(default = 0)] week_starts_on: u32,
-    #[prop(default = None, into)] min: Option<Date>,
-    #[prop(default = None, into)] max: Option<Date>,
+    #[prop(into, default = 0.into())] week_starts_on: Signal<u32>,
+    #[prop(optional, into)] min: MaybeProp<Date>,
+    #[prop(optional, into)] max: MaybeProp<Date>,
     #[prop(optional, into)] disabled: Option<Callback<Date, bool>>,
     #[prop(optional, into)] locale: Signal<String>,
-    #[prop(optional)] side: Side,
-    #[prop(optional)] align: Align,
-    #[prop(optional)] side_offset: SideOffset,
+    #[prop(optional, into)] side: Signal<Side>,
+    #[prop(optional, into)] align: Signal<Align>,
+    #[prop(optional, into)] side_offset: Signal<SideOffset>,
     #[prop(optional, into)] class: Signal<String>,
 ) -> impl IntoView {
     let ctx = FloatingContext::default();
@@ -106,7 +106,7 @@ fn label(mode: CalendarMode, selected: &[Date], placeholder: &str, names: &DateN
 
 #[component]
 fn DatePickerTrigger(
-    mode: CalendarMode,
+    mode: Signal<CalendarMode>,
     selected: RwSignal<Vec<Date>>,
     placeholder: Signal<String>,
     locale: Signal<String>,
@@ -134,7 +134,12 @@ fn DatePickerTrigger(
                     names
                         .with(|names| {
                             selected
-                                .with(|selected| label(mode, selected, &placeholder.get(), names))
+                                .with(|selected| label(
+                                    mode.get(),
+                                    selected,
+                                    &placeholder.get(),
+                                    names,
+                                ))
                         })
                 }}
             </span>
@@ -144,25 +149,25 @@ fn DatePickerTrigger(
 
 #[component]
 fn DatePickerContent(
-    mode: CalendarMode,
+    mode: Signal<CalendarMode>,
     selected: RwSignal<Vec<Date>>,
     month: Option<RwSignal<Date>>,
     default_month: Option<Date>,
     on_month_change: Option<Callback<Date>>,
-    week_starts_on: u32,
-    min: Option<Date>,
-    max: Option<Date>,
+    week_starts_on: Signal<u32>,
+    min: MaybeProp<Date>,
+    max: MaybeProp<Date>,
     disabled: Option<Callback<Date, bool>>,
     locale: Signal<String>,
-    side: Side,
-    align: Align,
-    side_offset: SideOffset,
+    side: Signal<Side>,
+    align: Signal<Align>,
+    side_offset: Signal<SideOffset>,
 ) -> impl IntoView {
     let ctx = use_popover();
 
     Effect::new(move |previous: Option<usize>| {
         let count = selected.with(|selected| selected.len());
-        let finished = match mode {
+        let finished = match mode.get() {
             CalendarMode::Single => count == 1,
             CalendarMode::Range => count == 2,
             CalendarMode::Multiple => false,

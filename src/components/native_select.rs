@@ -20,7 +20,7 @@ impl NativeSelectSize {
 
 #[component]
 pub fn NativeSelect(
-    #[prop(optional)] size: NativeSelectSize,
+    #[prop(optional, into)] size: Signal<NativeSelectSize>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(default = None, into)] model: Option<RwSignal<String>>,
     #[prop(optional, into)] value: Signal<String>,
@@ -29,8 +29,6 @@ pub fn NativeSelect(
     #[prop(optional, into)] on_blur: Option<Callback<ev::FocusEvent>>,
     children: Children,
 ) -> impl IntoView {
-    let size_class = size.as_class();
-
     view! {
         <NativeSelectRoot
             id=id
@@ -44,7 +42,7 @@ pub fn NativeSelect(
                     "bg-no-repeat [background-position:right_0.625rem_center] [background-size:1rem_1rem]",
                     "[background-image:url(data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%23737373%22%20stroke-width=%222%22%20stroke-linecap=%22square%22%20stroke-linejoin=%22miter%22%3E%3Cpath%20d=%22m6%209%206%206%206-6%22/%3E%3C/svg%3E)]",
                     "dark:[background-image:url(data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%23a3a3a3%22%20stroke-width=%222%22%20stroke-linecap=%22square%22%20stroke-linejoin=%22miter%22%3E%3Cpath%20d=%22m6%209%206%206%206-6%22/%3E%3C/svg%3E)]",
-                    size_class,
+                    size.get().as_class(),
                     class.get()
                 )
             }

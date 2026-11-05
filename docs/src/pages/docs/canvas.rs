@@ -168,7 +168,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "pan_on_drag",
-                ty: "bool",
+                ty: "Signal<bool>",
                 default: "false",
                 description: "Whether dragging the surface with the primary button pans it — the hand tool, always on. Off, because a press is the one gesture a caller cannot get back, and a board worth the name has something to click on. Space+drag, the middle button and two fingers pan either way.",
             },
@@ -324,7 +324,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "color",
-                ty: "StickyColor",
+                ty: "Signal<StickyColor>",
                 default: "Yellow",
                 description: "`Yellow`, `Green`, `Blue` or `Pink`.",
             },
@@ -366,7 +366,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "kind",
-                ty: "ShapeKind",
+                ty: "Signal<ShapeKind>",
                 default: "Rectangle",
                 description: "`Rectangle` or `Ellipse` — which is a border radius rather than a different element.",
             },

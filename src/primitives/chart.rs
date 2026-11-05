@@ -84,7 +84,7 @@ pub struct ChartContext {
     /// The categories along the bottom.
     pub labels: Signal<Vec<String>>,
     pub series: Signal<Vec<ChartSeries>>,
-    pub kind: ChartKind,
+    pub kind: Signal<ChartKind>,
     /// The category the pointer is nearest, if it is over the plot.
     pub hovered: RwSignal<Option<usize>>,
     pub plot_ref: AnyNodeRef,
@@ -143,7 +143,7 @@ impl ChartContext {
     /// value for this period".
     pub fn x(&self, index: usize) -> f64 {
         let count = self.count();
-        match self.kind {
+        match self.kind.get() {
             ChartKind::Bar => {
                 let band = self.plot_width() / count.max(1) as f64;
                 PAD_LEFT + band * index as f64 + band / 2.0
@@ -236,7 +236,7 @@ impl ChartContext {
         // in this file lives.
         let x = (client_x - rect.left()) / rect.width() * VIEW_WIDTH;
 
-        let index = match self.kind {
+        let index = match self.kind.get_untracked() {
             ChartKind::Bar => {
                 let band = self.plot_width() / count as f64;
                 ((x - PAD_LEFT) / band).floor()
@@ -266,7 +266,7 @@ pub fn use_chart() -> ChartContext {
 pub fn ChartRoot(
     #[prop(into)] labels: Signal<Vec<String>>,
     #[prop(into)] series: Signal<Vec<ChartSeries>>,
-    #[prop(optional)] kind: ChartKind,
+    #[prop(optional, into)] kind: Signal<ChartKind>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
@@ -282,7 +282,7 @@ pub fn ChartRoot(
         <Provider value=ctx>
             <div
                 data-slot="chart"
-                data-kind=match kind {
+                data-kind=move || match kind.get() {
                     ChartKind::Line => "line",
                     ChartKind::Area => "area",
                     ChartKind::Bar => "bar",
@@ -300,8 +300,8 @@ pub fn ChartRoot(
 pub fn ChartPlotRoot(
     #[prop(optional, into)] class: Signal<String>,
     /// Whether to draw the horizontal grid and its value labels.
-    #[prop(default = true)]
-    grid: bool,
+    #[prop(into, default = true.into())]
+    grid: Signal<bool>,
     /// The accessible name of the plot, written as `aria-label`. Left empty, the plot has none.
     #[prop(optional, into)]
     label: Signal<String>,
@@ -321,39 +321,41 @@ pub fn ChartPlotRoot(
             on:pointerleave=move |_| ctx.hovered.set(None)
             class=class
         >
-            {grid
-                .then(|| {
-                    view! {
-                        <g data-slot="chart-grid">
-                            {move || {
-                                ctx.ticks()
-                                    .into_iter()
-                                    .map(|value| {
-                                        let y = ctx.y(value);
-                                        view! {
-                                            <line
-                                                x1=PAD_LEFT
-                                                x2=VIEW_WIDTH - PAD_RIGHT
-                                                y1=y
-                                                y2=y
-                                                class="stroke-border"
-                                                stroke-width="1"
-                                            />
-                                            <text
-                                                x=PAD_LEFT - 8.0
-                                                y=y + 4.0
-                                                text-anchor="end"
-                                                class="fill-muted-foreground text-[10px]"
-                                            >
-                                                {format_tick(value)}
-                                            </text>
-                                        }
-                                    })
-                                    .collect_view()
-                            }}
-                        </g>
-                    }
-                })}
+            {move || {
+                grid.get()
+                    .then(|| {
+                        view! {
+                            <g data-slot="chart-grid">
+                                {move || {
+                                    ctx.ticks()
+                                        .into_iter()
+                                        .map(|value| {
+                                            let y = ctx.y(value);
+                                            view! {
+                                                <line
+                                                    x1=PAD_LEFT
+                                                    x2=VIEW_WIDTH - PAD_RIGHT
+                                                    y1=y
+                                                    y2=y
+                                                    class="stroke-border"
+                                                    stroke-width="1"
+                                                />
+                                                <text
+                                                    x=PAD_LEFT - 8.0
+                                                    y=y + 4.0
+                                                    text-anchor="end"
+                                                    class="fill-muted-foreground text-[10px]"
+                                                >
+                                                    {format_tick(value)}
+                                                </text>
+                                            }
+                                        })
+                                        .collect_view()
+                                }}
+                            </g>
+                        }
+                    })
+            }}
 
             <g data-slot="chart-series">
                 {move || {
@@ -363,7 +365,7 @@ pub fn ChartPlotRoot(
                         .enumerate()
                         .map(|(index, series)| {
                             let color = series.resolved_color(index);
-                            match ctx.kind {
+                            match ctx.kind.get() {
                                 ChartKind::Bar => {
                                     series
                                         .values
@@ -457,13 +459,12 @@ pub fn ChartPlotRoot(
                                     x=ctx.x(index)
                                     y=VIEW_HEIGHT - 8.0
                                     text-anchor=match (index, count) {
-                                        (0, _) if ctx.kind != ChartKind::Bar => "start",
+                                        (0, _) if ctx.kind.get() != ChartKind::Bar => "start",
                                         (
                                             index,
                                             count,
-                                        ) if index + 1 == count && ctx.kind != ChartKind::Bar => {
-                                            "end"
-                                        }
+                                        ) if index + 1 == count
+                                            && ctx.kind.get() != ChartKind::Bar => "end",
                                         _ => "middle",
                                     }
                                     class="fill-muted-foreground text-[10px]"

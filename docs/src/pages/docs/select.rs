@@ -165,7 +165,7 @@ const API: &[ApiEntry] = &[
         description: "The current value, or a placeholder when there is none. Renders the value itself, so an item's value and its text should read the same.",
         props: &[Prop {
             name: "placeholder",
-            ty: "String",
+            ty: "Signal<String>",
             default: "",
             description: "Shown while nothing is chosen.",
         }],

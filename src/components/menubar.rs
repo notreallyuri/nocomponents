@@ -82,9 +82,9 @@ pub fn MenubarPortal(children: ChildrenFn) -> impl IntoView {
 
 #[component]
 pub fn MenubarContent(
-    #[prop(optional)] side: Side,
-    #[prop(optional)] align: Align,
-    #[prop(optional)] side_offset: SideOffset,
+    #[prop(optional, into)] side: Signal<Side>,
+    #[prop(optional, into)] align: Signal<Align>,
+    #[prop(optional, into)] side_offset: Signal<SideOffset>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
@@ -186,7 +186,7 @@ pub fn MenubarSubTrigger(
 
 #[component]
 pub fn MenubarSubContent(
-    #[prop(optional)] side_offset: SideOffset,
+    #[prop(optional, into)] side_offset: Signal<SideOffset>,
     #[prop(optional, into)] class: Signal<String>,
     children: ChildrenFn,
 ) -> impl IntoView {

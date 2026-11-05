@@ -128,13 +128,13 @@ const API: &[ApiEntry] = &[
         props: &[
             Prop {
                 name: "variant",
-                ty: "ButtonVariant",
+                ty: "Signal<ButtonVariant>",
                 default: "Default",
                 description: "Forwarded to the underlying `Button`.",
             },
             Prop {
                 name: "size",
-                ty: "ButtonSize",
+                ty: "Signal<ButtonSize>",
                 default: "Default",
                 description: "Forwarded to the underlying `Button`.",
             },
@@ -176,7 +176,7 @@ const API: &[ApiEntry] = &[
             },
             Prop {
                 name: "show_close",
-                ty: "bool",
+                ty: "Signal<bool>",
                 default: "true",
                 description: "The corner close button. Off for a panel that is itself the control, as the command palette is.",
             },

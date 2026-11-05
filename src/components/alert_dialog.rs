@@ -25,8 +25,8 @@ pub fn AlertDialog(
 
 #[component]
 pub fn AlertDialogTrigger(
-    #[prop(optional)] size: ButtonSize,
-    #[prop(optional)] variant: ButtonVariant,
+    #[prop(optional, into)] size: Signal<ButtonSize>,
+    #[prop(optional, into)] variant: Signal<ButtonVariant>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] render: Option<Callback<TriggerRender, AnyView>>,

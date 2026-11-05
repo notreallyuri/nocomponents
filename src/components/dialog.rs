@@ -32,8 +32,8 @@ pub fn Dialog(
 
 #[component]
 pub fn DialogTrigger(
-    #[prop(optional)] size: ButtonSize,
-    #[prop(optional)] variant: ButtonVariant,
+    #[prop(optional, into)] size: Signal<ButtonSize>,
+    #[prop(optional, into)] variant: Signal<ButtonVariant>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] render: Option<Callback<TriggerRender, AnyView>>,
@@ -75,7 +75,7 @@ pub fn DialogTrigger(
 #[component]
 pub fn DialogPortal(
     #[prop(optional, into)] class: Signal<String>,
-    #[prop(default = true)] show_close: bool,
+    #[prop(default = true.into(), into)] show_close: Signal<bool>,
     children: ChildrenFn,
 ) -> impl IntoView {
     let context = use_dialog();
@@ -104,18 +104,21 @@ pub fn DialogPortal(
                     )
                 }>
                     {stored_children.with_value(|c| c())}
-                    {show_close
-                        .then(|| {
-                            view! {
-                                <button
-                                    on:click=move |_| context.close()
-                                    class="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
-                                >
-                                    <X />
-                                    <span class="sr-only">"Close"</span>
-                                </button>
-                            }
-                        })}
+                    {move || {
+                        show_close
+                            .get()
+                            .then(|| {
+                                view! {
+                                    <button
+                                        on:click=move |_| context.close()
+                                        class="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
+                                    >
+                                        <X />
+                                        <span class="sr-only">"Close"</span>
+                                    </button>
+                                }
+                            })
+                    }}
                 </DialogContentRoot>
             </div>
         </DialogPortalRoot>

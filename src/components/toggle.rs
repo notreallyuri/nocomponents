@@ -49,8 +49,8 @@ pub(crate) const TOGGLE_BASE: &str = "inline-flex shrink-0 items-center justify-
 
 #[component]
 pub fn Toggle(
-    #[prop(optional)] variant: ToggleVariant,
-    #[prop(optional)] size: ToggleSize,
+    #[prop(optional, into)] variant: Signal<ToggleVariant>,
+    #[prop(optional, into)] size: Signal<ToggleSize>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(default = None, into)] pressed: Option<RwSignal<bool>>,
     #[prop(optional)] default_pressed: bool,
@@ -64,7 +64,9 @@ pub fn Toggle(
             disabled=disabled
             default_pressed=default_pressed
             on_pressed_change=forward(on_pressed_change)
-            class=move || cn!(TOGGLE_BASE, variant.as_class(), size.as_class(), class.get())
+            class=move || {
+                cn!(TOGGLE_BASE, variant.get().as_class(), size.get().as_class(), class.get())
+            }
         >
             {children.map(|c| c())}
         </ToggleRoot>
