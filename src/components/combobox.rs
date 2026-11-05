@@ -6,13 +6,12 @@ use crate::{
         ComboboxContentRoot, ComboboxItemRoot, ComboboxPortalRoot, ComboboxRoot,
         ComboboxTriggerRoot, use_combobox,
     },
-    primitives::floating::TriggerRender,
-    utils::{
-        controllable::forward,
-        types::{Align, Side, SideOffset},
-    },
+    utils::controllable::forward,
 };
 use leptos::{either::Either, prelude::*};
+
+#[allow(unused_imports)]
+pub use crate::utils::types::{Align, Side, SideOffset, TriggerRender};
 
 #[component]
 pub fn Combobox(

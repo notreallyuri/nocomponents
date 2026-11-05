@@ -6,9 +6,12 @@ use crate::{
         DialogContentRoot, DialogPart, DialogPortalRoot, DialogRoot, DialogTriggerRoot, use_dialog,
         use_dialog_label_id,
     },
-    utils::{controllable::forward, types::TriggerRender},
+    utils::controllable::forward,
 };
 use leptos::{either::Either, prelude::*};
+
+#[allow(unused_imports)]
+pub use crate::utils::types::TriggerRender;
 
 #[component]
 pub fn Dialog(

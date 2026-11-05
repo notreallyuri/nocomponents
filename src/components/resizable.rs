@@ -1,9 +1,11 @@
 use crate::{
     cn,
     primitives::resizable::{ResizableGroupRoot, ResizableHandleRoot, ResizablePanelRoot},
-    utils::types::Orientation,
 };
 use leptos::prelude::*;
+
+#[allow(unused_imports)]
+pub use crate::utils::types::Orientation;
 
 #[component]
 pub fn ResizableGroup(

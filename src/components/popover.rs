@@ -1,14 +1,13 @@
 use crate::{
     cn,
     components::button::{Button, ButtonSize, ButtonVariant},
-    primitives::floating::TriggerRender,
     primitives::popover::{PopoverContentRoot, PopoverPortalRoot, PopoverRoot, PopoverTriggerRoot},
-    utils::{
-        controllable::forward,
-        types::{Align, Side, SideOffset},
-    },
+    utils::controllable::forward,
 };
 use leptos::{either::Either, prelude::*};
+
+#[allow(unused_imports)]
+pub use crate::utils::types::{Align, Side, SideOffset, TriggerRender};
 
 #[component]
 pub fn Popover(

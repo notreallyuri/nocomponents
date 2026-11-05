@@ -2,8 +2,52 @@
 
 The styled layer is installed, not depended on, so a release has two halves: the crate, which this
 file is about, and the files `cargo nocli` copied into your project, which are yours and which an
-upgrade does not touch. After bumping the dependency, run `cargo nocli components add <name>
---force` for each component you have not edited, and diff the ones you have.
+upgrade does not touch. After bumping the dependency, run `cargo nocli components status` to see
+which installed components are `unchanged`, `edited` or `not in lock`, then `cargo nocli components
+add <name> --force` for each unchanged one, and diff the rest. A component installed before the
+lock existed reads `not in lock`: the tool cannot tell whether it was edited, so diff it too.
+
+## Unreleased
+
+### Notes
+
+- **`ChildrenFn` children cannot move an owned value.** `DropdownMenu`, `Popover`, `Dialog` and the
+  other parts that take `children: ChildrenFn` may be rendered more than once (inside a `Portal` or
+  an `Either` branch), so moving a non-`Clone` value into them fails with E0525 ("expected a closure
+  that implements `Fn`, but this closure only implements `FnOnce`"). Clone it before the `view!`, or
+  keep it in a `StoredValue` and read it inside.
+
+### Changed
+
+- **Styled modules re-export the types their props name** when a primitive or `utils` owns them:
+  `Side`, `Align`, `SideOffset`, `Orientation`, `TriggerRender`, `StyledRender`, `AnchorRender`,
+  `Date`, `Language`, `ColorFormat`, `Crop`, `CalendarMode`, `ChartKind`, `TableSort`,
+  `DropdownMenuItemVariant`, `TabsListVariants`, `ToastVariant` and so on, from the styled module
+  that takes them. Previously `DropdownMenuItem`'s `variant` could only be named through
+  `nocomponents::primitives::dropdown_menu`.
+- The re-exports in installed files, and the generated `mod.rs` prelude, carry
+  `#[allow(unused_imports)]`: in a binary crate every `pub use` a project does not itself use
+  warned, and `ContextMenu*` alone produced a dozen.
+
+### cargo-nocli 0.2.0
+
+- **`components status`** lists installed components as `unchanged`, `edited` or `not in lock`.
+- **`components add`** no longer runs `cargo add` when `Cargo.toml` already asks for every feature
+  the install needs, so the project's formatting is left alone when nothing changes. Files it
+  overwrites with `--force` print `replaced`, with a note when they were edited or not in the lock,
+  and a file not in the lock is `kept (not in lock, cannot tell if edited)` rather than "already
+  here".
+- **`init`** writes a minimal Trunk `index.html` (linking the installed stylesheet) when there is
+  none, and the installed `globals.css` sets `--font-sans` to the system stack instead of naming a
+  font nothing loads.
+- **A `use` with attributes keeps them on every line it is flattened to.** `#[allow(unused_imports)]`
+  on a re-export tree used to land on the first line only, so an installed `context_menu` warned
+  once per remaining name; a `#[cfg]` would have been a miscompile. `pub(crate) use` keeps its
+  visibility per line too.
+- **`add` declares the install directory** in its parent module (`src/components/mod.rs` with
+  `pub mod nc;`, inside a `nocli:begin` / `nocli:end` block when the file is the project's), so a
+  fresh project no longer fails with E0583. The crate root is not edited; `add` prints the
+  `mod components;` to add when it is missing.
 
 ## 0.2.0
 

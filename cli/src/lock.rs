@@ -26,6 +26,16 @@ pub enum State {
     Unrecorded,
 }
 
+impl State {
+    pub fn label(&self) -> &'static str {
+        match self {
+            State::Untouched => "unchanged",
+            State::Edited => "edited",
+            State::Unrecorded => "not in lock",
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Default, Debug)]
 pub struct Lock {
     #[serde(default)]

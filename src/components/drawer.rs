@@ -5,17 +5,18 @@ use crate::{
         dialog::{DialogPortalRoot, DialogTriggerRoot, use_dialog},
         drawer::{DrawerContentRoot, DrawerHandleRoot, DrawerRoot, use_drawer},
     },
-    utils::{
-        controllable::forward,
-        types::{AsClass, Side},
-    },
+    utils::{controllable::forward, types::AsClass},
 };
 use leptos::prelude::*;
 
+#[allow(unused_imports)]
 pub use crate::components::sheet::{
     SheetClose as DrawerClose, SheetDescription as DrawerDescription, SheetFooter as DrawerFooter,
     SheetHeader as DrawerHeader, SheetTitle as DrawerTitle,
 };
+
+#[allow(unused_imports)]
+pub use crate::utils::types::Side;
 
 struct DrawerSide(Side);
 

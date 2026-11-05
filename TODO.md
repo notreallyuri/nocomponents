@@ -1104,6 +1104,53 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       `ctx.ended` (a replay) in the styled player (`primitives/video_player.rs:259-260`, set at
       :910-919), so the player sits silent over a stalled stream; `idle_delay`, `preload` and
       `playsinline` are not exposed (:678, :867-869).
+
+### From the noaweb port (2026-11-05)
+
+noaweb is porting immich-front onto `cargo nocli` and sent back what it could not build from the
+library (`noaweb/PORT-PLAN.md` §5.2 and §5.4). The CLI and consumer friction in §5.4 is fixed and
+in the changelog, not here. Icons are explicitly not needed now: noaweb uses `phosphor-leptos` for
+its own and keeps ours for the library's parts, so growing the set to immich-front's 87 is off the
+list.
+
+- [ ] **A keyboard-sortable list primitive** (`primitives/sortable.rs`, styled `components/sortable.rs`).
+      Replaces `@dnd-kit/react` in three places: `releases/components/order/release-order-list.tsx`
+      (selected rows drag as one block, drag overlay, list-only auto-scroll), `shell/sidebar.tsx`
+      `PinnedRow` (handle only, `disabled` for non-pinned views) and
+      `shared/ui/controls/sortable-list.tsx` (handle only, reduced-motion switch, sr-only
+      instructions, `onMove(from, to)`). `kanban.rs` and `drag.rs` have pointer drag only: no
+      keyboard reorder and no live announcements. Sketch: `Sortable<T> items=Signal<Vec<T>>
+      key=fn(&T)->K on_move=Callback<Move>` with `SortableItem` and `SortableHandle`, `Move { ids:
+      Vec<K>, to: usize }`, `selected: Option<Signal<HashSet<K>>>` for block drag, `disabled`.
+      Pointer and touch drag go through `use_drag` with a drag overlay. Keyboard: Space picks up,
+      arrows move, Space or Enter drops, Esc cancels. A polite `aria-live` region says "picked up
+      item 3 of 10", "moved to position 4 of 10", "dropped at 4", "cancelled". A multi-item block
+      move keeps its relative order. Reduced motion drops the transition. Auto-scroll scrolls the
+      list, not the page, and has to work inside a scroll-locked modal, where the wheel is blocked
+      (immich-front patches dnd-kit's `Scroller` for exactly this).
+- [ ] **Drawer snap points** (`components/drawer.rs`, `primitives/drawer.rs`). From
+      `features/media/components/viewer/asset-info.tsx` and `overlays/sheet-snap.ts`: peek at 0.40
+      of the viewport, full at 0.88, dismiss below 0.22, a flick of 0.6 px/ms, switch at 25 percent.
+      `Drawer snap_points=[0.4, 0.88] active_snap=RwSignal<usize> on_snap_change dismiss_below=0.22`,
+      dragged by the grabber, built on `drag.rs` (`.on_end` already carries the release velocity).
+      The decision is a pure `fn settle(height, velocity, points) -> Settle` in `primitives/` with
+      host `cargo test`s ported from `sheet-snap.test.ts`.
+- [ ] **Context-menu long-press on touch.** `overlays/context-menu.tsx`; `primitives/context_menu.rs`
+      only has `on:contextmenu`. `ContextMenu` opens on a touch long-press by default
+      (`long_press_ms`, default 450), cancelled by a move over 10 px, `pointerup` or
+      `pointercancel`, opens at the touch point, and sets `-webkit-touch-callout: none` on the
+      trigger. The timer is a reusable `use_long_press(on_trigger)` in `primitives/`, not private to
+      the menu.
+- [ ] **Mobile bottom-sheet presentation.** `dialog.tsx` (`sheet`), `dropdown-menu.tsx` and
+      `context-menu.tsx` (`sheetTitle`), `popover.tsx` (`sheet`), `select.tsx` (the shared
+      `menu-sheet` classes). A `mobile_sheet` prop and a `sheet_title` on `Dialog`, `DropdownMenu`,
+      `ContextMenu`, `Popover` and `Select`: below `md` the content renders as a bottom sheet with
+      grabber and scrim, above it unchanged. One shared `MenuSheet` wrapper in `primitives/`.
+- [ ] **Smaller, from the same port.** `Popover` `container` (portal into a sticky ancestor).
+      Return focus on close only for keyboard closes (immich-front's `returnFocusOnlyForKeyboard`),
+      so a pointer close does not pull focus back onto the trigger. `Skeleton` variants. A `fit`
+      button size.
+
 ## Docs site
 
 - [x] Docs pages for alert-dialog, label and spinner; a `code` snippet under every demo (89 blocks

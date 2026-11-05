@@ -8,12 +8,12 @@ use crate::{
         floating::FloatingPortal,
         menubar::{MenubarMenuRoot, MenubarRoot, MenubarTriggerRoot, use_menubar},
     },
-    utils::{
-        controllable::forward,
-        types::{Align, Side, SideOffset},
-    },
+    utils::controllable::forward,
 };
 use leptos::{ev, prelude::*};
+
+#[allow(unused_imports)]
+pub use crate::utils::types::{Align, Side, SideOffset};
 
 #[component]
 pub fn Menubar(

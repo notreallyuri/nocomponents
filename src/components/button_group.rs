@@ -1,5 +1,8 @@
-use crate::{cn, components::separator::Separator, utils::types::Orientation};
+use crate::{cn, components::separator::Separator};
 use leptos::prelude::*;
+
+#[allow(unused_imports)]
+pub use crate::utils::types::Orientation;
 
 fn seam_class(orientation: Orientation) -> &'static str {
     match orientation {

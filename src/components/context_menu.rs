@@ -1,13 +1,11 @@
 use crate::{
     cn,
     primitives::context_menu::{ContextMenuContentRoot, ContextMenuRoot, ContextMenuTriggerRoot},
-    utils::{
-        controllable::forward,
-        types::{Align, Side, SideOffset},
-    },
+    utils::controllable::forward,
 };
 use leptos::prelude::*;
 
+#[allow(unused_imports)]
 pub use crate::components::dropdown_menu::{
     DropdownMenuCheckboxItem as ContextMenuCheckboxItem, DropdownMenuGroup as ContextMenuGroup,
     DropdownMenuItem as ContextMenuItem, DropdownMenuLabel as ContextMenuLabel,
@@ -17,6 +15,9 @@ pub use crate::components::dropdown_menu::{
     DropdownMenuSubContent as ContextMenuSubContent,
     DropdownMenuSubTrigger as ContextMenuSubTrigger,
 };
+
+#[allow(unused_imports)]
+pub use crate::utils::types::{Align, Side, SideOffset};
 
 #[component]
 pub fn ContextMenu(

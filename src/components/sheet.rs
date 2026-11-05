@@ -6,12 +6,12 @@ use crate::{
         DialogContentRoot, DialogPart, DialogPortalRoot, DialogRoot, DialogTriggerRoot, use_dialog,
         use_dialog_label_id,
     },
-    utils::{
-        controllable::forward,
-        types::{AsClass, Side, TriggerRender},
-    },
+    utils::{controllable::forward, types::AsClass},
 };
 use leptos::{either::Either, prelude::*};
+
+#[allow(unused_imports)]
+pub use crate::utils::types::{Side, TriggerRender};
 
 struct SheetSide(Side);
 

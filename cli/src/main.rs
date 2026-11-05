@@ -8,6 +8,7 @@ mod init;
 mod install;
 mod lock;
 mod manifest;
+mod modules;
 mod remote;
 mod rewrite;
 
@@ -59,6 +60,8 @@ enum Components {
     },
     /// Show every component, marking the ones already installed.
     List,
+    /// Show which installed components are edited, unchanged, or not in the lock.
+    Status,
 }
 
 #[tokio::main]
@@ -88,6 +91,7 @@ async fn run(cli: Nocli) -> Result<()> {
             }
             Components::Remove { names, force } => install::remove(&names, force),
             Components::List => install::list(&source).await,
+            Components::Status => install::status(),
         },
     }
 }

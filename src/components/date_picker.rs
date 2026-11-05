@@ -6,17 +6,22 @@ use crate::{
     },
     icons::calendar::Calendar as CalendarIcon,
     primitives::{
-        calendar::CalendarMode,
         floating::{FloatingContext, FloatingRoot, TriggerAria},
         popover::{PopoverContentRoot, PopoverPortalRoot, use_popover},
     },
     utils::{
         controllable::{controllable, forward},
-        date::{Date, DateNames},
-        types::{Align, Side, SideOffset},
+        date::DateNames,
     },
 };
 use leptos::{ev, prelude::*};
+
+#[allow(unused_imports)]
+pub use crate::primitives::calendar::CalendarMode;
+#[allow(unused_imports)]
+pub use crate::utils::date::Date;
+#[allow(unused_imports)]
+pub use crate::utils::types::{Align, Side, SideOffset};
 
 #[component]
 pub fn DatePicker(

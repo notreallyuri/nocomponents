@@ -13,7 +13,9 @@ pub struct Rewritten {
 struct UseStatement {
     start: usize,
     end: usize,
-    is_pub: bool,
+    indent: String,
+    attributes: Vec<String>,
+    visibility: String,
     paths: Vec<String>,
 }
 
@@ -31,11 +33,27 @@ pub fn rewrite(source: &str, module_path: &str) -> Rewritten {
         let mut lines: Vec<String> = Vec::new();
         for path in &u.paths {
             note_dep(path, &mut component_deps, &mut uses_icons);
-            let keyword = if u.is_pub { "pub use" } else { "use" };
-            lines.push(format!("{keyword} {};", rewrite_path(path, module_path)));
+            lines.push(format!(
+                "{}use {};",
+                u.visibility,
+                rewrite_path(path, module_path)
+            ));
         }
         lines.sort();
-        out.push_str(&lines.join("\n"));
+        let lines: Vec<String> = lines
+            .iter()
+            .map(|line| {
+                let mut entry = String::new();
+                for attribute in &u.attributes {
+                    entry.push_str(attribute);
+                    entry.push('\n');
+                    entry.push_str(&u.indent);
+                }
+                entry.push_str(line);
+                entry
+            })
+            .collect();
+        out.push_str(&lines.join(&format!("\n{}", u.indent)));
 
         cursor = u.end;
     }
@@ -120,15 +138,12 @@ fn find_uses(source: &str) -> Vec<UseStatement> {
         let trimmed = line.trim_start();
         let indent = line.len() - trimmed.len();
 
-        let (is_pub, keyword_len) = if trimmed.starts_with("pub use ") {
-            (true, 8)
-        } else if trimmed.starts_with("use ") {
-            (false, 4)
-        } else {
+        let Some((visibility, keyword_len)) = use_keyword(trimmed) else {
             line_start = line_end + 1;
             continue;
         };
 
+        let (attributes, first) = preceding_attributes(source, line_start);
         let body_start = line_start + indent + keyword_len;
         let mut depth = 0usize;
         let mut i = body_start;
@@ -144,14 +159,54 @@ fn find_uses(source: &str) -> Vec<UseStatement> {
         let semi = i.min(bytes.len());
 
         out.push(UseStatement {
-            start: line_start + indent,
+            start: first.unwrap_or(line_start) + indent,
             end: (semi + 1).min(source.len()),
-            is_pub,
+            indent: line[..indent].to_string(),
+            attributes,
+            visibility,
             paths: flatten(&source[body_start..semi], ""),
         });
         line_start = semi + 1;
     }
     out
+}
+
+fn use_keyword(trimmed: &str) -> Option<(String, usize)> {
+    if trimmed.starts_with("use ") {
+        return Some((String::new(), 4));
+    }
+    let rest = trimmed.strip_prefix("pub")?;
+    let (vis, after) = match rest.strip_prefix('(') {
+        Some(inner) => {
+            let close = inner.find(')')?;
+            (&trimmed[..3 + close + 2], &inner[close + 1..])
+        }
+        None => (&trimmed[..3], rest),
+    };
+    after.strip_prefix(" use ")?;
+    Some((format!("{vis} "), vis.len() + 5))
+}
+
+/// The one-line outer attributes stacked directly above the `use` at `line_start`, in source
+/// order, and where the first one begins. They belong to every line the tree flattens to: a
+/// `#[cfg]` kept only on the first would compile the rest unconditionally.
+fn preceding_attributes(source: &str, line_start: usize) -> (Vec<String>, Option<usize>) {
+    let mut attributes = Vec::new();
+    let mut first = None;
+    let mut end = line_start;
+    while end > 0 {
+        let before = &source[..end - 1];
+        let start = before.rfind('\n').map(|i| i + 1).unwrap_or(0);
+        let line = before[start..].trim();
+        if !(line.starts_with("#[") && line.ends_with(']')) {
+            break;
+        }
+        attributes.push(line.to_string());
+        first = Some(start);
+        end = start;
+    }
+    attributes.reverse();
+    (attributes, first)
 }
 
 /// `a::{b, c::{d, e}}` becomes `a::b`, `a::c::d`, `a::c::e`.
@@ -239,6 +294,57 @@ mod tests {
                 .contains("pub use crate::components::nc::sheet::SheetClose as DrawerClose;")
         );
         assert_eq!(out.component_deps, vec!["sheet"]);
+    }
+
+    #[test]
+    fn repeats_an_attribute_on_every_line_a_tree_flattens_to() {
+        let out = rw(
+            "#[allow(unused_imports)]\npub use crate::components::dropdown_menu::{A as X, B as Y};\n",
+        );
+        assert_eq!(
+            out.source,
+            "#[allow(unused_imports)]\npub use crate::components::nc::dropdown_menu::A as X;\n#[allow(unused_imports)]\npub use crate::components::nc::dropdown_menu::B as Y;\n"
+        );
+    }
+
+    #[test]
+    fn a_cfg_and_a_stack_of_attributes_ride_along_in_order() {
+        let out = rw(
+            "/// Doc.\n#[cfg(feature = \"x\")]\n#[allow(unused_imports)]\nuse crate::{cn, primitives::a::B};\n",
+        );
+        assert_eq!(
+            out.source,
+            "/// Doc.\n#[cfg(feature = \"x\")]\n#[allow(unused_imports)]\nuse nocomponents::cn;\n#[cfg(feature = \"x\")]\n#[allow(unused_imports)]\nuse nocomponents::primitives::a::B;\n"
+        );
+    }
+
+    #[test]
+    fn keeps_a_restricted_visibility_on_each_line() {
+        let out = rw("pub(crate) use crate::icons::a::{B, C};\n");
+        assert!(
+            out.source
+                .contains("pub(crate) use nocomponents::icons::a::B;")
+        );
+        assert!(
+            out.source
+                .contains("pub(crate) use nocomponents::icons::a::C;")
+        );
+    }
+
+    #[test]
+    fn an_attribute_above_a_single_path_is_not_doubled() {
+        let out = rw("#[cfg(test)]\nuse crate::cn;\n");
+        assert_eq!(out.source, "#[cfg(test)]\nuse nocomponents::cn;\n");
+    }
+
+    #[test]
+    fn an_indented_use_keeps_its_indent_and_attributes() {
+        let out =
+            rw("mod m {\n    #[allow(unused_imports)]\n    use crate::icons::a::{B, C};\n}\n");
+        assert_eq!(
+            out.source,
+            "mod m {\n    #[allow(unused_imports)]\n    use nocomponents::icons::a::B;\n    #[allow(unused_imports)]\n    use nocomponents::icons::a::C;\n}\n"
+        );
     }
 
     #[test]

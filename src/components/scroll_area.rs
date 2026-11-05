@@ -3,9 +3,11 @@ use crate::{
     primitives::scroll_area::{
         ScrollAreaRoot, ScrollAreaScrollbarRoot, ScrollAreaThumbRoot, ScrollAreaViewportRoot,
     },
-    utils::types::Orientation,
 };
 use leptos::prelude::*;
+
+#[allow(unused_imports)]
+pub use crate::utils::types::Orientation;
 
 #[component]
 pub fn ScrollArea(

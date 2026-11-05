@@ -1,13 +1,15 @@
 use crate::{
     cn,
     components::toggle::{TOGGLE_BASE, ToggleSize, ToggleVariant},
-    primitives::toggle_group::{ToggleGroupItemRoot, ToggleGroupRoot, ToggleGroupType},
-    utils::{
-        controllable::forward,
-        types::{AsClass, Orientation},
-    },
+    primitives::toggle_group::{ToggleGroupItemRoot, ToggleGroupRoot},
+    utils::{controllable::forward, types::AsClass},
 };
 use leptos::{context::Provider, prelude::*};
+
+#[allow(unused_imports)]
+pub use crate::primitives::toggle_group::ToggleGroupType;
+#[allow(unused_imports)]
+pub use crate::utils::types::Orientation;
 
 #[derive(Copy, Clone, Default)]
 struct ToggleGroupStyle {

@@ -1,11 +1,14 @@
 use crate::{
     cn,
-    primitives::tabs::{
-        TabsContentRoot, TabsListRoot, TabsListVariants, TabsRoot, TabsTriggerRoot,
-    },
-    utils::{controllable::forward, types::Orientation},
+    primitives::tabs::{TabsContentRoot, TabsListRoot, TabsRoot, TabsTriggerRoot},
+    utils::controllable::forward,
 };
 use leptos::prelude::*;
+
+#[allow(unused_imports)]
+pub use crate::primitives::tabs::TabsListVariants;
+#[allow(unused_imports)]
+pub use crate::utils::types::Orientation;
 
 fn list_variant_class(variant: TabsListVariants) -> &'static str {
     match variant {

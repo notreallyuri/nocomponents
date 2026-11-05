@@ -8,27 +8,25 @@ pub fn require_cargo_project() -> Result<()> {
     Ok(())
 }
 
-pub fn current_features() -> Result<BTreeSet<String>> {
+/// Asks cargo for `nocomponents` with the union of what is already asked for and `required` — a
+/// second `add` must not turn off what the first one switched on. Returns whether it touched
+/// `Cargo.toml` at all: when the dependency is there and already asks for everything, it did not,
+/// so the project's own formatting is not handed to `cargo add` for nothing.
+pub fn add_dependency(required: &BTreeSet<String>, checkout: Option<&Path>) -> Result<bool> {
     let text = fs::read_to_string("Cargo.toml").context("reading Cargo.toml")?;
-    let doc: toml::Table = toml::from_str(&text).context("parsing Cargo.toml")?;
+    let current = features_in(&text)?;
 
-    Ok(doc
-        .get("dependencies")
-        .and_then(|d| d.get("nocomponents"))
-        .and_then(|n| n.get("features"))
-        .and_then(|f| f.as_array())
-        .map(|a| {
-            a.iter()
-                .filter_map(|v| v.as_str().map(str::to_string))
-                .collect()
-        })
-        .unwrap_or_default())
-}
+    if let Some(current) = &current
+        && required.is_subset(current)
+    {
+        return Ok(false);
+    }
 
-/// Adds `nocomponents` with the union of what is already asked for and what was just installed —
-/// a second `add` must not turn off what the first one switched on.
-pub fn add_dependency(features: &BTreeSet<String>, checkout: Option<&Path>) -> Result<()> {
-    let list = features.iter().cloned().collect::<Vec<_>>().join(",");
+    let wanted: BTreeSet<String> = required
+        .union(&current.unwrap_or_default())
+        .cloned()
+        .collect();
+    let list = wanted.iter().cloned().collect::<Vec<_>>().join(",");
 
     let mut command = Command::new("cargo");
     command.args(["add", "nocomponents", "--features", &list]);
@@ -43,7 +41,26 @@ pub fn add_dependency(features: &BTreeSet<String>, checkout: Option<&Path>) -> R
     if !status.success() {
         anyhow::bail!("`cargo add nocomponents --features {list}` failed");
     }
-    Ok(())
+    Ok(true)
+}
+
+/// The features `nocomponents` is asked for in this manifest, or `None` if it is not a dependency.
+fn features_in(manifest: &str) -> Result<Option<BTreeSet<String>>> {
+    let doc: toml::Table = toml::from_str(manifest).context("parsing Cargo.toml")?;
+
+    Ok(doc
+        .get("dependencies")
+        .and_then(|d| d.get("nocomponents"))
+        .map(|dep| {
+            dep.get("features")
+                .and_then(|f| f.as_array())
+                .map(|a| {
+                    a.iter()
+                        .filter_map(|v| v.as_str().map(str::to_string))
+                        .collect()
+                })
+                .unwrap_or_default()
+        }))
 }
 
 /// The exact `nocomponents` this project compiles against, read out of `Cargo.lock`.
@@ -99,4 +116,36 @@ pub fn is_path_dependency() -> Result<bool> {
         .and_then(|d| d.get("nocomponents"))
         .and_then(|n| n.get("path"))
         .is_some())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn set(names: &[&str]) -> BTreeSet<String> {
+        names.iter().map(|n| n.to_string()).collect()
+    }
+
+    #[test]
+    fn reads_the_features_of_an_inline_dependency() {
+        let manifest = "[dependencies]\nnocomponents = { version = \"0.2\", features = [\"button\", \"icons\"] }\n";
+        assert_eq!(
+            features_in(manifest).unwrap(),
+            Some(set(&["button", "icons"]))
+        );
+    }
+
+    #[test]
+    fn a_dependency_with_no_features_has_an_empty_set() {
+        let manifest = "[dependencies]\nnocomponents = \"0.2\"\n";
+        assert_eq!(features_in(manifest).unwrap(), Some(set(&[])));
+    }
+
+    #[test]
+    fn no_dependency_is_none() {
+        assert_eq!(
+            features_in("[dependencies]\nleptos = \"0.8\"\n").unwrap(),
+            None
+        );
+    }
 }

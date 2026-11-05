@@ -2,11 +2,15 @@ use crate::{
     cn,
     primitives::timeline::{
         TimelineConnectorRoot, TimelineContentRoot, TimelineItemRoot, TimelineMarkerRoot,
-        TimelineRoot, TimelineSide, TimelineState, TimelineTimeRoot,
+        TimelineRoot, TimelineTimeRoot,
     },
-    utils::types::Orientation,
 };
 use leptos::{either::Either, prelude::*};
+
+#[allow(unused_imports)]
+pub use crate::primitives::timeline::{TimelineSide, TimelineState};
+#[allow(unused_imports)]
+pub use crate::utils::types::Orientation;
 
 #[component]
 pub fn Timeline(

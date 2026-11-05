@@ -1,9 +1,12 @@
 use crate::{
     cn,
     primitives::radio_group::{RadioGroupItemRoot, RadioGroupRoot},
-    utils::{controllable::forward, types::Orientation},
+    utils::controllable::forward,
 };
 use leptos::prelude::*;
+
+#[allow(unused_imports)]
+pub use crate::utils::types::Orientation;
 
 #[component]
 pub fn RadioGroup(

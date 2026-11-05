@@ -1,5 +1,8 @@
-use crate::{cn, primitives::separator::SeparatorRoot, utils::types::Orientation};
+use crate::{cn, primitives::separator::SeparatorRoot};
 use leptos::prelude::*;
+
+#[allow(unused_imports)]
+pub use crate::utils::types::Orientation;
 
 #[component]
 pub fn Separator(

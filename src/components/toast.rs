@@ -1,3 +1,4 @@
+#[allow(unused_imports)]
 pub use crate::{
     cn,
     primitives::toast::{

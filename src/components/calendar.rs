@@ -2,12 +2,16 @@ use crate::{
     cn,
     icons::chevron::{ChevronLeft, ChevronRight},
     primitives::calendar::{
-        CalendarCaptionRoot, CalendarDayRoot, CalendarGridRoot, CalendarMode, CalendarNavRoot,
-        CalendarRoot,
+        CalendarCaptionRoot, CalendarDayRoot, CalendarGridRoot, CalendarNavRoot, CalendarRoot,
     },
-    utils::{controllable::forward, date::Date},
+    utils::controllable::forward,
 };
 use leptos::prelude::*;
+
+#[allow(unused_imports)]
+pub use crate::primitives::calendar::CalendarMode;
+#[allow(unused_imports)]
+pub use crate::utils::date::Date;
 
 #[component]
 pub fn Calendar(

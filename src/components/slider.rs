@@ -1,9 +1,12 @@
 use crate::{
     cn,
     primitives::slider::{SliderRangeRoot, SliderRoot, SliderThumbRoot, SliderTrackRoot},
-    utils::{controllable::controllable, types::Orientation},
+    utils::controllable::controllable,
 };
 use leptos::prelude::*;
+
+#[allow(unused_imports)]
+pub use crate::utils::types::Orientation;
 
 #[component]
 pub fn Slider(

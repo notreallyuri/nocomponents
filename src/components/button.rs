@@ -1,13 +1,13 @@
 use crate::utils::controllable::forward;
-use crate::{
-    cn,
-    primitives::button::ButtonRoot,
-    utils::types::{AsClass, StyledRender},
-};
+use crate::{cn, primitives::button::ButtonRoot, utils::types::AsClass};
 
+#[allow(unused_imports)]
 pub use crate::primitives::button::ButtonType;
 use leptos::{ev, prelude::*};
 use leptos_node_ref::AnyNodeRef;
+
+#[allow(unused_imports)]
+pub use crate::utils::types::StyledRender;
 
 #[derive(Default, Clone, Copy, PartialEq)]
 pub enum ButtonSize {

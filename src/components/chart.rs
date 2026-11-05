@@ -1,10 +1,11 @@
 use crate::{
     cn,
-    primitives::chart::{
-        ChartKind, ChartLegendRoot, ChartPlotRoot, ChartRoot, ChartSeries, ChartTooltipRoot,
-    },
+    primitives::chart::{ChartLegendRoot, ChartPlotRoot, ChartRoot, ChartTooltipRoot},
 };
 use leptos::prelude::*;
+
+#[allow(unused_imports)]
+pub use crate::primitives::chart::{ChartKind, ChartSeries};
 
 #[component]
 pub fn Chart(

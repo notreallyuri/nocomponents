@@ -4,18 +4,19 @@ use crate::{
     icons::{check::Check, chevron::ChevronRight, circle::Circle},
     primitives::dropdown_menu::{
         DropdownMenuCheckboxItemRoot, DropdownMenuContentRoot, DropdownMenuGroupRoot,
-        DropdownMenuItemRoot, DropdownMenuItemVariant, DropdownMenuPortalRoot,
-        DropdownMenuRadioGroupRoot, DropdownMenuRadioItemRoot, DropdownMenuRoot,
-        DropdownMenuSubContentRoot, DropdownMenuSubRoot, DropdownMenuSubTriggerRoot,
-        DropdownMenuTriggerRoot,
+        DropdownMenuItemRoot, DropdownMenuPortalRoot, DropdownMenuRadioGroupRoot,
+        DropdownMenuRadioItemRoot, DropdownMenuRoot, DropdownMenuSubContentRoot,
+        DropdownMenuSubRoot, DropdownMenuSubTriggerRoot, DropdownMenuTriggerRoot,
     },
-    primitives::floating::{FloatingPortal, TriggerRender},
-    utils::{
-        controllable::forward,
-        types::{Align, Side, SideOffset},
-    },
+    primitives::floating::FloatingPortal,
+    utils::controllable::forward,
 };
 use leptos::{either::Either, ev, prelude::*};
+
+#[allow(unused_imports)]
+pub use crate::primitives::dropdown_menu::DropdownMenuItemVariant;
+#[allow(unused_imports)]
+pub use crate::utils::types::{Align, Side, SideOffset, TriggerRender};
 
 #[component]
 pub fn DropdownMenu(
