@@ -288,7 +288,7 @@ pub fn KanbanCardRoot(
     /// A prop rather than the caller's own `on:click`, because a card cannot receive one: the
     /// moment it starts following the pointer it goes `pointer-events: none`, so the release
     /// lands on whatever is underneath. Only the gesture knows whether the pointer moved.
-    #[prop(default = None, into)]
+    #[prop(optional, into)]
     on_select: Option<Callback<()>>,
     children: Children,
 ) -> impl IntoView {

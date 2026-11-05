@@ -46,7 +46,7 @@ impl<T: Send + Sync + 'static> DataTableColumn<T> {
 pub fn DataTable<T>(
     #[prop(into)] rows: Signal<Vec<T>>,
     columns: Vec<DataTableColumn<T>>,
-    #[prop(default = None, into)] row_id: Option<Callback<T, String>>,
+    #[prop(optional, into)] row_id: Option<Callback<T, String>>,
     #[prop(default = None, into)] selection: Option<TableSelection>,
     #[prop(default = None, into)] sort: Option<TableSort>,
     #[prop(default = "No results.", into)] empty: &'static str,

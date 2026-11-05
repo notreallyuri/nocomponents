@@ -47,7 +47,7 @@ const ALPHANUMERIC: &str = r#"<InputOtp length=4 pattern=OtpPattern::Alphanumeri
 
 const COMPLETE: &str = r#"<InputOtp
     length=4
-    on_complete=Callback::new(move |code: String| submitted.set(code))
+    on_complete=move |code: String| submitted.set(code)
 >
     <InputOtpGroup>
         <InputOtpSlot index=0 />
@@ -266,10 +266,7 @@ pub fn Page() -> impl IntoView {
                     code=COMPLETE
                 >
                     <div class="flex flex-col gap-3">
-                        <InputOtp
-                            length=4
-                            on_complete=Callback::new(move |code: String| submitted.set(code))
-                        >
+                        <InputOtp length=4 on_complete=move |code: String| submitted.set(code)>
                             <InputOtpGroup>
                                 <InputOtpSlot index=0 />
                                 <InputOtpSlot index=1 />

@@ -505,7 +505,7 @@ pub fn CommandItemRoot(
     keywords: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     /// Run when the item is activated, by click or by Enter, with the item's value.
-    #[prop(default = None, into)]
+    #[prop(optional, into)]
     on_select: Option<Callback<String>>,
     /// Whether the item is the one currently *chosen*, which a palette has no notion of but a
     /// combobox does. Left out, the item carries no selected state at all; passed, it is

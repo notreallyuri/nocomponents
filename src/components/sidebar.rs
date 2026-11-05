@@ -596,7 +596,7 @@ pub fn SidebarTreeItem(
 pub fn SidebarTreeRow(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] active: Signal<bool>,
-    #[prop(default = None, into)] on_select: Option<Callback<ev::MouseEvent>>,
+    #[prop(optional, into)] on_select: Option<Callback<ev::MouseEvent>>,
     children: Children,
 ) -> impl IntoView {
     let item = use_tree_item();
@@ -604,7 +604,7 @@ pub fn SidebarTreeRow(
 
     view! {
         <TreeRowRoot
-            on_select=on_select
+            on_select=forward(on_select)
             class=move || {
                 cn!(
                     "group/tree-row flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding]",

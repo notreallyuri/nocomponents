@@ -46,7 +46,7 @@ const BOUNDS: &str = r#"// `min` and `max` fence the grid — and disable the pa
 <Calendar
     min=Date::today()
     max=Date::today().add_months(2)
-    disabled=Callback::new(|date: Date| matches!(date.weekday(), 0 | 6))
+    disabled=|date: Date| matches!(date.weekday(), 0 | 6)
 />"#;
 
 const MULTIPLE: &str = r#"<Calendar mode=CalendarMode::Multiple selected=selected />"#;
@@ -262,7 +262,7 @@ pub fn Page() -> impl IntoView {
                         <Calendar
                             min=Date::today()
                             max=Date::today().add_months(2)
-                            disabled=Callback::new(|date: Date| matches!(date.weekday(), 0 | 6))
+                            disabled=|date: Date| matches!(date.weekday(), 0 | 6)
                         />
                     </div>
                 </DemoSection>

@@ -123,7 +123,7 @@ pub fn DropdownMenuItem(
             inset=inset
             variant=variant
             close_on_select=close_on_select
-            on_click=on_click
+            on_click=forward(on_click)
             class=move || {
                 cn!(
                     "relative flex font-medium cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground hover:bg-accent hover:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 data-[inset]:pl-8 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 dark:data-[variant=destructive]:focus:bg-destructive/20 data-[variant=destructive]:focus:text-destructive data-[variant=destructive]:hover:bg-destructive/10 data-[variant=destructive]:hover:text-destructive data-[variant=destructive]:*:[svg]:text-destructive",
@@ -199,14 +199,14 @@ pub fn DropdownMenuCheckboxItem(
     #[prop(optional, into)] inset: Signal<bool>,
     #[prop(optional, into)] checked: RwSignal<bool>,
     #[prop(optional, into)] close_on_select: Signal<bool>,
-    #[prop(default = None, into)] on_checked_change: Option<Callback<bool>>,
+    #[prop(optional, into)] on_checked_change: Option<Callback<bool>>,
     children: Children,
 ) -> impl IntoView {
     view! {
         <DropdownMenuCheckboxItemRoot
             checked=checked
             close_on_select=close_on_select
-            on_checked_change=on_checked_change
+            on_checked_change=forward(on_checked_change)
             disabled=disabled
             inset=inset
             class=move || {
@@ -228,11 +228,15 @@ pub fn DropdownMenuCheckboxItem(
 pub fn DropdownMenuRadioGroup(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] value: RwSignal<String>,
-    #[prop(default = None, into)] on_value_change: Option<Callback<String>>,
+    #[prop(optional, into)] on_value_change: Option<Callback<String>>,
     children: Children,
 ) -> impl IntoView {
     view! {
-        <DropdownMenuRadioGroupRoot class=class value=value on_value_change=on_value_change>
+        <DropdownMenuRadioGroupRoot
+            class=class
+            value=value
+            on_value_change=forward(on_value_change)
+        >
             {children()}
         </DropdownMenuRadioGroupRoot>
     }

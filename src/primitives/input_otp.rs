@@ -101,7 +101,7 @@ pub fn InputOtpRoot(
     #[prop(optional, into)]
     on_value_change: Option<Callback<String>>,
     /// Fired once the last slot fills, with the finished code.
-    #[prop(default = None, into)]
+    #[prop(optional, into)]
     on_complete: Option<Callback<String>>,
     children: Children,
 ) -> impl IntoView {

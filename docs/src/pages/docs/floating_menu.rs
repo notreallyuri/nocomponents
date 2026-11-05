@@ -231,7 +231,7 @@ pub fn Page() -> impl IntoView {
                                 <FloatingMenuSeparator />
                                 <FloatingMenuItem
                                     label="Close"
-                                    on_click=Callback::new(move |_| horizontal.set(false))
+                                    on_click=move |_| horizontal.set(false)
                                 >
                                     <X />
                                 </FloatingMenuItem>
@@ -265,7 +265,7 @@ pub fn Page() -> impl IntoView {
                                 <FloatingMenuSeparator />
                                 <FloatingMenuItem
                                     label="Close"
-                                    on_click=Callback::new(move |_| vertical.set(false))
+                                    on_click=move |_| vertical.set(false)
                                 >
                                     <X />
                                 </FloatingMenuItem>
@@ -305,7 +305,7 @@ pub fn Page() -> impl IntoView {
                                 </FloatingMenuItem>
                                 <FloatingMenuItem
                                     label="Close"
-                                    on_click=Callback::new(move |_| controlled.set(false))
+                                    on_click=move |_| controlled.set(false)
                                 >
                                     <X />
                                 </FloatingMenuItem>
@@ -339,7 +339,7 @@ pub fn Page() -> impl IntoView {
                                 </FloatingMenuItem>
                                 <FloatingMenuItem
                                     label="Dismiss"
-                                    on_click=Callback::new(move |_| toolbar.set(false))
+                                    on_click=move |_| toolbar.set(false)
                                 >
                                     <X />
                                 </FloatingMenuItem>

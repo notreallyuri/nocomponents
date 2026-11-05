@@ -110,7 +110,7 @@ pub fn DropzoneRoot(
     #[prop(into)]
     on_files: Callback<Vec<File>>,
     /// Files that were dropped and turned away by `accept`.
-    #[prop(default = None, into)]
+    #[prop(optional, into)]
     on_rejected: Option<Callback<Vec<File>>>,
     children: Children,
 ) -> impl IntoView {

@@ -229,7 +229,12 @@ An optional *value* prop is `#[prop(default = None, into)] x: Option<T>` — `op
 empty string can stand in for "unset" (a label, a heading), prefer `Signal<String>`. An optional
 *callback* is the reverse, `#[prop(optional, into)] x: Option<Callback<T>>`: the setter takes the
 `Callback<T>` itself, so a caller can pass a bare closure (`on_open_change=move |open: bool| …`)
-instead of wrapping it in `Callback::new`.
+instead of wrapping it in `Callback::new`. `render` and `as_child` are the exception and stay
+`#[prop(default = None, into)] x: Option<Callback<…, AnyView>>`: `None` selects the default element,
+so the stand-in `utils::controllable::forward` would supply renders nothing instead. Likewise a
+callback whose *presence* changes behaviour (`on_move` and `on_resize` on a canvas node,
+`on_surface_drag`, `on_skip` on the video player) keeps `default = None, into` and is passed the
+`Option` as it is.
 
 **Pointer gestures** go through `use_drag` (`src/primitives/drag.rs`), never through hand-rolled
 window listeners: it owns the listener lifecycle (including `pointercancel`, which every hand-rolled

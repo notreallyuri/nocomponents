@@ -331,7 +331,7 @@ enum Priority { Low, Medium, High }
     // Not `on:click` — a card following the pointer is `pointer-events: none`,
     // so the click never reaches it. `on_select` fires only when the press
     // never travelled, which is the one thing the caller cannot work out.
-    on_select=Callback::new(move |_| { open.set(Some(ticket)); visible.set(true); })
+    on_select=move |_| { open.set(Some(ticket)); visible.set(true); }
 >
     <div class="flex flex-col gap-2">
         <Tooltip>
@@ -472,10 +472,10 @@ fn detail_board() -> AnyView {
                                             view! {
                                                 <KanbanCard
                                                     id=ticket.id.to_string()
-                                                    on_select=Callback::new(move |_| {
+                                                    on_select=move |_| {
                                                         open.set(Some(ticket));
                                                         visible.set(true);
-                                                    })
+                                                    }
                                                 >
                                                     <div class="flex flex-col gap-2">
                                                         <Tooltip>

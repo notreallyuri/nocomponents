@@ -69,7 +69,7 @@ view! {
                         // after the first pick is the bug in a multi-select.
                         selected=Signal::derive(move || holds(chosen, person.id))
                         close_on_select=false
-                        on_select=Callback::new(move |id| toggle(id))
+                        on_select=move |id| toggle(id)
                     >
                         <Avatar class="size-6"><AvatarFallback>{person.initials}</AvatarFallback></Avatar>
                         <span>{person.name}</span>
@@ -176,7 +176,7 @@ fn ReviewerField() -> impl IntoView {
                                         keywords=team
                                         selected=Signal::derive(move || holds(id))
                                         close_on_select=false
-                                        on_select=Callback::new(move |_| toggle(id))
+                                        on_select=move |_| toggle(id)
                                     >
                                         <Avatar class="size-6">
                                             <AvatarFallback class="text-[10px]">

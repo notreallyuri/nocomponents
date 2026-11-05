@@ -36,7 +36,7 @@ const SELECTION: &str = r#"let selected = RwSignal::new("lib.rs".to_string());
 
 <TreeRow
     active=Signal::derive(move || selected.get() == "lib.rs")
-    on_select=Callback::new(move |_| selected.set("lib.rs".to_string()))
+    on_select=move |_| selected.set("lib.rs".to_string())
 >
     "lib.rs"
 </TreeRow>"#;
@@ -201,9 +201,7 @@ pub fn Page() -> impl IntoView {
                                                     <TreeItem>
                                                         <TreeRow
                                                             active=Signal::derive(move || { selected.get() == name })
-                                                            on_select=Callback::new(move |_| {
-                                                                selected.set(name.to_string())
-                                                            })
+                                                            on_select=move |_| { selected.set(name.to_string()) }
                                                         >
                                                             {name}
                                                         </TreeRow>

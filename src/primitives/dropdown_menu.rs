@@ -232,7 +232,7 @@ pub fn DropdownMenuContentRoot(
     #[prop(optional)] side_offset: SideOffset,
     /// What Left and Right do inside this surface. A dropdown ignores them; a menubar's menu
     /// steps to the menu beside it, which is why this is a callback rather than a rule here.
-    #[prop(default = None, into)]
+    #[prop(optional, into)]
     on_arrow_horizontal: Option<Callback<Direction>>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
@@ -381,7 +381,7 @@ pub fn DropdownMenuItemRoot(
     /// Whether choosing this closes the menu. Read when the choice is made.
     #[prop(default = true.into(), into)]
     close_on_select: Signal<bool>,
-    #[prop(default = None, into)] on_click: Option<Callback<ev::MouseEvent>>,
+    #[prop(optional, into)] on_click: Option<Callback<ev::MouseEvent>>,
     children: Children,
 ) -> impl IntoView {
     let ctx = use_dropdown();
@@ -435,8 +435,8 @@ pub fn DropdownMenuCheckboxItemRoot(
     /// Whether choosing this closes the menu. Read when the choice is made.
     #[prop(optional, into)]
     close_on_select: Signal<bool>,
-    #[prop(default = None, into)] on_checked_change: Option<Callback<bool>>,
-    #[prop(default = None, into)] on_click: Option<Callback<ev::MouseEvent>>,
+    #[prop(optional, into)] on_checked_change: Option<Callback<bool>>,
+    #[prop(optional, into)] on_click: Option<Callback<ev::MouseEvent>>,
     children: Children,
 ) -> impl IntoView {
     let ctx = use_dropdown();
@@ -489,7 +489,7 @@ struct RadioGroupContext {
 pub fn DropdownMenuRadioGroupRoot(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] value: RwSignal<String>,
-    #[prop(default = None, into)] on_value_change: Option<Callback<String>>,
+    #[prop(optional, into)] on_value_change: Option<Callback<String>>,
     children: Children,
 ) -> impl IntoView {
     provide_context(RadioGroupContext {
@@ -514,7 +514,7 @@ pub fn DropdownMenuRadioItemRoot(
     /// Whether choosing this closes the menu. Read when the choice is made.
     #[prop(optional, into)]
     close_on_select: Signal<bool>,
-    #[prop(default = None, into)] on_click: Option<Callback<ev::MouseEvent>>,
+    #[prop(optional, into)] on_click: Option<Callback<ev::MouseEvent>>,
     children: Children,
 ) -> impl IntoView {
     let ctx = use_dropdown();

@@ -244,7 +244,7 @@ pub fn ComboboxItemRoot(
     #[prop(optional, into)] keywords: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     /// Run after the value has been written, with the item's value.
-    #[prop(default = None, into)]
+    #[prop(optional, into)]
     on_select: Option<Callback<String>>,
     /// Whether choosing the item again clears the selection, as a filter chip does.
     #[prop(default = true)]

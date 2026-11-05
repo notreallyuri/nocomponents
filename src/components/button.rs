@@ -1,3 +1,4 @@
+use crate::utils::controllable::forward;
 use crate::{
     cn,
     primitives::button::ButtonRoot,
@@ -105,7 +106,7 @@ pub fn Button(
     view! {
         <ButtonRoot
             node_ref=node_ref
-            on_click=on_click
+            on_click=forward(on_click)
             class=merged_classes
             disabled=disabled
             r#type=r#type

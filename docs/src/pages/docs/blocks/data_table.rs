@@ -48,7 +48,7 @@ view! {
     <DataTable
         rows=visible
         columns=columns
-        row_id=Callback::new(|row: Invoice| row.id.to_string())
+        row_id=|row: Invoice| row.id.to_string()
         selection=selection
         sort=sort
     />
@@ -193,7 +193,7 @@ fn PagedTable() -> impl IntoView {
             <DataTable
                 rows=visible
                 columns=columns
-                row_id=Callback::new(|row: Invoice| row.id.to_string())
+                row_id=|row: Invoice| row.id.to_string()
                 selection=selection
                 sort=sort
             />

@@ -50,7 +50,7 @@ pub fn ButtonRoot(
     /// trigger it hangs off, say.
     #[prop(default = None, into)]
     node_ref: Option<AnyNodeRef>,
-    #[prop(default = None, into)] on_click: Option<Callback<ev::MouseEvent>>,
+    #[prop(optional, into)] on_click: Option<Callback<ev::MouseEvent>>,
     #[prop(optional, into)] class: Signal<String>,
     /// Resolved against any [`crate::primitives::field`] around it, so a button inside a disabled
     /// field is disabled without being told twice.

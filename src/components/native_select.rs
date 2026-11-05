@@ -1,3 +1,4 @@
+use crate::utils::controllable::forward;
 use crate::{cn, primitives::native_select::NativeSelectRoot};
 use leptos::{ev, prelude::*};
 
@@ -25,7 +26,7 @@ pub fn NativeSelect(
     #[prop(optional, into)] value: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] id: Signal<String>,
-    #[prop(default = None, into)] on_blur: Option<Callback<ev::FocusEvent>>,
+    #[prop(optional, into)] on_blur: Option<Callback<ev::FocusEvent>>,
     children: Children,
 ) -> impl IntoView {
     let size_class = size.as_class();
@@ -36,7 +37,7 @@ pub fn NativeSelect(
             model=model
             value=value
             disabled=disabled
-            on_blur=on_blur
+            on_blur=forward(on_blur)
             class=move || {
                 cn!(
                     "w-full appearance-none rounded-lg border border-input bg-transparent py-1 pr-8 pl-2.5 transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:bg-input/30 dark:disabled:bg-input/80 [&>optgroup]:bg-popover [&>option]:bg-popover",

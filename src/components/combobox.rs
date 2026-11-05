@@ -145,7 +145,7 @@ pub fn ComboboxItem(
     #[prop(optional, into)] label: Signal<String>,
     #[prop(optional, into)] keywords: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
-    #[prop(default = None, into)] on_select: Option<Callback<String>>,
+    #[prop(optional, into)] on_select: Option<Callback<String>>,
     #[prop(default = true)] deselectable: bool,
     #[prop(default = None, into)] selected: Option<Signal<bool>>,
     #[prop(default = true)] close_on_select: bool,
@@ -158,7 +158,7 @@ pub fn ComboboxItem(
             label=label
             keywords=keywords
             disabled=disabled
-            on_select=on_select
+            on_select=forward(on_select)
             deselectable=deselectable
             selected=selected
             close_on_select=close_on_select

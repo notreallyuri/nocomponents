@@ -223,9 +223,7 @@ pub fn Page() -> impl IntoView {
                                                         view! {
                                                             <KanbanCard
                                                                 id=card.clone()
-                                                                on_select=Callback::new(move |_| {
-                                                                    clicked.set(Some(name.clone()))
-                                                                })
+                                                                on_select=move |_| { clicked.set(Some(name.clone())) }
                                                             >
                                                                 {card.clone()}
                                                             </KanbanCard>

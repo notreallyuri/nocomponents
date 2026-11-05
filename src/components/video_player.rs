@@ -289,8 +289,8 @@ pub fn VideoPlayer(
     #[prop(default = false)] autoplay: bool,
     #[prop(default = false)] r#loop: bool,
     #[prop(default = false)] muted: bool,
-    #[prop(default = None, into)] on_skip: Option<Callback<VideoPlayerStep>>,
-    #[prop(default = None, into)] controls: Option<Callback<(), AnyView>>,
+    #[prop(optional, into)] on_skip: Option<Callback<VideoPlayerStep>>,
+    #[prop(optional, into)] controls: Option<Callback<(), AnyView>>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {

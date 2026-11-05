@@ -1116,7 +1116,7 @@ pub fn VideoPlayerRailRoot(
     rail: VideoPlayerRail,
     #[prop(optional, into)] class: Signal<String>,
     /// The thumb, handed its position along the rail as a percentage.
-    #[prop(default = None, into)]
+    #[prop(optional, into)]
     thumb: Option<Callback<f64, AnyView>>,
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {

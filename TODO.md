@@ -1011,39 +1011,6 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       (`primitives/toggle.rs:30`) and `ToggleGroupItemRoot` (`primitives/toggle_group.rs:111`)
       read only their own `disabled`, and `Slider` has no `Field` wiring at all — no
       `FieldControl`, so no `id` for the label, no `aria-invalid` and no `aria-describedby`.
-- [ ] **Callbacks still declared `#[prop(default = None, into)]`.** `CLAUDE.md` now says an
-      optional callback is `#[prop(optional, into)] x: Option<Callback<T>>`, because that setter
-      takes the `Callback<T>` itself and so accepts a bare closure (`on_click=move |e| …`), where
-      `default = None` forces `Callback::new(…)`. `default = None, into` stays the rule for
-      optional *values*. What is left is converting the callbacks declared the old way.
-
-      Two things to know before doing it. A component that holds an `Option<Callback<T>>` and
-      hands it to a part declared `optional, into` cannot pass it as it stands, because the setter
-      wants a `Callback<T>`; `utils::controllable::forward` is the adapter (`None` becomes a
-      callback that does nothing). And the `view!` macro does not parse an unbraced
-      `x=move |v: Option<String>| …` (a generic inside the closure's parameter type), so such a
-      call site wants braces: `x={move |v: Option<String>| …}`.
-
-      By file (`render` and `as_child` are `Option<Callback<…, AnyView>>`, the rest events or
-      predicates):
-      - `components/`: `button.rs` (render); `calendar.rs` (disabled); `canvas.rs`
-        (on_surface_click, on_surface_drag, on_move ×4, on_resize ×3, on_gesture_end ×4,
-        on_change); `combobox.rs` (render, on_select); `command.rs` (on_select); `data_table.rs`
-        (row_id); `date_picker.rs` (disabled); `dropdown_menu.rs` (on_checked_change,
-        on_value_change); `dropzone.rs` (on_rejected); `floating_menu.rs` (on_click);
-        `hover_card.rs` (render); `input_otp.rs` (on_complete); `kanban.rs` (on_select);
-        `menubar.rs` (on_click); `native_select.rs` (on_blur); `navigation_menu.rs` (render);
-        `sidebar.rs` (render ×2, on_select); `tooltip.rs` (render); `tree.rs` (on_select);
-        `video_player.rs` (on_skip, controls).
-      - `primitives/`: `button.rs` (on_click, render); `calendar.rs` (disabled); `canvas.rs`
-        (on_surface_click, on_surface_drag, on_move, on_resize, on_gesture_end, on_change);
-        `combobox.rs` (as_child, on_select); `command.rs` (on_select); `dropdown_menu.rs` (render,
-        on_arrow_horizontal, on_click ×3, on_checked_change, on_value_change); `dropzone.rs`
-        (on_rejected); `floating.rs` (render); `hover_card.rs` (render); `input_otp.rs`
-        (on_complete); `kanban.rs` (on_select); `native_select.rs` (on_blur);
-        `navigation_menu.rs` (render); `popover.rs` (as_child); `select.rs` (as_child);
-        `sidebar.rs` (render); `tooltip.rs` (render); `tree.rs` (on_select); `video_player.rs`
-        (on_skip, thumb).
 - [ ] **`src/components/` still carries comments.** `CLAUDE.md` says none, at all:
       `components/floating_menu.rs` has 19 comment lines (`///` and `//`), `kanban.rs` 5,
       `dropzone.rs` 2 and `tree.rs` 2. Their content belongs on the docs pages, or in the

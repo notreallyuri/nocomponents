@@ -331,7 +331,7 @@ pub fn CanvasRoot(
     ///
     /// The world coordinate is the part the caller cannot work out for itself — it needs the
     /// surface's own box and the current transform, both of which live in here.
-    #[prop(default = None, into)]
+    #[prop(optional, into)]
     on_surface_click: Option<Callback<CanvasPoint>>,
     /// Run while the primary button is dragged across the board itself, and once more when it is
     /// let go — which is what a marquee, a lasso and a shape pulled open all need and a click
@@ -684,7 +684,7 @@ pub fn CanvasNodeRoot(
     /// telling anybody else about.
     ///
     /// Silent for a press that changed nothing, so selecting a node is not an edit.
-    #[prop(default = None, into)]
+    #[prop(optional, into)]
     on_gesture_end: Option<Callback<CanvasGesture>>,
     /// The smallest a resize may leave it, in world units.
     #[prop(default = 24.0)]
@@ -905,7 +905,7 @@ pub fn CanvasNodeRoot(
 #[component]
 pub fn CanvasNodeLabelRoot(
     #[prop(into)] value: Signal<String>,
-    #[prop(default = None, into)] on_change: Option<Callback<String>>,
+    #[prop(optional, into)] on_change: Option<Callback<String>>,
     /// Whether the input is showing. A signal rather than internal state so a caller can start an
     /// edit from somewhere else — a menu item, a keystroke on the board.
     #[prop(optional, into)]

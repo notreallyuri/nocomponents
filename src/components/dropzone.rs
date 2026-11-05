@@ -1,3 +1,4 @@
+use crate::utils::controllable::forward;
 use crate::{
     cn,
     primitives::dropzone::{DropzoneRoot, use_dropzone},
@@ -13,7 +14,7 @@ pub fn Dropzone(
     #[prop(default = true)] multiple: bool,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(into)] on_files: Callback<Vec<File>>,
-    #[prop(default = None, into)] on_rejected: Option<Callback<Vec<File>>>,
+    #[prop(optional, into)] on_rejected: Option<Callback<Vec<File>>>,
     children: Children,
 ) -> impl IntoView {
     view! {
@@ -22,7 +23,7 @@ pub fn Dropzone(
             multiple=multiple
             disabled=disabled
             on_files=on_files
-            on_rejected=on_rejected
+            on_rejected=forward(on_rejected)
             class=move || {
                 cn!(
                     "flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-input px-6 py-10 text-center transition-colors outline-none",

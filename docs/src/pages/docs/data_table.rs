@@ -77,7 +77,7 @@ view! {
     <DataTable
         rows=Signal::derive(|| PAYMENTS.to_vec())
         columns=columns
-        row_id=Callback::new(|row: Payment| row.id.to_string())
+        row_id=|row: Payment| row.id.to_string()
         selection=selection
         sort=TableSort::sorted_by("email", SortDirection::Ascending)
     />
@@ -365,7 +365,7 @@ pub fn Page() -> impl IntoView {
                             <DataTable
                                 rows=rows
                                 columns=columns()
-                                row_id=Callback::new(|row: Payment| row.id.to_string())
+                                row_id=|row: Payment| row.id.to_string()
                                 selection=selection
                                 sort=sort
                                 empty="No payments match that filter."

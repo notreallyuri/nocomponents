@@ -251,7 +251,7 @@ pub fn CalendarRoot(
     #[prop(default = None, into)] min: Option<Date>,
     #[prop(default = None, into)] max: Option<Date>,
     /// Anything else that cannot be picked.
-    #[prop(default = None, into)]
+    #[prop(optional, into)]
     disabled: Option<Callback<Date, bool>>,
     /// A BCP 47 tag — `"pt-BR"`, `"ja"` — for the month caption, the weekday headers and every
     /// day's accessible name. Empty is English, and so is anything the browser cannot read.

@@ -20,7 +20,7 @@ pub fn NativeSelectRoot(
     /// `on:blur` landed on the wrapper and never fired, `blur` not bubbling. The chevron is a
     /// background image on the `<select>` itself these days, so an `on:blur` at the call site
     /// reaches the control.
-    #[prop(default = None, into)]
+    #[prop(optional, into)]
     on_blur: Option<Callback<ev::FocusEvent>>,
     /// `<option>` and `<optgroup>` elements, written out as they are.
     children: Children,

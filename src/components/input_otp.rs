@@ -18,7 +18,7 @@ pub fn InputOtp(
     #[prop(default = None, into)] value: Option<RwSignal<String>>,
     #[prop(optional, into)] default_value: String,
     #[prop(optional, into)] on_value_change: Option<Callback<String>>,
-    #[prop(default = None, into)] on_complete: Option<Callback<String>>,
+    #[prop(optional, into)] on_complete: Option<Callback<String>>,
     children: Children,
 ) -> impl IntoView {
     view! {
@@ -31,7 +31,7 @@ pub fn InputOtp(
             value=value
             default_value=default_value
             on_value_change=forward(on_value_change)
-            on_complete=on_complete
+            on_complete=forward(on_complete)
             class=move || {
                 cn!(
                     "relative flex w-fit items-center gap-2 data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50",

@@ -38,7 +38,7 @@ let track = RwSignal::new(0usize);
 view! {
     <VideoPlayer
         src=Signal::derive(move || CLIPS[track.get()].to_string())
-        on_skip=Callback::new(move |step| {
+        on_skip=move |step| {
             track
                 .update(|track| {
                     *track = match step {
@@ -46,7 +46,7 @@ view! {
                         VideoPlayerStep::Next => (*track + 1).min(CLIPS.len() - 1),
                     };
                 })
-        })
+        }
     />
 }"#;
 
@@ -564,7 +564,7 @@ pub fn Page() -> impl IntoView {
                         <VideoPlayer
                             src=playlist_source
                             mode=VideoPlayerMode::Reduced
-                            on_skip=Callback::new(move |step| {
+                            on_skip=move |step| {
                                 track
                                     .update(|track| {
                                         *track = match step {
@@ -572,7 +572,7 @@ pub fn Page() -> impl IntoView {
                                             VideoPlayerStep::Next => (*track + 1).min(3),
                                         };
                                     })
-                            })
+                            }
                             class="max-w-xl"
                         />
                         <p class="text-sm text-muted-foreground">
@@ -624,7 +624,7 @@ pub fn Page() -> impl IntoView {
                             src=menu_source
                             poster=menu_poster
                             class="max-w-xl"
-                            controls=Callback::new(move |_| {
+                            controls=move |_| {
                                 view! {
                                     <VideoPlayerSeek />
                                     <div class="flex items-center gap-1">
@@ -663,7 +663,7 @@ pub fn Page() -> impl IntoView {
                                     </div>
                                 }
                                     .into_any()
-                            })
+                            }
                         />
                     </div>
                 </DemoSection>

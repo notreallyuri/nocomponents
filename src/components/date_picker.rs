@@ -34,7 +34,7 @@ pub fn DatePicker(
     #[prop(default = 0)] week_starts_on: u32,
     #[prop(default = None, into)] min: Option<Date>,
     #[prop(default = None, into)] max: Option<Date>,
-    #[prop(default = None, into)] disabled: Option<Callback<Date, bool>>,
+    #[prop(optional, into)] disabled: Option<Callback<Date, bool>>,
     #[prop(optional, into)] locale: Signal<String>,
     #[prop(optional)] side: Side,
     #[prop(optional)] align: Align,
@@ -192,7 +192,7 @@ fn DatePickerContent(
                     week_starts_on=week_starts_on
                     min=min
                     max=max
-                    disabled=disabled
+                    disabled=forward(disabled)
                     locale=locale
                     class="border-0 bg-transparent"
                 />

@@ -1,3 +1,4 @@
+use crate::utils::controllable::forward;
 use crate::{
     cn,
     icons::{media::Maximize, minus::Minus, plus::Plus},
@@ -54,8 +55,8 @@ pub fn Canvas(
     #[prop(optional, into)] viewport: RwSignal<Viewport>,
     #[prop(optional)] limits: ZoomLimits,
     #[prop(default = false)] pan_on_drag: bool,
-    #[prop(default = None, into)] on_surface_click: Option<Callback<CanvasPoint>>,
-    #[prop(default = None, into)] on_surface_drag: Option<Callback<CanvasDrag>>,
+    #[prop(optional, into)] on_surface_click: Option<Callback<CanvasPoint>>,
+    #[prop(optional, into)] on_surface_drag: Option<Callback<CanvasDrag>>,
     #[prop(default = true)] controls: bool,
     #[prop(default = 24.0)] gap: f64,
     #[prop(optional)] node_ref: Option<AnyNodeRef>,
@@ -70,7 +71,7 @@ pub fn Canvas(
             viewport=viewport
             limits=limits
             pan_on_drag=pan_on_drag
-            on_surface_click=on_surface_click
+            on_surface_click=forward(on_surface_click)
             on_surface_drag=on_surface_drag
             class=move || {
                 cn!(
@@ -181,7 +182,7 @@ pub fn CanvasNode(
     #[prop(default = None, into)] height: Option<Signal<f64>>,
     #[prop(default = None, into)] on_move: Option<Callback<CanvasPoint>>,
     #[prop(default = None, into)] on_resize: Option<Callback<WorldBox>>,
-    #[prop(default = None, into)] on_gesture_end: Option<Callback<CanvasGesture>>,
+    #[prop(optional, into)] on_gesture_end: Option<Callback<CanvasGesture>>,
     #[prop(default = None, into)] aspect: Option<f64>,
     #[prop(optional, into)] angle: Signal<f64>,
     #[prop(default = 24.0)] min_size: f64,
@@ -200,7 +201,7 @@ pub fn CanvasNode(
             height=height
             on_move=on_move
             on_resize=on_resize
-            on_gesture_end=on_gesture_end
+            on_gesture_end=forward(on_gesture_end)
             aspect=aspect
             angle=angle
             min_size=min_size
@@ -229,14 +230,14 @@ pub fn CanvasNode(
 #[component]
 pub fn CanvasNodeLabel(
     #[prop(into)] value: Signal<String>,
-    #[prop(default = None, into)] on_change: Option<Callback<String>>,
+    #[prop(optional, into)] on_change: Option<Callback<String>>,
     #[prop(optional, into)] editing: RwSignal<bool>,
     #[prop(optional, into)] class: Signal<String>,
 ) -> impl IntoView {
     view! {
         <CanvasNodeLabelRoot
             value=value
-            on_change=on_change
+            on_change=forward(on_change)
             editing=editing
             class=move || {
                 cn!(
@@ -255,9 +256,9 @@ pub fn CanvasSticky(
     #[prop(into)] y: Signal<f64>,
     #[prop(default = Signal::stored(160.0), into)] size: Signal<f64>,
     #[prop(optional)] color: StickyColor,
-    #[prop(default = None, into)] on_move: Option<Callback<CanvasPoint>>,
-    #[prop(default = None, into)] on_resize: Option<Callback<WorldBox>>,
-    #[prop(default = None, into)] on_gesture_end: Option<Callback<CanvasGesture>>,
+    #[prop(optional, into)] on_move: Option<Callback<CanvasPoint>>,
+    #[prop(optional, into)] on_resize: Option<Callback<WorldBox>>,
+    #[prop(optional, into)] on_gesture_end: Option<Callback<CanvasGesture>>,
     #[prop(optional, into)] angle: Signal<f64>,
     #[prop(default = 60.0)] min_size: f64,
     #[prop(optional, into)] z: Signal<i32>,
@@ -273,7 +274,7 @@ pub fn CanvasSticky(
             height=size
             on_move=on_move
             on_resize=on_resize
-            on_gesture_end=on_gesture_end
+            on_gesture_end=forward(on_gesture_end)
             aspect=1.0
             angle=angle
             min_size=min_size
@@ -299,9 +300,9 @@ pub fn CanvasShape(
     #[prop(default = Signal::stored(160.0), into)] width: Signal<f64>,
     #[prop(default = Signal::stored(100.0), into)] height: Signal<f64>,
     #[prop(optional)] kind: ShapeKind,
-    #[prop(default = None, into)] on_move: Option<Callback<CanvasPoint>>,
-    #[prop(default = None, into)] on_resize: Option<Callback<WorldBox>>,
-    #[prop(default = None, into)] on_gesture_end: Option<Callback<CanvasGesture>>,
+    #[prop(optional, into)] on_move: Option<Callback<CanvasPoint>>,
+    #[prop(optional, into)] on_resize: Option<Callback<WorldBox>>,
+    #[prop(optional, into)] on_gesture_end: Option<Callback<CanvasGesture>>,
     #[prop(default = None, into)] aspect: Option<f64>,
     #[prop(optional, into)] angle: Signal<f64>,
     #[prop(default = 32.0)] min_size: f64,
@@ -318,7 +319,7 @@ pub fn CanvasShape(
             height=height
             on_move=on_move
             on_resize=on_resize
-            on_gesture_end=on_gesture_end
+            on_gesture_end=forward(on_gesture_end)
             aspect=aspect
             angle=angle
             min_size=min_size
@@ -341,8 +342,8 @@ pub fn CanvasShape(
 pub fn CanvasText(
     #[prop(into)] x: Signal<f64>,
     #[prop(into)] y: Signal<f64>,
-    #[prop(default = None, into)] on_move: Option<Callback<CanvasPoint>>,
-    #[prop(default = None, into)] on_gesture_end: Option<Callback<CanvasGesture>>,
+    #[prop(optional, into)] on_move: Option<Callback<CanvasPoint>>,
+    #[prop(optional, into)] on_gesture_end: Option<Callback<CanvasGesture>>,
     #[prop(optional, into)] angle: Signal<f64>,
     #[prop(optional, into)] z: Signal<i32>,
     #[prop(optional, into)] selected: Signal<bool>,
@@ -354,7 +355,7 @@ pub fn CanvasText(
             x=x
             y=y
             on_move=on_move
-            on_gesture_end=on_gesture_end
+            on_gesture_end=forward(on_gesture_end)
             angle=angle
             z=z
             selected=selected

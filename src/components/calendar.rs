@@ -21,7 +21,7 @@ pub fn Calendar(
     #[prop(default = 0)] week_starts_on: u32,
     #[prop(default = None, into)] min: Option<Date>,
     #[prop(default = None, into)] max: Option<Date>,
-    #[prop(default = None, into)] disabled: Option<Callback<Date, bool>>,
+    #[prop(optional, into)] disabled: Option<Callback<Date, bool>>,
     #[prop(optional, into)] locale: Signal<String>,
     #[prop(optional, into)] class: Signal<String>,
 ) -> impl IntoView {
@@ -37,7 +37,7 @@ pub fn Calendar(
             week_starts_on=week_starts_on
             min=min
             max=max
-            disabled=disabled
+            disabled=forward(disabled)
             locale=locale
             class=move || {
                 cn!("w-fit rounded-lg border bg-background p-3 text-foreground", class.get())

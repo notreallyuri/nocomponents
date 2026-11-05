@@ -231,7 +231,7 @@ pub fn Page() -> impl IntoView {
                         <DatePicker
                             selected=delivery
                             min=Date::today()
-                            disabled=Callback::new(|date: Date| matches!(date.weekday(), 0 | 6))
+                            disabled=|date: Date| matches!(date.weekday(), 0 | 6)
                         />
                         <FieldDescription>"Weekdays only, from today onwards."</FieldDescription>
                     </Field>

@@ -43,13 +43,21 @@ where
     signal
 }
 
-/// Hands an `Option<Callback<T>>` on to a part whose own prop is `#[prop(optional, into)]`.
+/// Hands an `Option<Callback<T, R>>` on to a part whose own prop is `#[prop(optional, into)]`.
 ///
-/// That declaration makes the setter take the `Callback<T>` itself, so an `Option` held by the
-/// forwarding component cannot be passed as it stands. `None` becomes a callback that does
-/// nothing, which is what the receiver would have done without one.
-pub fn forward<T: 'static>(callback: Option<Callback<T>>) -> Callback<T> {
-    callback.unwrap_or_else(|| Callback::new(|_| {}))
+/// That declaration makes the setter take the `Callback<T, R>` itself, so an `Option` held by the
+/// forwarding component cannot be passed as it stands. `None` becomes a callback that ignores its
+/// argument and returns `R::default()` — nothing for an event handler, `false` for a predicate —
+/// which is what the receiver would have done without one.
+///
+/// Only for a receiver that treats a missing callback as exactly that. One that branches on
+/// whether it was given one at all (a canvas node that is only draggable when `on_move` is set,
+/// a skip control that is only enabled when `on_skip` is) must keep `default = None, into` and be
+/// handed the `Option` itself.
+pub fn forward<T: 'static, R: Default + 'static>(
+    callback: Option<Callback<T, R>>,
+) -> Callback<T, R> {
+    callback.unwrap_or_else(|| Callback::new(|_| R::default()))
 }
 
 #[cfg(test)]

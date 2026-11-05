@@ -120,7 +120,7 @@ pub fn CommandItem(
     #[prop(into)] value: String,
     #[prop(optional, into)] keywords: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
-    #[prop(default = None, into)] on_select: Option<Callback<String>>,
+    #[prop(optional, into)] on_select: Option<Callback<String>>,
     #[prop(optional, into)] class: Signal<String>,
     children: ChildrenFn,
 ) -> impl IntoView {
@@ -129,7 +129,7 @@ pub fn CommandItem(
             value=value
             keywords=keywords
             disabled=disabled
-            on_select=on_select
+            on_select=forward(on_select)
             class=move || {
                 cn!(
                     "relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none select-none data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted-foreground",
