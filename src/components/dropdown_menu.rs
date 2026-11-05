@@ -1,9 +1,11 @@
 use crate::{
     cn,
     components::button::{Button, ButtonSize, ButtonVariant},
-    icons::chevron::ChevronRight,
+    icons::{check::Check, chevron::ChevronRight, circle::Circle},
     primitives::dropdown_menu::{
-        DropdownMenuContentRoot, DropdownMenuItemRoot, DropdownMenuPortalRoot, DropdownMenuRoot,
+        DropdownMenuCheckboxItemRoot, DropdownMenuContentRoot, DropdownMenuGroupRoot,
+        DropdownMenuItemRoot, DropdownMenuItemVariant, DropdownMenuPortalRoot,
+        DropdownMenuRadioGroupRoot, DropdownMenuRadioItemRoot, DropdownMenuRoot,
         DropdownMenuSubContentRoot, DropdownMenuSubRoot, DropdownMenuSubTriggerRoot,
         DropdownMenuTriggerRoot,
     },
@@ -13,8 +15,15 @@ use crate::{
 use leptos::{either::Either, ev, prelude::*};
 
 #[component]
-pub fn DropdownMenu(children: ChildrenFn) -> impl IntoView {
-    view! { <DropdownMenuRoot class="relative inline-block text-left">{children()}</DropdownMenuRoot> }
+pub fn DropdownMenu(
+    #[prop(optional, into)] class: Signal<String>,
+    children: ChildrenFn,
+) -> impl IntoView {
+    view! {
+        <DropdownMenuRoot class=move || {
+            cn!("relative inline-block text-left", class.get())
+        }>{children()}</DropdownMenuRoot>
+    }
 }
 
 #[component]
@@ -91,16 +100,22 @@ pub fn DropdownMenuContent(
 pub fn DropdownMenuItem(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional, into)] inset: Signal<bool>,
+    #[prop(optional)] variant: DropdownMenuItemVariant,
+    #[prop(default = true.into(), into)] close_on_select: Signal<bool>,
     #[prop(optional, into)] on_click: Option<Callback<ev::MouseEvent>>,
     children: Children,
 ) -> impl IntoView {
     view! {
         <DropdownMenuItemRoot
             disabled=disabled
+            inset=inset
+            variant=variant
+            close_on_select=close_on_select
             on_click=on_click
             class=move || {
                 cn!(
-                    "relative flex font-medium cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground hover:bg-accent hover:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50",
+                    "relative flex font-medium cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground hover:bg-accent hover:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 data-[inset]:pl-8 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 dark:data-[variant=destructive]:focus:bg-destructive/20 data-[variant=destructive]:focus:text-destructive data-[variant=destructive]:hover:bg-destructive/10 data-[variant=destructive]:hover:text-destructive data-[variant=destructive]:*:[svg]:text-destructive",
                     class.get()
                 )
             }
@@ -111,32 +126,166 @@ pub fn DropdownMenuItem(
 }
 
 #[component]
-pub fn DropdownMenuLabel(children: Children) -> impl IntoView {
-    view! { <div class="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{children()}</div> }
+pub fn DropdownMenuLabel(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] inset: Signal<bool>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <div
+            data-slot="dropdown-menu-label"
+            data-inset=move || inset.get().then_some("")
+            class=move || {
+                cn!(
+                    "px-2 py-1.5 text-xs font-semibold text-muted-foreground data-[inset]:pl-8",
+                    class.get()
+                )
+            }
+        >
+            {children()}
+        </div>
+    }
 }
 
 #[component]
-pub fn DropdownMenuSeparator() -> impl IntoView {
-    view! { <div class="-mx-1 my-1 h-px bg-muted"></div> }
+pub fn DropdownMenuSeparator(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
+    view! {
+        <div
+            data-slot="dropdown-menu-separator"
+            role="separator"
+            class=move || cn!("-mx-1 my-1 h-px bg-muted", class.get())
+        ></div>
+    }
 }
 
 #[component]
-pub fn DropdownMenuSub(children: ChildrenFn) -> impl IntoView {
-    view! { <DropdownMenuSubRoot>{children()}</DropdownMenuSubRoot> }
+pub fn DropdownMenuGroup(
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    view! { <DropdownMenuGroupRoot class=class>{children()}</DropdownMenuGroupRoot> }
+}
+
+#[component]
+pub fn DropdownMenuShortcut(
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <span
+            data-slot="dropdown-menu-shortcut"
+            class=move || cn!("ml-auto text-xs tracking-widest text-muted-foreground", class.get())
+        >
+            {children()}
+        </span>
+    }
+}
+
+#[component]
+pub fn DropdownMenuCheckboxItem(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional, into)] inset: Signal<bool>,
+    #[prop(optional, into)] checked: RwSignal<bool>,
+    #[prop(optional, into)] close_on_select: Signal<bool>,
+    #[prop(default = None, into)] on_checked_change: Option<Callback<bool>>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <DropdownMenuCheckboxItemRoot
+            checked=checked
+            close_on_select=close_on_select
+            on_checked_change=on_checked_change
+            disabled=disabled
+            inset=inset
+            class=move || {
+                cn!(
+                    "group relative flex cursor-default select-none items-center gap-2 rounded-sm py-1.5 pr-2 pl-8 text-sm font-medium outline-none transition-colors focus:bg-accent focus:text-accent-foreground hover:bg-accent hover:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50",
+                    class.get()
+                )
+            }
+        >
+            <span class="pointer-events-none absolute left-2 flex size-3.5 items-center justify-center">
+                <Check class="hidden size-4 group-data-[state=checked]:block" />
+            </span>
+            {children()}
+        </DropdownMenuCheckboxItemRoot>
+    }
+}
+
+#[component]
+pub fn DropdownMenuRadioGroup(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] value: RwSignal<String>,
+    #[prop(default = None, into)] on_value_change: Option<Callback<String>>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <DropdownMenuRadioGroupRoot class=class value=value on_value_change=on_value_change>
+            {children()}
+        </DropdownMenuRadioGroupRoot>
+    }
+}
+
+#[component]
+pub fn DropdownMenuRadioItem(
+    #[prop(into)] value: String,
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional, into)] inset: Signal<bool>,
+    #[prop(optional, into)] close_on_select: Signal<bool>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <DropdownMenuRadioItemRoot
+            value=value
+            close_on_select=close_on_select
+            disabled=disabled
+            inset=inset
+            class=move || {
+                cn!(
+                    "group relative flex cursor-default select-none items-center gap-2 rounded-sm py-1.5 pr-2 pl-8 text-sm font-medium outline-none transition-colors focus:bg-accent focus:text-accent-foreground hover:bg-accent hover:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50",
+                    class.get()
+                )
+            }
+        >
+            <span class="pointer-events-none absolute left-2 flex size-3.5 items-center justify-center">
+                <Circle class="hidden size-2 fill-current group-data-[state=checked]:block" />
+            </span>
+            {children()}
+        </DropdownMenuRadioItemRoot>
+    }
+}
+
+#[component]
+pub fn DropdownMenuSub(
+    #[prop(optional, into)] class: Signal<String>,
+    children: ChildrenFn,
+) -> impl IntoView {
+    view! { <DropdownMenuSubRoot class=class>{children()}</DropdownMenuSubRoot> }
 }
 
 #[component]
 pub fn DropdownMenuSubTrigger(
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional, into)] inset: Signal<bool>,
     children: Children,
 ) -> impl IntoView {
     view! {
-        <DropdownMenuSubTriggerRoot class=move || {
-            cn!(
-                "group flex w-full cursor-default select-none font-medium justify-between items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground",
+        <DropdownMenuSubTriggerRoot
+            disabled=disabled
+            inset=inset
+            class=move || {
+                cn!(
+                    "group flex w-full cursor-default select-none font-medium justify-between items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground data-[inset]:pl-8 disabled:pointer-events-none disabled:opacity-50",
                 class.get()
-            )
-        }>{children()} <ChevronRight class="ml-auto" /></DropdownMenuSubTriggerRoot>
+                )
+            }
+        >
+            {children()}
+            <ChevronRight class="ml-auto" />
+        </DropdownMenuSubTriggerRoot>
     }
 }
 

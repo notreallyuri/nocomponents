@@ -6,9 +6,12 @@ use crate::{
 use leptos::prelude::*;
 
 pub use crate::components::dropdown_menu::{
+    DropdownMenuCheckboxItem as ContextMenuCheckboxItem, DropdownMenuGroup as ContextMenuGroup,
     DropdownMenuItem as ContextMenuItem, DropdownMenuLabel as ContextMenuLabel,
-    DropdownMenuPortal as ContextMenuPortal, DropdownMenuSeparator as ContextMenuSeparator,
-    DropdownMenuSub as ContextMenuSub, DropdownMenuSubContent as ContextMenuSubContent,
+    DropdownMenuPortal as ContextMenuPortal, DropdownMenuRadioGroup as ContextMenuRadioGroup,
+    DropdownMenuRadioItem as ContextMenuRadioItem, DropdownMenuSeparator as ContextMenuSeparator,
+    DropdownMenuShortcut as ContextMenuShortcut, DropdownMenuSub as ContextMenuSub,
+    DropdownMenuSubContent as ContextMenuSubContent,
     DropdownMenuSubTrigger as ContextMenuSubTrigger,
 };
 
@@ -24,10 +27,7 @@ pub fn ContextMenuTrigger(
     children: Children,
 ) -> impl IntoView {
     view! {
-        <ContextMenuTriggerRoot
-            disabled=disabled
-            class=move || cn!("select-none", class.get())
-        >
+        <ContextMenuTriggerRoot disabled=disabled class=move || cn!("select-none", class.get())>
             {children()}
         </ContextMenuTriggerRoot>
     }

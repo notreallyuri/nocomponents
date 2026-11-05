@@ -274,10 +274,56 @@ pub fn DropdownMenuContentRoot(
     }
 }
 
+/// How an item reads, written as `data-variant` so the styled layer can key a destructive row off
+/// the attribute instead of a class the caller types by hand.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub enum DropdownMenuItemVariant {
+    #[default]
+    Default,
+    Destructive,
+}
+
+impl DropdownMenuItemVariant {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Default => "default",
+            Self::Destructive => "destructive",
+        }
+    }
+}
+
+/// Closes the panel an item lives in and, from inside a submenu, the whole tree above it.
+fn close_tree(ctx: DropdownMenuContext, menu_root: Option<MenuRoot>) {
+    ctx.close();
+    if let Some(root) = menu_root {
+        root.0.close();
+    }
+}
+
+/// What follows a selection: close the tree, or, when `close_on_select` is off, leave it open with
+/// focus on the item just chosen (a click already focuses it; this covers a pointer that did not).
+fn finish_select(
+    target: Option<web_sys::EventTarget>,
+    close_on_select: Signal<bool>,
+    ctx: DropdownMenuContext,
+    menu_root: Option<MenuRoot>,
+) {
+    if close_on_select.get_untracked() {
+        close_tree(ctx, menu_root);
+    } else if let Some(item) = target.and_then(|t| t.dyn_into::<HtmlElement>().ok()) {
+        let _ = item.focus();
+    }
+}
+
 #[component]
 pub fn DropdownMenuItemRoot(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional, into)] inset: Signal<bool>,
+    #[prop(optional)] variant: DropdownMenuItemVariant,
+    /// Whether choosing this closes the menu. Read when the choice is made.
+    #[prop(default = true.into(), into)]
+    close_on_select: Signal<bool>,
     #[prop(default = None, into)] on_click: Option<Callback<ev::MouseEvent>>,
     children: Children,
 ) -> impl IntoView {
@@ -293,13 +339,11 @@ pub fn DropdownMenuItemRoot(
             return;
         }
 
+        let target = e.current_target();
         if let Some(cb) = on_click {
             cb.run(e);
         }
-        ctx.close();
-        if let Some(root) = menu_root {
-            root.0.close();
-        }
+        finish_select(target, close_on_select, ctx, menu_root);
     };
 
     view! {
@@ -313,9 +357,166 @@ pub fn DropdownMenuItemRoot(
             data-roving-item=""
             data-disabled=move || disabled.get().then_some("true")
             aria-disabled=move || disabled.get().then_some("true")
+            data-inset=move || inset.get().then_some("")
+            data-variant=variant.as_str()
             on:click=handle_click
             class=class
         >
+            {children()}
+        </div>
+    }
+}
+
+/// A row that holds an on/off choice. Takes part in the menu's keys exactly as an item does
+/// (`data-roving-item`). Choosing one leaves the menu open unless `close_on_select` is set.
+#[component]
+pub fn DropdownMenuCheckboxItemRoot(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional, into)] inset: Signal<bool>,
+    #[prop(optional, into)] checked: RwSignal<bool>,
+    /// Whether choosing this closes the menu. Read when the choice is made.
+    #[prop(optional, into)]
+    close_on_select: Signal<bool>,
+    #[prop(default = None, into)] on_checked_change: Option<Callback<bool>>,
+    #[prop(default = None, into)] on_click: Option<Callback<ev::MouseEvent>>,
+    children: Children,
+) -> impl IntoView {
+    let ctx = use_dropdown();
+    let menu_root = use_context::<MenuRoot>();
+
+    let handle_click = move |e: ev::MouseEvent| {
+        if disabled.get_untracked() {
+            return;
+        }
+
+        let next = !checked.get_untracked();
+        checked.set(next);
+        if let Some(cb) = on_checked_change {
+            cb.run(next);
+        }
+        let target = e.current_target();
+        if let Some(cb) = on_click {
+            cb.run(e);
+        }
+        finish_select(target, close_on_select, ctx, menu_root);
+    };
+
+    view! {
+        <div
+            data-slot="dropdown-menu-checkbox-item"
+            role="menuitemcheckbox"
+            tabindex="-1"
+            data-roving-item=""
+            aria-checked=move || checked.get().to_string()
+            data-state=move || if checked.get() { "checked" } else { "unchecked" }
+            data-disabled=move || disabled.get().then_some("true")
+            aria-disabled=move || disabled.get().then_some("true")
+            data-inset=move || inset.get().then_some("")
+            on:click=handle_click
+            class=class
+        >
+            {children()}
+        </div>
+    }
+}
+
+#[derive(Clone)]
+struct RadioGroupContext {
+    value: RwSignal<String>,
+    on_value_change: Option<Callback<String>>,
+}
+
+/// A set of radio items sharing one value. Publishes the value to the items below it.
+#[component]
+pub fn DropdownMenuRadioGroupRoot(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] value: RwSignal<String>,
+    #[prop(default = None, into)] on_value_change: Option<Callback<String>>,
+    children: Children,
+) -> impl IntoView {
+    provide_context(RadioGroupContext {
+        value,
+        on_value_change,
+    });
+
+    view! {
+        <div data-slot="dropdown-menu-radio-group" role="group" class=class>
+            {children()}
+        </div>
+    }
+}
+
+/// One choice of a radio group. Selecting it sets the group's value and leaves the menu open unless `close_on_select` is set.
+#[component]
+pub fn DropdownMenuRadioItemRoot(
+    #[prop(into)] value: String,
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional, into)] inset: Signal<bool>,
+    /// Whether choosing this closes the menu. Read when the choice is made.
+    #[prop(optional, into)]
+    close_on_select: Signal<bool>,
+    #[prop(default = None, into)] on_click: Option<Callback<ev::MouseEvent>>,
+    children: Children,
+) -> impl IntoView {
+    let ctx = use_dropdown();
+    let menu_root = use_context::<MenuRoot>();
+    let group = expect_context::<RadioGroupContext>();
+
+    let item_value = value.clone();
+    let is_checked = move || group.value.get() == item_value;
+
+    let handle_click = {
+        let value = value.clone();
+        let group = group.clone();
+        move |e: ev::MouseEvent| {
+            if disabled.get_untracked() {
+                return;
+            }
+
+            group.value.set(value.clone());
+            if let Some(cb) = group.on_value_change {
+                cb.run(value.clone());
+            }
+            let target = e.current_target();
+            if let Some(cb) = on_click {
+                cb.run(e);
+            }
+            finish_select(target, close_on_select, ctx, menu_root);
+        }
+    };
+
+    view! {
+        <div
+            data-slot="dropdown-menu-radio-item"
+            role="menuitemradio"
+            tabindex="-1"
+            data-roving-item=""
+            aria-checked={
+                let is_checked = is_checked.clone();
+                move || is_checked().to_string()
+            }
+            data-state=move || if is_checked() { "checked" } else { "unchecked" }
+            data-disabled=move || disabled.get().then_some("true")
+            aria-disabled=move || disabled.get().then_some("true")
+            data-inset=move || inset.get().then_some("")
+            on:click=handle_click
+            class=class
+        >
+            {children()}
+        </div>
+    }
+}
+
+/// A labelled-by-nothing cluster of items; `role="group"` is all it adds.
+#[component]
+pub fn DropdownMenuGroupRoot(
+    #[prop(optional, into)] class: Signal<String>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <div data-slot="dropdown-menu-group" role="group" class=class>
             {children()}
         </div>
     }
@@ -337,6 +538,7 @@ pub fn DropdownMenuSubRoot(
 pub fn DropdownMenuSubTriggerRoot(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional, into)] inset: Signal<bool>,
     children: Children,
 ) -> impl IntoView {
     let ctx = use_dropdown();
@@ -352,6 +554,7 @@ pub fn DropdownMenuSubTriggerRoot(
             tabindex="-1"
             data-roving-item=""
             disabled=disabled
+            data-inset=move || inset.get().then_some("")
             node_ref=ctx.trigger_ref
             class=class
             data-state=move || if ctx.is_open.get() { "open" } else { "closed" }
@@ -368,7 +571,7 @@ pub fn DropdownMenuSubTriggerRoot(
             }
             on:click=move |e| {
                 e.stop_propagation();
-                ctx.toggle();
+                ctx.open();
             }
             on:pointerenter=move |_| {
                 hover.0.set(true);
@@ -474,12 +677,8 @@ pub fn DropdownMenuSubContentRoot(
                 }
                 on:focusin=move |_| roving.on_focus_in()
                 data-state=move || if ctx.is_open.get() { "open" } else { "closed" }
-                data-side=move || match placement.get() {
-                    Placement::Top | Placement::TopStart | Placement::TopEnd => "top",
-                    Placement::Bottom | Placement::BottomStart | Placement::BottomEnd => "bottom",
-                    Placement::Left | Placement::LeftStart | Placement::LeftEnd => "left",
-                    Placement::Right | Placement::RightStart | Placement::RightEnd => "right",
-                }
+                data-align=move || placement_align(placement.get())
+                data-side=move || placement_side(placement.get())
                 class=class
             >
                 {children()}
