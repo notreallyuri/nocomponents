@@ -1128,19 +1128,6 @@ list.
       move keeps its relative order. Reduced motion drops the transition. Auto-scroll scrolls the
       list, not the page, and has to work inside a scroll-locked modal, where the wheel is blocked
       (immich-front patches dnd-kit's `Scroller` for exactly this).
-- [ ] **Drawer snap points** (`components/drawer.rs`, `primitives/drawer.rs`). From
-      `features/media/components/viewer/asset-info.tsx` and `overlays/sheet-snap.ts`: peek at 0.40
-      of the viewport, full at 0.88, dismiss below 0.22, a flick of 0.6 px/ms, switch at 25 percent.
-      `Drawer snap_points=[0.4, 0.88] active_snap=RwSignal<usize> on_snap_change dismiss_below=0.22`,
-      dragged by the grabber, built on `drag.rs` (`.on_end` already carries the release velocity).
-      The decision is a pure `fn settle(height, velocity, points) -> Settle` in `primitives/` with
-      host `cargo test`s ported from `sheet-snap.test.ts`.
-- [ ] **Context-menu long-press on touch.** `overlays/context-menu.tsx`; `primitives/context_menu.rs`
-      only has `on:contextmenu`. `ContextMenu` opens on a touch long-press by default
-      (`long_press_ms`, default 450), cancelled by a move over 10 px, `pointerup` or
-      `pointercancel`, opens at the touch point, and sets `-webkit-touch-callout: none` on the
-      trigger. The timer is a reusable `use_long_press(on_trigger)` in `primitives/`, not private to
-      the menu.
 - [ ] **Mobile bottom-sheet presentation.** `dialog.tsx` (`sheet`), `dropdown-menu.tsx` and
       `context-menu.tsx` (`sheetTitle`), `popover.tsx` (`sheet`), `select.tsx` (the shared
       `menu-sheet` classes). A `mobile_sheet` prop and a `sheet_title` on `Dialog`, `DropdownMenu`,

@@ -9,6 +9,27 @@ lock existed reads `not in lock`: the tool cannot tell whether it was edited, so
 
 ## Unreleased
 
+### Added
+
+- **`use_long_press`** (`primitives::long_press`, feature `long_press`): a held touch or pen press
+  that fires once after a delay (450 ms by default), reporting the press point, and is abandoned by
+  a move of more than 10 px, a release or a `pointercancel`. A mouse press never fires it. It starts
+  from a `pointerdown` that may land on a child, and follows the gesture through `use_drag`.
+- **`ContextMenu` opens on a touch long-press**, at the touch point, as `contextmenu` does at the
+  cursor. `ContextMenuTrigger` and `ContextMenuTriggerRoot` take `long_press: Signal<bool>`
+  (default true) and `long_press_ms: Signal<f64>` (default 450.0), and set
+  `-webkit-touch-callout: none` so iOS shows no callout of its own. The `contextmenu` Android sends
+  after a long press is swallowed when the press has already opened the menu. Feature
+  `context_menu` now lists `long_press`.
+- **Drawer snap points.** `Drawer` and `DrawerRoot` take `snap_points: Signal<Vec<f64>>` (fractions
+  of the viewport along the side, e.g. `vec![0.4, 0.88]`), `active_snap` / `default_active_snap` /
+  `on_active_snap_change` (the active point's value, `Option<f64>`), `dismiss_below` (default 0.22)
+  and `flick_velocity` (default 0.6 px/ms). The panel is as tall as the highest point, follows the
+  handle while dragged, settles on the nearest point, moves one point on a flick, and is dismissed
+  below `dismiss_below`; `data-snap` carries the index. The decision is the pure
+  `primitives::drawer::settle`, returning `Settle::Snap(f64)` or `Settle::Dismiss`. Without
+  `snap_points` a drawer behaves as before.
+
 ### Notes
 
 - **`ChildrenFn` children cannot move an owned value.** `DropdownMenu`, `Popover`, `Dialog` and the

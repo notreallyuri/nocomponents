@@ -1,6 +1,9 @@
 use crate::{
     cn,
-    primitives::context_menu::{ContextMenuContentRoot, ContextMenuRoot, ContextMenuTriggerRoot},
+    primitives::{
+        context_menu::{ContextMenuContentRoot, ContextMenuRoot, ContextMenuTriggerRoot},
+        long_press::DEFAULT_DELAY_MS,
+    },
     utils::controllable::forward,
 };
 use leptos::prelude::*;
@@ -37,10 +40,17 @@ pub fn ContextMenu(
 pub fn ContextMenuTrigger(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(default = true.into(), into)] long_press: Signal<bool>,
+    #[prop(default = DEFAULT_DELAY_MS.into(), into)] long_press_ms: Signal<f64>,
     children: Children,
 ) -> impl IntoView {
     view! {
-        <ContextMenuTriggerRoot disabled=disabled class=move || cn!("select-none", class.get())>
+        <ContextMenuTriggerRoot
+            disabled=disabled
+            long_press=long_press
+            long_press_ms=long_press_ms
+            class=move || cn!("select-none", class.get())
+        >
             {children()}
         </ContextMenuTriggerRoot>
     }

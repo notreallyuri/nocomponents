@@ -120,7 +120,7 @@ Two kinds, and you almost always want some of each.
 | `highlight` | syntax highlighting for the `code` component |
 | `full` | all of the above |
 
-**Elements** are one feature per component name — 72 of them, and a single name gates both layers,
+**Elements** are one feature per component name — 73 of them, and a single name gates both layers,
 because `accordion` is one thing whichever layer you take it from. Each lists what its own source
 imports, so cargo works out the closure:
 

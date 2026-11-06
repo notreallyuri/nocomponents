@@ -54,6 +54,8 @@ pub mod input_group;
 pub mod input_otp;
 #[cfg(feature = "kanban")]
 pub mod kanban;
+#[cfg(feature = "long_press")]
+pub mod long_press;
 #[cfg(feature = "menubar")]
 pub mod menubar;
 #[cfg(feature = "native_select")]
@@ -162,6 +164,8 @@ pub mod prelude {
     pub use super::input_otp::*;
     #[cfg(feature = "kanban")]
     pub use super::kanban::*;
+    #[cfg(feature = "long_press")]
+    pub use super::long_press::*;
     #[cfg(feature = "menubar")]
     pub use super::menubar::*;
     #[cfg(feature = "native_select")]

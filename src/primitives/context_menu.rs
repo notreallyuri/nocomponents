@@ -14,6 +14,7 @@ use crate::{
             handle_menu_keys, placement_align, placement_side,
         },
         floating::{FloatingContext, FloatingRoot, floating_options, side_placement},
+        long_press::{DEFAULT_DELAY_MS, use_long_press},
         roving_focus::use_roving_focus,
         typeahead::Typeahead,
     },
@@ -91,27 +92,75 @@ pub fn ContextMenuRoot(
     }
 }
 
-/// The region that answers a right-click. Opening rather than toggling is deliberate: the layer
-/// closes on the pointerdown, then this moves the anchor and opens it where the pointer is.
+/// How long after a long press has opened the menu a `contextmenu` event is taken to be the
+/// browser's own echo of it. Android fires one a little after the press, where the cursor would
+/// be, and without this it would reposition a menu that is already open.
+const NATIVE_ECHO_WINDOW_MS: f64 = 1000.0;
+
+/// The region that answers a right-click, or a long press on touch. Opening rather than toggling
+/// is deliberate: the layer closes on the pointerdown, then this moves the anchor and opens it
+/// where the pointer is.
+///
+/// `long_press` is on by default and opens the menu at the touch point once a touch or pen press
+/// has been held still for `long_press_ms`, the same as `contextmenu` does at the cursor. Turning
+/// it off removes that timer only; a browser that sends its own `contextmenu` for a long press
+/// (Android) still opens the menu from it.
 #[component]
 pub fn ContextMenuTriggerRoot(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
+    /// Whether a long press on touch opens the menu.
+    #[prop(default = true.into(), into)]
+    long_press: Signal<bool>,
+    /// How long a press is held before it opens the menu, in milliseconds.
+    #[prop(default = DEFAULT_DELAY_MS.into(), into)]
+    long_press_ms: Signal<f64>,
     children: Children,
 ) -> impl IntoView {
     let ctx = use_context_menu();
     let point = use_context_menu_point();
+    let opened_by_press = StoredValue::new(f64::NEG_INFINITY);
+
+    let press = use_long_press(move |at| {
+        if disabled.get_untracked() || !long_press.get_untracked() {
+            return;
+        }
+        opened_by_press.set_value(js_sys::Date::now());
+        point.x.set(at.client_x);
+        point.y.set(at.client_y);
+        ctx.open();
+    })
+    .delay(long_press_ms);
 
     view! {
         <div
             data-slot="context-menu-trigger"
             data-state=move || if ctx.is_open.get() { "open" } else { "closed" }
             data-disabled=move || disabled.get().then_some("true")
+            style=move || {
+                if !long_press.get() {
+                    return String::new();
+                }
+                let mut style = String::from("-webkit-touch-callout: none;");
+                if press.pressed.get() {
+                    style.push_str(" -webkit-user-select: none; user-select: none;");
+                }
+                style
+            }
+            on:pointerdown=move |e: ev::PointerEvent| {
+                if !disabled.get_untracked() && long_press.get_untracked() {
+                    press.start(&e);
+                }
+            }
             on:contextmenu=move |e: ev::MouseEvent| {
                 if disabled.get_untracked() {
                     return;
                 }
                 e.prevent_default();
+                if js_sys::Date::now() - opened_by_press.get_value() < NATIVE_ECHO_WINDOW_MS {
+                    return;
+                }
+                press.cancel();
                 point.x.set(e.client_x() as f64);
                 point.y.set(e.client_y() as f64);
                 ctx.open();

@@ -89,6 +89,7 @@ all-elements = [
     "kanban",
     "kbd",
     "label",
+    "long_press",
     "menubar",
     "native_select",
     "navigation_menu",
@@ -139,7 +140,7 @@ collapsible = []
 color_picker = ["drag", "input_group", "select", "separator"]
 combobox = ["button", "command", "field", "floating"]
 command = ["dialog"]
-context_menu = ["dropdown_menu", "floating", "roving_focus", "typeahead"]
+context_menu = ["dropdown_menu", "floating", "long_press", "roving_focus", "typeahead"]
 data_table = ["checkbox", "table"]
 date_picker = ["button", "calendar", "floating", "popover"]
 dialog = ["button", "dismiss", "field"]
@@ -161,6 +162,7 @@ item = ["separator"]
 kanban = ["drag"]
 kbd = []
 label = []
+long_press = ["drag"]
 menubar = ["dropdown_menu", "floating", "roving_focus"]
 native_select = ["field"]
 navigation_menu = ["dismiss", "roving_focus"]

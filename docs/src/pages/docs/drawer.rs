@@ -107,6 +107,25 @@ const SCROLLING: &str = r#"// A press that lands in something already scrolled b
     </ScrollArea>
 </DrawerContent>"#;
 
+const SNAP_POINTS: &str = r#"// The panel is as tall as the highest point and rests at the active one.
+// Drag the handle to move between them: a slow release goes to the nearest,
+// a flick moves one point, and letting go under 22 percent of the screen
+// dismisses. The snap point in force is written to `data-snap`.
+<Drawer snap_points=vec![0.4, 0.88]>
+    <DrawerTrigger>"Open asset info"</DrawerTrigger>
+    <DrawerContent>
+        <DrawerHeader>
+            <DrawerTitle>"Asset info"</DrawerTitle>
+            <DrawerDescription>
+                "Peeks at 40 percent; drag the handle up for the rest."
+            </DrawerDescription>
+        </DrawerHeader>
+        <div class="min-h-0 flex-1 overflow-y-auto">
+            // ...details...
+        </div>
+    </DrawerContent>
+</Drawer>"#;
+
 const API: &[ApiEntry] = &[
     ApiEntry {
         name: "Drawer",
@@ -141,6 +160,42 @@ const API: &[ApiEntry] = &[
                 ty: "bool",
                 default: "true",
                 description: "Non-modal leaves the page usable underneath: no overlay, no focus trap, and an outside pointer closes the drawer. Set here only; the content reads it from context.",
+            },
+            Prop {
+                name: "snap_points",
+                ty: "Signal<Vec<f64>>",
+                default: "vec![]",
+                description: "Heights the drawer rests at, as fractions of the viewport along its axis: `vec![0.4, 0.88]` is a peek and a full. The panel is as tall as the highest and slides to the active one; the first is where it opens. Empty is an ordinary drawer.",
+            },
+            Prop {
+                name: "active_snap",
+                ty: "Option<RwSignal<Option<f64>>>",
+                default: "None",
+                description: "The snap point the drawer is at, held by the caller; `None` inside means the first. Omit it and the root owns the signal. A value that is not in `snap_points` resolves to the nearest one.",
+            },
+            Prop {
+                name: "default_active_snap",
+                ty: "Option<f64>",
+                default: "None",
+                description: "The snap point the drawer starts at. Ignored when `active_snap` is given.",
+            },
+            Prop {
+                name: "on_active_snap_change",
+                ty: "Option<Callback<Option<f64>>>",
+                default: "None",
+                description: "Called with the new snap point whenever it changes, and with `None` when a drag dismisses the drawer, so the next opening is at the first point.",
+            },
+            Prop {
+                name: "dismiss_below",
+                ty: "Signal<f64>",
+                default: "0.22",
+                description: "The share of the viewport under which a released snapping drawer is dismissed, however slowly it got there.",
+            },
+            Prop {
+                name: "flick_velocity",
+                ty: "Signal<f64>",
+                default: "0.6",
+                description: "Release speed in pixels per millisecond that moves a snapping drawer one snap point in the flick's direction, or dismisses it from the lowest. Slower releases go to the nearest point.",
             },
             Prop {
                 name: "children",
@@ -408,6 +463,39 @@ pub fn Page() -> impl IntoView {
                             <DrawerFooter>
                                 <DrawerClose variant=ButtonVariant::Outline>"Close"</DrawerClose>
                             </DrawerFooter>
+                        </DrawerContent>
+                    </Drawer>
+                </DemoSection>
+
+                <DemoSection
+                    title="Snap points"
+                    description="Give the drawer heights to rest at and it stops being all-or-nothing. It opens at the first; drag the handle up past the midpoint and it settles at the next, drag it down and it comes back, and let go under 22 percent of the screen and it is dismissed. A quick flick moves one point in its direction, or dismisses from the lowest. Best tried at phone size."
+                    code=SNAP_POINTS
+                >
+                    <Drawer snap_points=vec![0.4, 0.88]>
+                        <DrawerTrigger class="rounded-lg border border-border px-3 py-1.5 text-sm">
+                            "Open asset info"
+                        </DrawerTrigger>
+                        <DrawerContent>
+                            <DrawerHeader>
+                                <DrawerTitle>"Asset info"</DrawerTitle>
+                                <DrawerDescription>
+                                    "Peeks at 40 percent; drag the handle up for the rest."
+                                </DrawerDescription>
+                            </DrawerHeader>
+                            <div class="min-h-0 flex-1 overflow-y-auto">
+                                <div class="flex flex-col gap-2 p-3">
+                                    {(1..=20)
+                                        .map(|i| {
+                                            view! {
+                                                <div class="rounded border border-border px-3 py-1.5 text-muted-foreground">
+                                                    {format!("Detail {i}")}
+                                                </div>
+                                            }
+                                        })
+                                        .collect_view()}
+                                </div>
+                            </div>
                         </DrawerContent>
                     </Drawer>
                 </DemoSection>
