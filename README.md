@@ -1,7 +1,7 @@
 # nocomponents
 
 Unstyled behaviour primitives for [Leptos](https://leptos.dev) 0.8, in the spirit of Radix, plus a
-styled layer that mirrors [shadcn/ui](https://ui.shadcn.com). 66 components, no npm, CSR.
+styled layer that mirrors [shadcn/ui](https://ui.shadcn.com). 67 components, no npm, CSR.
 
 **[Documentation and live demos →](https://notreallyuri.github.io/nocomponents/)**
 
@@ -134,8 +134,8 @@ you want when checking the whole thing. `cargo nocli` sets these for you.
 
 ## Beyond the shadcn catalogue
 
-Twelve components are ours, and none of them took a dependency: `canvas` (an infinite pan-and-zoom
-surface), `kanban`, `timeline`, `color-picker`, `image-cropper` (which crops animated GIFs at the
+Thirteen components are ours, and none of them took a dependency: `canvas` (an infinite pan-and-zoom
+surface), `kanban`, `sortable`, `timeline`, `color-picker`, `image-cropper` (which crops animated GIFs at the
 LZW level, so palettes and timing survive), `dropzone`, `tree`, `video-player`, `floating-menu`,
 `code`, `native-select`, and `toast`.
 

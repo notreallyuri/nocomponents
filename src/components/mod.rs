@@ -106,6 +106,8 @@ pub mod sidebar;
 pub mod skeleton;
 #[cfg(feature = "slider")]
 pub mod slider;
+#[cfg(feature = "sortable")]
+pub mod sortable;
 #[cfg(feature = "spinner")]
 pub mod spinner;
 #[cfg(feature = "switch")]
@@ -240,6 +242,8 @@ pub mod prelude {
     pub use super::skeleton::*;
     #[cfg(feature = "slider")]
     pub use super::slider::*;
+    #[cfg(feature = "sortable")]
+    pub use super::sortable::*;
     #[cfg(feature = "spinner")]
     pub use super::spinner::*;
     #[cfg(feature = "switch")]

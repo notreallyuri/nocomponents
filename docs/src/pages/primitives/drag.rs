@@ -18,6 +18,7 @@ pub const PRIMITIVE: Primitive = Primitive {
         "resizable",
         "scroll-area",
         "slider",
+        "sortable",
     ],
     view: page,
 };

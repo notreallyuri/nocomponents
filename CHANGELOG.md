@@ -11,6 +11,22 @@ lock existed reads `not in lock`: the tool cannot tell whether it was edited, so
 
 ### Added
 
+- **`Sortable`** (`primitives::sortable`, feature `sortable`; styled `Sortable`, `SortableItem`,
+  `SortableHandle`): a list reordered by pointer, touch or keyboard, which reports the move and
+  leaves the order to the caller. `on_move` gets `SortableMove { keys, to }`: the moved items in
+  their current relative order, and `to`, the index they land at in the list once they have left
+  it; `apply_move(&mut items, &moved, key)` applies it. Pointer drag goes through `use_drag` (the
+  held item follows the pointer, the others slide aside, no easing under `prefers-reduced-motion`);
+  on the handle, or the item if it has none, Space or Enter picks up, the arrows (Left and Right
+  when `orientation` is horizontal) and Home/End move, Space or Enter drops, Escape or losing focus
+  cancels, and focus stays on the moved item. `selected` makes a block drag: the selection moves
+  together, by pointer and keyboard. A visually hidden `aria-live` region announces pick-up, moves,
+  drop and cancel, and an instruction paragraph is `aria-describedby` on every handle; both are
+  replaceable (`announce`, `instructions`). Held near an edge it scrolls the nearest scrolling
+  ancestor, never the page, so it works in a dialog that locks the body. Needs `Grip` icon (new).
+- **`primitives::drag`** now also exports `edge_ramp`, `ScrollAnchor` and `scroll_parent`, the
+  auto-scroll curve, scroll-compensation and scroller lookup that the kanban board had privately;
+  the board uses them, and so does `Sortable`.
 - **`use_long_press`** (`primitives::long_press`, feature `long_press`): a held touch or pen press
   that fires once after a delay (450 ms by default), reporting the press point, and is abandoned by
   a move of more than 10 px, a release or a `pointercancel`. A mouse press never fires it. It starts

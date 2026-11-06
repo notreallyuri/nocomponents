@@ -257,6 +257,136 @@ impl Drag {
     }
 }
 
+/// How fast to scroll, from where a held pointer sits between the two edges of a scroller.
+///
+/// Nothing in the middle, and a ramp inside `edge` pixels of either end: zero at the inner limit
+/// of the zone and `max` at the edge itself, so a scroller that lurches the moment the pointer
+/// enters the zone is not the one being aimed at. Signed: negative scrolls towards `start`.
+/// Past the edge it holds at `max` rather than growing, since a pointer can leave the box.
+///
+/// Pure, so the two things that auto-scroll (the kanban board, a sortable list) share one curve.
+pub fn edge_ramp(position: f64, start: f64, end: f64, edge: f64, max: f64) -> f64 {
+    if end <= start || edge <= 0.0 {
+        return 0.0;
+    }
+
+    if position < start + edge {
+        -((start + edge - position) / edge).clamp(0.0, 1.0) * max
+    } else if position > end - edge {
+        ((position - (end - edge)) / edge).clamp(0.0, 1.0) * max
+    } else {
+        0.0
+    }
+}
+
+/// Where an element sat, and how far it was scrolled, at the moment a gesture began.
+///
+/// A dragged thing follows the pointer by a transform from where it was pressed, so anything that
+/// moves its *layout* position mid-gesture slides it out from under the cursor: its scroller
+/// scrolling (by auto-scroll or a wheel), a scroller further out, the page. The pointer positions
+/// a gesture works in are client ones and hear about none of it.
+///
+/// All of those are the same subtraction rather than a cause apiece to keep a tally of — where
+/// the container is now against where it was at the press. Its rect answers for everything
+/// outside it, its scroll offsets for the one thing that moves the content without moving the
+/// container: the container being the scroller.
+#[derive(Clone)]
+pub struct ScrollAnchor {
+    element: Element,
+    left: f64,
+    top: f64,
+    scroll_x: f64,
+    scroll_y: f64,
+}
+
+impl ScrollAnchor {
+    /// Takes the reading. Do it while nothing has been translated.
+    pub fn capture(element: Element) -> Self {
+        let rect = element.get_bounding_client_rect();
+        Self {
+            left: rect.left(),
+            top: rect.top(),
+            scroll_x: element.scroll_left() as f64,
+            scroll_y: element.scroll_top() as f64,
+            element,
+        }
+    }
+
+    /// How far the dragged thing has to be pushed, in x and y, to stay under the cursor.
+    pub fn shift(&self) -> (f64, f64) {
+        let rect = self.element.get_bounding_client_rect();
+        (
+            self.left - rect.left() + self.element.scroll_left() as f64 - self.scroll_x,
+            self.top - rect.top() + self.element.scroll_top() as f64 - self.scroll_y,
+        )
+    }
+}
+
+/// The nearest element at or above `from` that scrolls along the given axis, or `None` when only
+/// the page does.
+///
+/// "Scrolls" means it both allows it (`overflow: auto | scroll | overlay`) and has something to
+/// scroll to, so a wrapper that merely clips is stepped over. Stopping at the first one found is
+/// what keeps auto-scroll inside a modal: a body whose scroll is locked is never reached, because
+/// the dialog's own scroller comes first.
+pub fn scroll_parent(from: &Element, vertical: bool) -> Option<Element> {
+    let property = if vertical { "overflow-y" } else { "overflow-x" };
+    let mut current = Some(from.clone());
+
+    while let Some(element) = current {
+        let overflow = window()
+            .get_computed_style(&element)
+            .ok()
+            .flatten()
+            .and_then(|style| style.get_property_value(property).ok())
+            .unwrap_or_default();
+        let roomy = if vertical {
+            element.scroll_height() > element.client_height()
+        } else {
+            element.scroll_width() > element.client_width()
+        };
+
+        if matches!(overflow.as_str(), "auto" | "scroll" | "overlay") && roomy {
+            return Some(element);
+        }
+        current = element.parent_element();
+    }
+
+    None
+}
+
 fn now() -> f64 {
     js_sys::Date::now()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn nothing_scrolls_in_the_middle() {
+        assert_eq!(edge_ramp(50.0, 0.0, 100.0, 20.0, 16.0), 0.0);
+        assert_eq!(edge_ramp(20.0, 0.0, 100.0, 20.0, 16.0), 0.0);
+        assert_eq!(edge_ramp(80.0, 0.0, 100.0, 20.0, 16.0), 0.0);
+    }
+
+    #[test]
+    fn the_ramp_reaches_the_maximum_at_the_edge_and_holds_beyond_it() {
+        assert_eq!(edge_ramp(0.0, 0.0, 100.0, 20.0, 16.0), -16.0);
+        assert_eq!(edge_ramp(-30.0, 0.0, 100.0, 20.0, 16.0), -16.0);
+        assert_eq!(edge_ramp(100.0, 0.0, 100.0, 20.0, 16.0), 16.0);
+        assert_eq!(edge_ramp(140.0, 0.0, 100.0, 20.0, 16.0), 16.0);
+    }
+
+    #[test]
+    fn the_ramp_is_proportional_inside_the_zone() {
+        assert_eq!(edge_ramp(10.0, 0.0, 100.0, 20.0, 16.0), -8.0);
+        assert_eq!(edge_ramp(90.0, 0.0, 100.0, 20.0, 16.0), 8.0);
+    }
+
+    #[test]
+    fn an_empty_box_does_not_scroll() {
+        assert_eq!(edge_ramp(5.0, 10.0, 10.0, 20.0, 16.0), 0.0);
+        assert_eq!(edge_ramp(5.0, 0.0, 100.0, 0.0, 16.0), 0.0);
+    }
 }

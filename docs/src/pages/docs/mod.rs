@@ -56,6 +56,7 @@ pub mod sheet;
 pub mod sidebar;
 pub mod skeleton;
 pub mod slider;
+pub mod sortable;
 pub mod spinner;
 pub mod switch;
 pub mod table;

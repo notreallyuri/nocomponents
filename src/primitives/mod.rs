@@ -82,6 +82,8 @@ pub mod separator;
 pub mod sidebar;
 #[cfg(feature = "slider")]
 pub mod slider;
+#[cfg(feature = "sortable")]
+pub mod sortable;
 #[cfg(feature = "switch")]
 pub mod switch;
 #[cfg(feature = "table")]
@@ -192,6 +194,8 @@ pub mod prelude {
     pub use super::sidebar::*;
     #[cfg(feature = "slider")]
     pub use super::slider::*;
+    #[cfg(feature = "sortable")]
+    pub use super::sortable::*;
     #[cfg(feature = "switch")]
     pub use super::switch::*;
     #[cfg(feature = "table")]

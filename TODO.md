@@ -1113,21 +1113,6 @@ in the changelog, not here. Icons are explicitly not needed now: noaweb uses `ph
 its own and keeps ours for the library's parts, so growing the set to immich-front's 87 is off the
 list.
 
-- [ ] **A keyboard-sortable list primitive** (`primitives/sortable.rs`, styled `components/sortable.rs`).
-      Replaces `@dnd-kit/react` in three places: `releases/components/order/release-order-list.tsx`
-      (selected rows drag as one block, drag overlay, list-only auto-scroll), `shell/sidebar.tsx`
-      `PinnedRow` (handle only, `disabled` for non-pinned views) and
-      `shared/ui/controls/sortable-list.tsx` (handle only, reduced-motion switch, sr-only
-      instructions, `onMove(from, to)`). `kanban.rs` and `drag.rs` have pointer drag only: no
-      keyboard reorder and no live announcements. Sketch: `Sortable<T> items=Signal<Vec<T>>
-      key=fn(&T)->K on_move=Callback<Move>` with `SortableItem` and `SortableHandle`, `Move { ids:
-      Vec<K>, to: usize }`, `selected: Option<Signal<HashSet<K>>>` for block drag, `disabled`.
-      Pointer and touch drag go through `use_drag` with a drag overlay. Keyboard: Space picks up,
-      arrows move, Space or Enter drops, Esc cancels. A polite `aria-live` region says "picked up
-      item 3 of 10", "moved to position 4 of 10", "dropped at 4", "cancelled". A multi-item block
-      move keeps its relative order. Reduced motion drops the transition. Auto-scroll scrolls the
-      list, not the page, and has to work inside a scroll-locked modal, where the wheel is blocked
-      (immich-front patches dnd-kit's `Scroller` for exactly this).
 - [ ] **Mobile bottom-sheet presentation.** `dialog.tsx` (`sheet`), `dropdown-menu.tsx` and
       `context-menu.tsx` (`sheetTitle`), `popover.tsx` (`sheet`), `select.tsx` (the shared
       `menu-sheet` classes). A `mobile_sheet` prop and a `sheet_title` on `Dialog`, `DropdownMenu`,

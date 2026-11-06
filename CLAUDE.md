@@ -52,10 +52,10 @@ Two kinds. The **layers** — `primitives`, `icons`, `components` (= primitives 
 `utils`, `middleware` and `deps` exist, so always check/build with `--features full`, which is what
 `docs` depends on.
 
-The **elements** are one feature per name, and there are 73 of them. A single name gates both
+The **elements** are one feature per name, and there are 74 of them. A single name gates both
 halves: `#[cfg(feature = "accordion")]` sits on `primitives::accordion` *and* on
-`components::accordion`, because an element is one thing whichever layer you take it from. 54 names
-have a primitive, 66 have a component, and the ones that have only one (`floating`, `drag`, `long_press`,
+`components::accordion`, because an element is one thing whichever layer you take it from. 55 names
+have a primitive, 67 have a component, and the ones that have only one (`floating`, `drag`, `long_press`,
 `roving_focus`, `dismiss`, `typeahead` have no styled layer; `card`, `badge`, `sheet`, `skeleton`
 and the rest of the style-only set have no primitive) are gated just the same.
 
@@ -247,6 +247,13 @@ when the press lands on a wrapper rather than the surface; `.on_start` is where 
 become one gesture; `.on_end` gets the release velocity and how long the pointer had been still, so
 a flick can be told from a placement. Guard the press in your own `on:pointerdown` and then call
 `drag.start(&e)`.
+
+What several gestures share beyond the listeners also lives in `drag.rs`: `edge_ramp` (the auto-scroll
+curve), `ScrollAnchor` (how far a dragged thing has to be pushed to stay under the cursor after
+anything scrolled), and `scroll_parent` (the nearest ancestor that really scrolls — which is what keeps
+auto-scroll inside a modal that locks the body). The kanban board and `sortable` both use them. Sortable
+reads item geometry from `offsetTop`/`offsetLeft`, which a transform does not change, so the items can
+slide around while the drop is still being measured against where they started.
 
 **Not everything is a context.** `TableSort` and `TableSelection` (`primitives/table.rs`) are plain
 `Copy` handles the caller passes where they are needed: a table already has its rows and columns in

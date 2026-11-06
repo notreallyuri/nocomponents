@@ -15,7 +15,7 @@
 //! here — a drag that dies when the browser takes the pointer away (a scroll gesture, a context
 //! menu) leaves no card stuck to the cursor.
 
-use crate::primitives::drag::{DragPoint, use_drag};
+use crate::primitives::drag::{DragPoint, ScrollAnchor, edge_ramp, use_drag};
 use leptos::{context::Provider, ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
 use std::time::Duration;
@@ -57,17 +57,6 @@ pub struct KanbanDrag {
     pub over: Option<KanbanSlot>,
 }
 
-/// Where the dragged card's own container sat, and how far it was scrolled, at the press.
-///
-/// See [`KanbanContext::sync_shift`] for why those two are all it takes.
-#[derive(Copy, Clone)]
-struct ScrollOrigin {
-    left: f64,
-    top: f64,
-    scroll_x: f64,
-    scroll_y: f64,
-}
-
 #[derive(Copy, Clone)]
 pub struct KanbanContext {
     pub dragging: RwSignal<Option<KanbanDrag>>,
@@ -75,7 +64,7 @@ pub struct KanbanContext {
     /// a pointer held still at the edge stops sending events but should not stop scrolling.
     pointer: RwSignal<(f64, f64)>,
     /// The container the card in hand sits in, and where it was when the card was picked up.
-    origin: RwSignal<Option<(Element, ScrollOrigin)>>,
+    origin: RwSignal<Option<ScrollAnchor>>,
     /// How far the card has to be pushed to stay under the cursor, from [`Self::sync_shift`].
     shift: RwSignal<(f64, f64)>,
     /// The board's scroll range as it was before the press. A card held to the right is
@@ -109,21 +98,14 @@ impl KanbanContext {
     /// the page scrolling under all of it. The pointer positions the gesture works in are client
     /// ones and hear about none of it.
     ///
-    /// All four are the same subtraction rather than four causes to keep a tally of — where the
-    /// card's own container is now against where it was at the press. Its rect answers for
-    /// everything outside it, its scroll offsets for the one thing that moves the card without
-    /// moving the container: the container being the scroller.
+    /// All four are the same subtraction, which [`ScrollAnchor`] does: where the card's own
+    /// container is now against where it was at the press.
     fn sync_shift(&self) {
-        let Some((anchor, origin)) = self.origin.get_untracked() else {
+        let Some(anchor) = self.origin.get_untracked() else {
             return;
         };
 
-        let rect = anchor.get_bounding_client_rect();
-        let shift = (
-            origin.left - rect.left() + anchor.scroll_left() as f64 - origin.scroll_x,
-            origin.top - rect.top() + anchor.scroll_top() as f64 - origin.scroll_y,
-        );
-
+        let shift = anchor.shift();
         if self.shift.get_untracked() != shift {
             self.shift.set(shift);
         }
@@ -146,17 +128,7 @@ pub struct KanbanColumnContext {
 /// and signed: negative scrolls left.
 fn edge_step(board: &Element, x: f64) -> f64 {
     let rect = board.get_bounding_client_rect();
-    if rect.width() <= 0.0 {
-        return 0.0;
-    }
-
-    if x < rect.left() + EDGE {
-        -((rect.left() + EDGE - x) / EDGE).clamp(0.0, 1.0) * EDGE_SPEED
-    } else if x > rect.right() - EDGE {
-        ((x - (rect.right() - EDGE)) / EDGE).clamp(0.0, 1.0) * EDGE_SPEED
-    } else {
-        0.0
-    }
+    edge_ramp(x, rect.left(), rect.right(), EDGE, EDGE_SPEED)
 }
 
 fn attribute(element: &Element, name: &str) -> Option<String> {
@@ -346,16 +318,7 @@ pub fn KanbanCardRoot(
             let anchor = card_ref
                 .get_untracked()
                 .and_then(|card| card.parent_element());
-            ctx.origin.set(anchor.map(|anchor| {
-                let rect = anchor.get_bounding_client_rect();
-                let origin = ScrollOrigin {
-                    left: rect.left(),
-                    top: rect.top(),
-                    scroll_x: anchor.scroll_left() as f64,
-                    scroll_y: anchor.scroll_top() as f64,
-                };
-                (anchor, origin)
-            }));
+            ctx.origin.set(anchor.map(ScrollAnchor::capture));
 
             // Measured now, while nothing is translated and the width is the real one.
             if let Some(board) = ctx.board_ref.get_untracked() {

@@ -106,6 +106,7 @@ all-elements = [
     "sidebar",
     "skeleton",
     "slider",
+    "sortable",
     "spinner",
     "switch",
     "table",
@@ -179,6 +180,7 @@ sheet = ["button", "dialog"]
 sidebar = ["input", "separator", "sheet", "skeleton", "tooltip", "tree"]
 skeleton = []
 slider = ["drag", "field"]
+sortable = ["drag"]
 spinner = []
 switch = ["field"]
 table = []
@@ -212,6 +214,11 @@ features = [
   "HtmlElement",
   "KeyboardEvent",
   "NodeList",
+  # Auto-scroll under a drag: which ancestor scrolls, and keeping a keyboard-moved item in view.
+  "Window",
+  "CssStyleDeclaration",
+  "ScrollIntoViewOptions",
+  "ScrollLogicalPosition",
   # `ThemeProvider`: the stored choice, and the system one.
   "Storage",
   "MediaQueryList",
