@@ -1,11 +1,14 @@
 use crate::{
     cn,
     primitives::input_otp::{
-        InputOtpGroupRoot, InputOtpRoot, InputOtpSeparatorRoot, InputOtpSlotRoot, OtpPattern,
+        InputOtpGroupRoot, InputOtpRoot, InputOtpSeparatorRoot, InputOtpSlotRoot,
     },
     utils::controllable::forward,
 };
 use leptos::prelude::*;
+
+#[allow(unused_imports)]
+pub use crate::primitives::input_otp::OtpPattern;
 
 #[component]
 pub fn InputOtp(

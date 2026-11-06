@@ -3,13 +3,21 @@
 //! Modality, the focus trap, the layer stack and the exit animation are the dialog's; what this
 //! adds is the drag. It travels outward only, a flick dismisses as surely as a haul, and a press
 //! landing in something already scrolled belongs to that scroller.
+//!
+//! Given `snap_points` it also rests at more than one height: the panel is as tall as the highest
+//! point and slides to whichever one is active, a release settles on the nearest (a flick moves
+//! one point, a drag below `dismiss_below` throws it away), and the decision itself is the pure
+//! [`settle`].
 
 use crate::{
     primitives::{
         dialog::{DialogContentRoot, DialogRoot, use_dialog},
         drag::{DragEnd, DragPoint, use_drag},
     },
-    utils::{controllable::forward, types::Side},
+    utils::{
+        controllable::{controllable, forward},
+        types::Side,
+    },
 };
 use leptos::{context::Provider, ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
@@ -27,9 +35,87 @@ const RECEDE_SHIFT: f64 = 14.0;
 /// Depth past which the recede stops compounding; further back the panel would be a sliver.
 const RECEDE_MAX_STEPS: usize = 3;
 
+/// Below this share of the viewport, along the drawer's axis, a released snapping drawer is
+/// dismissed.
+pub const DEFAULT_DISMISS_BELOW: f64 = 0.22;
+/// Pixels per millisecond past which a release on a snapping drawer moves one snap point.
+pub const DEFAULT_SNAP_FLICK_VELOCITY: f64 = 0.6;
+
+/// Where a released snapping drawer comes to rest.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Settle {
+    /// Rest at this snap point.
+    Snap(f64),
+    Dismiss,
+}
+
+/// Decides where a released drawer goes.
+///
+/// - `position` is how much of the viewport the drawer covers along its axis at the release, as a
+///   fraction: the same unit as `snap_points`, so `0.4` is a panel 40 percent of the way across.
+/// - `velocity` is the release speed in pixels per millisecond, positive toward dismissal (the
+///   panel shrinking) and zero for a release after a pause.
+/// - `dismiss_below` is the position under which the drawer is thrown away however it got there.
+/// - `flick_threshold` is the speed, in either direction, that counts as a flick.
+///
+/// Below `dismiss_below` it dismisses; a flick moves one snap point from `position` in its
+/// direction, past the lowest dismissing and past the highest staying on it; anything slower goes
+/// to the nearest. With no snap points there is a single rest at the full extent, `Snap(1.0)`.
+pub fn settle(
+    position: f64,
+    velocity: f64,
+    snap_points: &[f64],
+    dismiss_below: f64,
+    flick_threshold: f64,
+) -> Settle {
+    const EPSILON: f64 = 1e-9;
+
+    let mut points: Vec<f64> = snap_points.to_vec();
+    if points.is_empty() {
+        points.push(1.0);
+    }
+    points.sort_by(|a, b| a.total_cmp(b));
+
+    if position < dismiss_below {
+        return Settle::Dismiss;
+    }
+
+    if velocity > flick_threshold {
+        return match points
+            .iter()
+            .rev()
+            .find(|point| **point < position - EPSILON)
+        {
+            Some(point) => Settle::Snap(*point),
+            None => Settle::Dismiss,
+        };
+    }
+
+    if velocity < -flick_threshold {
+        return match points.iter().find(|point| **point > position + EPSILON) {
+            Some(point) => Settle::Snap(*point),
+            None => Settle::Snap(points[points.len() - 1]),
+        };
+    }
+
+    let nearest = points
+        .iter()
+        .min_by(|a, b| (position - **a).abs().total_cmp(&(position - **b).abs()))
+        .copied()
+        .unwrap_or(1.0);
+    Settle::Snap(nearest)
+}
+
 #[derive(Copy, Clone)]
 pub struct DrawerContext {
     pub side: Side,
+    /// The heights the drawer rests at, as fractions of the viewport along its axis. Empty means
+    /// it is as tall as its content and has one resting place.
+    pub snap_points: Signal<Vec<f64>>,
+    /// The snap point the drawer is at, or `None` for the first.
+    pub active_snap: RwSignal<Option<f64>>,
+    pub dismiss_below: Signal<f64>,
+    pub flick_velocity: Signal<f64>,
     /// Drag distance from the resting place, in pixels. Never negative: it travels outward only.
     pub offset: RwSignal<f64>,
     pub dragging: RwSignal<bool>,
@@ -42,6 +128,45 @@ pub struct DrawerContext {
 }
 
 impl DrawerContext {
+    /// The snap point the drawer rests at: the active one if it names a point, otherwise the
+    /// first. `None` when there are no snap points.
+    pub fn current_snap(&self) -> Option<f64> {
+        self.snap_index()
+            .map(|index| self.snap_points.with(|points| points[index]))
+    }
+
+    /// The position of [`Self::current_snap`] in `snap_points`.
+    pub fn snap_index(&self) -> Option<usize> {
+        let active = self.active_snap.get();
+        self.snap_points.with(|points| {
+            if points.is_empty() {
+                return None;
+            }
+            match active {
+                Some(active) => points
+                    .iter()
+                    .enumerate()
+                    .min_by(|a, b| (active - a.1).abs().total_cmp(&(active - b.1).abs()))
+                    .map(|(index, _)| index),
+                None => Some(0),
+            }
+        })
+    }
+
+    fn highest_snap(&self) -> f64 {
+        self.snap_points
+            .with(|points| points.iter().copied().fold(0.0, f64::max))
+    }
+
+    /// How far below its tallest the panel rests, as a fraction of the viewport. Zero without
+    /// snap points.
+    fn snap_rest(&self) -> f64 {
+        match self.current_snap() {
+            Some(current) => (self.highest_snap() - current).max(0.0),
+            None => 0.0,
+        }
+    }
+
     /// Whether a nested drawer is currently sitting over this one.
     pub fn is_receded(&self) -> bool {
         self.nested_open.get() > 0
@@ -57,19 +182,34 @@ impl DrawerContext {
     pub fn transform(&self) -> String {
         let offset = self.offset.get();
         let depth = self.recede_depth();
+        let rest = self.snap_rest();
+
+        if offset == 0.0 && depth == 0 && rest == 0.0 {
+            return String::new();
+        }
 
         // Receding moves inward, the opposite way from a dismissal, and compounds with depth.
-        let travel = match (offset != 0.0, depth > 0) {
-            (true, _) => offset,
-            (false, true) => -RECEDE_SHIFT * depth as f64,
-            (false, false) => return String::new(),
+        let travel = if offset != 0.0 {
+            offset
+        } else {
+            -RECEDE_SHIFT * depth as f64
         };
 
-        let translate = match self.side {
-            Side::Bottom => format!("translate3d(0, {travel}px, 0)"),
-            Side::Top => format!("translate3d(0, {}px, 0)", -travel),
-            Side::Right => format!("translate3d({travel}px, 0, 0)"),
-            Side::Left => format!("translate3d({}px, 0, 0)", -travel),
+        let sign = match self.side {
+            Side::Bottom | Side::Right => 1.0,
+            Side::Top | Side::Left => -1.0,
+        };
+        let unit = if self.is_vertical() { "vh" } else { "vw" };
+        let amount = if rest > 0.0 {
+            format!("calc({}{unit} + {}px)", sign * rest * 100.0, sign * travel)
+        } else {
+            format!("{}px", sign * travel)
+        };
+
+        let translate = if self.is_vertical() {
+            format!("translate3d(0, {amount}, 0)")
+        } else {
+            format!("translate3d({amount}, 0, 0)")
         };
 
         if depth > 0 && offset == 0.0 {
@@ -123,6 +263,29 @@ pub fn DrawerRoot(
     /// pointer closes the drawer.
     #[prop(default = true)]
     modal: bool,
+    /// Heights the drawer rests at, as fractions of the viewport along its axis — `vec![0.4,
+    /// 0.88]` is a peek and a full. The panel is as tall as the highest and slides to the active
+    /// one. Empty is an ordinary drawer.
+    #[prop(optional, into)]
+    snap_points: Signal<Vec<f64>>,
+    /// The snap point the drawer is at, held by the caller. `None` means the first. Omit it and
+    /// the root keeps its own.
+    #[prop(default = None, into)]
+    active_snap: Option<RwSignal<Option<f64>>>,
+    /// The snap point the drawer starts at. Ignored when `active_snap` is given.
+    #[prop(default = None)]
+    default_active_snap: Option<f64>,
+    /// Called with the new snap point whenever it changes, and with `None` when a drag dismisses
+    /// the drawer.
+    #[prop(optional, into)]
+    on_active_snap_change: Option<Callback<Option<f64>>>,
+    /// The share of the viewport under which a released drawer is dismissed, however it got there.
+    #[prop(default = DEFAULT_DISMISS_BELOW.into(), into)]
+    dismiss_below: Signal<f64>,
+    /// Release speed, in pixels per millisecond, that moves a snapping drawer one snap point in
+    /// the flick's direction, or dismisses it from the lowest.
+    #[prop(default = DEFAULT_SNAP_FLICK_VELOCITY.into(), into)]
+    flick_velocity: Signal<f64>,
     children: Children,
 ) -> impl IntoView {
     // Read before providing, so this resolves to the parent: its chain plus itself becomes ours.
@@ -137,6 +300,10 @@ pub fn DrawerRoot(
 
     let context = DrawerContext {
         side,
+        snap_points,
+        active_snap: controllable(active_snap, default_active_snap, on_active_snap_change),
+        dismiss_below,
+        flick_velocity,
         offset: RwSignal::new(0.0),
         dragging: RwSignal::new(false),
         nested_open: RwSignal::new(0),
@@ -190,16 +357,63 @@ pub fn DrawerContentRoot(
     // The panel's length along the drag axis, measured at the press: what the travel is judged
     // against, and how far it has left to go once a release dismisses it.
     let length = StoredValue::new(0.0);
+    // The viewport along the axis, measured at the press: what snap points are fractions of.
+    let extent = StoredValue::new(0.0);
 
     let drag = use_drag(move |point: DragPoint| {
-        // Outward only: a haul back toward the anchored edge leaves the panel where it rests.
-        ctx.offset.set(ctx.travel(point.dx, point.dy).max(0.0));
+        let travel = ctx.travel(point.dx, point.dy);
+
+        // Outward only, unless there are taller snap points to haul toward: past the highest the
+        // panel stays put.
+        let floor = match untrack(|| ctx.current_snap()) {
+            Some(current) => -(untrack(|| ctx.highest_snap()) - current) * extent.get_value(),
+            None => 0.0,
+        };
+        ctx.offset.set(travel.max(floor));
     })
     .on_end(move |end: DragEnd| {
         ctx.dragging.set(false);
 
         let travel = ctx.offset.get_untracked();
         let length = length.get_value();
+
+        if let Some(current) = untrack(|| ctx.current_snap()) {
+            let extent = extent.get_value();
+            let velocity = if end.idle < FLICK_WINDOW {
+                ctx.travel(end.velocity_x, end.velocity_y)
+            } else {
+                0.0
+            };
+            let position = if extent > 0.0 {
+                current - travel / extent
+            } else {
+                current
+            };
+            let settled = ctx.snap_points.with_untracked(|points| {
+                settle(
+                    position,
+                    velocity,
+                    points,
+                    ctx.dismiss_below.get_untracked(),
+                    ctx.flick_velocity.get_untracked(),
+                )
+            });
+
+            match settled {
+                Settle::Snap(snap) => {
+                    if (snap - current).abs() > f64::EPSILON {
+                        ctx.active_snap.set(Some(snap));
+                    }
+                    ctx.offset.set(0.0);
+                }
+                Settle::Dismiss => {
+                    dialog.close();
+                    ctx.offset.set(length);
+                    ctx.active_snap.set(None);
+                }
+            }
+            return;
+        }
 
         // A pause before release is a placement, not a throw; the velocity is projected onto the
         // drag axis, so a shove back toward the edge comes out negative and does not dismiss.
@@ -286,6 +500,16 @@ pub fn DrawerContentRoot(
             rect.width()
         });
 
+        let viewport_extent = web_sys::window().and_then(|window| {
+            if ctx.is_vertical() {
+                window.inner_height().ok()
+            } else {
+                window.inner_width().ok()
+            }
+            .and_then(|value| value.as_f64())
+        });
+        extent.set_value(viewport_extent.unwrap_or(0.0));
+
         ctx.dragging.set(true);
         drag.start(&e);
     };
@@ -296,16 +520,27 @@ pub fn DrawerContentRoot(
             data-slot="drawer"
             data-side=ctx.side.as_str()
             data-dragging=move || ctx.dragging.get().then_some("true")
+            data-snap=move || ctx.snap_index().map(|index| index.to_string())
             data-nested=move || (ctx.nested_open.get() > 0).then(|| ctx.nested_open.get().to_string())
             // The panel animates rather than the dialog content, so it carries `data-state`.
             data-state=move || if dialog.is_open.get() { "open" } else { "closed" }
             style=move || {
-                let transform = match ctx.transform().as_str() {
+                let mut transform = match ctx.transform().as_str() {
                     "" => String::new(),
                     value => {
                         format!("transform: {value}; transform-origin: {};", ctx.transform_origin())
                     }
                 };
+                if ctx.highest_snap() > 0.0 {
+                    let tallest = ctx.highest_snap() * 100.0;
+                    transform.push_str(
+                        &if ctx.is_vertical() {
+                            format!(" height: {tallest}vh; max-height: none;")
+                        } else {
+                            format!(" width: {tallest}vw; max-width: none;")
+                        },
+                    );
+                }
                 // The panel has to track the pointer exactly; easing would read as lag.
                 if ctx.dragging.get() {
                     format!("{transform} transition: none;")
@@ -335,5 +570,96 @@ pub fn DrawerHandleRoot(#[prop(optional, into)] class: Signal<String>) -> impl I
             aria-hidden="true"
             class=class
         ></div>
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const POINTS: [f64; 2] = [0.40, 0.88];
+    const BELOW: f64 = 0.22;
+    const FLICK: f64 = 0.6;
+
+    fn settled(position: f64, velocity: f64) -> Settle {
+        settle(position, velocity, &POINTS, BELOW, FLICK)
+    }
+
+    #[test]
+    fn a_slow_release_goes_to_the_nearest_snap() {
+        assert_eq!(settled(0.45, 0.0), Settle::Snap(0.40));
+        assert_eq!(settled(0.70, 0.0), Settle::Snap(0.88));
+        assert_eq!(settled(0.64, 0.0), Settle::Snap(0.40));
+        assert_eq!(settled(0.65, 0.1), Settle::Snap(0.88));
+        assert_eq!(settled(0.95, -0.2), Settle::Snap(0.88));
+    }
+
+    #[test]
+    fn a_slow_release_between_the_floor_and_the_lowest_snap_returns_to_it() {
+        assert_eq!(settled(0.25, 0.0), Settle::Snap(0.40));
+    }
+
+    #[test]
+    fn a_flick_up_moves_one_snap() {
+        assert_eq!(settled(0.42, -1.0), Settle::Snap(0.88));
+        assert_eq!(settled(0.40, -0.7), Settle::Snap(0.88));
+    }
+
+    #[test]
+    fn a_flick_up_from_the_highest_stays_on_it() {
+        assert_eq!(settled(0.88, -2.0), Settle::Snap(0.88));
+        assert_eq!(settled(0.90, -2.0), Settle::Snap(0.88));
+    }
+
+    #[test]
+    fn a_flick_down_moves_one_snap() {
+        assert_eq!(settled(0.86, 1.0), Settle::Snap(0.40));
+        assert_eq!(settled(0.88, 0.7), Settle::Snap(0.40));
+        assert_eq!(settled(0.45, 1.0), Settle::Snap(0.40));
+    }
+
+    #[test]
+    fn a_flick_down_from_the_lowest_dismisses() {
+        assert_eq!(settled(0.40, 1.0), Settle::Dismiss);
+        assert_eq!(settled(0.35, 0.9), Settle::Dismiss);
+    }
+
+    #[test]
+    fn a_release_below_the_floor_dismisses_however_slowly() {
+        assert_eq!(settled(0.21, 0.0), Settle::Dismiss);
+        assert_eq!(settled(0.10, -0.1), Settle::Dismiss);
+        assert_eq!(settled(0.21, -5.0), Settle::Dismiss);
+        assert_eq!(settled(0.22, 0.0), Settle::Snap(0.40));
+    }
+
+    #[test]
+    fn a_speed_at_the_threshold_is_not_yet_a_flick() {
+        assert_eq!(settled(0.45, FLICK), Settle::Snap(0.40));
+        assert_eq!(settled(0.70, -FLICK), Settle::Snap(0.88));
+    }
+
+    #[test]
+    fn the_order_the_points_are_given_in_does_not_matter() {
+        let reversed = [0.88, 0.40];
+        assert_eq!(
+            settle(0.42, -1.0, &reversed, BELOW, FLICK),
+            Settle::Snap(0.88)
+        );
+        assert_eq!(settle(0.40, 1.0, &reversed, BELOW, FLICK), Settle::Dismiss);
+    }
+
+    #[test]
+    fn a_single_snap_is_a_rest_that_a_flick_down_dismisses() {
+        assert_eq!(settle(0.6, 0.0, &[0.6], BELOW, FLICK), Settle::Snap(0.6));
+        assert_eq!(settle(0.6, 0.9, &[0.6], BELOW, FLICK), Settle::Dismiss);
+        assert_eq!(settle(0.6, -0.9, &[0.6], BELOW, FLICK), Settle::Snap(0.6));
+    }
+
+    #[test]
+    fn no_snap_points_is_one_rest_at_the_full_extent() {
+        assert_eq!(settle(0.97, 0.0, &[], BELOW, FLICK), Settle::Snap(1.0));
+        assert_eq!(settle(0.5, 0.0, &[], BELOW, FLICK), Settle::Snap(1.0));
+        assert_eq!(settle(0.5, 0.9, &[], BELOW, FLICK), Settle::Dismiss);
+        assert_eq!(settle(0.1, 0.0, &[], BELOW, FLICK), Settle::Dismiss);
     }
 }

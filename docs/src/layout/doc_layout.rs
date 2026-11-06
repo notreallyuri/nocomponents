@@ -287,6 +287,10 @@ pub const NAV: &[NavGroup] = &[
                 href: "/docs/slider",
             },
             NavItem {
+                label: "Sortable",
+                href: "/docs/sortable",
+            },
+            NavItem {
                 label: "Spinner",
                 href: "/docs/spinner",
             },

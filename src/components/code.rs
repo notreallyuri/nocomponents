@@ -2,9 +2,11 @@ use crate::{
     cn,
     icons::{check::Check, copy::Copy},
     primitives::code::{CodeBlockContentRoot, CodeBlockRoot, CodeCopyRoot, use_code},
-    utils::types::Language,
 };
 use leptos::{either::Either, prelude::*};
+
+#[allow(unused_imports)]
+pub use crate::utils::types::Language;
 
 #[component]
 pub fn Code(#[prop(optional, into)] class: Signal<String>, children: Children) -> impl IntoView {

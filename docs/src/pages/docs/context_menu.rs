@@ -72,7 +72,7 @@ const AREA: &str = "flex h-32 items-center justify-center rounded-lg border bord
 const API: &[ApiEntry] = &[
     ApiEntry {
         name: "ContextMenu",
-        description: "A menu summoned by right-clicking a region, anchored to the pointer. Everything below the trigger is the dropdown menu's.",
+        description: "A menu summoned by right-clicking a region, or long-pressing it on touch, anchored to the pointer. Everything below the trigger is the dropdown menu's.",
         props: &[
             Prop {
                 name: "open",
@@ -102,7 +102,7 @@ const API: &[ApiEntry] = &[
     },
     ApiEntry {
         name: "ContextMenuTrigger",
-        description: "The region that answers a right-click.",
+        description: "The region that answers a right-click, or a long press on touch.",
         props: &[
             Prop {
                 name: "class",
@@ -114,7 +114,19 @@ const API: &[ApiEntry] = &[
                 name: "disabled",
                 ty: "Signal<bool>",
                 default: "false",
-                description: "Ignores the right-click entirely.",
+                description: "Ignores the right-click and the long press entirely.",
+            },
+            Prop {
+                name: "long_press",
+                ty: "Signal<bool>",
+                default: "true",
+                description: "Whether a touch or pen press held still opens the menu at the touch point, as a right-click does at the cursor. A mouse press never does. Off removes that timer only: a browser that sends its own `contextmenu` for a long press (Android) still opens the menu, once.",
+            },
+            Prop {
+                name: "long_press_ms",
+                ty: "Signal<f64>",
+                default: "450.0",
+                description: "How long the press is held, in milliseconds. It is abandoned if the finger moves more than 10 pixels, lifts, or is taken by a scroll.",
             },
             Prop {
                 name: "children",
@@ -153,6 +165,18 @@ const API: &[ApiEntry] = &[
                 description: "Merged over the menu's classes.",
             },
             Prop {
+                name: "mobile_sheet",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Below the `md` breakpoint (768px), present the menu as a bottom sheet over a scrim instead of a menu at the press point: no positioning, `data-presentation=\"sheet\"`. At `md` and up nothing changes, and it is written as `\"floating\"`. Escape, a tap on the scrim and choosing an item still close it.",
+            },
+            Prop {
+                name: "sheet_title",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The title row under the sheet's grabber. Empty means a grabber and no row. Ignored when the content is not a sheet.",
+            },
+            Prop {
                 name: "children",
                 ty: "Children",
                 default: "",
@@ -169,12 +193,12 @@ pub fn Page() -> impl IntoView {
     view! {
         <DocLayout
             title="Context Menu"
-            description="A menu summoned by right-clicking a region, anchored to the pointer."
+            description="A menu summoned by right-clicking a region, or long-pressing it on touch, anchored to the pointer. Set `mobile_sheet` and it becomes a bottom sheet on phones; the Dropdown Menu page shows it."
         >
             <div class="flex flex-col gap-8">
                 <DemoSection
                     title="Default"
-                    description="The menu opens at the pointer, not at the region. Right-click near the bottom of the window and it flips above the click instead of hanging off the edge."
+                    description="The menu opens at the pointer, not at the region. Right-click near the bottom of the window and it flips above the click instead of hanging off the edge. On a touch screen, press and hold: the menu opens at your finger after about half a second, and the browser's own callout stays out of the way."
                     code=DEFAULT
                 >
                     <div class="w-full max-w-sm">

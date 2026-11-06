@@ -2,8 +2,118 @@
 
 The styled layer is installed, not depended on, so a release has two halves: the crate, which this
 file is about, and the files `cargo nocli` copied into your project, which are yours and which an
-upgrade does not touch. After bumping the dependency, run `cargo nocli components add <name>
---force` for each component you have not edited, and diff the ones you have.
+upgrade does not touch. After bumping the dependency, run `cargo nocli components status` to see
+which installed components are `unchanged`, `edited` or `not in lock`, then `cargo nocli components
+add <name> --force` for each unchanged one, and diff the rest. A component installed before the
+lock existed reads `not in lock`: the tool cannot tell whether it was edited, so diff it too.
+
+## 0.3.0
+
+What noaweb needed to port immich-front: a sortable list, drawer snap points, long-press, phone
+sheets, and an installer that leaves a fresh project compiling. Source-compatible with 0.2 except
+where focus goes after a pointer closes a layer (see Changed).
+
+### Added
+
+- **Bottom sheet on phones.** `DropdownMenuContent`, `ContextMenuContent`, `SelectContent`,
+  `PopoverContent` and `DialogContentRoot` (styled: `DialogPortal`) take `mobile_sheet:
+  Signal<bool>` (default false) and `sheet_title: Signal<String>`. Below `md` (767px, via
+  `use_media_query`) the content is a bottom sheet in the same portal: a scrim, the panel on the
+  bottom edge, a grabber and the title row; the floating layers apply no positioning, and focus,
+  roving focus, typeahead and dismissal (scrim tap, Escape, choosing an item) are unchanged. The
+  content writes `data-presentation="sheet"` or `"floating"` (a dialog only when `mobile_sheet` is
+  set), and drops `data-side` and `data-align` in a sheet; the styled layer styles both from one
+  class string. The shared pieces are `utils::sheet` (`use_sheet_presentation`, `SheetScrim`,
+  `SheetHeader`, `SHEET_QUERY`).
+- **`PopoverPortal` / `PopoverPortalRoot` take `container: Option<AnyNodeRef>`**, which mounts the
+  panel in that element instead of `<body>` (`FloatingPortal` takes it too). A fullscreen element
+  still wins when the container is not inside it.
+- **`Skeleton` takes `variant: SkeletonVariant`** (`Default`, `Tile`, `Line`, `Card`), written as
+  `data-variant`; the pulse stops under `prefers-reduced-motion`, and the placeholder is
+  `aria-hidden`.
+- **`ButtonSize::Fit`**: no fixed height or padding, for a button that wraps a layout of its own.
+- **`utils::modality`** (`track_input_modality`, `last_input_was_keyboard`): whether the last input
+  was a key or a pointer.
+- **`Sortable`** (`primitives::sortable`, feature `sortable`; styled `Sortable`, `SortableItem`,
+  `SortableHandle`): a list reordered by pointer, touch or keyboard, which reports the move and
+  leaves the order to the caller. `on_move` gets `SortableMove { keys, to }`: the moved items in
+  their current relative order, and `to`, the index they land at in the list once they have left
+  it; `apply_move(&mut items, &moved, key)` applies it. Pointer drag goes through `use_drag` (the
+  held item follows the pointer, the others slide aside, no easing under `prefers-reduced-motion`);
+  on the handle, or the item if it has none, Space or Enter picks up, the arrows (Left and Right
+  when `orientation` is horizontal) and Home/End move, Space or Enter drops, Escape or losing focus
+  cancels, and focus stays on the moved item. `selected` makes a block drag: the selection moves
+  together, by pointer and keyboard. A visually hidden `aria-live` region announces pick-up, moves,
+  drop and cancel, and an instruction paragraph is `aria-describedby` on every handle; both are
+  replaceable (`announce`, `instructions`). Held near an edge it scrolls the nearest scrolling
+  ancestor, never the page, so it works in a dialog that locks the body. Needs `Grip` icon (new).
+- **`primitives::drag`** now also exports `edge_ramp`, `ScrollAnchor` and `scroll_parent`, the
+  auto-scroll curve, scroll-compensation and scroller lookup that the kanban board had privately;
+  the board uses them, and so does `Sortable`.
+- **`use_long_press`** (`primitives::long_press`, feature `long_press`): a held touch or pen press
+  that fires once after a delay (450 ms by default), reporting the press point, and is abandoned by
+  a move of more than 10 px, a release or a `pointercancel`. A mouse press never fires it. It starts
+  from a `pointerdown` that may land on a child, and follows the gesture through `use_drag`.
+- **`ContextMenu` opens on a touch long-press**, at the touch point, as `contextmenu` does at the
+  cursor. `ContextMenuTrigger` and `ContextMenuTriggerRoot` take `long_press: Signal<bool>`
+  (default true) and `long_press_ms: Signal<f64>` (default 450.0), and set
+  `-webkit-touch-callout: none` so iOS shows no callout of its own. The `contextmenu` Android sends
+  after a long press is swallowed when the press has already opened the menu. Feature
+  `context_menu` now lists `long_press`.
+- **Drawer snap points.** `Drawer` and `DrawerRoot` take `snap_points: Signal<Vec<f64>>` (fractions
+  of the viewport along the side, e.g. `vec![0.4, 0.88]`), `active_snap` / `default_active_snap` /
+  `on_active_snap_change` (the active point's value, `Option<f64>`), `dismiss_below` (default 0.22)
+  and `flick_velocity` (default 0.6 px/ms). The panel is as tall as the highest point, follows the
+  handle while dragged, settles on the nearest point, moves one point on a flick, and is dismissed
+  below `dismiss_below`; `data-snap` carries the index. The decision is the pure
+  `primitives::drawer::settle`, returning `Settle::Snap(f64)` or `Settle::Dismiss`. Without
+  `snap_points` a drawer behaves as before.
+
+### Notes
+
+- **`ChildrenFn` children cannot move an owned value.** `DropdownMenu`, `Popover`, `Dialog` and the
+  other parts that take `children: ChildrenFn` may be rendered more than once (inside a `Portal` or
+  an `Either` branch), so moving a non-`Clone` value into them fails with E0525 ("expected a closure
+  that implements `Fn`, but this closure only implements `FnOnce`"). Clone it before the `view!`, or
+  keep it in a `StoredValue` and read it inside.
+
+### Changed
+
+- **Focus returns to the trigger on close only when the keyboard closed the layer.** Floating
+  layers (`FloatingRoot`: popover, dropdown menu, select, context menu, tooltip and the rest) and
+  `DialogRoot` used to give focus back after any close; after an outside click or a mouse-chosen
+  item they now leave it where the pointer put it, which stops the focus ring and scroll jump on
+  the trigger. Escape, and Enter or Space on an item, still return it. If your code relied on the
+  trigger being focused after a mouse close, focus it from `on_open_change`.
+- **Styled modules re-export the types their props name** when a primitive or `utils` owns them:
+  `Side`, `Align`, `SideOffset`, `Orientation`, `TriggerRender`, `StyledRender`, `AnchorRender`,
+  `Date`, `Language`, `ColorFormat`, `Crop`, `CalendarMode`, `ChartKind`, `TableSort`,
+  `DropdownMenuItemVariant`, `TabsListVariants`, `ToastVariant` and so on, from the styled module
+  that takes them. Previously `DropdownMenuItem`'s `variant` could only be named through
+  `nocomponents::primitives::dropdown_menu`.
+- The re-exports in installed files, and the generated `mod.rs` prelude, carry
+  `#[allow(unused_imports)]`: in a binary crate every `pub use` a project does not itself use
+  warned, and `ContextMenu*` alone produced a dozen.
+
+### cargo-nocli 0.2.0
+
+- **`components status`** lists installed components as `unchanged`, `edited` or `not in lock`.
+- **`components add`** no longer runs `cargo add` when `Cargo.toml` already asks for every feature
+  the install needs, so the project's formatting is left alone when nothing changes. Files it
+  overwrites with `--force` print `replaced`, with a note when they were edited or not in the lock,
+  and a file not in the lock is `kept (not in lock, cannot tell if edited)` rather than "already
+  here".
+- **`init`** writes a minimal Trunk `index.html` (linking the installed stylesheet) when there is
+  none, and the installed `globals.css` sets `--font-sans` to the system stack instead of naming a
+  font nothing loads.
+- **A `use` with attributes keeps them on every line it is flattened to.** `#[allow(unused_imports)]`
+  on a re-export tree used to land on the first line only, so an installed `context_menu` warned
+  once per remaining name; a `#[cfg]` would have been a miscompile. `pub(crate) use` keeps its
+  visibility per line too.
+- **`add` declares the install directory** in its parent module (`src/components/mod.rs` with
+  `pub mod nc;`, inside a `nocli:begin` / `nocli:end` block when the file is the project's), so a
+  fresh project no longer fails with E0583. The crate root is not edited; `add` prints the
+  `mod components;` to add when it is missing.
 
 ## 0.2.0
 

@@ -3,9 +3,12 @@ use crate::{
     components::tooltip::{Tooltip, TooltipContent, TooltipTrigger},
     icons::ellipsis::Ellipsis,
     primitives::floating_menu::{FloatingMenuHandleRoot, FloatingMenuRoot, use_floating_menu},
-    utils::types::{Orientation, Side},
+    utils::types::Side,
 };
 use leptos::{either::Either, ev, prelude::*};
+
+#[allow(unused_imports)]
+pub use crate::utils::types::Orientation;
 
 #[component]
 pub fn FloatingMenu(

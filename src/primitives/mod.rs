@@ -54,6 +54,8 @@ pub mod input_group;
 pub mod input_otp;
 #[cfg(feature = "kanban")]
 pub mod kanban;
+#[cfg(feature = "long_press")]
+pub mod long_press;
 #[cfg(feature = "menubar")]
 pub mod menubar;
 #[cfg(feature = "native_select")]
@@ -80,6 +82,8 @@ pub mod separator;
 pub mod sidebar;
 #[cfg(feature = "slider")]
 pub mod slider;
+#[cfg(feature = "sortable")]
+pub mod sortable;
 #[cfg(feature = "switch")]
 pub mod switch;
 #[cfg(feature = "table")]
@@ -162,6 +166,8 @@ pub mod prelude {
     pub use super::input_otp::*;
     #[cfg(feature = "kanban")]
     pub use super::kanban::*;
+    #[cfg(feature = "long_press")]
+    pub use super::long_press::*;
     #[cfg(feature = "menubar")]
     pub use super::menubar::*;
     #[cfg(feature = "native_select")]
@@ -188,6 +194,8 @@ pub mod prelude {
     pub use super::sidebar::*;
     #[cfg(feature = "slider")]
     pub use super::slider::*;
+    #[cfg(feature = "sortable")]
+    pub use super::sortable::*;
     #[cfg(feature = "switch")]
     pub use super::switch::*;
     #[cfg(feature = "table")]

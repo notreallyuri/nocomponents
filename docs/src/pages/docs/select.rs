@@ -209,6 +209,18 @@ const API: &[ApiEntry] = &[
                 description: "Merged over the listbox's classes.",
             },
             Prop {
+                name: "mobile_sheet",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Below the `md` breakpoint (768px), present the list as a bottom sheet over a scrim instead of a popup under the trigger: no positioning, `data-presentation=\"sheet\"`. At `md` and up nothing changes, and it is written as `\"floating\"`. Escape, a tap on the scrim and choosing an item still close it.",
+            },
+            Prop {
+                name: "sheet_title",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The title row under the sheet's grabber. Empty means a grabber and no row. Ignored when the content is not a sheet.",
+            },
+            Prop {
                 name: "children",
                 ty: "Children",
                 default: "",
@@ -259,7 +271,7 @@ pub fn Page() -> impl IntoView {
     view! {
         <DocLayout
             title="Select"
-            description="Displays a list of options for the user to pick from."
+            description="Displays a list of options for the user to pick from. Set `mobile_sheet` and it becomes a bottom sheet on phones; the Dropdown Menu page shows it."
         >
             <div class="flex flex-col gap-8">
                 <DemoSection

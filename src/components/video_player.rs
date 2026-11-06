@@ -15,15 +15,19 @@ use crate::{
     primitives::{
         dropdown_menu::{DropdownMenuTriggerRoot, use_dropdown},
         video_player::{
-            VideoPlayerCaptionSize, VideoPlayerCaptionsRoot, VideoPlayerCaptionsToggleRoot,
-            VideoPlayerControlsRoot, VideoPlayerFullscreenRoot, VideoPlayerMode,
-            VideoPlayerMuteRoot, VideoPlayerPlayRoot, VideoPlayerRail, VideoPlayerRailFillRoot,
-            VideoPlayerRailRoot, VideoPlayerRoot, VideoPlayerSkipRoot, VideoPlayerStep,
+            VideoPlayerCaptionsRoot, VideoPlayerCaptionsToggleRoot, VideoPlayerControlsRoot,
+            VideoPlayerFullscreenRoot, VideoPlayerMuteRoot, VideoPlayerPlayRoot,
+            VideoPlayerRailFillRoot, VideoPlayerRailRoot, VideoPlayerRoot, VideoPlayerSkipRoot,
             VideoPlayerSurfaceRoot, VideoPlayerTimeRoot, VideoPlayerVideoRoot, use_video_player,
         },
     },
 };
 use leptos::{either::Either, prelude::*};
+
+#[allow(unused_imports)]
+pub use crate::primitives::video_player::{
+    VideoPlayerCaptionSize, VideoPlayerMode, VideoPlayerRail, VideoPlayerStep,
+};
 
 const CONTROL: &str = "inline-flex size-8 shrink-0 items-center justify-center rounded-md text-white outline-none transition-colors hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white/70 disabled:pointer-events-none disabled:opacity-40";
 const MENU_ITEM: &str =

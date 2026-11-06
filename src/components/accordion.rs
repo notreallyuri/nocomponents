@@ -2,11 +2,14 @@ use crate::{
     cn,
     icons::chevron::ChevronDown,
     primitives::accordion::{
-        AccordionContentRoot, AccordionItemRoot, AccordionRoot, AccordionTriggerRoot, AccordionType,
+        AccordionContentRoot, AccordionItemRoot, AccordionRoot, AccordionTriggerRoot,
     },
     utils::controllable::forward,
 };
 use leptos::prelude::*;
+
+#[allow(unused_imports)]
+pub use crate::primitives::accordion::AccordionType;
 
 #[component]
 pub fn Accordion(

@@ -3,16 +3,18 @@ use crate::{
     cn,
     icons::{media::Maximize, minus::Minus, plus::Plus},
     primitives::canvas::{
-        CanvasBackgroundRoot, CanvasDrag, CanvasGesture, CanvasMarqueeRoot, CanvasNodeLabelRoot,
-        CanvasNodeRoot, CanvasPoint, CanvasRoot, CanvasViewportRoot, use_canvas,
+        CanvasBackgroundRoot, CanvasMarqueeRoot, CanvasNodeLabelRoot, CanvasNodeRoot, CanvasRoot,
+        CanvasViewportRoot, use_canvas,
     },
-    utils::{
-        types::AsClass,
-        viewport::{Viewport, WorldBox, ZoomLimits},
-    },
+    utils::types::AsClass,
 };
 use leptos::prelude::*;
 use leptos_node_ref::AnyNodeRef;
+
+#[allow(unused_imports)]
+pub use crate::primitives::canvas::{CanvasDrag, CanvasGesture, CanvasPoint};
+#[allow(unused_imports)]
+pub use crate::utils::viewport::{Viewport, WorldBox, ZoomLimits};
 
 #[derive(Default, Copy, Clone, PartialEq, Eq, Debug)]
 pub enum StickyColor {

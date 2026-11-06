@@ -3,12 +3,15 @@ use crate::{
     icons::chevron::ChevronDown,
     primitives::navigation_menu::{
         NavigationMenuContentRoot, NavigationMenuIndicatorRoot, NavigationMenuItemRoot,
-        NavigationMenuLinkRender, NavigationMenuLinkRoot, NavigationMenuListRoot,
-        NavigationMenuRoot, NavigationMenuTriggerRoot,
+        NavigationMenuLinkRoot, NavigationMenuListRoot, NavigationMenuRoot,
+        NavigationMenuTriggerRoot,
     },
     utils::controllable::forward,
 };
 use leptos::prelude::*;
+
+#[allow(unused_imports)]
+pub use crate::primitives::navigation_menu::NavigationMenuLinkRender;
 
 #[component]
 pub fn NavigationMenu(

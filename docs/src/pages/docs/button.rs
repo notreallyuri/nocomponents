@@ -25,7 +25,10 @@ const VARIANTS: &str = r#"<Button variant=ButtonVariant::Default>"Default"</Butt
 const SIZES: &str = r#"<Button size=ButtonSize::Xs>"Extra Small"</Button>
 <Button size=ButtonSize::Sm>"Small"</Button>
 <Button>"Default"</Button>
-<Button size=ButtonSize::Lg>"Large"</Button>"#;
+<Button size=ButtonSize::Lg>"Large"</Button>
+<Button size=ButtonSize::Fit variant=ButtonVariant::Ghost>
+    "Fit"
+</Button>"#;
 
 const ICON_SIZES: &str = r#"<Button size=ButtonSize::IconXs>"×"</Button>
 <Button size=ButtonSize::IconSm>"×"</Button>
@@ -79,7 +82,7 @@ const API: &[ApiEntry] = &[ApiEntry {
             name: "size",
             ty: "Signal<ButtonSize>",
             default: "Default",
-            description: "Xs, Sm, Default, Lg, or the four Icon sizes for a square button.",
+            description: "Xs, Sm, Default, Lg, Fit (no fixed height or padding, for a button that wraps its own layout), or the four Icon sizes for a square button.",
         },
         Prop {
             name: "class",
@@ -148,7 +151,7 @@ pub fn Page() -> impl IntoView {
 
                 <DemoSection
                     title="Sizes"
-                    description="Four heights from Xs to Lg; the smaller ones also step down the text size and radius."
+                    description="Four heights from Xs to Lg; the smaller ones also step down the text size and radius. Fit has no fixed height or padding at all, for a button that wraps a layout of its own."
                     code=SIZES
                 >
                     <div class="flex flex-wrap items-center gap-3">
@@ -156,6 +159,9 @@ pub fn Page() -> impl IntoView {
                         <Button size=ButtonSize::Sm>"Small"</Button>
                         <Button>"Default"</Button>
                         <Button size=ButtonSize::Lg>"Large"</Button>
+                        <Button size=ButtonSize::Fit variant=ButtonVariant::Ghost>
+                            "Fit"
+                        </Button>
                     </div>
                 </DemoSection>
 

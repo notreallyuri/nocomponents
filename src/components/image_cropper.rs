@@ -4,9 +4,12 @@ use crate::{
         ImageCropperGridRoot, ImageCropperHandleRoot, ImageCropperImageRoot, ImageCropperRoot,
         ImageCropperWindowRoot, use_image_cropper,
     },
-    utils::image::{Crop, CropHandle},
+    utils::image::CropHandle,
 };
 use leptos::prelude::*;
+
+#[allow(unused_imports)]
+pub use crate::utils::image::Crop;
 
 #[component]
 pub fn ImageCropper(

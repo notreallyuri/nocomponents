@@ -5,6 +5,8 @@ pub mod date;
 pub mod form;
 pub mod gif;
 pub mod image;
+pub mod modality;
+pub mod sheet;
 pub mod types;
 pub mod viewport;
 

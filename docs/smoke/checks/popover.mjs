@@ -9,6 +9,7 @@ export default async (t) => {
   t.expect('content slot', await t.exists(`document.querySelector('[data-slot=popover-content]')`), true);
   await t.clickAt(1150, 860, 600);
   t.expect('outside click closes', await t.attr(trig, 'aria-expanded'), 'false');
+  t.expect('a pointer close does not pull focus back onto the trigger', await t.ev(`document.activeElement === ${trig}`), false);
 
   await t.focus(trig);
   await t.key('Enter', 500);
@@ -16,6 +17,21 @@ export default async (t) => {
   await t.key('Escape', 500);
   t.expect('Escape closes', await t.attr(trig, 'aria-expanded'), 'false');
   t.expect('focus is back on the trigger', await t.ev(`document.activeElement === ${trig}`), true);
+
+  // Focus return follows the input that closed it: an input inside the panel has focus either way.
+  const formTrig = `${section(/form/i)}.querySelector('[data-slot=popover-trigger]')`;
+  const inner = `document.querySelector('[data-slot=popover-content] input')`;
+  await t.click(formTrig, 500);
+  if (!(await t.exists(inner))) return t.fail('form popover', 'no input inside the panel');
+  await t.focus(inner);
+  await t.clickAt(1150, 860, 600);
+  t.expect('form popover closed by an outside click', await t.attr(formTrig, 'aria-expanded'), 'false');
+  t.expect('mouse close: focus is not pulled onto the trigger', await t.ev(`document.activeElement === ${formTrig}`), false);
+  await t.click(formTrig, 500);
+  await t.focus(inner);
+  await t.key('Escape', 500);
+  t.expect('Escape closes the form popover', await t.attr(formTrig, 'aria-expanded'), 'false');
+  t.expect('keyboard close: focus is back on the trigger', await t.ev(`document.activeElement === ${formTrig}`), true);
 
   // The reactive-side demo: a button cycles the placement, the next open uses it.
   const sec = section(/reactive/i);

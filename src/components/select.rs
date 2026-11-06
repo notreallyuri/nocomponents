@@ -75,16 +75,23 @@ pub fn SelectPortal(children: ChildrenFn) -> impl IntoView {
 #[component]
 pub fn SelectContent(
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] mobile_sheet: Signal<bool>,
+    #[prop(optional, into)] sheet_title: Signal<String>,
     children: Children,
 ) -> impl IntoView {
     view! {
-        <SelectContentRoot class=move || {
-            cn!(
-                "z-50 flex max-h-96 flex-col overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md pointer-events-auto data-[state=closed]:pointer-events-none",
+        <SelectContentRoot
+            mobile_sheet=mobile_sheet
+            sheet_title=sheet_title
+            class=move || {
+                cn!(
+                    "z-50 flex max-h-96 flex-col overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md pointer-events-auto data-[state=closed]:pointer-events-none",
                 "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2",
+                "data-[presentation=sheet]:w-full data-[presentation=sheet]:max-h-[85dvh] data-[presentation=sheet]:rounded-b-none data-[presentation=sheet]:rounded-t-xl data-[presentation=sheet]:border-x-0 data-[presentation=sheet]:border-b-0 data-[presentation=sheet]:px-3 data-[presentation=sheet]:pb-[max(1rem,env(safe-area-inset-bottom))] data-[presentation=sheet]:data-[state=open]:slide-in-from-bottom-full data-[presentation=sheet]:data-[state=closed]:slide-out-to-bottom-full data-[presentation=sheet]:data-[state=open]:zoom-in-100 data-[presentation=sheet]:data-[state=closed]:zoom-out-100 data-[presentation=sheet]:[&_[data-slot=select-item]]:min-h-11",
                 class.get()
-            )
-        }>
+                )
+            }
+        >
             <div class="min-h-0 w-full flex-1 overflow-y-auto p-1">{children()}</div>
         </SelectContentRoot>
     }

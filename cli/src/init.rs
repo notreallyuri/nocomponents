@@ -20,10 +20,12 @@ pub async fn run(source: &Source) -> Result<()> {
     install_styles(source, &config).await?;
     trunk_tailwind()?;
 
-    let mut features = manifest::current_features()?;
-    features.insert("primitives".into());
-    features.insert("icons".into());
-    features.insert("theme".into());
+    index_html(&config)?;
+
+    let features = ["primitives", "icons", "theme"]
+        .into_iter()
+        .map(String::from)
+        .collect();
     manifest::add_dependency(&features, source.checkout())?;
 
     println!("\nNow add components: cargo nocli components add button dialog");
@@ -56,14 +58,53 @@ async fn install_styles(source: &Source, config: &Config) -> Result<()> {
     Ok(())
 }
 
+fn index_html(config: &Config) -> Result<()> {
+    let path = Path::new("index.html");
+    if path.exists() {
+        println!("index.html is already here, leaving it alone");
+        return Ok(());
+    }
+    fs::write(path, page(&config.style.css, &package_name())).context("writing index.html")?;
+    println!("wrote index.html");
+    Ok(())
+}
+
+fn package_name() -> String {
+    fs::read_to_string("Cargo.toml")
+        .ok()
+        .and_then(|text| toml::from_str::<toml::Table>(&text).ok())
+        .and_then(|doc| {
+            doc.get("package")?
+                .get("name")?
+                .as_str()
+                .map(str::to_string)
+        })
+        .unwrap_or_else(|| "app".to_string())
+}
+
+fn page(css: &str, title: &str) -> String {
+    format!(
+        "<!doctype html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n    <link data-trunk rel=\"rust\" />\n    <link data-trunk rel=\"tailwind-css\" href=\"{css}\" />\n    <title>{title}</title>\n  </head>\n  <body></body>\n</html>\n"
+    )
+}
+
 /// The docs stylesheet, minus its `@source` (a consumer's components are in their own `src`,
-/// already scanned) and its font import.
+/// already scanned) and its font import — and with the import gone, the font token falls back to
+/// the system stack rather than naming a face nothing loads.
 fn project_stylesheet(source: &str) -> String {
     source
         .lines()
         .filter(|line| {
             let line = line.trim();
             !line.starts_with("@source") && !line.starts_with("@import url(")
+        })
+        .map(|line| {
+            if line.trim_start().starts_with("--font-sans:") {
+                let indent = &line[..line.len() - line.trim_start().len()];
+                format!("{indent}--font-sans: ui-sans-serif, system-ui, sans-serif;")
+            } else {
+                line.to_string()
+            }
         })
         .collect::<Vec<_>>()
         .join("\n")
@@ -97,6 +138,23 @@ fn trunk_tailwind() -> Result<()> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn the_font_token_falls_back_to_the_system_stack() {
+        let out = super::project_stylesheet(
+            "@theme inline {\n  --font-sans: \"Figtree\", sans-serif;\n}",
+        );
+        assert!(out.contains("  --font-sans: ui-sans-serif, system-ui, sans-serif;"));
+        assert!(!out.contains("Figtree"));
+    }
+
+    #[test]
+    fn the_page_links_the_stylesheet_for_trunk() {
+        let html = super::page("styles/globals.css", "demo");
+        assert!(html.contains("<link data-trunk rel=\"rust\" />"));
+        assert!(html.contains("rel=\"tailwind-css\" href=\"styles/globals.css\""));
+        assert!(html.contains("<title>demo</title>"));
+    }
+
     #[test]
     fn drops_the_docs_only_lines_and_keeps_the_rest() {
         let source = "@import url(\"https://fonts.googleapis.com/x\");\n@import \"tailwindcss\";\n@import \"./animate.css\";\n@source \"../../src\";\n\n@custom-variant dark (&:is(.dark *));\n";

@@ -1,7 +1,7 @@
 # nocomponents
 
 Unstyled behaviour primitives for [Leptos](https://leptos.dev) 0.8, in the spirit of Radix, plus a
-styled layer that mirrors [shadcn/ui](https://ui.shadcn.com). 66 components, no npm, CSR.
+styled layer that mirrors [shadcn/ui](https://ui.shadcn.com). 67 components, no npm, CSR.
 
 **[Documentation and live demos →](https://notreallyuri.github.io/nocomponents/)**
 
@@ -51,7 +51,7 @@ Everything with no classes in it stays an ordinary dependency: the primitives, t
 
 ```toml
 [dependencies]
-nocomponents = { version = "0.2", features = ["primitives", "dialog", "tooltip"] }
+nocomponents = { version = "0.3", features = ["primitives", "dialog", "tooltip"] }
 ```
 
 See [the CLI's README](https://github.com/notreallyuri/nocomponents/blob/main/cli/README.md) for
@@ -120,13 +120,13 @@ Two kinds, and you almost always want some of each.
 | `highlight` | syntax highlighting for the `code` component |
 | `full` | all of the above |
 
-**Elements** are one feature per component name — 72 of them, and a single name gates both layers,
+**Elements** are one feature per component name — 73 of them, and a single name gates both layers,
 because `accordion` is one thing whichever layer you take it from. Each lists what its own source
 imports, so cargo works out the closure:
 
 ```toml
 # exactly the dialog primitive and what it needs, and nothing else
-nocomponents = { version = "0.2", features = ["primitives", "dialog"] }
+nocomponents = { version = "0.3", features = ["primitives", "dialog"] }
 ```
 
 With no features at all only `utils`, `middleware` and `deps` exist, so `--features full` is what
@@ -134,8 +134,8 @@ you want when checking the whole thing. `cargo nocli` sets these for you.
 
 ## Beyond the shadcn catalogue
 
-Twelve components are ours, and none of them took a dependency: `canvas` (an infinite pan-and-zoom
-surface), `kanban`, `timeline`, `color-picker`, `image-cropper` (which crops animated GIFs at the
+Thirteen components are ours, and none of them took a dependency: `canvas` (an infinite pan-and-zoom
+surface), `kanban`, `sortable`, `timeline`, `color-picker`, `image-cropper` (which crops animated GIFs at the
 LZW level, so palettes and timing survive), `dropzone`, `tree`, `video-player`, `floating-menu`,
 `code`, `native-select`, and `toast`.
 

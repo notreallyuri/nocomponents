@@ -1,14 +1,14 @@
 use crate::{
     cn,
     components::button::{Button, ButtonSize, ButtonVariant},
-    primitives::floating::TriggerRender,
     primitives::popover::{PopoverContentRoot, PopoverPortalRoot, PopoverRoot, PopoverTriggerRoot},
-    utils::{
-        controllable::forward,
-        types::{Align, Side, SideOffset},
-    },
+    utils::controllable::forward,
 };
 use leptos::{either::Either, prelude::*};
+use leptos_node_ref::AnyNodeRef;
+
+#[allow(unused_imports)]
+pub use crate::utils::types::{Align, Side, SideOffset, TriggerRender};
 
 #[component]
 pub fn Popover(
@@ -61,8 +61,11 @@ pub fn PopoverTrigger(
 }
 
 #[component]
-pub fn PopoverPortal(children: ChildrenFn) -> impl IntoView {
-    view! { <PopoverPortalRoot children=children /> }
+pub fn PopoverPortal(
+    #[prop(default = None)] container: Option<AnyNodeRef>,
+    children: ChildrenFn,
+) -> impl IntoView {
+    view! { <PopoverPortalRoot container=container children=children /> }
 }
 
 #[component]
@@ -71,6 +74,8 @@ pub fn PopoverContent(
     #[prop(optional, into)] align: Signal<Align>,
     #[prop(optional, into)] side_offset: Signal<SideOffset>,
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] mobile_sheet: Signal<bool>,
+    #[prop(optional, into)] sheet_title: Signal<String>,
     children: Children,
 ) -> impl IntoView {
     view! {
@@ -78,11 +83,14 @@ pub fn PopoverContent(
             side=side
             align=align
             side_offset=side_offset
+            mobile_sheet=mobile_sheet
+            sheet_title=sheet_title
             class=move || {
                 let base_one = "flex flex-col gap-2 py-4 rounded-lg bg-popover text-sm text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-none animation-duration-100 fill-mode-forwards pointer-events-auto data-[state=closed]:pointer-events-none";
                 let animations = "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2";
                 let base_two = "has-data-[slot=popover-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl";
-                let base_class = format!("{base_one} {animations} {base_two}");
+                let sheet = "data-[presentation=sheet]:w-full data-[presentation=sheet]:max-h-[85dvh] data-[presentation=sheet]:overflow-y-auto data-[presentation=sheet]:rounded-b-none data-[presentation=sheet]:rounded-t-xl data-[presentation=sheet]:ring-0 data-[presentation=sheet]:border-t data-[presentation=sheet]:pb-[max(1.5rem,env(safe-area-inset-bottom))] data-[presentation=sheet]:data-[state=open]:slide-in-from-bottom-full data-[presentation=sheet]:data-[state=closed]:slide-out-to-bottom-full data-[presentation=sheet]:data-[state=open]:zoom-in-100 data-[presentation=sheet]:data-[state=closed]:zoom-out-100";
+                let base_class = format!("{base_one} {animations} {base_two} {sheet}");
                 cn!(base_class.as_str(), class.get())
             }
         >

@@ -1104,6 +1104,21 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       `ctx.ended` (a replay) in the styled player (`primitives/video_player.rs:259-260`, set at
       :910-919), so the player sits silent over a stalled stream; `idle_delay`, `preload` and
       `playsinline` are not exposed (:678, :867-869).
+
+### From the noaweb port (2026-11-05)
+
+The rest of what noaweb asked for landed (sortable, drawer snap points, long-press, mobile sheets,
+the small items and the CLI friction); what follows is what those left behind.
+
+- [ ] **The phone sheet presentation is static.** `mobile_sheet` (Dialog, DropdownMenu,
+      ContextMenu, Popover, Select; `utils::sheet`) puts the content in a bottom sheet below `md`,
+      but it cannot be dragged down to dismiss, has no snap points (the drawer has both now) and no
+      close button — scrim, Escape or choosing an item close it. And `use_floating` still runs
+      underneath it with its output discarded. `container` (portal into a given element) is
+      exposed on `Popover` only, though it lives in `FloatingPortal` and every floating layer
+      could take it. Visually, the sheet's title row looks like one more item (no weight or
+      colour of its own) and the panel's top corners are square where a sheet usually rounds them.
+
 ## Docs site
 
 - [x] Docs pages for alert-dialog, label and spinner; a `code` snippet under every demo (89 blocks

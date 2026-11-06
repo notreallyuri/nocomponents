@@ -10,9 +10,12 @@ use crate::{
         ColorPickerRail, ColorPickerRailRoot, ColorPickerRoot, ColorPickerSwatchRoot,
         use_color_picker,
     },
-    utils::{color::ColorFormat, types::Orientation},
+    utils::types::Orientation,
 };
 use leptos::{either::Either, prelude::*};
+
+#[allow(unused_imports)]
+pub use crate::utils::color::ColorFormat;
 
 const CHEQUER: &str = "background-image: linear-gradient(45deg, var(--color-border) 25%, transparent 25%, transparent 75%, var(--color-border) 75%), linear-gradient(45deg, var(--color-border) 25%, transparent 25%, transparent 75%, var(--color-border) 75%); background-size: 8px 8px; background-position: 0 0, 4px 4px;";
 

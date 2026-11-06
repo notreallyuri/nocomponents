@@ -3,7 +3,13 @@ use crate::{
         dismiss::{LayerBounds, use_dismissable_layer},
         field::field_disabled,
     },
-    utils::{controllable::controllable, next_id, types::TriggerRender},
+    utils::{
+        controllable::controllable,
+        modality::{last_input_was_keyboard, track_input_modality},
+        next_id,
+        sheet::{SheetHeader, presentation_attr, use_sheet_presentation},
+        types::TriggerRender,
+    },
 };
 use leptos::{
     context::Provider, either::Either, ev, portal::Portal, prelude::*, wasm_bindgen::JsCast,
@@ -63,6 +69,7 @@ pub fn DialogRoot(
     modal: bool,
     children: Children,
 ) -> impl IntoView {
+    track_input_modality();
     let is_open = controllable(open, default_open, on_open_change);
     let is_mounted = RwSignal::new(is_open.get_untracked());
 
@@ -106,8 +113,10 @@ pub fn DialogRoot(
             cancel_unmount();
             context.is_mounted.set(true);
         } else {
-            // Only on an actual close, not on the first run.
+            // Only on an actual close, not on the first run, and only when the keyboard closed
+            // it: a pointer close leaves focus where the pointer put it.
             if was_open == Some(true)
+                && last_input_was_keyboard()
                 && let Some(el) = previously_focused.get_value()
             {
                 let _ = el.focus();
@@ -280,10 +289,20 @@ pub fn DialogContentRoot(
     /// The ARIA role of the panel: `"dialog"`, or `"alertdialog"` for one that interrupts.
     #[prop(default = "dialog", into)]
     role: &'static str,
+    /// Below the `md` breakpoint, present the panel as a sheet on the bottom edge, with a grabber
+    /// and, if `sheet_title` is set, a title row. Written as `data-presentation="sheet"`; the
+    /// panel's own overlay is the scrim, and the styled layer does the anchoring. Off by default.
+    #[prop(optional, into)]
+    mobile_sheet: Signal<bool>,
+    /// The title row of the sheet. Empty means a grabber and no row; it has no effect at `md` and
+    /// up, where the dialog is centred and its own title is the heading.
+    #[prop(optional, into)]
+    sheet_title: Signal<String>,
     children: Children,
 ) -> impl IntoView {
     let ctx = use_dialog();
     let content_ref = ctx.content_ref;
+    let sheet = use_sheet_presentation(mobile_sheet);
 
     let focus_trap = move |e: ev::KeyboardEvent| {
         // A non-modal dialog must not hold Tab: the page underneath is still the user's.
@@ -358,7 +377,9 @@ pub fn DialogContentRoot(
             aria-labelledby=move || Some(ctx.title_id.get()).filter(|id| !id.is_empty())
             aria-describedby=move || Some(ctx.description_id.get()).filter(|id| !id.is_empty())
             data-state=move || if ctx.is_open.get() { "open" } else { "closed" }
+            data-presentation=move || mobile_sheet.get().then(|| presentation_attr(sheet.get()))
         >
+            <SheetHeader sheet=sheet title=sheet_title />
             {children()}
         </div>
     }

@@ -4,9 +4,11 @@ use crate::{
         FieldDescriptionRoot, FieldErrorRoot, FieldLabelRoot, FieldLegendRoot, FieldRoot,
         FieldSetRoot,
     },
-    utils::types::Orientation,
 };
 use leptos::prelude::*;
+
+#[allow(unused_imports)]
+pub use crate::utils::types::Orientation;
 
 #[component]
 pub fn Field(

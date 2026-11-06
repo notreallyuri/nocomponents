@@ -5,7 +5,9 @@ use crate::{
     primitives::dismiss::{LayerBounds, use_dismissable_layer},
     utils::{
         controllable::controllable,
-        get_placement, next_id,
+        get_placement,
+        modality::{last_input_was_keyboard, track_input_modality},
+        next_id,
         types::{Align, Side, SideOffset, TriggerRect},
     },
 };
@@ -38,21 +40,41 @@ use web_sys::{Element, HtmlElement, KeyboardEvent};
 /// Read on every `fullscreenchange` rather than once at mount, because which element that is —
 /// or whether there is one at all — changes underneath a layer that is already open, and the
 /// portal has to move with it.
+///
+/// `container` mounts the layer in an element of the caller's instead of `<body>`: a sticky or
+/// fixed ancestor the layer should move with in the same frame, rather than being re-positioned
+/// by script while it scrolls. It yields to the fullscreen element when the container is not
+/// inside it, for the reason above.
 #[component]
-pub fn FloatingPortal(children: ChildrenFn) -> impl IntoView {
+pub fn FloatingPortal(
+    #[prop(default = None)] container: Option<AnyNodeRef>,
+    children: ChildrenFn,
+) -> impl IntoView {
     let children = StoredValue::new(children);
-    let mount = RwSignal::new_local(document().fullscreen_element());
+    let fullscreen = RwSignal::new_local(document().fullscreen_element());
 
     let listener = window_event_listener(ev::fullscreenchange, move |_| {
         let current = document().fullscreen_element();
-        if mount.with_untracked(|held| held != &current) {
-            mount.set(current);
+        if fullscreen.with_untracked(|held| held != &current) {
+            fullscreen.set(current);
         }
     });
     on_cleanup(move || listener.remove());
 
+    let mount = move || {
+        let fullscreen = fullscreen.get();
+        let container = container.and_then(|container| container.get());
+        match (container, fullscreen) {
+            (Some(container), Some(fullscreen)) if !fullscreen.contains(Some(&container)) => {
+                Some(fullscreen)
+            }
+            (Some(container), _) => Some(container),
+            (None, fullscreen) => fullscreen,
+        }
+    };
+
     view! {
-        {move || match mount.get() {
+        {move || match mount() {
             Some(mount) => {
                 Either::Left(
                     // Re-created rather than re-targeted: `Portal` reads its mount once, so moving the
@@ -68,6 +90,17 @@ pub fn FloatingPortal(children: ChildrenFn) -> impl IntoView {
                 )
             }
         }}
+    }
+}
+
+/// The classes of the positioned shell a floating layer's content sits in. In a sheet the shell
+/// spans the bottom edge instead of following `floating_styles`, which the caller then leaves
+/// unapplied: nothing positions a sheet, so there is nothing for `use_floating` to fight.
+pub fn shell_class(sheet: bool, floating: &'static str) -> &'static str {
+    if sheet {
+        "fixed inset-x-0 bottom-0 z-50 w-full pointer-events-none"
+    } else {
+        floating
     }
 }
 
@@ -291,6 +324,7 @@ pub fn FloatingRoot(
     on_open_change: Option<Callback<bool>>,
     children: ChildrenFn,
 ) -> impl IntoView {
+    track_input_modality();
     let mut context = context.unwrap_or_default();
 
     // A context a caller built and kept hold of keeps its own `is_open` unless `open` replaces it.
@@ -418,10 +452,11 @@ pub fn FloatingRoot(
     Effect::new(move |was_open: Option<bool>| {
         let is_open = context.is_open.get();
 
-        // Hand focus back only if it is still inside the content: a layer closed by the mouse
-        // moving away must leave focus where the user put it.
+        // Hand focus back only if it is still inside the content, and only when the keyboard did
+        // the closing: a layer closed by the mouse must leave focus where the user put it.
         if !is_open
             && was_open == Some(true)
+            && last_input_was_keyboard()
             && focus_is_inside_content(context)
             && let Some(trigger) = context.trigger_ref.get_untracked()
             && let Ok(trigger) = trigger.dyn_into::<HtmlElement>()

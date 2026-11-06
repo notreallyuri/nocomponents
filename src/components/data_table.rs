@@ -5,12 +5,13 @@ use crate::{
         table::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow},
     },
     icons::chevron::{ChevronDown, ChevronUp},
-    primitives::table::{
-        SelectionState, SortDirection, TableSelection, TableSort, TableSortHeaderRoot,
-    },
+    primitives::table::{SelectionState, SortDirection, TableSortHeaderRoot},
 };
 use leptos::prelude::*;
 use std::cmp::Ordering;
+
+#[allow(unused_imports)]
+pub use crate::primitives::table::{TableSelection, TableSort};
 
 pub struct DataTableColumn<T: Send + Sync + 'static> {
     pub key: &'static str,

@@ -5,9 +5,11 @@ use crate::{
         CarouselButtonRoot, CarouselContentRoot, CarouselItemRoot, CarouselRoot, CarouselStep,
         use_carousel,
     },
-    utils::types::Orientation,
 };
 use leptos::prelude::*;
+
+#[allow(unused_imports)]
+pub use crate::utils::types::Orientation;
 
 #[component]
 pub fn Carousel(

@@ -4,8 +4,8 @@ use crate::{
     icons::search::Search,
     primitives::{
         command::{
-            CommandEmptyRoot, CommandFilter, CommandGroupLabelRoot, CommandGroupRoot,
-            CommandInputRoot, CommandItemRoot, CommandListRoot, CommandRoot, CommandSeparatorRoot,
+            CommandEmptyRoot, CommandGroupLabelRoot, CommandGroupRoot, CommandInputRoot,
+            CommandItemRoot, CommandListRoot, CommandRoot, CommandSeparatorRoot,
             use_command_shortcut,
         },
         dialog::DialogRoot,
@@ -13,6 +13,9 @@ use crate::{
     utils::controllable::forward,
 };
 use leptos::prelude::*;
+
+#[allow(unused_imports)]
+pub use crate::primitives::command::CommandFilter;
 
 #[component]
 pub fn Command(

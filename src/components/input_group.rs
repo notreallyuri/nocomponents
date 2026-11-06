@@ -5,9 +5,12 @@ use crate::{
         input::{Input, InputType},
         textarea::Textarea,
     },
-    primitives::input_group::{InputGroupAddonRoot, InputGroupAlign, InputGroupRoot},
+    primitives::input_group::{InputGroupAddonRoot, InputGroupRoot},
 };
 use leptos::{ev, prelude::*};
+
+#[allow(unused_imports)]
+pub use crate::primitives::input_group::InputGroupAlign;
 
 #[component]
 pub fn InputGroup(

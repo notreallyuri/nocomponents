@@ -3,19 +3,23 @@ use crate::{
     icons::x::X,
     primitives::{
         dialog::{DialogPortalRoot, DialogTriggerRoot, use_dialog},
-        drawer::{DrawerContentRoot, DrawerHandleRoot, DrawerRoot, use_drawer},
+        drawer::{
+            DEFAULT_DISMISS_BELOW, DEFAULT_SNAP_FLICK_VELOCITY, DrawerContentRoot,
+            DrawerHandleRoot, DrawerRoot, use_drawer,
+        },
     },
-    utils::{
-        controllable::forward,
-        types::{AsClass, Side},
-    },
+    utils::{controllable::forward, types::AsClass},
 };
 use leptos::prelude::*;
 
+#[allow(unused_imports)]
 pub use crate::components::sheet::{
     SheetClose as DrawerClose, SheetDescription as DrawerDescription, SheetFooter as DrawerFooter,
     SheetHeader as DrawerHeader, SheetTitle as DrawerTitle,
 };
+
+#[allow(unused_imports)]
+pub use crate::utils::types::Side;
 
 struct DrawerSide(Side);
 
@@ -45,6 +49,12 @@ pub fn Drawer(
     #[prop(optional)] default_open: bool,
     #[prop(optional, into)] on_open_change: Option<Callback<bool>>,
     #[prop(default = true)] modal: bool,
+    #[prop(optional, into)] snap_points: Signal<Vec<f64>>,
+    #[prop(default = None, into)] active_snap: Option<RwSignal<Option<f64>>>,
+    #[prop(default = None)] default_active_snap: Option<f64>,
+    #[prop(optional, into)] on_active_snap_change: Option<Callback<Option<f64>>>,
+    #[prop(default = DEFAULT_DISMISS_BELOW.into(), into)] dismiss_below: Signal<f64>,
+    #[prop(default = DEFAULT_SNAP_FLICK_VELOCITY.into(), into)] flick_velocity: Signal<f64>,
     children: Children,
 ) -> impl IntoView {
     view! {
@@ -54,6 +64,12 @@ pub fn Drawer(
             default_open=default_open
             on_open_change=forward(on_open_change)
             modal=modal
+            snap_points=snap_points
+            active_snap=active_snap
+            default_active_snap=default_active_snap
+            on_active_snap_change=forward(on_active_snap_change)
+            dismiss_below=dismiss_below
+            flick_velocity=flick_velocity
         >
             {children()}
         </DrawerRoot>

@@ -11,6 +11,7 @@ pub mod chevron;
 pub mod circle;
 pub mod copy;
 pub mod ellipsis;
+pub mod grip;
 pub mod loader;
 pub mod media;
 pub mod message;

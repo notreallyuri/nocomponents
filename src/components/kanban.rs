@@ -1,11 +1,12 @@
 use crate::utils::controllable::forward;
 use crate::{
     cn,
-    primitives::kanban::{
-        KanbanBoardRoot, KanbanCardRoot, KanbanColumnRoot, KanbanMove, KanbanSlotRoot,
-    },
+    primitives::kanban::{KanbanBoardRoot, KanbanCardRoot, KanbanColumnRoot, KanbanSlotRoot},
 };
 use leptos::prelude::*;
+
+#[allow(unused_imports)]
+pub use crate::primitives::kanban::KanbanMove;
 
 #[component]
 pub fn KanbanBoard(

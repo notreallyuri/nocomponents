@@ -181,6 +181,18 @@ const API: &[ApiEntry] = &[
                 description: "The corner close button. Off for a panel that is itself the control, as the command palette is.",
             },
             Prop {
+                name: "mobile_sheet",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Below the `md` breakpoint (768px), present the panel as a bottom sheet instead of a centred panel: no positioning, `data-presentation=\"sheet\"`. At `md` and up nothing changes, and it is written as `\"floating\"`. The overlay is the scrim, and Escape and a tap on it close the dialog as before.",
+            },
+            Prop {
+                name: "sheet_title",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The title row under the sheet's grabber. Empty means a grabber and no row. Ignored when the content is not a sheet.",
+            },
+            Prop {
                 name: "children",
                 ty: "ChildrenFn",
                 default: "",
@@ -267,7 +279,7 @@ pub fn Page() -> impl IntoView {
     view! {
         <DocLayout
             title="Dialog"
-            description="A modal window that interrupts the user to focus on a specific task."
+            description="A modal window that interrupts the user to focus on a specific task. Set `mobile_sheet` and it becomes a bottom sheet on phones; the Dropdown Menu page shows it."
         >
             <div class="flex flex-col gap-8">
                 <DemoSection

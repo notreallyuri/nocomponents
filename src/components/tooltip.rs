@@ -1,12 +1,12 @@
 use crate::{
     cn,
     primitives::tooltip::{TooltipContentRoot, TooltipPortalRoot, TooltipRoot, TooltipTriggerRoot},
-    utils::{
-        controllable::forward,
-        types::{Align, AnchorRender, Side, SideOffset},
-    },
+    utils::controllable::forward,
 };
 use leptos::prelude::*;
+
+#[allow(unused_imports)]
+pub use crate::utils::types::{Align, AnchorRender, Side, SideOffset};
 
 #[component]
 pub fn Tooltip(

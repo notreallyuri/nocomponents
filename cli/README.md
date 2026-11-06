@@ -30,7 +30,13 @@ cargo nocli components add button dialog
 ```
 
 `init` writes `nocomponents.toml`, installs `globals.css` and `animate.css`, adds `tailwindcss` to
-`Trunk.toml`, and adds the `nocomponents` dependency.
+`Trunk.toml`, adds the `nocomponents` dependency, and writes a minimal `index.html` (a `rust` link
+and a `tailwind-css` link to the installed stylesheet) so `trunk build` works on a fresh project.
+It never overwrites an `index.html`, a stylesheet or a `Trunk.toml` that is already there.
+
+The installed `globals.css` is the docs' stylesheet without its font import, so `--font-sans` is
+set to `ui-sans-serif, system-ui, sans-serif` rather than the docs' Figtree, which nothing in your
+project loads. Import a font and point `--font-sans` at it when you want one.
 
 `components add` copies each component into the install directory, together with anything it is
 built on — `sidebar` brings `sheet`, `skeleton`, `tooltip`, `separator` and `input` with it — and
@@ -49,7 +55,18 @@ It can tell them apart because `nocomponents.lock`, written beside the config, r
 each file as it was installed. That file is generated — check it in if you want the distinction to
 survive a fresh clone, and delete it if you would rather every installed component read as yours.
 
-Pass `--force` when you do want files replaced. It names anything of yours it overwrote.
+Pass `--force` when you do want files replaced. Each one prints `replaced`, and it names anything
+of yours it overwrote. `add` touches `Cargo.toml` only when the dependency or its features have to
+change.
+
+```bash
+cargo nocli components status
+```
+
+`status` lists every installed component as `unchanged` (still what was installed), `edited` (yours
+now) or `not in lock` (installed before the lock existed, or copied in by hand, so there is nothing
+to compare against). After upgrading the `nocomponents` dependency it is the list of what is safe
+to refresh with `add --force` and what to diff first.
 
 ```bash
 cargo nocli components remove button
@@ -89,6 +106,13 @@ pub mod our_own;   // anything out here is left alone
 Every `.rs` beside it is declared inside the block, your own files included — so a module you
 declare yourself outside it is not declared twice. The components are yours to edit; the list
 between the markers is not.
+
+`add` also declares the install directory in the module above it: `src/components/mod.rs` is
+created with `pub mod nc;` when there is none, and when there is one (or a `src/components.rs`)
+the line is added inside a `// nocli:begin` / `// nocli:end` block, never over what you wrote. A
+deeper directory is declared level by level. The crate root (`main.rs` / `lib.rs`) is yours and is
+not edited: if it does not declare the first segment, `add` prints what to put there
+(`mod components;`).
 
 ## What gets rewritten
 

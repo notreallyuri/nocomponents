@@ -1,6 +1,6 @@
 [package]
 name = "nocomponents"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 description = "Unstyled behaviour primitives for Leptos, and a shadcn/ui-styled layer you install as source you own"
 repository = "https://github.com/notreallyuri/nocomponents"
@@ -89,6 +89,7 @@ all-elements = [
     "kanban",
     "kbd",
     "label",
+    "long_press",
     "menubar",
     "native_select",
     "navigation_menu",
@@ -105,6 +106,7 @@ all-elements = [
     "sidebar",
     "skeleton",
     "slider",
+    "sortable",
     "spinner",
     "switch",
     "table",
@@ -139,7 +141,7 @@ collapsible = []
 color_picker = ["drag", "input_group", "select", "separator"]
 combobox = ["button", "command", "field", "floating"]
 command = ["dialog"]
-context_menu = ["dropdown_menu", "floating", "roving_focus", "typeahead"]
+context_menu = ["dropdown_menu", "floating", "long_press", "roving_focus", "typeahead"]
 data_table = ["checkbox", "table"]
 date_picker = ["button", "calendar", "floating", "popover"]
 dialog = ["button", "dismiss", "field"]
@@ -161,6 +163,7 @@ item = ["separator"]
 kanban = ["drag"]
 kbd = []
 label = []
+long_press = ["drag"]
 menubar = ["dropdown_menu", "floating", "roving_focus"]
 native_select = ["field"]
 navigation_menu = ["dismiss", "roving_focus"]
@@ -177,6 +180,7 @@ sheet = ["button", "dialog"]
 sidebar = ["input", "separator", "sheet", "skeleton", "tooltip", "tree"]
 skeleton = []
 slider = ["drag", "field"]
+sortable = ["drag"]
 spinner = []
 switch = ["field"]
 table = []
@@ -210,6 +214,11 @@ features = [
   "HtmlElement",
   "KeyboardEvent",
   "NodeList",
+  # Auto-scroll under a drag: which ancestor scrolls, and keeping a keyboard-moved item in view.
+  "Window",
+  "CssStyleDeclaration",
+  "ScrollIntoViewOptions",
+  "ScrollLogicalPosition",
   # `ThemeProvider`: the stored choice, and the system one.
   "Storage",
   "MediaQueryList",

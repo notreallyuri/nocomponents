@@ -50,7 +50,7 @@ pub async fn add(source: &Source, names: &[String], force: bool) -> Result<()> {
                 let why = match state {
                     State::Untouched => "unchanged, --force refreshes it",
                     State::Edited => "edited here",
-                    State::Unrecorded => "already here",
+                    State::Unrecorded => "not in lock, cannot tell if edited",
                 };
                 println!("  kept      {} ({why})", path.display());
                 kept += 1;
@@ -62,12 +62,17 @@ pub async fn add(source: &Source, names: &[String], force: bool) -> Result<()> {
                 fs::write(&path, &out.source)
                     .with_context(|| format!("writing {}", path.display()))?;
                 lock.record(&name, &out.source);
-                let reason = if names.contains(&name) {
-                    "added"
-                } else {
-                    "needed by"
+                let reason = match (&state, names.contains(&name)) {
+                    (Some(_), _) => "replaced",
+                    (None, true) => "added",
+                    (None, false) => "needed by",
                 };
-                println!("  {reason:<9} {}", path.display());
+                let note = match state {
+                    Some(State::Edited) => " (was edited here)",
+                    Some(State::Unrecorded) => " (not in lock, cannot tell if it was edited)",
+                    _ => "",
+                };
+                println!("  {reason:<9} {}{note}", path.display());
                 written += 1;
             }
         }
@@ -81,10 +86,11 @@ pub async fn add(source: &Source, names: &[String], force: bool) -> Result<()> {
     }
 
     write_module(dir)?;
+    let root_hint = crate::modules::declare_install_dir(&config.paths.components)?;
     lock.save()?;
 
-    let mut features = manifest::current_features()?;
-    features.insert("primitives".into());
+    let mut features = BTreeSet::new();
+    features.insert("primitives".to_string());
     if uses_icons {
         features.insert("icons".into());
     }
@@ -99,6 +105,10 @@ pub async fn add(source: &Source, names: &[String], force: bool) -> Result<()> {
         print!(", {kept} left alone (--force overwrites)");
     }
     println!(" in {}", config.paths.components);
+
+    if let Some(hint) = root_hint {
+        println!("\n{hint}");
+    }
 
     // Loudly, and after the list rather than inside it: this is the one thing `add` does that
     // cannot be undone by running it again.
@@ -116,8 +126,8 @@ pub async fn add(source: &Source, names: &[String], force: bool) -> Result<()> {
     Ok(())
 }
 
-const MOD_BEGIN: &str = "// nocli:begin";
-const MOD_END: &str = "// nocli:end";
+pub const MOD_BEGIN: &str = "// nocli:begin";
+pub const MOD_END: &str = "// nocli:end";
 
 /// Rewritten from the directory, so a file removed by hand stops being declared — but only
 /// between the markers. Everything a project adds outside them survives, which it did not before:
@@ -154,7 +164,7 @@ fn write_module(dir: &Path) -> Result<()> {
     for name in &names {
         block.push_str(&format!("pub mod {name};\n"));
     }
-    block.push_str("\npub mod prelude {\n");
+    block.push_str("\n#[allow(unused_imports)]\npub mod prelude {\n");
     for name in &names {
         block.push_str(&format!("    pub use super::{name}::*;\n"));
     }
@@ -255,6 +265,56 @@ pub fn remove(names: &[String], force: bool) -> Result<()> {
     Ok(())
 }
 
+pub fn status() -> Result<()> {
+    manifest::require_cargo_project()?;
+    let config = Config::load()?;
+    let dir = Path::new(&config.paths.components);
+    let lock = Lock::load();
+
+    let mut files: Vec<(String, String)> = Vec::new();
+    if let Ok(entries) = fs::read_dir(dir) {
+        for entry in entries.filter_map(|e| e.ok()) {
+            let file = entry.file_name().to_string_lossy().into_owned();
+            let Some(name) = file.strip_suffix(".rs").filter(|n| *n != "mod") else {
+                continue;
+            };
+            let text = fs::read_to_string(entry.path())
+                .with_context(|| format!("reading {}", entry.path().display()))?;
+            files.push((name.to_string(), text));
+        }
+    }
+
+    let rows = status_rows(&files, &lock);
+    for (name, state) in &rows {
+        println!("  {:<12} {name}", state.label());
+    }
+
+    let count = |wanted: State| rows.iter().filter(|(_, s)| *s == wanted).count();
+    println!(
+        "\n{} installed in {}: {} unchanged, {} edited, {} not in lock",
+        rows.len(),
+        config.paths.components,
+        count(State::Untouched),
+        count(State::Edited),
+        count(State::Unrecorded),
+    );
+    if count(State::Unrecorded) > 0 {
+        println!(
+            "Components not in the lock were installed before it existed, or by hand — `components add <name> --force` replaces one and records it."
+        );
+    }
+    Ok(())
+}
+
+fn status_rows(files: &[(String, String)], lock: &Lock) -> Vec<(String, State)> {
+    let mut rows: Vec<(String, State)> = files
+        .iter()
+        .map(|(name, text)| (name.clone(), lock.state(name, text)))
+        .collect();
+    rows.sort_by(|a, b| a.0.cmp(&b.0));
+    rows
+}
+
 pub async fn list(source: &Source) -> Result<()> {
     let names = source.catalogue().await?;
     let installed: BTreeSet<String> = Config::load()
@@ -284,6 +344,40 @@ pub async fn list(source: &Source) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn status_sorts_files_into_edited_unchanged_and_not_in_lock() {
+        let mut lock = Lock::default();
+        lock.record("button", "a");
+        lock.record("dialog", "b");
+
+        let files = vec![
+            ("dialog".to_string(), "b changed".to_string()),
+            ("button".to_string(), "a".to_string()),
+            ("tabs".to_string(), "c".to_string()),
+        ];
+
+        assert_eq!(
+            status_rows(&files, &lock),
+            vec![
+                ("button".to_string(), State::Untouched),
+                ("dialog".to_string(), State::Edited),
+                ("tabs".to_string(), State::Unrecorded),
+            ]
+        );
+    }
+
+    #[test]
+    fn the_generated_prelude_is_allowed_to_go_unused() {
+        let dir = std::env::temp_dir().join(format!("nocli-mod-{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(dir.join("button.rs"), "").unwrap();
+        write_module(&dir).unwrap();
+        let text = fs::read_to_string(dir.join("mod.rs")).unwrap();
+        fs::remove_dir_all(&dir).unwrap();
+
+        assert!(text.contains("#[allow(unused_imports)]\npub mod prelude"));
+    }
 
     #[test]
     fn a_first_mod_rs_is_the_block_and_nothing_else() {

@@ -10,18 +10,20 @@ use crate::{
     icons::{chevron::ChevronRight, panel::PanelLeft},
     primitives::{
         sidebar::{
-            SidebarCollapsible, SidebarMenuButtonRoot, SidebarProviderRoot, SidebarRailRoot,
-            SidebarRoot, SidebarTriggerRoot, use_sidebar,
+            SidebarMenuButtonRoot, SidebarProviderRoot, SidebarRailRoot, SidebarRoot,
+            SidebarTriggerRoot, use_sidebar,
         },
         tree::{TreeGroupRoot, TreeItemRoot, TreeRoot, TreeRowRoot, use_tree_item},
     },
-    utils::{
-        controllable::forward,
-        types::{AsClass, Side, StyledRender},
-    },
+    utils::{controllable::forward, types::AsClass},
 };
 use leptos::{either::Either, ev, prelude::*};
 use leptos_node_ref::AnyNodeRef;
+
+#[allow(unused_imports)]
+pub use crate::primitives::sidebar::SidebarCollapsible;
+#[allow(unused_imports)]
+pub use crate::utils::types::{Side, StyledRender};
 
 #[derive(Default, Clone, Copy, PartialEq)]
 pub enum SidebarVariant {
