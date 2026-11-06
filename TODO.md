@@ -1107,21 +1107,17 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
 
 ### From the noaweb port (2026-11-05)
 
-noaweb is porting immich-front onto `cargo nocli` and sent back what it could not build from the
-library (`noaweb/PORT-PLAN.md` §5.2 and §5.4). The CLI and consumer friction in §5.4 is fixed and
-in the changelog, not here. Icons are explicitly not needed now: noaweb uses `phosphor-leptos` for
-its own and keeps ours for the library's parts, so growing the set to immich-front's 87 is off the
-list.
+The rest of what noaweb asked for landed (sortable, drawer snap points, long-press, mobile sheets,
+the small items and the CLI friction); what follows is what those left behind.
 
-- [ ] **Mobile bottom-sheet presentation.** `dialog.tsx` (`sheet`), `dropdown-menu.tsx` and
-      `context-menu.tsx` (`sheetTitle`), `popover.tsx` (`sheet`), `select.tsx` (the shared
-      `menu-sheet` classes). A `mobile_sheet` prop and a `sheet_title` on `Dialog`, `DropdownMenu`,
-      `ContextMenu`, `Popover` and `Select`: below `md` the content renders as a bottom sheet with
-      grabber and scrim, above it unchanged. One shared `MenuSheet` wrapper in `primitives/`.
-- [ ] **Smaller, from the same port.** `Popover` `container` (portal into a sticky ancestor).
-      Return focus on close only for keyboard closes (immich-front's `returnFocusOnlyForKeyboard`),
-      so a pointer close does not pull focus back onto the trigger. `Skeleton` variants. A `fit`
-      button size.
+- [ ] **The phone sheet presentation is static.** `mobile_sheet` (Dialog, DropdownMenu,
+      ContextMenu, Popover, Select; `utils::sheet`) puts the content in a bottom sheet below `md`,
+      but it cannot be dragged down to dismiss, has no snap points (the drawer has both now) and no
+      close button — scrim, Escape or choosing an item close it. And `use_floating` still runs
+      underneath it with its output discarded. `container` (portal into a given element) is
+      exposed on `Popover` only, though it lives in `FloatingPortal` and every floating layer
+      could take it. Visually, the sheet's title row looks like one more item (no weight or
+      colour of its own) and the panel's top corners are square where a sheet usually rounds them.
 
 ## Docs site
 

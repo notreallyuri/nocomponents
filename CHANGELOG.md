@@ -11,6 +11,25 @@ lock existed reads `not in lock`: the tool cannot tell whether it was edited, so
 
 ### Added
 
+- **Bottom sheet on phones.** `DropdownMenuContent`, `ContextMenuContent`, `SelectContent`,
+  `PopoverContent` and `DialogContentRoot` (styled: `DialogPortal`) take `mobile_sheet:
+  Signal<bool>` (default false) and `sheet_title: Signal<String>`. Below `md` (767px, via
+  `use_media_query`) the content is a bottom sheet in the same portal: a scrim, the panel on the
+  bottom edge, a grabber and the title row; the floating layers apply no positioning, and focus,
+  roving focus, typeahead and dismissal (scrim tap, Escape, choosing an item) are unchanged. The
+  content writes `data-presentation="sheet"` or `"floating"` (a dialog only when `mobile_sheet` is
+  set), and drops `data-side` and `data-align` in a sheet; the styled layer styles both from one
+  class string. The shared pieces are `utils::sheet` (`use_sheet_presentation`, `SheetScrim`,
+  `SheetHeader`, `SHEET_QUERY`).
+- **`PopoverPortal` / `PopoverPortalRoot` take `container: Option<AnyNodeRef>`**, which mounts the
+  panel in that element instead of `<body>` (`FloatingPortal` takes it too). A fullscreen element
+  still wins when the container is not inside it.
+- **`Skeleton` takes `variant: SkeletonVariant`** (`Default`, `Tile`, `Line`, `Card`), written as
+  `data-variant`; the pulse stops under `prefers-reduced-motion`, and the placeholder is
+  `aria-hidden`.
+- **`ButtonSize::Fit`**: no fixed height or padding, for a button that wraps a layout of its own.
+- **`utils::modality`** (`track_input_modality`, `last_input_was_keyboard`): whether the last input
+  was a key or a pointer.
 - **`Sortable`** (`primitives::sortable`, feature `sortable`; styled `Sortable`, `SortableItem`,
   `SortableHandle`): a list reordered by pointer, touch or keyboard, which reports the move and
   leaves the order to the caller. `on_move` gets `SortableMove { keys, to }`: the moved items in
@@ -56,6 +75,12 @@ lock existed reads `not in lock`: the tool cannot tell whether it was edited, so
 
 ### Changed
 
+- **Focus returns to the trigger on close only when the keyboard closed the layer.** Floating
+  layers (`FloatingRoot`: popover, dropdown menu, select, context menu, tooltip and the rest) and
+  `DialogRoot` used to give focus back after any close; after an outside click or a mouse-chosen
+  item they now leave it where the pointer put it, which stops the focus ring and scroll jump on
+  the trigger. Escape, and Enter or Space on an item, still return it. If your code relied on the
+  trigger being focused after a mouse close, focus it from `on_open_change`.
 - **Styled modules re-export the types their props name** when a primitive or `utils` owns them:
   `Side`, `Align`, `SideOffset`, `Orientation`, `TriggerRender`, `StyledRender`, `AnchorRender`,
   `Date`, `Language`, `ColorFormat`, `Crop`, `CalendarMode`, `ChartKind`, `TableSort`,

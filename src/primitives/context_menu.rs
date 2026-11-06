@@ -13,13 +13,14 @@ use crate::{
             MenuRoot, focus_element, focus_item_under_pointer, focus_menu_off_item,
             handle_menu_keys, placement_align, placement_side,
         },
-        floating::{FloatingContext, FloatingRoot, floating_options, side_placement},
+        floating::{FloatingContext, FloatingRoot, floating_options, shell_class, side_placement},
         long_press::{DEFAULT_DELAY_MS, use_long_press},
         roving_focus::use_roving_focus,
         typeahead::Typeahead,
     },
     utils::{
         controllable::controllable,
+        sheet::{SheetHeader, SheetScrim, presentation_attr, use_sheet_presentation},
         types::{Align, Orientation, Side, SideOffset},
     },
 };
@@ -180,11 +181,20 @@ pub fn ContextMenuContentRoot(
     #[prop(into, default = Align::Start.into())] align: Signal<Align>,
     #[prop(into, default = SideOffset(0.0).into())] side_offset: Signal<SideOffset>,
     #[prop(optional, into)] class: Signal<String>,
+    /// Below the `md` breakpoint, present the menu as a bottom sheet instead of anchoring it to
+    /// the press point: a scrim, the menu on the bottom edge, no positioning. Written as
+    /// `data-presentation="sheet"` (`"floating"` otherwise). Off by default.
+    #[prop(optional, into)]
+    mobile_sheet: Signal<bool>,
+    /// The title row shown at the top of the sheet. Empty means a grabber and no row.
+    #[prop(optional, into)]
+    sheet_title: Signal<String>,
     children: Children,
 ) -> impl IntoView {
     let ctx = use_context_menu();
     let point = use_context_menu_point();
     let floating_ref = ctx.content_ref;
+    let sheet = use_sheet_presentation(mobile_sheet);
 
     let UseFloatingReturn {
         floating_styles,
@@ -208,28 +218,33 @@ pub fn ContextMenuContentRoot(
         }
     });
 
+    let ready = Signal::derive(move || sheet.get() || is_positioned.get());
+
     let menu_ref = AnyNodeRef::new();
     let roving = use_roving_focus(menu_ref, Orientation::Vertical);
     let typeahead = Typeahead::new();
 
     Effect::new(move |_| {
-        if ctx.is_open.get() && is_positioned.get() {
+        if ctx.is_open.get() && ready.get() {
             focus_element(menu_ref);
             roving.sync_tab_stop();
         }
     });
 
     view! {
+        <SheetScrim sheet=sheet open=ctx.is_open.into() />
         <div
             node_ref=floating_ref
             style=move || {
-                if !is_positioned.get() {
+                if sheet.get() {
+                    String::new()
+                } else if !is_positioned.get() {
                     format!("{} visibility: hidden;", floating_styles.get())
                 } else {
                     floating_styles.get().to_string()
                 }
             }
-            class="fixed z-50 w-max pointer-events-none"
+            class=move || shell_class(sheet.get(), "fixed z-50 w-max pointer-events-none")
         >
             <div
                 node_ref=menu_ref
@@ -246,10 +261,12 @@ pub fn ContextMenuContentRoot(
                 on:pointermove=move |e| focus_item_under_pointer(&e, menu_ref)
                 on:pointerleave=move |_| focus_menu_off_item(menu_ref)
                 data-state=move || if ctx.is_open.get() { "open" } else { "closed" }
-                data-align=move || placement_align(placement.get())
-                data-side=move || placement_side(placement.get())
+                data-presentation=move || presentation_attr(sheet.get())
+                data-align=move || (!sheet.get()).then(|| placement_align(placement.get()))
+                data-side=move || (!sheet.get()).then(|| placement_side(placement.get()))
                 class=class
             >
+                <SheetHeader sheet=sheet title=sheet_title />
                 {children()}
             </div>
         </div>

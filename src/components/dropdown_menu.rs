@@ -18,6 +18,8 @@ pub use crate::primitives::dropdown_menu::DropdownMenuItemVariant;
 #[allow(unused_imports)]
 pub use crate::utils::types::{Align, Side, SideOffset, TriggerRender};
 
+pub const MENU_SHEET_CLASS: &str = "data-[presentation=sheet]:w-full data-[presentation=sheet]:max-h-[85dvh] data-[presentation=sheet]:overflow-y-auto data-[presentation=sheet]:rounded-b-none data-[presentation=sheet]:rounded-t-xl data-[presentation=sheet]:border-x-0 data-[presentation=sheet]:border-b-0 data-[presentation=sheet]:px-4 data-[presentation=sheet]:pb-[max(1rem,env(safe-area-inset-bottom))] data-[presentation=sheet]:data-[state=open]:slide-in-from-bottom-full data-[presentation=sheet]:data-[state=closed]:slide-out-to-bottom-full data-[presentation=sheet]:data-[state=open]:zoom-in-100 data-[presentation=sheet]:data-[state=closed]:zoom-out-100 data-[presentation=sheet]:[&_[data-slot=dropdown-menu-item]]:min-h-11";
+
 #[component]
 pub fn DropdownMenu(
     #[prop(optional, into)] class: Signal<String>,
@@ -85,6 +87,8 @@ pub fn DropdownMenuContent(
     #[prop(optional, into)] align: Signal<Align>,
     #[prop(optional, into)] side_offset: Signal<SideOffset>,
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] mobile_sheet: Signal<bool>,
+    #[prop(optional, into)] sheet_title: Signal<String>,
     children: Children,
 ) -> impl IntoView {
     view! {
@@ -92,6 +96,8 @@ pub fn DropdownMenuContent(
             side=side
             align=align
             side_offset=side_offset
+            mobile_sheet=mobile_sheet
+            sheet_title=sheet_title
             class=move || {
                 cn!(
                     "z-50 min-w-32 overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md pointer-events-auto data-[state=closed]:pointer-events-none",
@@ -99,6 +105,7 @@ pub fn DropdownMenuContent(
                     "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
                     "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
                     "data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+                    MENU_SHEET_CLASS,
                     class.get()
                 )
             }

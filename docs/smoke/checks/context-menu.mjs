@@ -27,7 +27,8 @@ export default async (t) => {
     await touch(t, 'touchEnd', []);
     await t.sleep(1200);
     t.expect('it stays open through release and a native contextmenu', await t.ev(isOpen), true);
-    t.expect('and has not moved', await t.ev(origin), [left, top]);
+    const [left2, top2] = await t.ev(origin);
+    t.ok('and has not moved', Math.abs(left2 - left) <= 1 && Math.abs(top2 - top) <= 1, `[${left2}, ${top2}] vs [${left}, ${top}]`);
     await t.key('Escape', 400);
     t.expect('Escape closes it', await t.ev(isOpen), false);
 

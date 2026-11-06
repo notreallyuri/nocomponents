@@ -26,7 +26,14 @@ export default async (t) => {
   await t.click(demoBtn('Options'));
   await t.click(menuItem('Settings'));
   await t.settle('plain item closes the menu', openMenus, 0);
-  t.expect('focus returns to trigger after a plain item', await t.ev(`document.activeElement === ${demoBtn('Options')}`), true);
+  t.expect('a mouse-chosen item leaves focus off the trigger', await t.ev(`document.activeElement === ${demoBtn('Options')}`), false);
+
+  // an item chosen with the keyboard hands focus back
+  await t.click(demoBtn('Options'));
+  await t.hover(menuItem('Settings'));
+  await t.key('Enter');
+  await t.settle('Enter on an item closes the menu', openMenus, 0);
+  t.expect('focus returns to trigger after Enter on an item', await t.ev(`document.activeElement === ${demoBtn('Options')}`), true);
 
   // Submenu
   await t.click(demoBtn('More'));
@@ -96,5 +103,44 @@ export default async (t) => {
 
   await t.click(menuItem('Reset layout'));
   await t.settle('a plain item closes the menu', viewState, 'false');
-  t.expect('focus returns to View', await t.ev(`document.activeElement === ${demoBtn('View')}`), true);
+  t.expect('a mouse click does not return focus to View', await t.ev(`document.activeElement === ${demoBtn('View')}`), false);
+
+  // On phones: the same menu is a bottom sheet, and only below md.
+  const sheetEl = `document.querySelector('[data-slot=dropdown-menu-content]')`;
+  const presentation = `${sheetEl}?.dataset.presentation ?? null`;
+  const open = `${demoBtn('Sort by')}.getAttribute('aria-expanded')`;
+
+  await t.viewport(1280, 900);
+  await t.click(demoBtn('Sort by'), 400);
+  t.expect('floating at 1280', await t.ev(presentation), 'floating');
+  t.expect('no scrim at 1280', await t.ev(`!!document.querySelector('[data-slot=menu-sheet-scrim]')`), false);
+  await t.key('Escape', 400);
+
+  await t.viewport(390, 800, true);
+  await t.sleep(300);
+  await t.click(demoBtn('Sort by'), 500);
+  t.expect('sheet at 390', await t.ev(presentation), 'sheet');
+  t.ok('scrim is present', await t.ev(`!!document.querySelector('[data-slot=menu-sheet-scrim]')`));
+  t.expect('title row shows sheet_title', await t.ev(`document.querySelector('[data-slot=menu-sheet-title]')?.textContent`), 'Sort by');
+  t.ok('grabber is present', await t.ev(`!!document.querySelector('[data-slot=sheet-grabber]')`));
+  const box = await t.ev(`(() => { const r = ${sheetEl}.getBoundingClientRect(); return [r.left, r.right, r.bottom, innerWidth, innerHeight]; })()`);
+  t.ok('anchored to the bottom edge and full width', box && Math.abs(box[2] - box[4]) <= 1 && box[0] <= 1 && Math.abs(box[1] - box[3]) <= 1);
+  t.ok('menu has focus inside', await t.ev(`${sheetEl}.contains(document.activeElement)`));
+
+  await t.click(menuItem('Size'), 400);
+  await t.settle('an item click closes the sheet', open, 'false');
+
+  await t.click(demoBtn('Sort by'), 500);
+  t.expect('reopens as a sheet', await t.ev(presentation), 'sheet');
+  await t.key('ArrowDown');
+  t.ok('arrows move through the items in a sheet', await t.ev(`document.activeElement.matches('[role^=menuitem]')`));
+  await t.key('Escape', 400);
+  await t.settle('Escape closes the sheet', open, 'false');
+  t.expect('focus returns to the trigger after Escape', await t.ev(`document.activeElement === ${demoBtn('Sort by')}`), true);
+
+  await t.click(demoBtn('Sort by'), 500);
+  await t.clickAt(195, 60, 400);
+  await t.settle('a tap on the scrim closes the sheet', open, 'false');
+
+  await t.viewport(1280, 900);
 };

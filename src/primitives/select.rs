@@ -3,7 +3,7 @@ use crate::{
         field::{field_control_for_trigger, field_disabled},
         floating::{
             ArrowOpen, FloatingContext, FloatingPortal, FloatingRoot, FloatingTrigger, TriggerAria,
-            TriggerRender,
+            TriggerRender, shell_class,
         },
         roving_focus::use_roving_focus,
         typeahead::Typeahead,
@@ -11,6 +11,7 @@ use crate::{
     utils::{
         controllable::{controllable, forward},
         form::{SHADOW_STYLE, non_empty, on_form_reset},
+        sheet::{SheetHeader, SheetScrim, presentation_attr, use_sheet_presentation},
         types::Orientation,
     },
 };
@@ -231,10 +232,19 @@ pub fn SelectPortalRoot(children: ChildrenFn) -> impl IntoView {
 #[component]
 pub fn SelectContentRoot(
     #[prop(optional, into)] class: Signal<String>,
+    /// Below the `md` breakpoint, present the list as a bottom sheet instead of a popup under the
+    /// trigger: a scrim, the list on the bottom edge, at full width, no positioning. Written as
+    /// `data-presentation="sheet"` (`"floating"` otherwise). Off by default.
+    #[prop(optional, into)]
+    mobile_sheet: Signal<bool>,
+    /// The title row shown at the top of the sheet. Empty means a grabber and no row.
+    #[prop(optional, into)]
+    sheet_title: Signal<String>,
     children: Children,
 ) -> impl IntoView {
     let ctx = use_select();
     let floating_ref = ctx.content_ref;
+    let sheet = use_sheet_presentation(mobile_sheet);
 
     let middleware: MiddlewareVec = vec![
         Box::new(Offset::new(OffsetOptions::Value(0.0))),
@@ -257,6 +267,8 @@ pub fn SelectContentRoot(
             .middleware(SendWrapper::new(middleware)),
     );
 
+    let ready = Signal::derive(move || sheet.get() || is_positioned.get());
+
     let listbox_ref = AnyNodeRef::new();
     let roving = use_roving_focus(listbox_ref, Orientation::Vertical);
     let typeahead = Typeahead::new();
@@ -264,15 +276,19 @@ pub fn SelectContentRoot(
     // A select opens *on* its current value, the way a native one does: focus lands on the chosen
     // option, so the first arrow key steps away from it rather than from the top of the list.
     Effect::new(move |_| {
-        if ctx.is_open.get() && is_positioned.get() {
+        if ctx.is_open.get() && ready.get() {
             roving.focus_tab_stop();
         }
     });
 
     view! {
+        <SheetScrim sheet=sheet open=ctx.is_open.into() />
         <div
             node_ref=floating_ref
             style=move || {
+                if sheet.get() {
+                    return String::new();
+                }
                 let width = ctx
                     .trigger_ref
                     .get()
@@ -286,7 +302,7 @@ pub fn SelectContentRoot(
                 base_style.push_str(&format!(" width: {}px;", width));
                 base_style
             }
-            class="fixed z-50 pointer-events-none"
+            class=move || shell_class(sheet.get(), "fixed z-50 pointer-events-none")
         >
             <div
                 node_ref=listbox_ref
@@ -323,14 +339,19 @@ pub fn SelectContentRoot(
                 }
                 on:focusin=move |_| roving.on_focus_in()
                 data-state=move || {
-                    if ctx.is_open.get() && is_positioned.get() { "open" } else { "closed" }
+                    if ctx.is_open.get() && ready.get() { "open" } else { "closed" }
                 }
-                data-side=move || match placement.get() {
-                    Placement::Top | Placement::TopStart | Placement::TopEnd => "top",
-                    _ => "bottom",
+                data-presentation=move || presentation_attr(sheet.get())
+                data-side=move || {
+                    (!sheet.get())
+                        .then(|| match placement.get() {
+                            Placement::Top | Placement::TopStart | Placement::TopEnd => "top",
+                            _ => "bottom",
+                        })
                 }
                 class=class
             >
+                <SheetHeader sheet=sheet title=sheet_title />
                 {children()}
             </div>
         </div>

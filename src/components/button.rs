@@ -16,6 +16,7 @@ pub enum ButtonSize {
     #[default]
     Default,
     Lg,
+    Fit,
     Icon,
     IconSm,
     IconXs,
@@ -37,6 +38,8 @@ impl AsClass for ButtonSize {
             ButtonSize::Lg => {
                 "h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2"
             }
+
+            ButtonSize::Fit => "h-auto gap-1.5 p-0 text-left font-normal whitespace-normal",
 
             ButtonSize::Icon => "size-8",
             ButtonSize::IconLg => "size-9",

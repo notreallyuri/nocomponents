@@ -203,12 +203,20 @@ const API: &[ApiEntry] = &[
     ApiEntry {
         name: "PopoverPortal",
         description: "The panel, positioned against the trigger and flipped when there is no room.",
-        props: &[Prop {
-            name: "children",
-            ty: "ChildrenFn",
-            default: "",
-            description: "Distance from the trigger, in pixels.",
-        }],
+        props: &[
+            Prop {
+                name: "container",
+                ty: "Option<AnyNodeRef>",
+                default: "None",
+                description: "Mount the panel in this element instead of `<body>` — a sticky or fixed ancestor it should move with, so scrolling does not leave it behind until the next position update. A fullscreen element still wins when the container is not inside it.",
+            },
+            Prop {
+                name: "children",
+                ty: "ChildrenFn",
+                default: "",
+                description: "Distance from the trigger, in pixels.",
+            },
+        ],
     },
     ApiEntry {
         name: "PopoverContent",
@@ -237,6 +245,18 @@ const API: &[ApiEntry] = &[
                 ty: "Signal<String>",
                 default: "\"\"",
                 description: "Stacks the title over the description.",
+            },
+            Prop {
+                name: "mobile_sheet",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Below the `md` breakpoint (768px), present the panel as a bottom sheet over a scrim instead of a panel beside the trigger: no positioning, `data-presentation=\"sheet\"`. At `md` and up nothing changes, and it is written as `\"floating\"`. Escape, a tap on the scrim and choosing an item still close it.",
+            },
+            Prop {
+                name: "sheet_title",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The title row under the sheet's grabber. Empty means a grabber and no row. Ignored when the content is not a sheet.",
             },
             Prop {
                 name: "children",
@@ -325,7 +345,10 @@ pub fn Page() -> impl IntoView {
     let side = RwSignal::new(Side::Bottom);
 
     view! {
-        <DocLayout title="Popover" description="Floating content anchored to a trigger element.">
+        <DocLayout
+            title="Popover"
+            description="Floating content anchored to a trigger element. Set `mobile_sheet` and it becomes a bottom sheet on phones; the Dropdown Menu page shows it. `container` portals it into an element of yours instead of the body."
+        >
             <div class="flex flex-col gap-8">
                 <DemoSection
                     title="Default"

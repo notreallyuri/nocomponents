@@ -73,6 +73,19 @@ view! {
     </DropdownMenu>
 }"#;
 
+const ON_PHONES: &str = r#"<DropdownMenu>
+    <DropdownMenuTrigger variant=ButtonVariant::Outline>
+        "Sort by"
+    </DropdownMenuTrigger>
+    <DropdownMenuPortal>
+        <DropdownMenuContent class="w-48" mobile_sheet=true sheet_title="Sort by">
+            <DropdownMenuItem>"Name"</DropdownMenuItem>
+            <DropdownMenuItem>"Date modified"</DropdownMenuItem>
+            <DropdownMenuItem>"Size"</DropdownMenuItem>
+        </DropdownMenuContent>
+    </DropdownMenuPortal>
+</DropdownMenu>"#;
+
 const WITH_SUBMENU: &str = r#"<DropdownMenu>
     <DropdownMenuTrigger variant=ButtonVariant::Outline>
         "More"
@@ -211,6 +224,18 @@ const API: &[ApiEntry] = &[
                 ty: "Signal<String>",
                 default: "\"\"",
                 description: "Merged over the menu's classes.",
+            },
+            Prop {
+                name: "mobile_sheet",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Below the `md` breakpoint (768px), present the menu as a bottom sheet over a scrim instead of a menu under the trigger: no positioning, `data-presentation=\"sheet\"`. At `md` and up nothing changes, and it is written as `\"floating\"`. Escape, a tap on the scrim and choosing an item still close it.",
+            },
+            Prop {
+                name: "sheet_title",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The title row under the sheet's grabber. Empty means a grabber and no row. Ignored when the content is not a sheet.",
             },
             Prop {
                 name: "children",
@@ -563,6 +588,29 @@ pub fn Page() -> impl IntoView {
                                 <DropdownMenuItem variant=DropdownMenuItemVariant::Destructive>
                                     "Log out"
                                 </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenuPortal>
+                    </DropdownMenu>
+                </DemoSection>
+
+                <DemoSection
+                    title="On phones"
+                    description="Set mobile_sheet and, below the md breakpoint (768px), the menu is a bottom sheet instead: a scrim, the panel on the bottom edge with safe-area padding, a grabber and the title row from sheet_title. The items, the arrow keys and the typeahead are the same, and so is the way out: a tap on the scrim, Escape, or choosing an item. From md up it is the menu above. The same two props are on ContextMenuContent, SelectContent, PopoverContent and DialogPortal; narrow the window to see it."
+                    code=ON_PHONES
+                >
+                    <DropdownMenu>
+                        <DropdownMenuTrigger variant=ButtonVariant::Outline>
+                            "Sort by"
+                        </DropdownMenuTrigger>
+                        <DropdownMenuPortal>
+                            <DropdownMenuContent
+                                class="w-48"
+                                mobile_sheet=true
+                                sheet_title="Sort by"
+                            >
+                                <DropdownMenuItem>"Name"</DropdownMenuItem>
+                                <DropdownMenuItem>"Date modified"</DropdownMenuItem>
+                                <DropdownMenuItem>"Size"</DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenuPortal>
                     </DropdownMenu>

@@ -1,5 +1,6 @@
 use crate::{
     cn,
+    components::dropdown_menu::MENU_SHEET_CLASS,
     primitives::{
         context_menu::{ContextMenuContentRoot, ContextMenuRoot, ContextMenuTriggerRoot},
         long_press::DEFAULT_DELAY_MS,
@@ -62,6 +63,8 @@ pub fn ContextMenuContent(
     #[prop(into, default = Align::Start.into())] align: Signal<Align>,
     #[prop(into, default = SideOffset(0.0).into())] side_offset: Signal<SideOffset>,
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] mobile_sheet: Signal<bool>,
+    #[prop(optional, into)] sheet_title: Signal<String>,
     children: Children,
 ) -> impl IntoView {
     view! {
@@ -69,6 +72,8 @@ pub fn ContextMenuContent(
             side=side
             align=align
             side_offset=side_offset
+            mobile_sheet=mobile_sheet
+            sheet_title=sheet_title
             class=move || {
                 cn!(
                     "z-50 min-w-32 overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md pointer-events-auto data-[state=closed]:pointer-events-none",
@@ -76,6 +81,7 @@ pub fn ContextMenuContent(
                     "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
                     "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
                     "data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+                    MENU_SHEET_CLASS,
                     class.get()
                 )
             }

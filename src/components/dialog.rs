@@ -79,6 +79,8 @@ pub fn DialogTrigger(
 pub fn DialogPortal(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(default = true.into(), into)] show_close: Signal<bool>,
+    #[prop(optional, into)] mobile_sheet: Signal<bool>,
+    #[prop(optional, into)] sheet_title: Signal<String>,
     children: ChildrenFn,
 ) -> impl IntoView {
     let context = use_dialog();
@@ -100,12 +102,17 @@ pub fn DialogPortal(
                             />
                         }
                     })}
-                <DialogContentRoot class=move || {
-                    cn!(
-                        "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=closed]:pointer-events-none",
-                            class.get()
-                    )
-                }>
+                <DialogContentRoot
+                    mobile_sheet=mobile_sheet
+                    sheet_title=sheet_title
+                    class=move || {
+                        cn!(
+                            "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=closed]:pointer-events-none",
+                        "data-[presentation=sheet]:top-auto data-[presentation=sheet]:bottom-0 data-[presentation=sheet]:left-0 data-[presentation=sheet]:w-full data-[presentation=sheet]:max-w-none data-[presentation=sheet]:max-h-[90dvh] data-[presentation=sheet]:translate-x-0 data-[presentation=sheet]:translate-y-0 data-[presentation=sheet]:overflow-y-auto data-[presentation=sheet]:rounded-b-none data-[presentation=sheet]:rounded-t-xl data-[presentation=sheet]:pb-[max(1rem,env(safe-area-inset-bottom))] data-[presentation=sheet]:data-[state=open]:slide-in-from-bottom-full data-[presentation=sheet]:data-[state=closed]:slide-out-to-bottom-full data-[presentation=sheet]:data-[state=open]:zoom-in-100 data-[presentation=sheet]:data-[state=closed]:zoom-out-100",
+                        class.get()
+                        )
+                    }
+                >
                     {stored_children.with_value(|c| c())}
                     {move || {
                         show_close
