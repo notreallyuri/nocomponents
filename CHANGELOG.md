@@ -7,7 +7,11 @@ which installed components are `unchanged`, `edited` or `not in lock`, then `car
 add <name> --force` for each unchanged one, and diff the rest. A component installed before the
 lock existed reads `not in lock`: the tool cannot tell whether it was edited, so diff it too.
 
-## Unreleased
+## 0.3.0
+
+What noaweb needed to port immich-front: a sortable list, drawer snap points, long-press, phone
+sheets, and an installer that leaves a fresh project compiling. Source-compatible with 0.2 except
+where focus goes after a pointer closes a layer (see Changed).
 
 ### Added
 

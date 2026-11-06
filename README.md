@@ -51,7 +51,7 @@ Everything with no classes in it stays an ordinary dependency: the primitives, t
 
 ```toml
 [dependencies]
-nocomponents = { version = "0.2", features = ["primitives", "dialog", "tooltip"] }
+nocomponents = { version = "0.3", features = ["primitives", "dialog", "tooltip"] }
 ```
 
 See [the CLI's README](https://github.com/notreallyuri/nocomponents/blob/main/cli/README.md) for
@@ -126,7 +126,7 @@ imports, so cargo works out the closure:
 
 ```toml
 # exactly the dialog primitive and what it needs, and nothing else
-nocomponents = { version = "0.2", features = ["primitives", "dialog"] }
+nocomponents = { version = "0.3", features = ["primitives", "dialog"] }
 ```
 
 With no features at all only `utils`, `middleware` and `deps` exist, so `--features full` is what
