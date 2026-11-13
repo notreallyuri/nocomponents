@@ -151,6 +151,24 @@ const API: &[ApiEntry] = &[
                 default: "",
                 description: "Placed inside the `<video>` itself: `<source>` and `<track>` elements.",
             },
+            Prop {
+                name: "playsinline",
+                ty: "bool",
+                default: "true",
+                description: "Plays in the page rather than the phone's own fullscreen player.",
+            },
+            Prop {
+                name: "preload",
+                ty: "&'static str",
+                default: "\"metadata\"",
+                description: "The element's `preload`: `\"none\"`, `\"metadata\"` or `\"auto\"`.",
+            },
+            Prop {
+                name: "idle_delay",
+                ty: "u64",
+                default: "2500",
+                description: "Milliseconds the controls stay up after the last pointer move or key.",
+            },
         ],
     },
     ApiEntry {
@@ -199,6 +217,18 @@ const API: &[ApiEntry] = &[
                 default: "",
                 description: "The `<source>` and `<track>` elements.",
             },
+            Prop {
+                name: "playsinline",
+                ty: "bool",
+                default: "true",
+                description: "Plays in the page rather than the phone's own fullscreen player.",
+            },
+            Prop {
+                name: "preload",
+                ty: "&'static str",
+                default: "\"metadata\"",
+                description: "The element's `preload`.",
+            },
         ],
     },
     ApiEntry {
@@ -222,12 +252,44 @@ const API: &[ApiEntry] = &[
     ApiEntry {
         name: "VideoPlayerBadge",
         description: "The centred play badge, shown while the video is paused. It reads the surface's own `data-state`, so it needs nothing passed to it.",
-        props: &[Prop {
-            name: "class",
-            ty: "Signal<String>",
-            default: "\"\"",
-            description: "Merged over the badge's classes.",
-        }],
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the badge's classes.",
+            },
+            Prop {
+                name: "play_icon",
+                ty: "Option<ViewFn>",
+                default: "Play",
+                description: "The glyph, in place of the play glyph. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
+            Prop {
+                name: "replay_icon",
+                ty: "Option<ViewFn>",
+                default: "Replay",
+                description: "The glyph, in place of the glyph once the video has ended. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "VideoPlayerBuffering",
+        description: "A spinner over the frame while playback waits for data. Shown from the surface's `data-waiting`, after a short delay so a quick stall does not flash it.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the indicator's classes.",
+            },
+            Prop {
+                name: "icon",
+                ty: "Option<ViewFn>",
+                default: "LoaderCircle",
+                description: "The glyph, in place of the spinner. It is turned for you. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
+        ],
     },
     ApiEntry {
         name: "VideoPlayerControls",
@@ -270,12 +332,32 @@ const API: &[ApiEntry] = &[
     ApiEntry {
         name: "VideoPlayerPlayButton",
         description: "Play and pause, which is one button because it is one state. It never assumes: pressing it calls `play()` and the icon changes when the element says it is playing, so a refused autoplay does not leave a pause icon over a still frame.",
-        props: &[Prop {
-            name: "class",
-            ty: "Signal<String>",
-            default: "\"\"",
-            description: "Merged over the button's classes.",
-        }],
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the button's classes.",
+            },
+            Prop {
+                name: "play_icon",
+                ty: "Option<ViewFn>",
+                default: "Play",
+                description: "The glyph, in place of the play glyph. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
+            Prop {
+                name: "pause_icon",
+                ty: "Option<ViewFn>",
+                default: "Pause",
+                description: "The glyph, in place of the pause glyph. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
+            Prop {
+                name: "replay_icon",
+                ty: "Option<ViewFn>",
+                default: "Replay",
+                description: "The glyph, in place of the glyph once the video has ended. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
+        ],
     },
     ApiEntry {
         name: "VideoPlayerSkipButton",
@@ -293,17 +375,37 @@ const API: &[ApiEntry] = &[
                 default: "\"\"",
                 description: "Merged over the button's classes.",
             },
+            Prop {
+                name: "icon",
+                ty: "Option<ViewFn>",
+                default: "SkipBack / SkipForward",
+                description: "The glyph, in place of the skip glyph. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
         ],
     },
     ApiEntry {
         name: "VideoPlayerMuteButton",
         description: "Mute and unmute. Coming off mute at zero volume brings the volume back somewhere audible, since silence with the control showing sound is a control that appears broken.",
-        props: &[Prop {
-            name: "class",
-            ty: "Signal<String>",
-            default: "\"\"",
-            description: "Merged over the button's classes.",
-        }],
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the button's classes.",
+            },
+            Prop {
+                name: "volume_icon",
+                ty: "Option<ViewFn>",
+                default: "Volume",
+                description: "The glyph, in place of the speaker. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
+            Prop {
+                name: "muted_icon",
+                ty: "Option<ViewFn>",
+                default: "VolumeOff",
+                description: "The glyph, in place of the muted speaker. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
+        ],
     },
     ApiEntry {
         name: "VideoPlayerTime",
@@ -363,37 +465,67 @@ const API: &[ApiEntry] = &[
                 default: "",
                 description: "The menu's contents — `DropdownMenuItem` and friends, the two provided groups, or your own.",
             },
+            Prop {
+                name: "icon",
+                ty: "Option<ViewFn>",
+                default: "Settings",
+                description: "The glyph, in place of the settings glyph. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
         ],
     },
     ApiEntry {
         name: "VideoPlayerSpeedItems",
         description: "A labelled group of playback speeds, ticking whichever is in force. A group rather than a whole menu, so it can sit beside a caller's own items instead of replacing them, and `submenu` folds it into one row when the menu is getting long.",
-        props: &[Prop {
-            name: "submenu",
-            ty: "bool",
-            default: "false",
-            description: "Fold the group into a single row that opens its items beside the menu, instead of listing them inline under a label. The default player uses this; a caller assembling a short menu of their own usually does not.",
-        }],
+        props: &[
+            Prop {
+                name: "submenu",
+                ty: "bool",
+                default: "false",
+                description: "Fold the group into a single row that opens its items beside the menu, instead of listing them inline under a label. The default player uses this; a caller assembling a short menu of their own usually does not.",
+            },
+            Prop {
+                name: "check_icon",
+                ty: "Option<ViewFn>",
+                default: "Check",
+                description: "The glyph, in place of the check mark on the chosen rate. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
+        ],
     },
     ApiEntry {
         name: "VideoPlayerCaptionItems",
         description: "A labelled group of the subtitle tracks the element is carrying, plus Off. Renders nothing at all when there are no tracks, so it costs nothing to leave in a menu for a video that has none.",
-        props: &[Prop {
-            name: "submenu",
-            ty: "bool",
-            default: "false",
-            description: "Fold the group into a single row that opens its items beside the menu, instead of listing them inline under a label. The default player uses this; a caller assembling a short menu of their own usually does not.",
-        }],
+        props: &[
+            Prop {
+                name: "submenu",
+                ty: "bool",
+                default: "false",
+                description: "Fold the group into a single row that opens its items beside the menu, instead of listing them inline under a label. The default player uses this; a caller assembling a short menu of their own usually does not.",
+            },
+            Prop {
+                name: "check_icon",
+                ty: "Option<ViewFn>",
+                default: "Check",
+                description: "The glyph, in place of the check mark on the chosen track. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
+        ],
     },
     ApiEntry {
         name: "VideoPlayerCaptionSizeItems",
         description: "A labelled group of caption sizes, ticking the one in force. Sizes are written against the player's own width rather than in pixels, so one choice holds from a thumbnail to fullscreen. Renders nothing while no track is showing, since there would be nothing to size.",
-        props: &[Prop {
-            name: "submenu",
-            ty: "bool",
-            default: "false",
-            description: "Fold the group into a single row that opens its items beside the menu, instead of listing them inline under a label. The default player uses this; a caller assembling a short menu of their own usually does not.",
-        }],
+        props: &[
+            Prop {
+                name: "submenu",
+                ty: "bool",
+                default: "false",
+                description: "Fold the group into a single row that opens its items beside the menu, instead of listing them inline under a label. The default player uses this; a caller assembling a short menu of their own usually does not.",
+            },
+            Prop {
+                name: "check_icon",
+                ty: "Option<ViewFn>",
+                default: "Check",
+                description: "The glyph, in place of the check mark on the chosen size. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
+        ],
     },
     ApiEntry {
         name: "VideoPlayerCaptions",
@@ -416,22 +548,44 @@ const API: &[ApiEntry] = &[
     ApiEntry {
         name: "VideoPlayerCaptionsButton",
         description: "Toggles the first subtitle track on and off, with an underline marking it on — the one-press control for the common case where there is only one. Renders nothing when the video carries no tracks.",
-        props: &[Prop {
-            name: "class",
-            ty: "Signal<String>",
-            default: "\"\"",
-            description: "Merged over the button's classes.",
-        }],
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the button's classes.",
+            },
+            Prop {
+                name: "icon",
+                ty: "Option<ViewFn>",
+                default: "Captions",
+                description: "The glyph, in place of the captions glyph. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
+        ],
     },
     ApiEntry {
         name: "VideoPlayerFullscreenButton",
         description: "Fullscreen, taken on the whole player rather than on the `<video>` — a video element in fullscreen draws the browser's own controls over these. What the document is actually doing is read back from `fullscreenchange`, so leaving with Escape is not missed.",
-        props: &[Prop {
-            name: "class",
-            ty: "Signal<String>",
-            default: "\"\"",
-            description: "Merged over the button's classes.",
-        }],
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the button's classes.",
+            },
+            Prop {
+                name: "enter_icon",
+                ty: "Option<ViewFn>",
+                default: "Maximize",
+                description: "The glyph, in place of the enter-fullscreen glyph. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
+            Prop {
+                name: "exit_icon",
+                ty: "Option<ViewFn>",
+                default: "Minimize",
+                description: "The glyph, in place of the exit-fullscreen glyph. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
+        ],
     },
 ];
 

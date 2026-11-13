@@ -1,5 +1,9 @@
 use crate::{cn, utils::types::AsClass};
-use leptos::prelude::*;
+use leptos::{either::Either, prelude::*};
+use leptos_node_ref::AnyNodeRef;
+
+#[allow(unused_imports)]
+pub use crate::utils::types::StyledRender;
 
 #[derive(Default, Copy, Clone)]
 pub enum BadgeVariant {
@@ -35,20 +39,28 @@ impl AsClass for BadgeVariant {
 pub fn Badge(
     #[prop(optional, into)] variant: Signal<BadgeVariant>,
     #[prop(optional, into)] class: Signal<String>,
-    children: Children,
+    #[prop(default = None, into)] render: Option<Callback<StyledRender, AnyView>>,
+    #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
-    view! {
-        <div
-            data-slot="badge"
-            class=move || {
-                cn!(
-                    "inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3",
-                variant.get().as_class(),
-                class.get()
-                )
-            }
-        >
-            {children()}
-        </div>
+    let class = Signal::derive(move || {
+        cn!(
+            "inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3",
+            variant.get().as_class(),
+            class.get()
+        )
+    });
+    let node_ref = AnyNodeRef::new();
+
+    match render {
+        Some(render) => Either::Left(render.run(StyledRender {
+            class,
+            node_ref,
+            disabled: Signal::default(),
+        })),
+        None => Either::Right(view! {
+            <span data-slot="badge" node_ref=node_ref class=class>
+                {children.map(|children| children())}
+            </span>
+        }),
     }
 }

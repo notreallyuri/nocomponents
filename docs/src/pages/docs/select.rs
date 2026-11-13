@@ -176,6 +176,12 @@ const API: &[ApiEntry] = &[
                 default: "",
                 description: "Usually a `SelectValue`.",
             },
+            Prop {
+                name: "icon",
+                ty: "Option<ViewFn>",
+                default: "ChevronDown",
+                description: "The glyph, in place of the chevron. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
         ],
     },
     ApiEntry {
@@ -261,6 +267,12 @@ const API: &[ApiEntry] = &[
                 ty: "Children",
                 default: "",
                 description: "The option's text.",
+            },
+            Prop {
+                name: "icon",
+                ty: "Option<ViewFn>",
+                default: "Check",
+                description: "The glyph, in place of the check mark on the chosen item. Any view — an `Icon`, an SVG of your own; see Icons.",
             },
         ],
     },

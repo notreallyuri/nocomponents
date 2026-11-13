@@ -9,7 +9,7 @@ use crate::{
         DropdownMenuSubRoot, DropdownMenuSubTriggerRoot, DropdownMenuTriggerRoot,
     },
     primitives::floating::FloatingPortal,
-    utils::controllable::forward,
+    utils::{controllable::forward, icon::IconSlot},
 };
 use leptos::{either::Either, ev, prelude::*};
 
@@ -208,6 +208,7 @@ pub fn DropdownMenuCheckboxItem(
     #[prop(optional, into)] checked: RwSignal<bool>,
     #[prop(optional, into)] close_on_select: Signal<bool>,
     #[prop(optional, into)] on_checked_change: Option<Callback<bool>>,
+    #[prop(optional, into)] icon: Option<ViewFn>,
     children: Children,
 ) -> impl IntoView {
     view! {
@@ -225,7 +226,12 @@ pub fn DropdownMenuCheckboxItem(
             }
         >
             <span class="pointer-events-none absolute left-2 flex size-3.5 items-center justify-center">
-                <Check class="hidden size-4 group-data-[state=checked]:block" />
+                <IconSlot
+                    icon=icon
+                    fallback=|| view! { <Check /> }
+                    data_slot="dropdown-menu-item-indicator"
+                    class="hidden size-4 shrink-0 items-center justify-center group-data-[state=checked]:flex [&>svg]:size-full"
+                />
             </span>
             {children()}
         </DropdownMenuCheckboxItemRoot>
@@ -257,6 +263,7 @@ pub fn DropdownMenuRadioItem(
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] inset: Signal<bool>,
     #[prop(optional, into)] close_on_select: Signal<bool>,
+    #[prop(optional, into)] icon: Option<ViewFn>,
     children: Children,
 ) -> impl IntoView {
     view! {
@@ -273,7 +280,12 @@ pub fn DropdownMenuRadioItem(
             }
         >
             <span class="pointer-events-none absolute left-2 flex size-3.5 items-center justify-center">
-                <Circle class="hidden size-2 fill-current group-data-[state=checked]:block" />
+                <IconSlot
+                    icon=icon
+                    fallback=|| view! { <Circle /> }
+                    data_slot="dropdown-menu-item-indicator"
+                    class="hidden size-2 shrink-0 items-center justify-center group-data-[state=checked]:flex [&>svg]:size-full [&>svg]:fill-current"
+                />
             </span>
             {children()}
         </DropdownMenuRadioItemRoot>
@@ -293,6 +305,7 @@ pub fn DropdownMenuSubTrigger(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] inset: Signal<bool>,
+    #[prop(optional, into)] icon: Option<ViewFn>,
     children: Children,
 ) -> impl IntoView {
     view! {
@@ -307,7 +320,12 @@ pub fn DropdownMenuSubTrigger(
             }
         >
             {children()}
-            <ChevronRight class="ml-auto" />
+            <IconSlot
+                icon=icon
+                fallback=|| view! { <ChevronRight /> }
+                data_slot="dropdown-menu-sub-icon"
+                class="ml-auto flex size-4 shrink-0 items-center justify-center [&>svg]:size-full"
+            />
         </DropdownMenuSubTriggerRoot>
     }
 }

@@ -409,6 +409,12 @@ const API: &[ApiEntry] = &[
                 default: "",
                 description: "The row's label.",
             },
+            Prop {
+                name: "icon",
+                ty: "Option<ViewFn>",
+                default: "Check",
+                description: "The glyph, in place of the check mark. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
         ],
     },
     ApiEntry {
@@ -481,6 +487,12 @@ const API: &[ApiEntry] = &[
                 default: "",
                 description: "The row's label.",
             },
+            Prop {
+                name: "icon",
+                ty: "Option<ViewFn>",
+                default: "Circle",
+                description: "The glyph, in place of the dot. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
         ],
     },
     ApiEntry {
@@ -528,6 +540,12 @@ const API: &[ApiEntry] = &[
                 ty: "Children",
                 default: "",
                 description: "The row's label.",
+            },
+            Prop {
+                name: "icon",
+                ty: "Option<ViewFn>",
+                default: "ChevronRight",
+                description: "The glyph, in place of the chevron. Any view — an `Icon`, an SVG of your own; see Icons.",
             },
         ],
     },

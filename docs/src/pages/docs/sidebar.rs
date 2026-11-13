@@ -331,6 +331,12 @@ const API: &[ApiEntry] = &[
                 default: "None",
                 description: "Defaults to a panel icon and a screen-reader label.",
             },
+            Prop {
+                name: "icon",
+                ty: "Option<ViewFn>",
+                default: "PanelLeft",
+                description: "The glyph, in place of the panel glyph (unused when `children` are given). Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
         ],
     },
     ApiEntry {

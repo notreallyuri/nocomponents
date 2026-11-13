@@ -18,7 +18,7 @@ use nocomponents::{
         toggle::{ToggleSize, ToggleVariant},
         toggle_group::{ToggleGroup, ToggleGroupItem},
     },
-    icons::IconRoot,
+    icons::Icon,
     primitives::{
         canvas::{CanvasDrag, CanvasPoint, surface_holds, world_at},
         drag::use_drag,
@@ -207,34 +207,34 @@ impl Kind {
     }
 
     /// The path data is Lucide's, the same as the library's own icons; a block needs a glyph the
-    /// styled layer never asked for, and `IconRoot` is what makes it look like the rest.
+    /// styled layer never asked for, and `Icon` is what makes it look like the rest.
     fn icon(self) -> AnyView {
         match self {
             Kind::Note => view! {
-                <IconRoot class="size-4">
+                <Icon view_box="0 0 24 24" stroke_width=2.0 class="size-4">
                     <path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11l5-5V5a2 2 0 0 0-2-2z" />
                     <path d="M15 21v-4a2 2 0 0 1 2-2h4" />
-                </IconRoot>
+                </Icon>
             }
             .into_any(),
             Kind::Rectangle => view! {
-                <IconRoot class="size-4">
+                <Icon view_box="0 0 24 24" stroke_width=2.0 class="size-4">
                     <rect width="18" height="14" x="3" y="5" rx="1" />
-                </IconRoot>
+                </Icon>
             }
             .into_any(),
             Kind::Ellipse => view! {
-                <IconRoot class="size-4">
+                <Icon view_box="0 0 24 24" stroke_width=2.0 class="size-4">
                     <circle cx="12" cy="12" r="9" />
-                </IconRoot>
+                </Icon>
             }
             .into_any(),
             Kind::Text => view! {
-                <IconRoot class="size-4">
+                <Icon view_box="0 0 24 24" stroke_width=2.0 class="size-4">
                     <path d="M4 7V4h16v3" />
                     <path d="M12 4v16" />
                     <path d="M9 20h6" />
-                </IconRoot>
+                </Icon>
             }
             .into_any(),
         }

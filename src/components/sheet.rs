@@ -6,7 +6,7 @@ use crate::{
         DialogContentRoot, DialogPart, DialogPortalRoot, DialogRoot, DialogTriggerRoot, use_dialog,
         use_dialog_label_id,
     },
-    utils::{controllable::forward, types::AsClass},
+    utils::{controllable::forward, icon::IconSlot, types::AsClass},
 };
 use leptos::{either::Either, prelude::*};
 
@@ -101,12 +101,15 @@ pub fn SheetContent(
     #[prop(default = Side::Right.into(), into)] side: Signal<Side>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] id: Option<String>,
+    #[prop(default = true.into(), into)] show_close: Signal<bool>,
+    #[prop(optional, into)] close_icon: Option<ViewFn>,
     children: ChildrenFn,
 ) -> impl IntoView {
     let context = use_dialog();
     if let Some(id) = id {
         context.content_id.set(id);
     }
+    let close_icon = StoredValue::new(close_icon);
     let stored_children = StoredValue::new(children);
 
     view! {
@@ -133,13 +136,27 @@ pub fn SheetContent(
                     )
                 }>
                     {stored_children.with_value(|children| children())}
-                    <button
-                        on:click=move |_| context.close()
-                        class="absolute top-4 right-4 rounded-sm opacity-70 transition-opacity outline-none hover:opacity-100 focus-visible:ring-3 focus-visible:ring-ring/50"
-                    >
-                        <X />
-                        <span class="sr-only">"Close"</span>
-                    </button>
+                    {move || {
+                        show_close
+                            .get()
+                            .then(|| {
+                                view! {
+                                    <button
+                                        type="button"
+                                        data-slot="sheet-close"
+                                        on:click=move |_| context.close()
+                                        class="absolute top-4 right-4 rounded-sm opacity-70 transition-opacity outline-none hover:opacity-100 focus-visible:ring-3 focus-visible:ring-ring/50"
+                                    >
+                                        <IconSlot
+                                            icon=close_icon.get_value()
+                                            fallback=|| view! { <X /> }
+                                            class="flex size-4 items-center justify-center [&>svg]:size-full"
+                                        />
+                                        <span class="sr-only">"Close"</span>
+                                    </button>
+                                }
+                            })
+                    }}
                 </DialogContentRoot>
             </div>
         </DialogPortalRoot>

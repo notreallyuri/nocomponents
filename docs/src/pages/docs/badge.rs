@@ -6,7 +6,16 @@ use crate::{
     layout::doc_layout::DocLayout,
 };
 use leptos::prelude::*;
-use nocomponents::components::badge::{Badge, BadgeVariant};
+use leptos_router::components::A;
+use nocomponents::components::badge::{Badge, BadgeVariant, StyledRender};
+
+const AS_A_LINK: &str = r#"<Badge
+    variant=BadgeVariant::Outline
+    render=Callback::new(|badge: StyledRender| {
+        view! { <A href="/blocks?uses=badge" attr:class=badge.class>"Blocks using badge"</A> }
+            .into_any()
+    })
+/>"#;
 
 const VARIANTS: &str = r#"<Badge variant=BadgeVariant::Default>"Default"</Badge>
 <Badge variant=BadgeVariant::Secondary>"Secondary"</Badge>
@@ -36,6 +45,12 @@ const API: &[ApiEntry] = &[ApiEntry {
             default: "",
             description: "The label.",
         },
+        Prop {
+            name: "render",
+            ty: "Option<Callback<StyledRender, AnyView>>",
+            default: "None",
+            description: "Render as something else — an `<a>` or a router `<A>`, where the variants' hover styles apply. Handed the classes and a node ref.",
+        },
     ],
 }];
 
@@ -56,6 +71,24 @@ pub fn Page() -> impl IntoView {
                         <Badge variant=BadgeVariant::Ghost>"Ghost"</Badge>
                         <Badge variant=BadgeVariant::Destructive>"Destructive"</Badge>
                     </div>
+                </DemoSection>
+
+                <DemoSection
+                    title="As a link"
+                    description="With render the badge is the anchor itself, which is where the variants' hover styles apply."
+                    code=AS_A_LINK
+                >
+                    <Badge
+                        variant=BadgeVariant::Outline
+                        render=Callback::new(|badge: StyledRender| {
+                            view! {
+                                <A href="/blocks?uses=badge" attr:class=badge.class>
+                                    "Blocks using badge"
+                                </A>
+                            }
+                                .into_any()
+                        })
+                    />
                 </DemoSection>
 
                 <ApiReference entries=API />

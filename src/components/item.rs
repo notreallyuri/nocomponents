@@ -1,5 +1,9 @@
 use crate::{cn, components::separator::Separator, utils::types::AsClass};
-use leptos::prelude::*;
+use leptos::{either::Either, prelude::*};
+use leptos_node_ref::AnyNodeRef;
+
+#[allow(unused_imports)]
+pub use crate::utils::types::StyledRender;
 
 #[derive(Default, Clone, Copy)]
 pub enum ItemVariant {
@@ -78,27 +82,39 @@ pub fn Item(
     #[prop(optional, into)] variant: Signal<ItemVariant>,
     #[prop(optional, into)] size: Signal<ItemSize>,
     #[prop(optional, into)] class: Signal<String>,
-    children: Children,
+    #[prop(default = None, into)] render: Option<Callback<StyledRender, AnyView>>,
+    #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
-    view! {
-        <div
-            data-slot="item"
-            data-variant=move || match variant.get() {
-                ItemVariant::Default => "default",
-                ItemVariant::Outline => "outline",
-                ItemVariant::Muted => "muted",
-            }
-            class=move || {
-                cn!(
-                    "group/item flex flex-wrap items-center rounded-lg border border-transparent text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 [a]:hover:bg-accent/50",
-                    variant.get().as_class(),
-                    size.get().as_class(),
-                    class.get()
-                )
-            }
-        >
-            {children()}
-        </div>
+    let class = Signal::derive(move || {
+        cn!(
+            "group/item flex flex-wrap items-center rounded-lg border border-transparent text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 [a]:hover:bg-accent/50",
+            variant.get().as_class(),
+            size.get().as_class(),
+            class.get()
+        )
+    });
+    let node_ref = AnyNodeRef::new();
+
+    match render {
+        Some(render) => Either::Left(render.run(StyledRender {
+            class,
+            node_ref,
+            disabled: Signal::default(),
+        })),
+        None => Either::Right(view! {
+            <div
+                data-slot="item"
+                data-variant=move || match variant.get() {
+                    ItemVariant::Default => "default",
+                    ItemVariant::Outline => "outline",
+                    ItemVariant::Muted => "muted",
+                }
+                node_ref=node_ref
+                class=class
+            >
+                {children.map(|children| children())}
+            </div>
+        }),
     }
 }
 

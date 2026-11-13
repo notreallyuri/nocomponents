@@ -31,6 +31,7 @@ pub mod field;
 pub mod floating_menu;
 pub mod form;
 pub mod hover_card;
+pub mod icons;
 pub mod image_cropper;
 pub mod index;
 pub mod input;

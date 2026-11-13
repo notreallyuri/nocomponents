@@ -48,6 +48,18 @@ const SIDES: &str = r#"<Sheet>
     </SheetContent>
 </Sheet>"#;
 
+const NO_CLOSE_BUTTON: &str = r#"<Sheet>
+    <SheetTrigger variant=ButtonVariant::Outline>"Confirm"</SheetTrigger>
+    <SheetContent side=Side::Bottom show_close=false>
+        <SheetHeader>
+            <SheetTitle>"Leave without saving?"</SheetTitle>
+        </SheetHeader>
+        <SheetFooter>
+            <SheetClose>"Stay"</SheetClose>
+        </SheetFooter>
+    </SheetContent>
+</Sheet>"#;
+
 const CONTROLLED: &str = r#"<Button on_click=Callback::new(move |_| open.set(true))>"Open"</Button>
 <Sheet open=open>
     <SheetContent side=Side::Bottom>
@@ -164,6 +176,18 @@ const API: &[ApiEntry] = &[
                 ty: "ChildrenFn",
                 default: "",
                 description: "The panel's contents. Re-run on each mount, hence `ChildrenFn`.",
+            },
+            Prop {
+                name: "show_close",
+                ty: "Signal<bool>",
+                default: "true",
+                description: "Whether the corner close button is drawn. Off, close it with `SheetClose`, Escape or the overlay.",
+            },
+            Prop {
+                name: "close_icon",
+                ty: "Option<ViewFn>",
+                default: "X",
+                description: "The glyph, in place of the close cross. Any view — an `Icon`, an SVG of your own; see Icons.",
             },
         ],
     },
@@ -383,6 +407,24 @@ pub fn Page() -> impl IntoView {
                             </SheetContent>
                         </Sheet>
                     </div>
+                </DemoSection>
+
+                <DemoSection
+                    title="Without the close button"
+                    description="show_close=false drops the corner cross, for a sheet whose footer already says how to leave."
+                    code=NO_CLOSE_BUTTON
+                >
+                    <Sheet>
+                        <SheetTrigger variant=ButtonVariant::Outline>"Confirm"</SheetTrigger>
+                        <SheetContent side=Side::Bottom show_close=false>
+                            <SheetHeader>
+                                <SheetTitle>"Leave without saving?"</SheetTitle>
+                            </SheetHeader>
+                            <SheetFooter>
+                                <SheetClose>"Stay"</SheetClose>
+                            </SheetFooter>
+                        </SheetContent>
+                    </Sheet>
                 </DemoSection>
 
                 <ApiReference entries=API />

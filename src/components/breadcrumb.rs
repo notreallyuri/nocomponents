@@ -1,5 +1,9 @@
-use crate::{cn, icons::chevron::ChevronRight};
-use leptos::prelude::*;
+use crate::{cn, icons::chevron::ChevronRight, utils::icon::IconSlot};
+use leptos::{either::Either, prelude::*};
+use leptos_node_ref::AnyNodeRef;
+
+#[allow(unused_imports)]
+pub use crate::utils::types::StyledRender;
 
 #[component]
 pub fn Breadcrumb(
@@ -60,16 +64,28 @@ pub fn BreadcrumbItem(
 pub fn BreadcrumbLink(
     #[prop(optional, into)] href: Signal<String>,
     #[prop(optional, into)] class: Signal<String>,
-    children: Children,
+    #[prop(default = None, into)] render: Option<Callback<StyledRender, AnyView>>,
+    #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
-    view! {
-        <a
-            href=move || Some(href.get()).filter(|href| !href.is_empty())
-            data-slot="breadcrumb-link"
-            class=move || { cn!("transition-colors hover:text-foreground", class.get()) }
-        >
-            {children()}
-        </a>
+    let class = Signal::derive(move || cn!("transition-colors hover:text-foreground", class.get()));
+    let node_ref = AnyNodeRef::new();
+
+    match render {
+        Some(render) => Either::Left(render.run(StyledRender {
+            class,
+            node_ref,
+            disabled: Signal::default(),
+        })),
+        None => Either::Right(view! {
+            <a
+                href=move || Some(href.get()).filter(|href| !href.is_empty())
+                data-slot="breadcrumb-link"
+                node_ref=node_ref
+                class=class
+            >
+                {children.map(|children| children())}
+            </a>
+        }),
     }
 }
 
@@ -94,6 +110,7 @@ pub fn BreadcrumbPage(
 #[component]
 pub fn BreadcrumbSeparator(
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] icon: Option<ViewFn>,
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     view! {
@@ -105,7 +122,16 @@ pub fn BreadcrumbSeparator(
         >
             {match children {
                 Some(children) => children(),
-                None => view! { <ChevronRight /> }.into_any(),
+                None => {
+                    view! {
+                        <IconSlot
+                            icon=icon
+                            fallback=|| view! { <ChevronRight /> }
+                            class="flex size-3.5 items-center justify-center [&>svg]:size-full"
+                        />
+                    }
+                        .into_any()
+                }
             }}
         </li>
     }

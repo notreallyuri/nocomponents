@@ -126,6 +126,30 @@ const API: &[ApiEntry] = &[ApiEntry {
             default: "None",
             description: "The label. Optional, since an icon button may have none.",
         },
+        Prop {
+            name: "aria_label",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "The accessible name, for a button whose only content is an icon. Written onto the `render` element too.",
+        },
+        Prop {
+            name: "id",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "The element id. Empty leaves it off.",
+        },
+        Prop {
+            name: "name",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "Submitted with `value` when this button submits the form.",
+        },
+        Prop {
+            name: "value",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "Submitted under `name`.",
+        },
     ],
 }];
 

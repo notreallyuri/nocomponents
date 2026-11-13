@@ -149,6 +149,18 @@ const API: &[ApiEntry] = &[
                 default: "\"\"",
                 description: "Merged over the table's classes.",
             },
+            Prop {
+                name: "sort_ascending_icon",
+                ty: "Option<ViewFn>",
+                default: "ChevronUp",
+                description: "The glyph, in place of the ascending-sort arrow. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
+            Prop {
+                name: "sort_descending_icon",
+                ty: "Option<ViewFn>",
+                default: "ChevronDown",
+                description: "The glyph, in place of the descending-sort arrow. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
         ],
     },
     ApiEntry {

@@ -1,9 +1,13 @@
-//! The handful of icons the styled layer needs, drawn inline rather than pulled from a crate: a
-//! UI library should not hand its consumers an icon dependency for six glyphs.
+//! The glyphs the styled layer falls back on, and the [`Icon`] wrapper they are drawn with.
+//!
+//! **Not a dependency.** Like `src/components/`, this directory is installed: `cargo nocli`
+//! copies the glyphs a component needs into the project (`paths.icons`, `src/icons/nc` by
+//! default) beside the components, and the installed components name them there. The project
+//! owns them from then on — edit `chevron.rs` and every component that falls back on a chevron
+//! draws the new one, or ignore them and hand each component its own icon through its `icon`
+//! slot. Nothing here is ever a reason for a project to depend on an icon crate.
 //!
 //! The path data is [Lucide](https://lucide.dev)'s, under the ISC licence.
-
-use leptos::prelude::*;
 
 pub mod calendar;
 pub mod check;
@@ -12,6 +16,7 @@ pub mod circle;
 pub mod copy;
 pub mod ellipsis;
 pub mod grip;
+pub mod icon;
 pub mod loader;
 pub mod media;
 pub mod message;
@@ -22,23 +27,4 @@ pub mod plus;
 pub mod search;
 pub mod x;
 
-#[component]
-pub fn IconRoot(
-    #[prop(optional, into)] class: Signal<String>,
-    children: Children,
-) -> impl IntoView {
-    view! {
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="square"
-            stroke-linejoin="miter"
-            class=class
-        >
-            {children()}
-        </svg>
-    }
-}
+pub use icon::Icon;

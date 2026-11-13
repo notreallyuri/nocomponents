@@ -4,7 +4,7 @@ use crate::{
     primitives::accordion::{
         AccordionContentRoot, AccordionItemRoot, AccordionRoot, AccordionTriggerRoot,
     },
-    utils::controllable::forward,
+    utils::{controllable::forward, icon::IconSlot},
 };
 use leptos::prelude::*;
 
@@ -59,6 +59,7 @@ pub fn AccordionItem(
 pub fn AccordionTrigger(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional, into)] icon: Option<ViewFn>,
     children: Children,
 ) -> impl IntoView {
     view! {
@@ -66,13 +67,18 @@ pub fn AccordionTrigger(
             disabled=disabled
             class=move || {
                 cn!(
-                    "flex flex-1 items-center justify-between gap-4 py-4 text-left text-sm font-medium transition-all outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50 data-disabled:pointer-events-none data-disabled:opacity-50 [&[data-state=open]>svg]:rotate-180",
+                    "flex flex-1 items-center justify-between gap-4 py-4 text-left text-sm font-medium transition-all outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50 data-disabled:pointer-events-none data-disabled:opacity-50 [&[data-state=open]>[data-slot=accordion-icon]]:rotate-180",
                     class.get()
                 )
             }
         >
             {children()}
-            <ChevronDown class="size-4 shrink-0 text-muted-foreground transition-transform duration-200" />
+            <IconSlot
+                icon=icon
+                fallback=|| view! { <ChevronDown /> }
+                data_slot="accordion-icon"
+                class="flex size-4 shrink-0 items-center justify-center text-muted-foreground transition-transform duration-200 [&>svg]:size-full"
+            />
         </AccordionTriggerRoot>
     }
 }

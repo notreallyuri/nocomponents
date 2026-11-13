@@ -6,6 +6,7 @@ use crate::{
     },
     icons::chevron::{ChevronDown, ChevronUp},
     primitives::table::{SelectionState, SortDirection, TableSortHeaderRoot},
+    utils::icon::IconSlot,
 };
 use leptos::prelude::*;
 use std::cmp::Ordering;
@@ -52,10 +53,13 @@ pub fn DataTable<T>(
     #[prop(default = None, into)] sort: Option<TableSort>,
     #[prop(default = "No results.".into(), into)] empty: Signal<String>,
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] sort_ascending_icon: Option<ViewFn>,
+    #[prop(optional, into)] sort_descending_icon: Option<ViewFn>,
 ) -> impl IntoView
 where
     T: Clone + PartialEq + Send + Sync + 'static,
 {
+    let sort_icons = StoredValue::new((sort_ascending_icon, sort_descending_icon));
     let sort = sort.unwrap_or_default();
     let sorted = Memo::new(move |_| {
         let mut rows = rows.get();
@@ -169,9 +173,27 @@ where
                                                                 if sort.is_sorted_by(key)
                                                                     && sort.direction.get() == SortDirection::Descending
                                                                 {
-                                                                    view! { <ChevronDown class="size-3.5" /> }.into_any()
+                                                                    view! {
+                                                                        <IconSlot
+                                                                            icon=sort_icons
+                                                                                .with_value(|(_, descending)| descending.clone())
+                                                                            fallback=|| view! { <ChevronDown /> }
+                                                                            data_slot="data-table-sort-icon"
+                                                                            class=SORT_ICON_CLASS
+                                                                        />
+                                                                    }
+                                                                        .into_any()
                                                                 } else {
-                                                                    view! { <ChevronUp class="size-3.5" /> }.into_any()
+                                                                    view! {
+                                                                        <IconSlot
+                                                                            icon=sort_icons
+                                                                                .with_value(|(ascending, _)| ascending.clone())
+                                                                            fallback=|| view! { <ChevronUp /> }
+                                                                            data_slot="data-table-sort-icon"
+                                                                            class=SORT_ICON_CLASS
+                                                                        />
+                                                                    }
+                                                                        .into_any()
                                                                 }
                                                             }}
                                                         </span>
@@ -282,3 +304,5 @@ pub fn DataTableSelectionCount(
         </p>
     }
 }
+
+const SORT_ICON_CLASS: &str = "flex size-3.5 items-center justify-center [&>svg]:size-full";

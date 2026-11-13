@@ -149,7 +149,7 @@ fn BugReport() -> impl IntoView {
 
     // Shown only after a submit, and then only while still true.
     let bad = move |which: fn(&Problems) -> bool| {
-        Signal::derive(move || submitted.get() && problems.with(|problems| which(problems)))
+        Signal::derive(move || submitted.get() && problems.with(which))
     };
 
     let submit = move |event: leptos::ev::SubmitEvent| {

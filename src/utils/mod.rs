@@ -4,6 +4,7 @@ pub mod controllable;
 pub mod date;
 pub mod form;
 pub mod gif;
+pub mod icon;
 pub mod image;
 pub mod modality;
 pub mod sheet;

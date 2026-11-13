@@ -177,6 +177,12 @@ const API: &[ApiEntry] = &[
                 default: "",
                 description: "The label; the chevron is added.",
             },
+            Prop {
+                name: "icon",
+                ty: "Option<ViewFn>",
+                default: "ChevronDown",
+                description: "The glyph, in place of the chevron (turned over when open). Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
         ],
     },
     ApiEntry {

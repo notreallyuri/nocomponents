@@ -1,4 +1,4 @@
-use crate::{cn, primitives::textarea::TextareaRoot};
+use crate::{cn, primitives::textarea::TextareaRoot, utils::controllable::forward};
 use leptos::prelude::*;
 use leptos_node_ref::AnyNodeRef;
 
@@ -18,6 +18,7 @@ pub fn Textarea(
     #[prop(optional, into)] autocomplete: Signal<String>,
     #[prop(default = None, into)] rows: Option<u32>,
     #[prop(optional, into)] form: Signal<String>,
+    #[prop(optional, into)] on_input: Option<Callback<String>>,
 ) -> impl IntoView {
     let node_ref = node_ref.unwrap_or_default();
 
@@ -34,6 +35,7 @@ pub fn Textarea(
             autocomplete=autocomplete
             rows=rows
             form=form
+            on_input=forward(on_input)
             class=move || {
                 cn!(
                     "flex min-h-16 w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",

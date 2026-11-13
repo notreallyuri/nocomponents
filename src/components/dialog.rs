@@ -6,7 +6,7 @@ use crate::{
         DialogContentRoot, DialogPart, DialogPortalRoot, DialogRoot, DialogTriggerRoot, use_dialog,
         use_dialog_label_id,
     },
-    utils::controllable::forward,
+    utils::{controllable::forward, icon::IconSlot},
 };
 use leptos::{either::Either, prelude::*};
 
@@ -81,9 +81,11 @@ pub fn DialogPortal(
     #[prop(default = true.into(), into)] show_close: Signal<bool>,
     #[prop(optional, into)] mobile_sheet: Signal<bool>,
     #[prop(optional, into)] sheet_title: Signal<String>,
+    #[prop(optional, into)] close_icon: Option<ViewFn>,
     children: ChildrenFn,
 ) -> impl IntoView {
     let context = use_dialog();
+    let close_icon = StoredValue::new(close_icon);
     let stored_children = StoredValue::new(children);
 
     view! {
@@ -120,10 +122,16 @@ pub fn DialogPortal(
                             .then(|| {
                                 view! {
                                     <button
+                                        type="button"
+                                        data-slot="dialog-close"
                                         on:click=move |_| context.close()
                                         class="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
                                     >
-                                        <X />
+                                        <IconSlot
+                                            icon=close_icon.get_value()
+                                            fallback=|| view! { <X /> }
+                                            class="flex size-4 items-center justify-center [&>svg]:size-full"
+                                        />
                                         <span class="sr-only">"Close"</span>
                                     </button>
                                 }
@@ -187,5 +195,22 @@ pub fn DialogDescription(
         <div id=id class=move || cn!("text-sm text-muted-foreground", class.get())>
             {children()}
         </div>
+    }
+}
+
+#[component]
+pub fn DialogClose(
+    #[prop(optional, into)] size: Signal<ButtonSize>,
+    #[prop(default = ButtonVariant::Outline.into(), into)] variant: Signal<ButtonVariant>,
+    #[prop(optional, into)] class: Signal<String>,
+    children: ChildrenFn,
+) -> impl IntoView {
+    let ctx = use_dialog();
+    let stored_children = StoredValue::new(children);
+
+    view! {
+        <Button size=size variant=variant class=class on_click=move |_| ctx.close()>
+            {move || stored_children.with_value(|children| children())}
+        </Button>
     }
 }

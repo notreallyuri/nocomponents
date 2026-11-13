@@ -2,7 +2,7 @@ use crate::{
     cn,
     icons::grip::Grip,
     primitives::sortable::{SortableHandleRoot, SortableItemRoot, SortableRoot},
-    utils::types::Orientation,
+    utils::{icon::IconSlot, types::Orientation},
 };
 use leptos::prelude::*;
 use std::collections::HashSet;
@@ -83,6 +83,7 @@ pub fn SortableItem(
 pub fn SortableHandle(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] label: Signal<String>,
+    #[prop(optional, into)] icon: Option<ViewFn>,
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     view! {
@@ -100,7 +101,17 @@ pub fn SortableHandle(
         >
             {match children {
                 Some(children) => children().into_any(),
-                None => view! { <Grip /> }.into_any(),
+                None => {
+                    view! {
+                        <IconSlot
+                            icon=icon
+                            fallback=|| view! { <Grip /> }
+                            data_slot="sortable-handle-icon"
+                            class="flex size-4 items-center justify-center [&>svg]:size-full"
+                        />
+                    }
+                        .into_any()
+                }
             }}
         </SortableHandleRoot>
     }

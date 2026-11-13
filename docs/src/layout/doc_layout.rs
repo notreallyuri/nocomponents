@@ -55,6 +55,10 @@ pub const NAV: &[NavGroup] = &[
                 href: "/docs/theme",
             },
             NavItem {
+                label: "Icons",
+                href: "/docs/icons",
+            },
+            NavItem {
                 label: "Utilities",
                 href: "/docs/utility",
             },

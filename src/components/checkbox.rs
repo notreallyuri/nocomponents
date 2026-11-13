@@ -1,5 +1,8 @@
 use crate::{
-    cn, icons::check::Check, primitives::checkbox::CheckboxRoot, utils::controllable::forward,
+    cn,
+    icons::check::Check,
+    primitives::checkbox::CheckboxRoot,
+    utils::{controllable::forward, icon::IconSlot},
 };
 use leptos::prelude::*;
 
@@ -15,6 +18,7 @@ pub fn Checkbox(
     #[prop(optional, into)] value: Signal<String>,
     #[prop(optional, into)] required: Signal<bool>,
     #[prop(optional, into)] form: Signal<String>,
+    #[prop(optional, into)] icon: Option<ViewFn>,
 ) -> impl IntoView {
     view! {
         <CheckboxRoot
@@ -34,14 +38,12 @@ pub fn Checkbox(
                 )
             }
         >
-            <div class=move || {
-                cn!(
-                    "items-center justify-center text-primary-foreground",
-                    "hidden group-data-[state=checked]/checkbox:flex"
-                )
-            }>
-                <Check />
-            </div>
+            <IconSlot
+                icon=icon
+                fallback=|| view! { <Check /> }
+                data_slot="checkbox-indicator"
+                class="hidden size-full items-center justify-center text-primary-foreground group-data-[state=checked]/checkbox:flex [&>svg]:size-full"
+            />
         </CheckboxRoot>
     }
 }

@@ -198,6 +198,12 @@ const API: &[ApiEntry] = &[
                 default: "",
                 description: "The panel's contents. Re-run on each mount, hence `ChildrenFn`.",
             },
+            Prop {
+                name: "close_icon",
+                ty: "Option<ViewFn>",
+                default: "X",
+                description: "The glyph, in place of the close cross. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
         ],
     },
     ApiEntry {
@@ -251,6 +257,30 @@ const API: &[ApiEntry] = &[
                 ty: "Children",
                 default: "",
                 description: "The description text.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "DialogClose",
+        description: "A button that closes the dialog — a footer's Cancel. The styled `Button`, outlined by default.",
+        props: &[
+            Prop {
+                name: "size",
+                ty: "Signal<ButtonSize>",
+                default: "Default",
+                description: "The button's size.",
+            },
+            Prop {
+                name: "variant",
+                ty: "Signal<ButtonVariant>",
+                default: "Outline",
+                description: "The button's variant.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the button's classes.",
             },
         ],
     },

@@ -7,6 +7,7 @@ use crate::{
         NavigationMenuTriggerRoot,
     },
     utils::controllable::forward,
+    utils::icon::IconSlot,
 };
 use leptos::prelude::*;
 
@@ -65,6 +66,7 @@ pub fn NavigationMenuItem(
 pub fn NavigationMenuTrigger(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional, into)] icon: Option<ViewFn>,
     children: Children,
 ) -> impl IntoView {
     view! {
@@ -78,7 +80,12 @@ pub fn NavigationMenuTrigger(
             }
         >
             {children()}
-            <ChevronDown class="relative top-px size-3.5 text-muted-foreground transition-transform duration-200 group-data-[state=open]/nav-trigger:rotate-180" />
+            <IconSlot
+                icon=icon
+                fallback=|| view! { <ChevronDown /> }
+                data_slot="navigation-menu-icon"
+                class="relative top-px flex size-3.5 shrink-0 items-center justify-center text-muted-foreground transition-transform duration-200 group-data-[state=open]/nav-trigger:rotate-180 [&>svg]:size-full"
+            />
         </NavigationMenuTriggerRoot>
     }
 }
