@@ -97,7 +97,7 @@ const API: &[ApiEntry] = &[
                 name: "orientation",
                 ty: "Signal<Orientation>",
                 default: "Vertical",
-                description: "Vertical is a panel, horizontal is a toolbar. The handle moves to the start of whichever it is.",
+                description: "Vertical is a panel, horizontal is a toolbar and the default — a strip of actions floating over the thing they act on. The handle moves to the start of whichever it is, and the grip turns with it.",
             },
             Prop {
                 name: "compact",
@@ -151,7 +151,7 @@ const API: &[ApiEntry] = &[
     },
     ApiEntry {
         name: "FloatingMenuItem",
-        description: "One action: an icon for children, and a label as a prop so a compact menu can still say what the icon means.",
+        description: "One action: an icon for children, and a label as a prop so a compact menu can still say what the icon means. Its own button rather than a Button, since ButtonSize is a value and not a signal and an item could not then resize with a menu that changes shape. The tooltip exists only while the label does not, as in the sidebar collapsed to icons.",
         props: &[
             Prop {
                 name: "label",

@@ -1,9 +1,10 @@
 # TODO
 
-Working list for `nocomponents`. Status reflects the tree as of 2026-08-25; check items off as they
-land and add new ones rather than keeping a parallel list elsewhere. Closed items are one line —
-the reasoning is in the commit that closed them, and anything still to do about one is its own open
-item rather than a sentence buried in a closed one.
+Working list for `nocomponents`. Status reflects the tree as of 2026-11-13; check items off as they
+land and add new ones rather than keeping a parallel list elsewhere. Closed items from earlier work
+keep their reasoning where it was written; a new item should be short, with the reasoning in the
+commit that closes it, and anything still to do about a closed one is its own open item rather than
+a sentence buried in it.
 
 ## Priority
 
@@ -279,9 +280,7 @@ it. This no longer blocks a "stable" tag. What exists, and where to reuse it:
 - [x] Floating triggers carry `aria-haspopup` / `aria-expanded` / `aria-controls`, written onto
       `trigger_ref` from an effect — the trigger comes in three shapes and the node ref is all they
       share.
-- [ ] Not all closed after all: a canvas node cannot be reached by the keyboard at all. Filed with
-      the rest of the canvas work rather than here, since it shares a design with the selection
-      model — see *Canvas: what a collaboration tool needs*.
+- [ ] Canvas nodes are not reachable by keyboard — see *Canvas: what a collaboration tool needs*.
 
 ## Canvas: what a collaboration tool needs
 
@@ -488,9 +487,9 @@ the rest; the other ten are listed under *Beyond the shadcn catalogue* below.
 `sonner` *is* `toast`, `typography` is a stylesheet page, and `form` is deliberately a separate
 crate (`noform`) rather than something this one grows.
 
-The remaining count, for whoever comes to check it: 72 element features, 53 of them with a
-primitive and 66 with a component. `CLAUDE.md` carried the same drift and now says the same
-numbers — when one of these moves, both do.
+The remaining count, for whoever comes to check it: 73 element features, 55 of them with a
+primitive and 67 with a component. `CLAUDE.md` says the same numbers — when one of these moves,
+both do.
 
 **P3 — substantial state machines.** All closed, and three of them are what the docs site itself
 runs on: the sidebar is the nav, the command palette is ⌘K, and the data table is the only honest
@@ -986,10 +985,9 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       `id`, `aria-invalid` and `aria-describedby`, but a `<label for>` cannot name a
       `<span role="slider">` — `for` only labels labelable elements. The thumb wants
       `aria-labelledby` pointing at the `FieldLabel`'s id, which means the label publishing one.
-- [ ] **`src/components/` still carries comments.** `CLAUDE.md` says none, at all:
-      `components/floating_menu.rs` has 19 comment lines (`///` and `//`), `kanban.rs` 5,
-      `dropzone.rs` 2 and `tree.rs` 2. Their content belongs on the docs pages, or in the
-      primitive where it explains behaviour.
+- [x] **`src/components/` carried comments** (`floating_menu.rs` 19 lines, `kanban.rs` 5,
+      `dropzone.rs` 2, `tree.rs` 2). All removed; what explained behaviour moved to the matching
+      `ApiReference` descriptions in `docs/src/pages/docs/`.
 
 **Per component**
 
@@ -1023,9 +1021,8 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       `Callback<Date, bool>` (`components/date_picker.rs:21`), the same name meaning two things next
       to every other component's `Signal<bool>` — and no `id` for a `Field` label to point at.
 - [ ] `dialog`: no `DialogOverlay`/`DialogContent` split — the portal's `class` styles the panel
-      and the overlay is fixed. (`modal` is not missing: it has been on the styled `Dialog` root
-      since 0.2.0, and the overlay is already gated on it; this item said otherwise until 0.4.
-      `DialogClose` and `close_icon` landed in 0.4.)
+      and the overlay is fixed. (`modal` and `DialogClose` are not missing; both landed
+      by 0.4.)
 - [ ] `drawer`: no `DrawerPortal` or `DrawerOverlay` — the overlay is built inside `DrawerContent` and only when `modal`
       (:66-75), so a non-default overlay means rewriting the content.
 - [x] `dropdown_menu`: `class` on every part (noaweb's patch), sub-trigger click opens, `data-align`
@@ -1041,7 +1038,8 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       the primitive under the rule in `CLAUDE.md`. The doc comment gives a reason (`ButtonSize` is
       a value, so an item could not resize with the menu), which is a reason for the enum item
       above rather than for the layering.
-- [ ] `hover_card`: `delay` is Radix's `open_delay`.
+- [ ] `hover_card`: the open delay is `delay` on `HoverCard` (`components/hover_card.rs:16`) where Radix
+      and the primitive call it `open_delay`; `close_delay` is already there. Rename it, or keep it and say so.
 - [ ] `image_cropper`: `min_size` is on the primitive (`primitives/image_cropper.rs:219`) and not
       on `ImageCropper` (`components/image_cropper.rs:12`). The resize handles are
       `aria-hidden="true"` (`primitives/image_cropper.rs:386`) with no keyboard path, so the crop
@@ -1059,9 +1057,8 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       `MenubarSubTrigger` no `disabled` (:162) — see `dropdown_menu`, which this is built on.
       None of `MenubarGroup`, `MenubarCheckboxItem`, `MenubarRadioGroup`, `MenubarRadioItem` or
       `inset`, though the dropdown primitive has all of them now and `menubar.rs` only has to wrap
-      them. `MenubarSubContent` mounts into `document.body` rather than `FloatingPortal`
-      (:188), see the cross-cutting item, and that is where it diverges from
-      `DropdownMenuSubContent` — which is the same component with the one word right.
+      them. (`MenubarSubContent` used to mount into `document.body`; it
+      goes through `FloatingPortal` now, like `DropdownMenuSubContent`.)
 - [ ] `native_select`: no `NativeSelectOption` or `NativeSelectOptGroup`
       (`components/native_select.rs:20`); every caller writes bare `<option>`s. No `on_change`
       (:21).
@@ -1192,8 +1189,8 @@ source (`/docs/icons`). What that left:
       asked for yet.
 - [ ] Snippets are extracted, not curated. A few still carry the demo's layout wrapper (`<div
       class="flex gap-3">`). Worth a pass to trim the ones where it adds nothing.
-- [ ] Dead nav link in `docs/src/layout/doc_layout.rs`: `/docs/introduction` has no route and falls
-      through to "Not Found." `/docs/installation` is a page now.
+- [x] Dead nav link: `/docs/introduction` had no route and fell through to "Not Found." The `NAV`
+      entry is removed (no introduction page exists; `/docs/installation` is the way in).
 - [x] The form-state page is back, on a **git** dependency. It came off main because `docs` named
       `noform` by path (`../../noform`, a sibling clone that exists on one machine): cargo will not
       load a workspace whose member has an unreadable manifest, so every CI job died inside
@@ -1215,9 +1212,10 @@ source (`/docs/icons`). What that left:
       onto a *switch*: **Component**, **Blocks**, and later **Primitives** — one page, three views
       of it. The routes are already shaped for it, so it is a `Tabs` in `DocLayout` driven by the
       path rather than a restructure.
-- [ ] Adding a component means editing five files, two of which (`NAV`, `COMPONENTS`) are
+- [x] Adding a component means editing five files, two of which (`NAV`, `COMPONENTS`) are
       hand-maintained copies of the same list — which is how `/docs` came to be missing progress,
-      skeleton and textarea. Drive routes, nav and the index from one const.
+      skeleton and textarea. Covered by the generator item (*The other 48 primitives*, item 1),
+      which drives `NAV` and `COMPONENTS` too; not a separate job.
 - [x] Blocks moved out of `/docs/<component>/blocks` and into their own `/blocks` section. Filing a
       block under one component was always a fiction — each composes three to ten of them — so the
       owner was whichever file it lived in and the rest could not reach it. Each block now carries
@@ -1254,9 +1252,9 @@ short file of prose around a table nobody typed.
 - [ ] **1. The generator.** An `xtask` over the `#[component]` signatures emitting the `ApiEntry`
       shape both layers already use — name, type, default, and the doc comment as the description.
       It pays for itself twice over: 180 primitive tables that never get written, and 985 styled
-      rows that stop drifting. Same item as *Generate the prop-table rows at build time* below;
-      they are one job, and this is the reason to do it now rather than the reason to do it
-      eventually.
+      rows that stop drifting — 315 tables and 985 rows hand-pasted today. An `xtask` or a build
+      script both fit. It could drive `NAV` and `COMPONENTS` too, closing the five-files item above.
+      This is the one generator item; the later *Generate the prop-table rows* line points here.
 
       Two things it must handle that the styled layer does not exercise: `#[prop(default = …)]`
       needs rendering as the default column, and `src/primitives/` carries real `///` prose while
@@ -1278,9 +1276,9 @@ short file of prose around a table nobody typed.
       One template with those four sections, proven on two pages before the other 46 are cut to
       fit it.
 
-- [ ] **3. The way in.** The component page gains a switch — Overview · Primitives · Blocks —
-      since nobody looks up `DialogContentRoot` except while reading about `Dialog`. `/primitives`
-      keeps its own index for the five that have no component page to hang off.
+- [ ] **3. The way in.** The component/blocks/primitives switch, as described under *The header
+      link between a component and its blocks is a stopgap* above; `/primitives` keeps its own
+      index for the five that have no component page to hang off.
 
 Then the pages, batched by what they share rather than alphabetically, so a shape is argued once
 and reused rather than re-decided 48 times. The batches add up to 53 and cover 48: families 4 and 7
@@ -1328,19 +1326,12 @@ are the menus that both float and rove, and each belongs to whichever batch it g
       `render` callback shape — still have nowhere to be described once. `Side` / `Align` /
       `Orientation` / `SideOffset` are on `/docs/utility` now, so this is the other half of that
       page rather than a `/docs/types` of its own.
-- [ ] Generate the prop-table rows at build time rather than keeping **315 tables and 985 rows**
-      hand-pasted and in step: an `xtask` or a build script over the `#[component]` signatures,
-      emitting the same `ApiEntry` shape. It could drive `NAV` and `COMPONENTS` too, closing the
-      five-files item above. This and item 1 of *The other 48 primitives* are the same job — that
-      is where the argument for doing it now lives.
-
-## Publishing
-
+- [ ] Generate the prop-table rows at build time — see item 1 of *The other 48 primitives*.
 - [x] Consumers have no way to get the CSS. Answered by not shipping the styled layer as a crate at
       all: a Tailwind build cannot see classes inside `~/.cargo/registry`, so `cargo nocli` installs
       `src/components/<name>.rs` into the project's own `src/` and `init` installs the stylesheet
       beside it. The crate keeps everything with no classes in it.
-- [x] One feature per element — 72 of them now — gating both layers under one name, each listing
+- [x] One feature per element — 73 of them now — gating both layers under one name, each listing
       what its own source imports so cargo works the closure out. `tests/features.rs` re-derives
       the table from the imports and fails if `Cargo.toml` has drifted — the failure it prevents
       is silent, since `--features full` builds either way.
@@ -1384,12 +1375,10 @@ are the menus that both float and rove, and each belongs to whichever batch it g
       declaring the oldest library its rewriting rules still produce valid source for — which
       wants a semver comparison and cannot fire until there are two releases to compare.
 
-- [x] Both crates are on crates.io at 0.1.0; 0.2.0 is the first release to carry the catalogue as it is now,
-      and all 66 components install and compile as a foreign crate (`--from` a checkout, wasm32).
-- [ ] `DropdownMenuItemVariant` lives in `primitives::dropdown_menu` and the installed `dropdown_menu.rs`
-      does not re-export it, so a consumer writing `variant=DropdownMenuItemVariant::Destructive` has to
-      import it from `nocomponents::primitives` by hand. `ButtonVariant` and the other styled-layer enums
-      come with the file because they are declared in it.
+- [x] Both crates are on crates.io — `nocomponents` 0.5.0 and `nocomponents-cli` 0.4.0 (tags `v0.5.0`
+      and `v0.4.0`) — and all 67 components install and compile as a foreign crate (`--from` a
+      checkout, wasm32).
+- [x] `DropdownMenuItemVariant` is re-exported by the installed `dropdown_menu.rs` (0.3.0).
 - [x] `nocomponents.lock` beside the config records a hash of each file as installed, so `add` now
       says *which* kind of file it left alone — "edited here" against "unchanged, --force refreshes
       it" — and `--force` names what of yours it overwrote. FNV-1a, not a cryptographic hash: the
@@ -1440,17 +1429,11 @@ are the menus that both float and rove, and each belongs to whichever batch it g
       `check -p docs`, `test --features full`. `pages.yml` deploys the docs site on every push to
       main — needs Settings → Pages → Source: GitHub Actions once.
 
-- [ ] Nothing installs a panic hook, so a panic in the docs app surfaces as
-      `RuntimeError: unreachable` with no message and no line. It cost an afternoon on the toast
-      disposal bug, where the panic was real and the only way to find it was bisecting the call.
-      Three lines in `docs/src/main.rs`.
-- [ ] What renders is covered by `docs/smoke/` (`node docs/smoke/run.mjs`: a console-error sweep of
-      every page and an interaction check per component page), but two things remain.
-      It is not in CI. `ci.yml` already has Rust and the `wasm32-unknown-unknown` target; a job
-      would add `trunk` (`pages.yml` installs it with `jetli/trunk-action`, and it downloads the
-      pinned Tailwind itself) and a browser (Google Chrome is on the runner image, and the suite
-      finds `google-chrome`), then run `node docs/smoke/run.mjs`. The first build is the slow part;
-      `Swatinem/rust-cache` helps.
-      And there are no `wasm-bindgen-test` unit tests over the primitives' `data-state`
+- [x] The docs app installs `console_error_panic_hook` first thing in `main`, so a panic shows its
+      message and location instead of `RuntimeError: unreachable`.
+- [x] `docs/smoke/` (`node docs/smoke/run.mjs`: a console-error sweep of every page and an
+      interaction check per component page) runs in CI as the `smoke` job in `ci.yml`; the trunk
+      build timeout is `SMOKE_BUILD_TIMEOUT_MIN`, default 10 and 30 in CI.
+- [ ] There are no `wasm-bindgen-test` unit tests over the primitives' `data-state`
       transitions, which would catch regressions in the floating and toast state machines without a
       browser session — the toast one has now been wrong twice.

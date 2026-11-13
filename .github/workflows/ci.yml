@@ -39,3 +39,33 @@ jobs:
       # One narrow slice, because `--features full` builds whether or not the element features are
       # right and this is the shape a consumer actually asks for.
       - run: cargo check --no-default-features --features primitives,sidebar
+
+  smoke:
+    name: browser smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup target add wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: jetli/trunk-action@v0.5.0
+        with:
+          version: latest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Builds the docs with trunk, sweeps every page and runs the interaction checks in the
+      # Chrome the runner image ships. A cold build can outrun the default ten minutes.
+      - name: Smoke
+        env:
+          CHROME: /usr/bin/google-chrome
+          SMOKE_BUILD_TIMEOUT_MIN: 30
+          CHROME_NO_SANDBOX: "1"
+        run: node docs/smoke/run.mjs

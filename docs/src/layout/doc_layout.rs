@@ -31,10 +31,6 @@ pub const NAV: &[NavGroup] = &[
         label: "Sections",
         items: &[
             NavItem {
-                label: "Introduction",
-                href: "/docs/introduction",
-            },
-            NavItem {
                 label: "Components",
                 href: "/docs",
             },

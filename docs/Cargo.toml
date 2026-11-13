@@ -18,6 +18,7 @@ leptos = { version = "0.8.19", features = ["csr"] }
 leptos_meta = "0.8.6"
 leptos_router = "0.8.13"
 leptos-node-ref = "0.2.0"
+console_error_panic_hook = "0.1.7"
 tw_merge = { version = "0.1.21", features = ["variant"] }
 # `FormData` and `HtmlFormElement` are what the Field page's native-form demo reads back.
 web-sys = { version = "0.3", features = ["FormData", "HtmlFormElement", "SubmitEvent"] }

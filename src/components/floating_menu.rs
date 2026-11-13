@@ -14,14 +14,8 @@ pub use crate::utils::types::Orientation;
 pub fn FloatingMenu(
     #[prop(optional)] position: Option<RwSignal<(f64, f64)>>,
     #[prop(default = (24.0, 24.0))] default_position: (f64, f64),
-    /// Vertical is a panel; horizontal is a toolbar.
-    /// Horizontal by default, which is what this kind of menu usually is: a strip of actions
-    /// floating over the thing they act on. Vertical is the variation, and turns it into a panel.
-    #[prop(optional, into)]
-    orientation: Signal<Orientation>,
-    /// Items drop their labels and become icons.
-    #[prop(optional, into)]
-    compact: Signal<bool>,
+    #[prop(optional, into)] orientation: Signal<Orientation>,
+    #[prop(optional, into)] compact: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
     children: Children,
 ) -> impl IntoView {
@@ -34,11 +28,8 @@ pub fn FloatingMenu(
             class=move || {
                 cn!(
                     "z-50 flex overflow-hidden rounded-lg border bg-popover text-popover-foreground shadow-lg ring-1 ring-foreground/10",
-                    // The panel runs the way its items do, and the handle sits across the start of
-                    // it either way — which is the top of a column and the left of a row.
                     "data-[orientation=vertical]:min-w-40 data-[orientation=vertical]:flex-col",
                     "data-[orientation=horizontal]:flex-row data-[orientation=horizontal]:items-stretch",
-                    // Lifted while it travels, and never transitioned: it is following a pointer.
                     "data-[dragging=true]:shadow-2xl data-[dragging=true]:ring-primary/40",
                     class.get(),
                 )
@@ -49,7 +40,6 @@ pub fn FloatingMenu(
     }
 }
 
-/// The strip you move it by: across the top of a panel, down the side of a toolbar.
 #[component]
 pub fn FloatingMenuHandle(
     #[prop(optional, into)] class: Signal<String>,
@@ -70,7 +60,6 @@ pub fn FloatingMenuHandle(
                 )
             }
         >
-            // The grip turns with the panel, so it always reads as the short edge you take hold of.
             <IconSlot
                 icon=icon
                 fallback=|| view! { <Ellipsis /> }
@@ -107,21 +96,13 @@ pub fn FloatingMenuContent(
     }
 }
 
-/// One action. Its children are the icon; the label is a prop, because a compact menu still has to
-/// tell assistive tech — and the reader hovering it — what the icon means.
-///
-/// Its own `<button>` rather than a `Button`: `ButtonSize` is a value and not a signal, so a menu
-/// that changes shape while it is on screen could not change the size of its items with it.
 #[component]
 pub fn FloatingMenuItem(
     #[prop(into)] label: Signal<String>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] on_click: Option<Callback<ev::MouseEvent>>,
-    /// The icon. A `ChildrenFn` because a compact item renders inside a tooltip and a full one
-    /// does not, and the two branches each need their own copy.
-    #[prop(optional)]
-    children: Option<ChildrenFn>,
+    #[prop(optional)] children: Option<ChildrenFn>,
 ) -> impl IntoView {
     let ctx = use_floating_menu();
     let compact = move || ctx.compact.get();
@@ -160,8 +141,6 @@ pub fn FloatingMenuItem(
         }
     };
 
-    // A label that has been taken away has to be readable some other way, which is what the
-    // sidebar does when it collapses to icons: the tooltip exists only while there is no label.
     move || match compact() {
         true => Either::Left(view! {
             <Tooltip>
@@ -173,7 +152,6 @@ pub fn FloatingMenuItem(
     }
 }
 
-/// A rule across the flow: level in a column of items, upright in a row of them.
 #[component]
 pub fn FloatingMenuSeparator(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
     let ctx = use_floating_menu();
