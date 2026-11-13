@@ -7,6 +7,104 @@ which installed components are `unchanged`, `edited` or `not in lock`, then `car
 add <name> --force` for each unchanged one, and diff the rest. A component installed before the
 lock existed reads `not in lock`: the tool cannot tell whether it was edited, so diff it too.
 
+## 0.4.0
+
+Icons come from the consumer. Every component that draws a glyph takes it through an `icon` slot,
+and the glyphs it falls back on are installed into the project as source, like the components, so
+there is no icon set to depend on and no icon crate to agree with. Plus the form and link gaps the
+first screens of a port run into.
+
+### Upgrading from 0.3
+
+Bump the dependency to `0.4`, update the CLI (`cargo install nocomponents-cli`, 0.3.0), then:
+
+```bash
+cargo nocli components status          # what is unchanged, edited, not in lock
+cargo nocli components add <name> --force   # for each unchanged one; diff the edited ones
+```
+
+`add` now also writes the glyphs each component falls back on, and the `Icon` wrapper, into
+`paths.icons` (default `src/icons/nc`; a 0.3 `nocomponents.toml` gets the default without being
+edited). Declare `mod icons;` in your crate root if `add` says so. Components you do not refresh
+keep compiling: they still name `nocomponents::icons::…`, which 0.4 keeps behind the `icons`
+feature. Once every installed component is refreshed, drop `icons` from your features.
+
+Nothing below removes a prop; every change is additive except the two marked **breaking**.
+
+| component | change |
+| --- | --- |
+| `icons::IconRoot` | **breaking**: renamed `Icon` (`icons::icon::Icon`), and `view_box` is required. It no longer strokes by default: pass `stroke_width=2.0` for the old look. Decorative by default (`aria-hidden`); `label` names it. |
+| every glyph (`ChevronDown`, `X`, `Check`, …) | now `aria-hidden="true"`. A glyph you gave `attr:aria-label` should use `Icon`'s `label` instead. |
+| `Spinner` | **breaking (DOM)**: the root is a `<span role="status">` holding the glyph, not the `<svg>` itself — CSS aimed at `svg[data-slot=spinner]` needs `[data-slot=spinner]`. New `icon`. |
+| `Accordion` | `AccordionTrigger`: `icon`. The open rotation now targets `[data-slot=accordion-icon]`, not a child `svg`. |
+| `Badge` | `render` (the `StyledRender` shape); `children` optional. Renders a `<span>` rather than a `<div>`. |
+| `Breadcrumb` | `BreadcrumbLink`: `render`, `children` optional. `BreadcrumbSeparator`: `icon`. |
+| `Button` | `aria_label`, `id`, `name`, `value` (also on `ButtonRoot`; `aria_label` and `id` reach a `render` element). |
+| `Calendar` | `prev_icon`, `next_icon`. |
+| `Canvas` | `CanvasControls`: `zoom_out_icon`, `zoom_in_icon`, `fit_icon`. |
+| `Carousel` | `CarouselPrevious`, `CarouselNext`: `icon`. |
+| `Checkbox` | `icon`. |
+| `Code` | `CodeCopyButton`: `copy_icon`, `copied_icon`. |
+| `Combobox` | `ComboboxTrigger`, `ComboboxItem`: `icon`. |
+| `Command` | `CommandInput`: `icon`. |
+| `DataTable` | `sort_ascending_icon`, `sort_descending_icon`. |
+| `DatePicker` | `icon`. |
+| `Dialog` | `DialogPortal`: `close_icon`. New `DialogClose` (a button that closes, like `SheetClose`). |
+| `Drawer` | `DrawerContent`: `show_close`, `close_icon`. |
+| `DropdownMenu` / `ContextMenu` | `*CheckboxItem`, `*RadioItem`, `*SubTrigger`: `icon`. |
+| `FloatingMenu` | `FloatingMenuHandle`: `icon`. |
+| `Input` | `on_input`, `on_change` (`Callback<String>`). |
+| `Item` | `render`; `children` optional. |
+| `Label` | `html_for`. |
+| `Menubar` | `MenubarSubTrigger`: `icon`. |
+| `NavigationMenu` | `NavigationMenuTrigger`: `icon`. |
+| `Pagination` | `PaginationPrevious`, `PaginationNext`: `icon`. |
+| `Select` | `SelectTrigger`, `SelectItem`: `icon`. |
+| `Sheet` | `SheetContent`: `show_close`, `close_icon`. |
+| `Sidebar` | `SidebarTrigger`, `SidebarTreeRow`: `icon`. The mobile sheet uses `show_close=false` rather than hiding the button with a class. |
+| `Sortable` | `SortableHandle`: `icon`. |
+| `Textarea` | `on_input` (also on `TextareaRoot`). |
+| `Tree` | `TreeRow`: `icon`. |
+| `VideoPlayer` | `playsinline`, `preload`, `idle_delay`; draws `VideoPlayerBuffering` and a replay glyph once ended. `VideoPlayerVideo`: `playsinline`, `preload`. `VideoPlayerBadge`: `play_icon`, `replay_icon`. `VideoPlayerPlayButton`: `play_icon`, `pause_icon`, `replay_icon`. `VideoPlayerMuteButton`: `volume_icon`, `muted_icon`. `VideoPlayerFullscreenButton`: `enter_icon`, `exit_icon`. `VideoPlayerSkipButton`, `VideoPlayerMenu`, `VideoPlayerCaptionsButton`: `icon`. The three `*Items`: `check_icon`. |
+
+### Added
+
+- **Icon slots.** One shape everywhere: `icon: Option<ViewFn>` on a part that draws one glyph, and
+  `<what>_icon` for each glyph of a part that swaps them (`play_icon` / `pause_icon`). Pass any
+  view, `icon=|| view! { <MyIcon /> }`; unset draws the installed fallback. The component draws
+  the slot through `utils::icon::IconSlot`, an `aria-hidden` span it sizes, colours, rotates and
+  hides, with the `<svg>` filling it — so the caller's icon needs no classes, and one from any set,
+  at any viewBox, sits exactly where the fallback did.
+- **`Icon`** (`icons::icon::Icon`, was `IconRoot`): the wrapper for any SVG. Takes the artwork's
+  own `view_box` (required — Font Awesome's are per icon, `0 0 512 512`, `0 0 448 512`), fills with
+  `currentColor` unless `stroke_width` is set, accepts arbitrary children (a duotone icon's two
+  paths and opacity), sizes to `1em` through the `width`/`height` attributes so any class or
+  component rule wins, and is `aria-hidden` unless `label` is set (then `role="img"` with that
+  `aria-label`).
+- **`/docs/icons`**, the page that documents the slot, the wrapper, the fallbacks and bringing
+  your own set, with demos of a filled narrow icon and a duotone one.
+- **`VideoPlayerBuffering`**, a spinner over the frame while playback waits for data;
+  `VideoPlayerRoot` and `VideoPlayerSurfaceRoot` write `data-waiting` and `data-ended`. A `Replay`
+  glyph.
+- **`render` on `BreadcrumbLink`, `Badge` and `Item`** — a router `<A>`, as `Button` already
+  could. **`DialogClose`.** **`show_close` on `SheetContent` and `DrawerContent`.**
+
+### Fixed
+
+- `TODO.md` said `Dialog` had no `modal`; it has had one on the root since 0.2.0, as has `Sheet`.
+
+### cargo-nocli 0.3.0
+
+- **Icons are installed.** `components add` writes the glyphs each component falls back on, and
+  `Icon`, into `paths.icons` (default `src/icons/nc`), rewrites `crate::icons::…` to that module,
+  declares it in the module above, and records the files in the lock (apart from components, since
+  `calendar` is both). A component's `--force` refreshes an unchanged icon but never one you have
+  edited; `icons add <name> --force` does.
+- **`icons add`** and **`icons list`**; `components status` lists icons too.
+- `init` no longer turns on the `icons` feature.
+- Installing from a release before 0.4, which has no icon sources, keeps the old behaviour: icons
+  come from `nocomponents::icons` and the feature is turned on.
+
 ## 0.3.0
 
 What noaweb needed to port immich-front: a sortable list, drawer snap points, long-press, phone
