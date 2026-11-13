@@ -6,6 +6,7 @@ use crate::{
     utils::controllable::forward,
 };
 use leptos::prelude::*;
+use leptos_node_ref::AnyNodeRef;
 
 #[allow(unused_imports)]
 pub use crate::utils::types::{Align, AnchorRender, Side, SideOffset};
@@ -53,12 +54,13 @@ pub fn HoverCardContent(
     #[prop(optional, into)] align: Signal<Align>,
     #[prop(into, default = SideOffset(8.0).into())] side_offset: Signal<SideOffset>,
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(default = None)] container: Option<AnyNodeRef>,
     children: ChildrenFn,
 ) -> impl IntoView {
     let stored_children = StoredValue::new(children);
 
     view! {
-        <HoverCardPortalRoot>
+        <HoverCardPortalRoot container=container>
             <HoverCardContentRoot
                 side=side
                 align=align

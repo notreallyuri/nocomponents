@@ -9,6 +9,7 @@ use crate::{
     utils::{controllable::forward, icon::IconSlot},
 };
 use leptos::{either::Either, prelude::*};
+use leptos_node_ref::AnyNodeRef;
 
 #[allow(unused_imports)]
 pub use crate::utils::types::{Align, Side, SideOffset, TriggerRender};
@@ -123,12 +124,13 @@ pub fn ComboboxContent(
     #[prop(optional, into)] side_offset: Signal<SideOffset>,
     #[prop(into, default = true.into())] should_filter: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(default = None)] container: Option<AnyNodeRef>,
     children: ChildrenFn,
 ) -> impl IntoView {
     let children = StoredValue::new(children);
 
     view! {
-        <ComboboxPortalRoot>
+        <ComboboxPortalRoot container=container>
             <ComboboxContentRoot
                 side=side
                 align=align

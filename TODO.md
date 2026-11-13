@@ -487,7 +487,7 @@ the rest; the other ten are listed under *Beyond the shadcn catalogue* below.
 `sonner` *is* `toast`, `typography` is a stylesheet page, and `form` is deliberately a separate
 crate (`noform`) rather than something this one grows.
 
-The remaining count, for whoever comes to check it: 73 element features, 55 of them with a
+The remaining count, for whoever comes to check it: 74 element features, 56 of them with a
 primitive and 67 with a component. `CLAUDE.md` says the same numbers — when one of these moves,
 both do.
 
@@ -1096,14 +1096,19 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
 The rest of what noaweb asked for landed (sortable, drawer snap points, long-press, mobile sheets,
 the small items and the CLI friction); what follows is what those left behind.
 
-- [ ] **The phone sheet presentation is static.** `mobile_sheet` (Dialog, DropdownMenu,
-      ContextMenu, Popover, Select; `utils::sheet`) puts the content in a bottom sheet below `md`,
-      but it cannot be dragged down to dismiss, has no snap points (the drawer has both now) and no
-      close button — scrim, Escape or choosing an item close it. And `use_floating` still runs
-      underneath it with its output discarded. `container` (portal into a given element) is
-      exposed on `Popover` only, though it lives in `FloatingPortal` and every floating layer
-      could take it. Visually, the sheet's title row looks like one more item (no weight or
-      colour of its own) and the panel's top corners are square where a sheet usually rounds them.
+- [x] **The phone sheet presentation is static.** Landed after 0.5.0: a close button in the header
+      (`sheet_show_close`, `sheet_close_label`, `sheet_close_icon`), drag-to-dismiss from the header
+      only (`primitives::sheet_drag`, deciding with the drawer's `settle` now in `utils::settle`),
+      `sheet_snap_points` on all five content parts, `container` on every portalled floating layer,
+      a heading-weight title, and `use_floating` no longer attaches its auto-update under a sheet.
+- [ ] Still open on the sheets: `SheetScrim`'s and the grabber's classes live in `utils/sheet.rs`,
+      which a Tailwind build in a consumer's project does not scan (the same trap `src/components`
+      exists to avoid) — they should move to the styled layer. `use_floating` still computes one
+      position when a sheet mounts and discards it (its auto-update is detached and re-attached
+      live as the presentation flips). A menu, context menu or select that crosses `md` while open
+      is closed rather than re-shaped, since a sheet's markup differs (`SheetFrame`). Submenus
+      (`DropdownMenuSubContent`) take no `container`. Sheet heights are `dvh` and the settle
+      fraction uses `visualViewport.height`, which differs from `dvh` while a keyboard is up.
 
 ### Icons (0.4)
 

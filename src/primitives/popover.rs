@@ -1,7 +1,10 @@
 use crate::{
-    primitives::floating::{
-        FloatingContext, FloatingPortal, FloatingRoot, FloatingTrigger, TriggerAria, TriggerRender,
-        floating_options, shell_class, side_placement,
+    primitives::{
+        floating::{
+            FloatingContext, FloatingPortal, FloatingRoot, FloatingTrigger, TriggerAria,
+            TriggerRender, floating_options_unless_sheet, shell_class, side_placement,
+        },
+        sheet_drag::use_sheet_grab,
     },
     utils::{
         controllable::forward,
@@ -103,9 +106,29 @@ pub fn PopoverContentRoot(
     /// otherwise) for the styled layer to key on. Off by default.
     #[prop(optional, into)]
     mobile_sheet: Signal<bool>,
-    /// The title row shown at the top of the sheet. Empty means a grabber and no row.
+    /// The title in the sheet's header row, beside the close button. Empty shows no title.
     #[prop(optional, into)]
     sheet_title: Signal<String>,
+    /// The heights the sheet rests at, as fractions of the viewport height — `vec![0.4, 0.9]` is a
+    /// peek and a tall. The sheet is as tall as the highest, opens at the first, and a drag on its
+    /// header settles on the nearest (a flick moves one, a release below the lowest dismisses).
+    /// Written as `data-snap`, the index of the active one. Empty is a sheet as tall as its content.
+    #[prop(optional, into)]
+    sheet_snap_points: Signal<Vec<f64>>,
+    /// Whether the sheet's header has a close button. On by default; it exists only in a sheet.
+    #[prop(default = true.into(), into)]
+    sheet_show_close: Signal<bool>,
+    /// The close button's accessible name.
+    #[prop(default = "Close".into(), into)]
+    sheet_close_label: Signal<String>,
+    /// What the close button draws; a plain cross when none is given. The styled layer passes its
+    /// own glyph.
+    #[prop(default = None, into)]
+    sheet_close_icon: Option<ViewFn>,
+    /// Whether dragging the sheet's header row moves and dismisses it. Off, the header is inert and
+    /// leaves the browser's touch scrolling alone; the scrim, Escape and the close button remain.
+    #[prop(default = true.into(), into)]
+    sheet_draggable: Signal<bool>,
     /// Move focus into the popover when it opens: onto the first focusable element inside, or the
     /// panel itself when there is none (it carries `tabindex="-1"` for that). Closing hands focus
     /// back to the trigger when the keyboard closed it. Turn it off for a popover that should
@@ -123,6 +146,14 @@ pub fn PopoverContentRoot(
     let floating_ref = ctx.content_ref;
     let panel_ref = AnyNodeRef::new();
     let sheet = use_sheet_presentation(mobile_sheet);
+    let close = Callback::new(move |_| ctx.close());
+    let grab = use_sheet_grab(
+        sheet,
+        ctx.is_open.into(),
+        sheet_snap_points,
+        sheet_draggable,
+        close,
+    );
 
     let UseFloatingReturn {
         floating_styles,
@@ -132,7 +163,7 @@ pub fn PopoverContentRoot(
     } = use_floating(
         ctx.trigger_ref,
         floating_ref,
-        floating_options(side_placement(side, align), side_offset),
+        floating_options_unless_sheet(side_placement(side, align), side_offset, sheet),
     );
 
     let ready = Signal::derive(move || sheet.get() || is_positioned.get());
@@ -178,26 +209,48 @@ pub fn PopoverContentRoot(
                 }
                 data-slot="popover-content"
                 data-presentation=move || presentation_attr(sheet.get())
-                data-align=move || (!sheet.get()).then(|| match placement.get() {
-                    Placement::TopStart
-                    | Placement::BottomStart
-                    | Placement::LeftStart
-                    | Placement::RightStart => "start",
-                    Placement::TopEnd
-                    | Placement::BottomEnd
-                    | Placement::LeftEnd
-                    | Placement::RightEnd => "end",
-                    _ => "center",
-                })
-                data-side=move || (!sheet.get()).then(|| match placement.get() {
-                    Placement::Top | Placement::TopStart | Placement::TopEnd => "top",
-                    Placement::Bottom | Placement::BottomStart | Placement::BottomEnd => "bottom",
-                    Placement::Left | Placement::LeftStart | Placement::LeftEnd => "left",
-                    Placement::Right | Placement::RightStart | Placement::RightEnd => "right",
-                })
+                data-dragging=move || grab.dragging()
+                data-snap=move || grab.snap()
+                style=move || grab.style()
+                data-align=move || {
+                    (!sheet.get())
+                        .then(|| match placement.get() {
+                            Placement::TopStart
+                            | Placement::BottomStart
+                            | Placement::LeftStart
+                            | Placement::RightStart => "start",
+                            Placement::TopEnd
+                            | Placement::BottomEnd
+                            | Placement::LeftEnd
+                            | Placement::RightEnd => "end",
+                            _ => "center",
+                        })
+                }
+                data-side=move || {
+                    (!sheet.get())
+                        .then(|| match placement.get() {
+                            Placement::Top | Placement::TopStart | Placement::TopEnd => "top",
+                            Placement::Bottom | Placement::BottomStart | Placement::BottomEnd => {
+                                "bottom"
+                            }
+                            Placement::Left | Placement::LeftStart | Placement::LeftEnd => "left",
+                            Placement::Right | Placement::RightStart | Placement::RightEnd => {
+                                "right"
+                            }
+                        })
+                }
                 class=class
             >
-                <SheetHeader sheet=sheet title=sheet_title />
+                <SheetHeader
+                    sheet=sheet
+                    title=sheet_title
+                    on_grab=grab.on_grab()
+                    draggable=sheet_draggable
+                    close=close
+                    show_close=sheet_show_close
+                    close_label=sheet_close_label
+                    close_icon=sheet_close_icon
+                />
                 {children()}
             </div>
         </div>

@@ -16,6 +16,7 @@ use crate::{
 };
 use floating_ui_leptos::{Placement, UseFloatingReturn, use_floating};
 use leptos::{context::Provider, either::Either, prelude::*};
+use leptos_node_ref::AnyNodeRef;
 use std::time::Duration;
 
 pub type HoverCardContext = FloatingContext;
@@ -143,12 +144,18 @@ pub fn HoverCardTriggerRoot(
 }
 
 #[component]
-pub fn HoverCardPortalRoot(children: ChildrenFn) -> impl IntoView {
+pub fn HoverCardPortalRoot(
+    /// Mount the layer in this element instead of `<body>` — a sticky or fixed ancestor it should
+    /// move with. The fullscreen element still wins when the container is not inside it.
+    #[prop(default = None)]
+    container: Option<AnyNodeRef>,
+    children: ChildrenFn,
+) -> impl IntoView {
     let ctx = use_hover_card();
     let stored_children = StoredValue::new(children);
 
     view! {
-        <FloatingPortal>
+        <FloatingPortal container=container>
             <Show when=move || ctx.is_mounted.get()>{stored_children.with_value(|c| c())}</Show>
         </FloatingPortal>
     }

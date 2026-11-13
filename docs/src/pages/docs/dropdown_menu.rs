@@ -190,12 +190,20 @@ const API: &[ApiEntry] = &[
     ApiEntry {
         name: "DropdownMenuPortal",
         description: "Renders the menu at the end of the document, so it escapes any clipping ancestor.",
-        props: &[Prop {
-            name: "children",
-            ty: "ChildrenFn",
-            default: "",
-            description: "The menu. Re-run on each mount, hence `ChildrenFn`.",
-        }],
+        props: &[
+            Prop {
+                name: "container",
+                ty: "Option<AnyNodeRef>",
+                default: "None",
+                description: "Mount the layer in this element instead of `<body>` — a sticky or fixed ancestor it should move with, so scrolling does not leave it behind until the next position update. A fullscreen element still wins when the container is not inside it.",
+            },
+            Prop {
+                name: "children",
+                ty: "ChildrenFn",
+                default: "",
+                description: "The menu. Re-run on each mount, hence `ChildrenFn`.",
+            },
+        ],
     },
     ApiEntry {
         name: "DropdownMenuContent",
@@ -229,13 +237,43 @@ const API: &[ApiEntry] = &[
                 name: "mobile_sheet",
                 ty: "Signal<bool>",
                 default: "false",
-                description: "Below the `md` breakpoint (768px), present the menu as a bottom sheet over a scrim instead of a menu under the trigger: no positioning, `data-presentation=\"sheet\"`. At `md` and up nothing changes, and it is written as `\"floating\"`. Escape, a tap on the scrim and choosing an item still close it.",
+                description: "Below the `md` breakpoint (768px), present the menu as a bottom sheet over a scrim instead of a menu under the trigger: no positioning, `data-presentation=\"sheet\"`. At `md` and up nothing changes, and it is written as `\"floating\"`. Escape, a tap on the scrim, choosing an item and the header's close button close it, and dragging the header down dismisses it.",
             },
             Prop {
                 name: "sheet_title",
                 ty: "Signal<String>",
                 default: "\"\"",
-                description: "The title row under the sheet's grabber. Empty means a grabber and no row. Ignored when the content is not a sheet.",
+                description: "The title in the sheet's header row, beside the close button. Empty shows no title. Ignored when the content is not a sheet.",
+            },
+            Prop {
+                name: "sheet_snap_points",
+                ty: "Signal<Vec<f64>>",
+                default: "vec![]",
+                description: "The heights the sheet rests at, as fractions of the viewport height — `vec![0.4, 0.9]` is a peek and a tall. The sheet is as tall as the highest and opens at the first; dragging its header settles on the nearest, a flick moves one point, and a release below the lowest dismisses it. `data-snap` carries the active index. Empty is a sheet as tall as its content. Ignored when the content is not a sheet.",
+            },
+            Prop {
+                name: "sheet_show_close",
+                ty: "Signal<bool>",
+                default: "true",
+                description: "Whether the sheet's header has a close button. Present only in a sheet.",
+            },
+            Prop {
+                name: "sheet_close_label",
+                ty: "Signal<String>",
+                default: "\"Close\"",
+                description: "The sheet close button's screen-reader text. Translate it here.",
+            },
+            Prop {
+                name: "sheet_close_icon",
+                ty: "Option<ViewFn>",
+                default: "X",
+                description: "The glyph of the sheet's close button, in place of the cross. Any view; see Icons.",
+            },
+            Prop {
+                name: "sheet_draggable",
+                ty: "Signal<bool>",
+                default: "true",
+                description: "Whether dragging the sheet's header row (grabber and title) moves and dismisses it. Off, the header is inert: no `touch-action: none`, and the scrim, Escape and the close button remain.",
             },
             Prop {
                 name: "children",
@@ -613,7 +651,7 @@ pub fn Page() -> impl IntoView {
 
                 <DemoSection
                     title="On phones"
-                    description="Set mobile_sheet and, below the md breakpoint (768px), the menu is a bottom sheet instead: a scrim, the panel on the bottom edge with safe-area padding, a grabber and the title row from sheet_title. The items, the arrow keys and the typeahead are the same, and so is the way out: a tap on the scrim, Escape, or choosing an item. From md up it is the menu above. The same two props are on ContextMenuContent, SelectContent, PopoverContent and DialogPortal; narrow the window to see it."
+                    description="Set mobile_sheet and, below the md breakpoint (768px), the menu is a bottom sheet instead: a scrim, the panel on the bottom edge with safe-area padding, a grabber, the title row from sheet_title and a close button. The items, the arrow keys and the typeahead are the same, and so is the way out: a tap on the scrim, Escape, choosing an item or the close button; dragging the header down dismisses it too, and sheet_snap_points gives it more than one height. From md up it is the menu above. The same props are on ContextMenuContent, SelectContent, PopoverContent and DialogPortal; narrow the window to see it."
                     code=ON_PHONES
                 >
                     <DropdownMenu>

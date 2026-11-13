@@ -18,6 +18,24 @@ so diff it too and `components add <name> --force` to record it.
   `DatePicker`. Migration: rename `disabled=|date| …` to `disabled_dates=|date| …`. The primitive
   `CalendarRoot` keeps `disabled`.
 
+### Changed
+
+- **A `mobile_sheet` layer's header now has defaults you did not have in 0.5.** On
+  `DropdownMenuContent`, `ContextMenuContent`, `SelectContent`, `PopoverContent` and `DialogPortal`
+  (and their `*Root`s), below `md`:
+  - a close button is shown in the header row — opt out with `sheet_show_close=false`;
+  - dragging the header (grabber and title) moves and dismisses the sheet, and the header is
+    `position: sticky` with `touch-action: none` — opt out with `sheet_draggable=false`, which also
+    drops the `touch-action`;
+  - `DialogPortal` hides its corner close button in a sheet, the header's taking its place (it
+    follows `show_close`, so `show_close=false` removes both) — there is no separate switch;
+  - the title is `font-semibold text-foreground` rather than `font-medium`.
+- **In a sheet, a menu, context menu or select is built as a frame around the role element.** The
+  header sits beside the `role="menu"` / `role="listbox"` element, not inside it, and the classes,
+  the drag transform and `data-dragging`, `data-snap` and `data-state` are on the frame
+  (`data-slot="menu-sheet"`). Floating markup is unchanged. Such a layer closes if the window
+  crosses `md` while it is open.
+
 ### Added
 
 - **`Checkbox` `indeterminate`** (and `indeterminate_icon`, default `Minus`): `aria-checked="mixed"`,
@@ -35,6 +53,23 @@ so diff it too and `components add <name> --force` to record it.
   when the reset happens (so data that arrived after mount is honoured), else the current `value`.
   A control's `form` prop is honoured by the reset listener. `utils::form::on_native_reset`.
 - **`PopoverContentRoot` `initial_focus`**, a selector `auto_focus` tries first.
+- **The phone sheet can be closed and dragged.** On `DropdownMenuContent`, `ContextMenuContent`,
+  `SelectContent`, `PopoverContent` and `DialogPortal` (and their `*Root`s) a sheet now has a close
+  button in its header row — `sheet_show_close` (default true), `sheet_close_label` (default
+  "Close"), `sheet_close_icon` — and dragging the header down moves the panel with the pointer and,
+  on release, springs back or dismisses it by the drawer's own rule (`data-dragging`, no transition
+  while dragging). The body is not a handle, so scrolling a list never drags the sheet.
+  `sheet_draggable` turns the drag off. `sheet_snap_points` (fractions of the viewport height) gives it several resting heights:
+  it opens at the first, settles on the nearest, a flick moves one, and a release below the
+  lowest dismisses; the active index is `data-snap`. `DialogPortal` hides its corner close button
+  in a sheet, since the header carries one. New primitive `sheet_drag` (`use_sheet_grab`,
+  `SheetGrab`), and `utils::settle` (`settle`, `Settle`, `settle_drag`), which the drawer now
+  re-exports. The sheet title reads as a heading (`font-semibold text-foreground`).
+- **`container` on every portalled floating layer**: `DropdownMenuPortal` (and `ContextMenuPortal`),
+  `SelectPortal`, `MenubarPortal`, and `HoverCardContent`, `TooltipContent`, `ComboboxContent` (with
+  the matching `*PortalRoot`s), as `PopoverPortal` already had.
+- **A floating layer presented as a sheet no longer attaches `use_floating`'s auto-update**
+  (`floating_options_unless_sheet`).
 
 ### Fixed
 

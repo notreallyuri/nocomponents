@@ -44,3 +44,14 @@ pub fn IconSlot(
 pub fn icon_or(icon: Option<ViewFn>, fallback: impl Into<ViewFn>) -> ViewFn {
     icon.unwrap_or_else(|| fallback.into())
 }
+
+/// The caller's icon, or `fallback`, drawn in a slot of `class`, as the `ViewFn` a primitive that
+/// owns the button around the glyph (a sheet's close button) takes.
+///
+/// The primitive cannot draw the fallback — glyphs belong to the styled layer — and the styled
+/// layer cannot reach inside the button, so the styled layer hands the finished slot in.
+pub fn slot_view(icon: Option<ViewFn>, fallback: ViewFn, class: &'static str) -> ViewFn {
+    ViewFn::from(move || {
+        view! { <IconSlot icon=icon.clone() fallback=fallback.clone() class=class /> }
+    })
+}

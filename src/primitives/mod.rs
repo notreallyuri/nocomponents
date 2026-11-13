@@ -78,6 +78,8 @@ pub mod scroll_area;
 pub mod select;
 #[cfg(feature = "separator")]
 pub mod separator;
+#[cfg(feature = "sheet_drag")]
+pub mod sheet_drag;
 #[cfg(feature = "sidebar")]
 pub mod sidebar;
 #[cfg(feature = "slider")]
@@ -190,6 +192,8 @@ pub mod prelude {
     pub use super::select::*;
     #[cfg(feature = "separator")]
     pub use super::separator::*;
+    #[cfg(feature = "sheet_drag")]
+    pub use super::sheet_drag::*;
     #[cfg(feature = "sidebar")]
     pub use super::sidebar::*;
     #[cfg(feature = "slider")]

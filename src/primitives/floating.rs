@@ -120,6 +120,19 @@ pub fn floating_options(
     placement: Signal<Placement>,
     side_offset: Signal<SideOffset>,
 ) -> UseFloatingOptions {
+    floating_options_unless_sheet(placement, side_offset, Signal::stored(false))
+}
+
+/// [`floating_options`] for a layer that may be a phone sheet: while `sheet` is true nothing
+/// positions the layer, so the auto-update (its scroll, resize and layout observers) is not
+/// attached. `use_floating` watches the option, so it detaches and re-attaches as `sheet` flips —
+/// attaching runs a position update, which is what places the layer when a window widens past the
+/// breakpoint with it open. One position is still computed when the content mounts, and discarded.
+pub fn floating_options_unless_sheet(
+    placement: Signal<Placement>,
+    side_offset: Signal<SideOffset>,
+    sheet: Signal<bool>,
+) -> UseFloatingOptions {
     let middleware = Signal::derive(move || {
         let middleware: MiddlewareVec = vec![
             Box::new(Offset::new(OffsetOptions::Value(side_offset.get().0))),
@@ -132,7 +145,7 @@ pub fn floating_options(
     UseFloatingOptions::default()
         .placement(Signal::derive(move || Some(placement.get())))
         .strategy(Strategy::Fixed)
-        .while_elements_mounted_auto_update()
+        .while_elements_mounted_auto_update_with_enabled(Signal::derive(move || !sheet.get()))
         .middleware(middleware)
 }
 

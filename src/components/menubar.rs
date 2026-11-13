@@ -12,6 +12,7 @@ use crate::{
     utils::icon::IconSlot,
 };
 use leptos::{ev, prelude::*};
+use leptos_node_ref::AnyNodeRef;
 
 #[allow(unused_imports)]
 pub use crate::utils::types::{Align, Side, SideOffset};
@@ -77,8 +78,11 @@ pub fn MenubarTrigger(
 }
 
 #[component]
-pub fn MenubarPortal(children: ChildrenFn) -> impl IntoView {
-    view! { <DropdownMenuPortalRoot children=children /> }
+pub fn MenubarPortal(
+    #[prop(default = None)] container: Option<AnyNodeRef>,
+    children: ChildrenFn,
+) -> impl IntoView {
+    view! { <DropdownMenuPortalRoot container=container children=children /> }
 }
 
 #[component]

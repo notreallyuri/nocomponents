@@ -13,14 +13,21 @@ use crate::{
             MenuRoot, focus_element, focus_item_under_pointer, focus_menu_off_item,
             handle_menu_keys, placement_align, placement_side,
         },
-        floating::{FloatingContext, FloatingRoot, floating_options, shell_class, side_placement},
+        floating::{
+            FloatingContext, FloatingRoot, floating_options_unless_sheet, shell_class,
+            side_placement,
+        },
         long_press::{DEFAULT_DELAY_MS, use_long_press},
         roving_focus::use_roving_focus,
+        sheet_drag::{SheetFrame, use_sheet_grab},
         typeahead::Typeahead,
     },
     utils::{
         controllable::controllable,
-        sheet::{SheetHeader, SheetScrim, presentation_attr, use_sheet_presentation},
+        sheet::{
+            SHEET_ROLE_STYLE, SheetScrim, close_when_presentation_changes, presentation_attr,
+            use_sheet_presentation,
+        },
         types::{Align, Orientation, Side, SideOffset},
     },
 };
@@ -186,15 +193,44 @@ pub fn ContextMenuContentRoot(
     /// `data-presentation="sheet"` (`"floating"` otherwise). Off by default.
     #[prop(optional, into)]
     mobile_sheet: Signal<bool>,
-    /// The title row shown at the top of the sheet. Empty means a grabber and no row.
+    /// The title in the sheet's header row, beside the close button. Empty shows no title.
     #[prop(optional, into)]
     sheet_title: Signal<String>,
+    /// The heights the sheet rests at, as fractions of the viewport height — `vec![0.4, 0.9]` is a
+    /// peek and a tall. The sheet is as tall as the highest, opens at the first, and a drag on its
+    /// header settles on the nearest (a flick moves one, a release below the lowest dismisses).
+    /// Written as `data-snap`, the index of the active one. Empty is a sheet as tall as its content.
+    #[prop(optional, into)]
+    sheet_snap_points: Signal<Vec<f64>>,
+    /// Whether the sheet's header has a close button. On by default; it exists only in a sheet.
+    #[prop(default = true.into(), into)]
+    sheet_show_close: Signal<bool>,
+    /// The close button's accessible name.
+    #[prop(default = "Close".into(), into)]
+    sheet_close_label: Signal<String>,
+    /// What the close button draws; a plain cross when none is given. The styled layer passes its
+    /// own glyph.
+    #[prop(default = None, into)]
+    sheet_close_icon: Option<ViewFn>,
+    /// Whether dragging the sheet's header row moves and dismisses it. Off, the header is inert and
+    /// leaves the browser's touch scrolling alone; the scrim, Escape and the close button remain.
+    #[prop(default = true.into(), into)]
+    sheet_draggable: Signal<bool>,
     children: Children,
 ) -> impl IntoView {
     let ctx = use_context_menu();
     let point = use_context_menu_point();
     let floating_ref = ctx.content_ref;
     let sheet = use_sheet_presentation(mobile_sheet);
+    let close = Callback::new(move |_| ctx.close());
+    let as_sheet = sheet.get_untracked();
+    let grab = use_sheet_grab(
+        sheet,
+        ctx.is_open.into(),
+        sheet_snap_points,
+        sheet_draggable,
+        close,
+    );
 
     let UseFloatingReturn {
         floating_styles,
@@ -205,7 +241,7 @@ pub fn ContextMenuContentRoot(
     } = use_floating(
         ctx.trigger_ref,
         floating_ref,
-        floating_options(side_placement(side, align), side_offset),
+        floating_options_unless_sheet(side_placement(side, align), side_offset, sheet),
     );
 
     // Auto-update watches resizes and scrolls; an anchor that teleports is neither, so without
@@ -217,6 +253,8 @@ pub fn ContextMenuContentRoot(
             update();
         }
     });
+
+    close_when_presentation_changes(sheet, close);
 
     let ready = Signal::derive(move || sheet.get() || is_positioned.get());
 
@@ -230,6 +268,32 @@ pub fn ContextMenuContentRoot(
             roving.sync_tab_stop();
         }
     });
+
+    let role_element = view! {
+        <div
+            node_ref=menu_ref
+            id=move || ctx.content_id.get()
+            data-slot="context-menu-content"
+            role="menu"
+            tabindex="-1"
+            on:keydown=move |e| {
+                if handle_menu_keys(&e, roving, typeahead, ctx) {
+                    e.prevent_default();
+                }
+            }
+            on:focusin=move |_| roving.on_focus_in()
+            on:pointermove=move |e| focus_item_under_pointer(&e, menu_ref)
+            on:pointerleave=move |_| focus_menu_off_item(menu_ref)
+            data-state=move || if ctx.is_open.get() { "open" } else { "closed" }
+            data-presentation=move || presentation_attr(sheet.get())
+            data-align=move || (!sheet.get()).then(|| placement_align(placement.get()))
+            data-side=move || (!sheet.get()).then(|| placement_side(placement.get()))
+            class=move || if as_sheet { String::new() } else { class.get() }
+            style=if as_sheet { SHEET_ROLE_STYLE } else { "" }
+        >
+                {children()}
+        </div>
+    };
 
     view! {
         <SheetScrim sheet=sheet open=ctx.is_open.into() />
@@ -246,29 +310,26 @@ pub fn ContextMenuContentRoot(
             }
             class=move || shell_class(sheet.get(), "fixed z-50 w-max pointer-events-none")
         >
-            <div
-                node_ref=menu_ref
-                id=move || ctx.content_id.get()
-                data-slot="context-menu-content"
-                role="menu"
-                tabindex="-1"
-                on:keydown=move |e| {
-                    if handle_menu_keys(&e, roving, typeahead, ctx) {
-                        e.prevent_default();
-                    }
+            {if as_sheet {
+                view! {
+                    <SheetFrame
+                        grab=grab
+                        sheet=sheet
+                        open=ctx.is_open.into()
+                        close=close
+                        class=class
+                        title=sheet_title
+                        show_close=sheet_show_close
+                        close_label=sheet_close_label
+                        close_icon=sheet_close_icon
+                    >
+                        {role_element}
+                    </SheetFrame>
                 }
-                on:focusin=move |_| roving.on_focus_in()
-                on:pointermove=move |e| focus_item_under_pointer(&e, menu_ref)
-                on:pointerleave=move |_| focus_menu_off_item(menu_ref)
-                data-state=move || if ctx.is_open.get() { "open" } else { "closed" }
-                data-presentation=move || presentation_attr(sheet.get())
-                data-align=move || (!sheet.get()).then(|| placement_align(placement.get()))
-                data-side=move || (!sheet.get()).then(|| placement_side(placement.get()))
-                class=class
-            >
-                <SheetHeader sheet=sheet title=sheet_title />
-                {children()}
-            </div>
+                    .into_any()
+            } else {
+                role_element.into_any()
+            }}
         </div>
     }
 }

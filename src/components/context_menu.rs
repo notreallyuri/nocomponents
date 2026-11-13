@@ -1,11 +1,12 @@
 use crate::{
     cn,
-    components::dropdown_menu::MENU_SHEET_CLASS,
+    components::dropdown_menu::{MENU_SHEET_CLASS, SHEET_CLOSE_ICON},
+    icons::x::X,
     primitives::{
         context_menu::{ContextMenuContentRoot, ContextMenuRoot, ContextMenuTriggerRoot},
         long_press::DEFAULT_DELAY_MS,
     },
-    utils::controllable::forward,
+    utils::{controllable::forward, icon::slot_view},
 };
 use leptos::prelude::*;
 
@@ -65,6 +66,11 @@ pub fn ContextMenuContent(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] mobile_sheet: Signal<bool>,
     #[prop(optional, into)] sheet_title: Signal<String>,
+    #[prop(optional, into)] sheet_snap_points: Signal<Vec<f64>>,
+    #[prop(default = true.into(), into)] sheet_show_close: Signal<bool>,
+    #[prop(default = "Close".into(), into)] sheet_close_label: Signal<String>,
+    #[prop(optional, into)] sheet_close_icon: Option<ViewFn>,
+    #[prop(default = true.into(), into)] sheet_draggable: Signal<bool>,
     children: Children,
 ) -> impl IntoView {
     view! {
@@ -74,6 +80,13 @@ pub fn ContextMenuContent(
             side_offset=side_offset
             mobile_sheet=mobile_sheet
             sheet_title=sheet_title
+            sheet_snap_points=sheet_snap_points
+            sheet_show_close=sheet_show_close
+            sheet_draggable=sheet_draggable
+            sheet_close_label=sheet_close_label
+            sheet_close_icon=Some(
+                slot_view(sheet_close_icon, ViewFn::from(|| view! { <X /> }), SHEET_CLOSE_ICON),
+            )
             class=move || {
                 cn!(
                     "z-50 min-w-32 overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md pointer-events-auto data-[state=closed]:pointer-events-none",

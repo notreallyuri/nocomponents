@@ -103,6 +103,7 @@ all-elements = [
     "select",
     "separator",
     "sheet",
+    "sheet_drag",
     "sidebar",
     "skeleton",
     "slider",
@@ -141,15 +142,15 @@ collapsible = []
 color_picker = ["drag", "input_group", "select", "separator"]
 combobox = ["button", "command", "field", "floating"]
 command = ["dialog"]
-context_menu = ["dropdown_menu", "floating", "long_press", "roving_focus", "typeahead"]
+context_menu = ["dropdown_menu", "floating", "long_press", "roving_focus", "sheet_drag", "typeahead"]
 data_table = ["checkbox", "table"]
 date_picker = ["button", "calendar", "field", "floating", "popover"]
-dialog = ["button", "dismiss", "field"]
+dialog = ["button", "dismiss", "field", "sheet_drag"]
 dismiss = []
 drag = []
 dropzone = []
 drawer = ["dialog", "drag", "sheet"]
-dropdown_menu = ["button", "floating", "roving_focus", "typeahead"]
+dropdown_menu = ["button", "floating", "roving_focus", "sheet_drag", "typeahead"]
 empty = []
 field = []
 floating = ["dismiss"]
@@ -168,15 +169,16 @@ menubar = ["dropdown_menu", "floating", "roving_focus"]
 native_select = ["field"]
 navigation_menu = ["dismiss", "roving_focus"]
 pagination = ["button"]
-popover = ["button", "floating"]
+popover = ["button", "floating", "sheet_drag"]
 progress = []
 radio_group = ["field", "roving_focus"]
 resizable = ["drag"]
 roving_focus = []
 scroll_area = ["drag"]
-select = ["field", "floating", "roving_focus", "typeahead"]
+select = ["field", "floating", "roving_focus", "sheet_drag", "typeahead"]
 separator = []
 sheet = ["button", "dialog"]
+sheet_drag = ["drag"]
 sidebar = ["input", "separator", "sheet", "skeleton", "tooltip", "tree"]
 skeleton = []
 slider = ["drag", "field"]
@@ -223,6 +225,7 @@ features = [
   # `ThemeProvider`: the stored choice, and the system one.
   "Storage",
   "MediaQueryList",
+  "VisualViewport",
   # Copy buttons.
   "Navigator",
   "Clipboard",

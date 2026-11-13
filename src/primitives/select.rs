@@ -6,12 +6,16 @@ use crate::{
             TriggerRender, shell_class,
         },
         roving_focus::use_roving_focus,
+        sheet_drag::{SheetFrame, use_sheet_grab},
         typeahead::Typeahead,
     },
     utils::{
         controllable::{controllable, forward},
         form::{SHADOW_STYLE, non_empty, on_form_reset},
-        sheet::{SheetHeader, SheetScrim, presentation_attr, use_sheet_presentation},
+        sheet::{
+            SHEET_ROLE_STYLE, SheetScrim, close_when_presentation_changes, presentation_attr,
+            use_sheet_presentation,
+        },
         types::Orientation,
     },
 };
@@ -181,7 +185,13 @@ pub fn SelectTriggerRoot(
 }
 
 #[component]
-pub fn SelectPortalRoot(children: ChildrenFn) -> impl IntoView {
+pub fn SelectPortalRoot(
+    /// Mount the layer in this element instead of `<body>` — a sticky or fixed ancestor it should
+    /// move with. The fullscreen element still wins when the container is not inside it.
+    #[prop(default = None)]
+    container: Option<AnyNodeRef>,
+    children: ChildrenFn,
+) -> impl IntoView {
     let ctx = use_select();
     let labels = use_select_labels();
     let stored_children = StoredValue::new(children);
@@ -223,7 +233,7 @@ pub fn SelectPortalRoot(children: ChildrenFn) -> impl IntoView {
     });
 
     view! {
-        <FloatingPortal>
+        <FloatingPortal container=container>
             <Show when=move || ctx.is_mounted.get()>{stored_children.with_value(|c| c())}</Show>
         </FloatingPortal>
     }
@@ -237,14 +247,43 @@ pub fn SelectContentRoot(
     /// `data-presentation="sheet"` (`"floating"` otherwise). Off by default.
     #[prop(optional, into)]
     mobile_sheet: Signal<bool>,
-    /// The title row shown at the top of the sheet. Empty means a grabber and no row.
+    /// The title in the sheet's header row, beside the close button. Empty shows no title.
     #[prop(optional, into)]
     sheet_title: Signal<String>,
+    /// The heights the sheet rests at, as fractions of the viewport height — `vec![0.4, 0.9]` is a
+    /// peek and a tall. The sheet is as tall as the highest, opens at the first, and a drag on its
+    /// header settles on the nearest (a flick moves one, a release below the lowest dismisses).
+    /// Written as `data-snap`, the index of the active one. Empty is a sheet as tall as its content.
+    #[prop(optional, into)]
+    sheet_snap_points: Signal<Vec<f64>>,
+    /// Whether the sheet's header has a close button. On by default; it exists only in a sheet.
+    #[prop(default = true.into(), into)]
+    sheet_show_close: Signal<bool>,
+    /// The close button's accessible name.
+    #[prop(default = "Close".into(), into)]
+    sheet_close_label: Signal<String>,
+    /// What the close button draws; a plain cross when none is given. The styled layer passes its
+    /// own glyph.
+    #[prop(default = None, into)]
+    sheet_close_icon: Option<ViewFn>,
+    /// Whether dragging the sheet's header row moves and dismisses it. Off, the header is inert and
+    /// leaves the browser's touch scrolling alone; the scrim, Escape and the close button remain.
+    #[prop(default = true.into(), into)]
+    sheet_draggable: Signal<bool>,
     children: Children,
 ) -> impl IntoView {
     let ctx = use_select();
     let floating_ref = ctx.content_ref;
     let sheet = use_sheet_presentation(mobile_sheet);
+    let close = Callback::new(move |_| ctx.close());
+    let as_sheet = sheet.get_untracked();
+    let grab = use_sheet_grab(
+        sheet,
+        ctx.is_open.into(),
+        sheet_snap_points,
+        sheet_draggable,
+        close,
+    );
 
     let middleware: MiddlewareVec = vec![
         Box::new(Offset::new(OffsetOptions::Value(0.0))),
@@ -263,9 +302,11 @@ pub fn SelectContentRoot(
         UseFloatingOptions::default()
             .placement(Placement::BottomStart)
             .strategy(Strategy::Fixed)
-            .while_elements_mounted_auto_update()
+            .while_elements_mounted_auto_update_with_enabled(Signal::derive(move || !sheet.get()))
             .middleware(SendWrapper::new(middleware)),
     );
+
+    close_when_presentation_changes(sheet, close);
 
     let ready = Signal::derive(move || sheet.get() || is_positioned.get());
 
@@ -280,6 +321,59 @@ pub fn SelectContentRoot(
             roving.focus_tab_stop();
         }
     });
+
+    let role_element = view! {
+        <div
+            node_ref=listbox_ref
+            data-slot="select-content"
+            id=move || ctx.content_id.get()
+            role="listbox"
+            aria-labelledby=move || ctx.trigger_id.get()
+            tabindex="-1"
+            on:keydown=move |e| {
+                let key = e.key();
+                if roving.on_keydown(&key) {
+                    e.prevent_default();
+                    return;
+                }
+                match key.as_str() {
+                    // An option is a div, so Enter and Space have to be turned into the click
+                    // that commits it.
+                    "Enter" | " " => {
+                        if let Some(active) = document().active_element()
+                            && active.has_attribute("data-roving-item")
+                            && let Ok(active) = active.dyn_into::<HtmlElement>()
+                        {
+                            e.prevent_default();
+                            active.click();
+                        }
+                    }
+                    "Tab" => ctx.close(),
+                    _ => {
+                        if typeahead.push(&key, listbox_ref) {
+                            e.prevent_default();
+                        }
+                    }
+                }
+            }
+            on:focusin=move |_| roving.on_focus_in()
+            data-state=move || {
+                if ctx.is_open.get() && ready.get() { "open" } else { "closed" }
+            }
+            data-presentation=move || presentation_attr(sheet.get())
+            data-side=move || {
+                (!sheet.get())
+                    .then(|| match placement.get() {
+                        Placement::Top | Placement::TopStart | Placement::TopEnd => "top",
+                        _ => "bottom",
+                    })
+            }
+            class=move || if as_sheet { String::new() } else { class.get() }
+            style=if as_sheet { SHEET_ROLE_STYLE } else { "" }
+        >
+                {children()}
+        </div>
+    };
 
     view! {
         <SheetScrim sheet=sheet open=ctx.is_open.into() />
@@ -304,56 +398,26 @@ pub fn SelectContentRoot(
             }
             class=move || shell_class(sheet.get(), "fixed z-50 pointer-events-none")
         >
-            <div
-                node_ref=listbox_ref
-                data-slot="select-content"
-                id=move || ctx.content_id.get()
-                role="listbox"
-                aria-labelledby=move || ctx.trigger_id.get()
-                tabindex="-1"
-                on:keydown=move |e| {
-                    let key = e.key();
-                    if roving.on_keydown(&key) {
-                        e.prevent_default();
-                        return;
-                    }
-                    match key.as_str() {
-                        // An option is a div, so Enter and Space have to be turned into the click
-                        // that commits it.
-                        "Enter" | " " => {
-                            if let Some(active) = document().active_element()
-                                && active.has_attribute("data-roving-item")
-                                && let Ok(active) = active.dyn_into::<HtmlElement>()
-                            {
-                                e.prevent_default();
-                                active.click();
-                            }
-                        }
-                        "Tab" => ctx.close(),
-                        _ => {
-                            if typeahead.push(&key, listbox_ref) {
-                                e.prevent_default();
-                            }
-                        }
-                    }
+            {if as_sheet {
+                view! {
+                    <SheetFrame
+                        grab=grab
+                        sheet=sheet
+                        open=ctx.is_open.into()
+                        close=close
+                        class=class
+                        title=sheet_title
+                        show_close=sheet_show_close
+                        close_label=sheet_close_label
+                        close_icon=sheet_close_icon
+                    >
+                        {role_element}
+                    </SheetFrame>
                 }
-                on:focusin=move |_| roving.on_focus_in()
-                data-state=move || {
-                    if ctx.is_open.get() && ready.get() { "open" } else { "closed" }
-                }
-                data-presentation=move || presentation_attr(sheet.get())
-                data-side=move || {
-                    (!sheet.get())
-                        .then(|| match placement.get() {
-                            Placement::Top | Placement::TopStart | Placement::TopEnd => "top",
-                            _ => "bottom",
-                        })
-                }
-                class=class
-            >
-                <SheetHeader sheet=sheet title=sheet_title />
-                {children()}
-            </div>
+                    .into_any()
+            } else {
+                role_element.into_any()
+            }}
         </div>
     }
 }

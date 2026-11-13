@@ -56,11 +56,11 @@ needs the feature. With no features only
 `utils`, `middleware` and `deps` exist, so always check/build with `--features full`, which is what
 `docs` depends on.
 
-The **elements** are one feature per name, and there are 73 of them. A single name gates both
+The **elements** are one feature per name, and there are 74 of them. A single name gates both
 halves: `#[cfg(feature = "accordion")]` sits on `primitives::accordion` *and* on
-`components::accordion`, because an element is one thing whichever layer you take it from. 55 names
+`components::accordion`, because an element is one thing whichever layer you take it from. 56 names
 have a primitive, 67 have a component, and the ones that have only one (`floating`, `drag`, `long_press`,
-`roving_focus`, `dismiss`, `typeahead` have no styled layer; `card`, `badge`, `sheet`, `skeleton`
+`roving_focus`, `dismiss`, `typeahead`, `sheet_drag` have no styled layer; `card`, `badge`, `sheet`, `skeleton`
 and the rest of the style-only set have no primitive) are gated just the same.
 
 Each element feature lists what its own source imports — `accordion = ["collapsible",
