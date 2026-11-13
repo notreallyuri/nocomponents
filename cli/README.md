@@ -71,6 +71,55 @@ to refresh with `add --force` and what to diff first.
 
 `status` lists the installed icons too, in their own section.
 
+## Updating
+
+```bash
+cargo update -p nocomponents
+cargo nocli components update
+cargo nocli components update --apply
+```
+
+`update` compares every installed component and icon with the release your `Cargo.lock` names, the
+same one `add` reads. So the flow is: bump the dependency, `cargo update -p nocomponents`, run
+`update` to see what changed, then `--apply`. Each file is fetched and rewritten exactly as `add`
+would write it, and then sorted into one row:
+
+```
+components in src/components/nc:
+  outdated       button
+  current        dialog
+  edited         select (edited here, and changed upstream — diff it)
+  not in lock    tabs (not in lock, cannot tell if edited; `components add <name> --force` records it)
+  not in release ours (yours, or dropped by the release)
+
+0 outdated, 1 current, 2 ignored (edited or not in lock), 1 not in the release
+run with --apply to update the 1 unchanged ones
+```
+
+`outdated` is a file still exactly as it was installed, for which the release has something
+different; `current` is one that already matches. Without `--apply` nothing is written.
+
+With `--apply`, only the `outdated` files are rewritten, and the lock records the new hash. Everything
+else is left alone and listed at the end, with its reason: `ignored:` for the first two below, and a
+`not in the release:` heading for the last.
+
+- `edited` is yours now, so it is never overwritten. When the release also changed it, the row says so and
+  you diff it by hand; `status` and `add --force` remain for that.
+- `not in lock` has nothing to compare against, so the tool cannot tell whether you edited it.
+  `add <name> --force` replaces it and records it.
+- `not in release` is a file the release does not have: one you added to the directory yourself, or
+  one the release dropped. It is reported and never deleted.
+
+An updated component can now be built on something that is not installed — a new component, or a
+new glyph. `--apply` installs those too (printed as `needed by`), turns on their Cargo features, and
+rewrites each directory's `mod.rs`.
+
+`update` first checks that the release exists, and stops with an error if it cannot be reached or
+is not tagged, rather than reporting every file as missing from it.
+
+Because the comparison is against the release in `Cargo.lock`, a project that depends on
+`nocomponents` by path gets the same refusal as `add`; use `--from <path>`.
+
 ## Icons
 
 ```bash
@@ -83,6 +132,16 @@ icons are what it draws when you do not: redraw `src/icons/nc/chevron.rs` and ev
 falls back on a chevron draws yours. Because they are yours to redraw, a component's `--force`
 refreshes an icon that is unchanged but never one you have edited; `icons add <name> --force`
 replaces it.
+
+```bash
+cargo nocli icons remove x
+```
+
+`icons remove` mirrors `components remove`: it deletes the glyph, forgets it in the lock and
+rewrites `mod.rs`. It refuses for an icon that an installed component or another icon still
+draws (`kept ... (used by dialog)`) and for one you have edited; `--force` overrides both. The
+`icon` wrapper is used by every glyph, so it is refused until they are gone. Names are lowercase
+letters, digits and `_`; anything that could be a path is rejected.
 
 A project's own icon set belongs beside `nc`, not inside it (`src/icons/app.rs`, declared in
 `src/icons/mod.rs` outside the nocli block), so nothing the CLI writes ever touches it.

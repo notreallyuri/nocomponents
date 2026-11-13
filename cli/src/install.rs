@@ -1,4 +1,4 @@
-//! `cargo nocli components add`, `list`, `remove` and `status`, and `icons add` / `list`.
+//! `cargo nocli components add`, `list`, `remove`, `status` and `update`, and `icons add` / `list` / `remove`.
 
 use crate::{
     config::Config,
@@ -97,15 +97,59 @@ fn place(
 /// Whether the release being installed from ships its glyphs as source. Before 0.4 the styled
 /// layer drew them out of `nocomponents::icons`, and a CLI newer than the library a project has
 /// pinned has to keep installing it that way.
-pub async fn ships_icons(source: &Source) -> bool {
-    source.icon("icon").await.is_ok()
+pub async fn ships_icons(source: &Source) -> Result<bool> {
+    Ok(source.icon_opt("icon").await?.is_some())
+}
+
+/// Components built on other components pull those in too, read out of the source just
+/// downloaded rather than from a list that could drift.
+#[allow(clippy::too_many_arguments)]
+async fn install_components(
+    source: &Source,
+    targets: &Targets<'_>,
+    dir: &Path,
+    wanted: &[String],
+    asked_for: &[String],
+    force: bool,
+    lock: &mut Lock,
+    outcome: &mut Outcome,
+    icons: &mut BTreeSet<String>,
+) -> Result<Vec<String>> {
+    let mut queue: VecDeque<String> = wanted.iter().cloned().collect();
+    let mut seen: BTreeSet<String> = wanted.iter().cloned().collect();
+    let mut installed: Vec<String> = Vec::new();
+
+    while let Some(name) = queue.pop_front() {
+        let file = source.component(&name).await?;
+        let out = rewrite::rewrite(&file, targets);
+        icons.extend(out.icon_deps.iter().cloned());
+
+        place(
+            Kind::Component,
+            dir,
+            &name,
+            &out.source,
+            asked_for.contains(&name),
+            force,
+            lock,
+            outcome,
+        )?;
+        installed.push(name);
+
+        for dep in out.component_deps {
+            if seen.insert(dep.clone()) {
+                queue.push_back(dep);
+            }
+        }
+    }
+    Ok(installed)
 }
 
 pub async fn add(source: &Source, names: &[String], force: bool) -> Result<()> {
     manifest::require_cargo_project()?;
     let config = Config::load()?;
     let module_path = config.module_path()?;
-    let installs_icons = ships_icons(source).await;
+    let installs_icons = ships_icons(source).await?;
     let icons_path = if installs_icons {
         config.icons_module_path()?
     } else {
@@ -119,40 +163,21 @@ pub async fn add(source: &Source, names: &[String], force: bool) -> Result<()> {
     fs::create_dir_all(dir).with_context(|| format!("creating {}", config.paths.components))?;
 
     let mut lock = Lock::load();
-    let mut queue: VecDeque<String> = names.iter().cloned().collect();
-    let mut seen: BTreeSet<String> = names.iter().cloned().collect();
-    let mut installed: Vec<String> = Vec::new();
     let mut icons: BTreeSet<String> = BTreeSet::new();
     let mut outcome = Outcome::new();
 
-    // Components built on other components pull those in too, read out of the source just
-    // downloaded rather than from a list that could drift.
-    while let Some(name) = queue.pop_front() {
-        let file = source.component(&name).await?;
-        let out = rewrite::rewrite(&file, &targets);
-        icons.extend(out.icon_deps.iter().cloned());
-
-        // Never write over a file already there: the installed source is the project's to edit.
-        // What the lock adds is *which* file that is — a component still exactly as it was
-        // installed is worth refreshing, and one the project has edited is not.
-        place(
-            Kind::Component,
-            dir,
-            &name,
-            &out.source,
-            names.contains(&name),
-            force,
-            &mut lock,
-            &mut outcome,
-        )?;
-        installed.push(name);
-
-        for dep in out.component_deps {
-            if seen.insert(dep.clone()) {
-                queue.push_back(dep);
-            }
-        }
-    }
+    let installed = install_components(
+        source,
+        &targets,
+        dir,
+        names,
+        names,
+        force,
+        &mut lock,
+        &mut outcome,
+        &mut icons,
+    )
+    .await?;
 
     write_module(dir)?;
     let root_hint = crate::modules::declare_install_dir(&config.paths.components)?;
@@ -200,7 +225,7 @@ pub async fn add(source: &Source, names: &[String], force: bool) -> Result<()> {
 pub async fn add_icons(source: &Source, names: &[String], force: bool) -> Result<()> {
     manifest::require_cargo_project()?;
     let config = Config::load()?;
-    if !ships_icons(source).await {
+    if !ships_icons(source).await? {
         anyhow::bail!(
             "the nocomponents this project compiles against draws its icons from the crate rather \
              than shipping them as source — upgrade it to 0.4 or later to install them"
@@ -377,6 +402,7 @@ fn splice(existing: &str, block: &str) -> String {
 /// on, which would leave the project not compiling, and once for a file the project has edited,
 /// which is work `add` was careful never to overwrite and this should be no keener to throw away.
 pub fn remove(names: &[String], force: bool) -> Result<()> {
+    check_names(names)?;
     manifest::require_cargo_project()?;
     let config = Config::load()?;
     let module_path = config.module_path()?;
@@ -432,6 +458,389 @@ pub fn remove(names: &[String], force: bool) -> Result<()> {
     // which anything still installed may be using.
     if removed > 0 {
         println!("Cargo.toml is untouched — drop the features by hand if nothing else needs them.");
+    }
+    Ok(())
+}
+
+pub fn remove_icons(names: &[String], force: bool) -> Result<()> {
+    check_names(names)?;
+    manifest::require_cargo_project()?;
+    let config = Config::load()?;
+    let icons_path = config.icons_module_path()?;
+    let components_dir = Path::new(&config.paths.components);
+    let dir = Path::new(&config.paths.icons);
+    let mut lock = Lock::load();
+
+    let mut removed = 0usize;
+    let mut kept = 0usize;
+
+    for name in names {
+        let path = dir.join(format!("{name}.rs"));
+        if !path.exists() {
+            println!("  not here  {}", path.display());
+            continue;
+        }
+
+        let dependents = lock::icon_dependents(components_dir, dir, name, &icons_path)?;
+        if !dependents.is_empty() && !force {
+            println!(
+                "  kept      {} (used by {})",
+                path.display(),
+                dependents.join(", ")
+            );
+            kept += 1;
+            continue;
+        }
+
+        let edited = fs::read_to_string(&path)
+            .map(|text| lock.state(Kind::Icon, name, &text) == State::Edited)
+            .unwrap_or(false);
+        if edited && !force {
+            println!("  kept      {} (edited here)", path.display());
+            kept += 1;
+            continue;
+        }
+
+        fs::remove_file(&path).with_context(|| format!("removing {}", path.display()))?;
+        lock.forget(Kind::Icon, name);
+        println!("  removed   {}", path.display());
+        removed += 1;
+    }
+
+    if dir.is_dir() {
+        write_module(dir)?;
+    }
+    lock.save()?;
+
+    print!("\n{removed} removed");
+    if kept > 0 {
+        print!(", {kept} left alone (--force removes them anyway)");
+    }
+    println!(" in {}", config.paths.icons);
+    Ok(())
+}
+
+fn check_names(names: &[String]) -> Result<()> {
+    for name in names {
+        let ok = !name.is_empty()
+            && name
+                .chars()
+                .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_');
+        if !ok {
+            anyhow::bail!(
+                "`{name}` is not a component or icon name — names are lowercase letters, digits and `_`"
+            );
+        }
+    }
+    Ok(())
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum UpdateRow {
+    Current,
+    Outdated,
+    Edited { changed_upstream: bool },
+    Unrecorded,
+    Gone,
+}
+
+pub fn classify(on_disk: &str, recorded: Option<&str>, upstream: Option<&str>) -> UpdateRow {
+    let Some(upstream) = upstream else {
+        return UpdateRow::Gone;
+    };
+    let Some(recorded) = recorded else {
+        return UpdateRow::Unrecorded;
+    };
+    let upstream = lock::hash(upstream);
+    if recorded == lock::hash(on_disk) {
+        if recorded == upstream {
+            UpdateRow::Current
+        } else {
+            UpdateRow::Outdated
+        }
+    } else {
+        UpdateRow::Edited {
+            changed_upstream: recorded != upstream,
+        }
+    }
+}
+
+impl UpdateRow {
+    fn label(&self) -> &'static str {
+        match self {
+            UpdateRow::Current => "current",
+            UpdateRow::Outdated => "outdated",
+            UpdateRow::Edited { .. } => "edited",
+            UpdateRow::Unrecorded => "not in lock",
+            UpdateRow::Gone => "not in release",
+        }
+    }
+
+    fn note(&self, kind: Kind) -> Option<String> {
+        match self {
+            UpdateRow::Current | UpdateRow::Outdated => None,
+            UpdateRow::Edited {
+                changed_upstream: true,
+            } => Some("edited here, and changed upstream — diff it".to_string()),
+            UpdateRow::Edited { .. } => Some("edited here".to_string()),
+            UpdateRow::Unrecorded => {
+                let what = match kind {
+                    Kind::Component => "components",
+                    Kind::Icon => "icons",
+                };
+                Some(format!(
+                    "not in lock, cannot tell if edited; `{what} add <name> --force` records it"
+                ))
+            }
+            UpdateRow::Gone => Some("yours, or dropped by the release".to_string()),
+        }
+    }
+
+    fn ignored(&self) -> bool {
+        !matches!(self, UpdateRow::Current | UpdateRow::Outdated)
+    }
+}
+
+struct Examined {
+    kind: Kind,
+    name: String,
+    row: UpdateRow,
+    upstream: Option<rewrite::Rewritten>,
+}
+
+async fn examine(
+    source: &Source,
+    kind: Kind,
+    dir: &str,
+    targets: &Targets<'_>,
+    lock: &Lock,
+) -> Result<Vec<Examined>> {
+    let mut files = read_installed(Path::new(dir))?;
+    files.sort_by(|a, b| a.0.cmp(&b.0));
+
+    let mut out = Vec::new();
+    for (name, text) in files {
+        let fetched = match kind {
+            Kind::Component => source.component_opt(&name).await?,
+            Kind::Icon => source.icon_opt(&name).await?,
+        };
+        let upstream = fetched.map(|file| rewrite::rewrite(&file, targets));
+        let row = classify(
+            &text,
+            lock.recorded(kind, &name),
+            upstream.as_ref().map(|u| u.source.as_str()),
+        );
+        out.push(Examined {
+            kind,
+            name,
+            row,
+            upstream,
+        });
+    }
+    Ok(out)
+}
+
+fn print_rows(rows: &[Examined], dir: &str, what: &str) {
+    println!("{what} in {dir}:");
+    for e in rows {
+        match e.row.note(e.kind) {
+            Some(note) => println!("  {:<14} {} ({note})", e.row.label(), e.name),
+            None => println!("  {:<14} {}", e.row.label(), e.name),
+        }
+    }
+    if rows.is_empty() {
+        println!("  (none installed)");
+    }
+}
+
+pub async fn update(source: &Source, apply: bool) -> Result<()> {
+    manifest::require_cargo_project()?;
+    let config = Config::load()?;
+    let module_path = config.module_path()?;
+    let installs_icons = ships_icons(source).await?;
+    let icons_path = if installs_icons {
+        config.icons_module_path()?
+    } else {
+        "nocomponents::icons".to_string()
+    };
+    let targets = Targets {
+        components: &module_path,
+        icons: &icons_path,
+    };
+    source.catalogue().await?;
+    let mut lock = Lock::load();
+
+    let components = examine(
+        source,
+        Kind::Component,
+        &config.paths.components,
+        &targets,
+        &lock,
+    )
+    .await?;
+    let icons = if installs_icons {
+        examine(source, Kind::Icon, &config.paths.icons, &targets, &lock).await?
+    } else {
+        Vec::new()
+    };
+
+    let all = || components.iter().chain(icons.iter());
+    let outdated = all().filter(|e| e.row == UpdateRow::Outdated).count();
+    let current = all().filter(|e| e.row == UpdateRow::Current).count();
+    let ignored = all()
+        .filter(|e| e.row.ignored() && e.row != UpdateRow::Gone)
+        .count();
+    let gone = all().filter(|e| e.row == UpdateRow::Gone).count();
+
+    if !apply {
+        print_rows(&components, &config.paths.components, "components");
+        if installs_icons {
+            println!();
+            print_rows(&icons, &config.paths.icons, "icons");
+        }
+        print!(
+            "\n{outdated} outdated, {current} current, {ignored} ignored (edited or not in lock)"
+        );
+        if gone > 0 {
+            print!(", {gone} not in the release");
+        }
+        println!();
+        if outdated > 0 {
+            println!("run with --apply to update the {outdated} unchanged ones");
+        }
+        return Ok(());
+    }
+
+    let component_dir = Path::new(&config.paths.components);
+    let icon_dir = Path::new(&config.paths.icons);
+    let mut component_deps: BTreeSet<String> = BTreeSet::new();
+    let mut icon_deps: BTreeSet<String> = BTreeSet::new();
+    let mut components_touched = false;
+    let mut icons_touched = false;
+
+    for e in all().filter(|e| e.row == UpdateRow::Outdated) {
+        let Some(upstream) = &e.upstream else {
+            continue;
+        };
+        let dir = match e.kind {
+            Kind::Component => component_dir,
+            Kind::Icon => icon_dir,
+        };
+        let path = dir.join(format!("{}.rs", e.name));
+        fs::write(&path, &upstream.source)
+            .with_context(|| format!("writing {}", path.display()))?;
+        lock.record(e.kind, &e.name, &upstream.source);
+        println!("  updated   {}", path.display());
+        component_deps.extend(upstream.component_deps.iter().cloned());
+        icon_deps.extend(upstream.icon_deps.iter().cloned());
+        match e.kind {
+            Kind::Component => components_touched = true,
+            Kind::Icon => icons_touched = true,
+        }
+    }
+    lock.save()?;
+
+    let missing_components: Vec<String> = component_deps
+        .into_iter()
+        .filter(|name| !component_dir.join(format!("{name}.rs")).exists())
+        .collect();
+    let mut outcome = Outcome::new();
+    let mut hints = [None, None];
+    let mut fresh: Vec<String> = Vec::new();
+
+    if !missing_components.is_empty() {
+        components_touched = true;
+        fs::create_dir_all(component_dir)
+            .with_context(|| format!("creating {}", config.paths.components))?;
+        println!();
+        let existed: BTreeSet<String> = read_installed(component_dir)?
+            .into_iter()
+            .map(|(name, _)| name)
+            .collect();
+        let mut pulled_icons = BTreeSet::new();
+        let installed = install_components(
+            source,
+            &targets,
+            component_dir,
+            &missing_components,
+            &[],
+            false,
+            &mut lock,
+            &mut outcome,
+            &mut pulled_icons,
+        )
+        .await?;
+        icon_deps.extend(pulled_icons);
+        fresh = installed
+            .into_iter()
+            .filter(|name| !existed.contains(name))
+            .collect();
+        hints[0] = crate::modules::declare_install_dir(&config.paths.components)?;
+    }
+    if components_touched {
+        write_module(component_dir)?;
+    }
+
+    if installs_icons {
+        let missing_icons: BTreeSet<String> = icon_deps
+            .into_iter()
+            .filter(|name| !icon_dir.join(format!("{name}.rs")).exists())
+            .collect();
+        if !missing_icons.is_empty() {
+            println!();
+            hints[1] = install_icons(
+                source,
+                &config,
+                &targets,
+                missing_icons,
+                &[],
+                false,
+                &mut lock,
+                &mut outcome,
+            )
+            .await?;
+        } else if icons_touched {
+            write_module(icon_dir)?;
+        }
+    }
+    lock.save()?;
+
+    if !fresh.is_empty() {
+        let mut features = BTreeSet::new();
+        features.insert("primitives".to_string());
+        features.extend(fresh);
+        manifest::add_dependency(&features, source.checkout())?;
+    }
+
+    for hint in hints.into_iter().flatten() {
+        println!("\n{hint}");
+    }
+
+    let updated = all().filter(|e| e.row == UpdateRow::Outdated).count();
+    print!("\n{updated} updated");
+    if outcome.written > 0 {
+        print!(", {} newly installed", outcome.written);
+    }
+    println!();
+
+    for (heading, wanted_gone) in [("ignored:", false), ("not in the release:", true)] {
+        let left: Vec<&Examined> = all()
+            .filter(|e| e.row.ignored() && (e.row == UpdateRow::Gone) == wanted_gone)
+            .collect();
+        if left.is_empty() {
+            continue;
+        }
+        println!("\n{heading}");
+        for e in left {
+            let dir = match e.kind {
+                Kind::Component => &config.paths.components,
+                Kind::Icon => &config.paths.icons,
+            };
+            match (&e.row, e.row.note(e.kind)) {
+                (UpdateRow::Gone, _) | (_, None) => println!("  {dir}/{}.rs", e.name),
+                (_, Some(note)) => println!("  {dir}/{}.rs: {note}", e.name),
+            }
+        }
     }
     Ok(())
 }
@@ -633,5 +1042,46 @@ mod tests {
             1,
             "not declared twice"
         );
+    }
+
+    #[test]
+    fn classifies_every_row_of_an_update() {
+        let h = lock::hash;
+        let installed = h("v1");
+
+        assert_eq!(
+            classify("v1", Some(&installed), Some("v1")),
+            UpdateRow::Current
+        );
+        assert_eq!(
+            classify("v1", Some(&installed), Some("v2")),
+            UpdateRow::Outdated
+        );
+        assert_eq!(
+            classify("v1 mine", Some(&installed), Some("v1")),
+            UpdateRow::Edited {
+                changed_upstream: false
+            }
+        );
+        assert_eq!(
+            classify("v1 mine", Some(&installed), Some("v2")),
+            UpdateRow::Edited {
+                changed_upstream: true
+            }
+        );
+        assert_eq!(classify("v1", None, Some("v1")), UpdateRow::Unrecorded);
+        assert_eq!(classify("v1", Some(&installed), None), UpdateRow::Gone);
+        assert_eq!(classify("v1", None, None), UpdateRow::Gone);
+    }
+
+    #[test]
+    fn a_name_cannot_be_a_path() {
+        let names = |n: &str| vec![n.to_string()];
+        assert!(check_names(&names("dropdown_menu")).is_ok());
+        assert!(check_names(&names("../x")).is_err());
+        assert!(check_names(&names("a/b")).is_err());
+        assert!(check_names(&names("a\\b")).is_err());
+        assert!(check_names(&names("..")).is_err());
+        assert!(check_names(&names("")).is_err());
     }
 }

@@ -105,6 +105,10 @@ impl Lock {
         self.map_mut(kind).remove(name);
     }
 
+    pub fn recorded(&self, kind: Kind, name: &str) -> Option<&str> {
+        self.map(kind).get(name).map(String::as_str)
+    }
+
     pub fn state(&self, kind: Kind, name: &str, on_disk: &str) -> State {
         match self.map(kind).get(name) {
             None => State::Unrecorded,
@@ -119,20 +123,28 @@ impl Lock {
 /// Their imports were rewritten on the way in, so a dependency reads as `<module_path>::<name>::`
 /// in the file that has it — which is what makes this a search rather than a list to maintain.
 pub fn dependents_of(dir: &Path, name: &str, module_path: &str) -> Result<Vec<String>> {
-    let needle = format!("{module_path}::{name}::");
-    let mut found = Vec::new();
+    dependents_in(dir, Some(name), &format!("{module_path}::{name}::"))
+}
 
-    for entry in fs::read_dir(dir).with_context(|| format!("reading {}", dir.display()))? {
+fn dependents_in(dir: &Path, own: Option<&str>, needle: &str) -> Result<Vec<String>> {
+    let mut found = Vec::new();
+    let entries = match fs::read_dir(dir) {
+        Ok(entries) => entries,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(found),
+        Err(e) => return Err(e).with_context(|| format!("reading {}", dir.display())),
+    };
+
+    for entry in entries {
         let entry = entry?;
         let file = entry.file_name().to_string_lossy().into_owned();
         let Some(other) = file.strip_suffix(".rs") else {
             continue;
         };
-        if other == name || other == "mod" {
+        if Some(other) == own || other == "mod" {
             continue;
         }
         if fs::read_to_string(entry.path())
-            .map(|text| text.contains(&needle))
+            .map(|text| text.contains(needle))
             .unwrap_or(false)
         {
             found.push(other.to_string());
@@ -140,6 +152,22 @@ pub fn dependents_of(dir: &Path, name: &str, module_path: &str) -> Result<Vec<St
     }
 
     found.sort();
+    Ok(found)
+}
+
+pub fn icon_dependents(
+    components: &Path,
+    icons: &Path,
+    name: &str,
+    icons_module_path: &str,
+) -> Result<Vec<String>> {
+    let needle = format!("{icons_module_path}::{name}::");
+    let mut found = dependents_in(components, None, &needle)?;
+    found.extend(
+        dependents_in(icons, Some(name), &needle)?
+            .into_iter()
+            .map(|other| format!("{other} (icon)")),
+    );
     Ok(found)
 }
 
@@ -210,5 +238,45 @@ mod tests {
     fn a_lock_from_before_icons_reads_with_none() {
         let lock: Lock = toml::from_str("[components]\nbutton = \"00\"\n").unwrap();
         assert_eq!(lock.state(Kind::Icon, "x", ""), State::Unrecorded);
+    }
+
+    #[test]
+    fn an_icon_is_used_by_components_and_by_other_icons() {
+        let root = std::env::temp_dir().join(format!("nocli-icon-deps-{}", std::process::id()));
+        let components = root.join("components");
+        let icons = root.join("icons");
+        fs::create_dir_all(&components).unwrap();
+        fs::create_dir_all(&icons).unwrap();
+        fs::write(
+            components.join("dialog.rs"),
+            "use crate::icons::nc::x::XIcon;\n",
+        )
+        .unwrap();
+        fs::write(
+            components.join("button.rs"),
+            "use crate::icons::nc::check::CheckIcon;\n",
+        )
+        .unwrap();
+        fs::write(icons.join("x.rs"), "use crate::icons::nc::icon::Icon;\n").unwrap();
+        fs::write(
+            icons.join("check.rs"),
+            "use crate::icons::nc::icon::Icon;\n",
+        )
+        .unwrap();
+        fs::write(icons.join("mod.rs"), "pub mod icon;\n").unwrap();
+
+        let of =
+            |name: &str| icon_dependents(&components, &icons, name, "crate::icons::nc").unwrap();
+        let x = of("x");
+        let icon = of("icon");
+        let none = of("unused");
+        fs::remove_dir_all(&root).unwrap();
+
+        assert_eq!(x, vec!["dialog".to_string()]);
+        assert_eq!(
+            icon,
+            vec!["check (icon)".to_string(), "x (icon)".to_string()]
+        );
+        assert!(none.is_empty());
     }
 }
