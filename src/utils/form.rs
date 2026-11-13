@@ -56,30 +56,86 @@ fn closest_form(node: &Element) -> Option<Element> {
 /// well as the property, so that a reset which the handler leaves unchanged restores them to what
 /// the root already says. The listener is on the form itself and is removed with the owner.
 pub fn on_form_reset(node: AnyNodeRef, handler: impl Fn() + Send + Sync + 'static) {
+    on_form_reset_in(node, Signal::derive(String::new), handler);
+}
+
+/// [`on_form_reset`] for a control that may belong to a form it is not inside: a non-empty `form`
+/// names the `<form>` by id and is listened to instead of the ancestor. Resolved when the node
+/// mounts and again whenever `form` changes; a form that is not in the document yet at that
+/// moment is not found.
+pub fn on_form_reset_in(
+    node: AnyNodeRef,
+    form: Signal<String>,
+    handler: impl Fn() + Send + Sync + 'static,
+) {
     let listener = StoredValue::new_local(None::<(Element, Closure<dyn FnMut()>)>);
     let handler = std::sync::Arc::new(handler);
 
+    let detach = move || {
+        if let Some(Some((form, closure))) = listener.try_update_value(|held| held.take()) {
+            let _ =
+                form.remove_event_listener_with_callback("reset", closure.as_ref().unchecked_ref());
+        }
+    };
+
     Effect::new(move |_| {
-        let Some(form) = node.get().and_then(|node| closest_form(&node)) else {
+        let id = form.get();
+        let Some(node) = node.get() else {
             return;
         };
-        if listener.with_value(|held| held.is_some()) {
+        let target = if id.is_empty() {
+            closest_form(&node)
+        } else {
+            document().get_element_by_id(&id)
+        };
+
+        let held = listener.with_value(|held| held.as_ref().map(|(form, _)| form.clone()));
+        if held == target {
             return;
         }
+        detach();
+        let Some(target) = target else {
+            return;
+        };
 
         let handler = handler.clone();
         let closure = Closure::<dyn FnMut()>::new(move || {
             let handler = handler.clone();
             set_timeout(move || handler(), Duration::ZERO);
         });
-        let _ = form.add_event_listener_with_callback("reset", closure.as_ref().unchecked_ref());
-        listener.set_value(Some((form, closure)));
+        let _ = target.add_event_listener_with_callback("reset", closure.as_ref().unchecked_ref());
+        listener.set_value(Some((target, closure)));
     });
 
-    on_cleanup(move || {
-        if let Some(Some((form, closure))) = listener.try_update_value(|held| held.take()) {
-            let _ =
-                form.remove_event_listener_with_callback("reset", closure.as_ref().unchecked_ref());
+    on_cleanup(detach);
+}
+
+/// Puts a native text control back to its default when its form is reset, and tells the `model`
+/// bound to it.
+///
+/// The default is read *at the moment of the reset*, not captured at mount, so a value that
+/// arrives late — a profile loaded after the form rendered — is what the form returns to, as with
+/// React's `defaultValue`. Callers pass `default_value` when they set one and otherwise the
+/// current `value` prop (empty when neither — an empty `default_value` is unset): never the `model`'s own earlier contents, which is
+/// what the reader has been editing. The browser resets the control itself to its HTML default,
+/// which a control whose value is written as a property never had, so the result is written to
+/// both the element and `model`. `form` is the control's `form` prop; see [`on_form_reset_in`].
+pub fn on_native_reset(
+    node: AnyNodeRef,
+    form: Signal<String>,
+    model: Option<RwSignal<String>>,
+    default_value: Signal<String>,
+    value: Signal<String>,
+) {
+    on_form_reset_in(node, form, move || {
+        let default = Some(default_value.get_untracked())
+            .filter(|default| !default.is_empty())
+            .unwrap_or_else(|| value.get_untracked());
+        if let Some(model) = model {
+            model.set(default.clone());
+        }
+        if let Some(node) = node.get_untracked() {
+            let _ = js_sys::Reflect::set(&node, &"value".into(), &default.into());
         }
     });
 }

@@ -28,7 +28,13 @@ const API: &[ApiEntry] = &[ApiEntry {
             name: "model",
             ty: "Option<RwSignal<String>>",
             default: "None",
-            description: "Two-way binding. Pass this or `value`, not both.",
+            description: "Two-way binding. Pass this or `value`, not both. A reset of the surrounding `<form>` (or the one named by `form`) writes `default_value` into it; see `default_value`.",
+        },
+        Prop {
+            name: "default_value",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "What a reset of the form puts back, read at the moment of the reset — so a value that arrived after mount is honoured. Empty means unset, and the current `value` is used instead. Never the `model`'s own earlier contents. The result is written to the control and to `model`.",
         },
         Prop {
             name: "value",

@@ -9,6 +9,45 @@ touched; `cargo nocli components status` and a diff are how you deal with those.
 installed before the lock existed reads `not in lock`: the tool cannot tell whether it was edited,
 so diff it too and `components add <name> --force` to record it.
 
+## Unreleased
+
+### Breaking
+
+- **`Calendar` and `DatePicker`: the per-date callback is `disabled_dates`.** `disabled` was a
+  `Callback<Date, bool>` here and a `Signal<bool>` everywhere else; it is now the signal on
+  `DatePicker`. Migration: rename `disabled=|date| …` to `disabled_dates=|date| …`. The primitive
+  `CalendarRoot` keeps `disabled`.
+
+### Added
+
+- **`Checkbox` `indeterminate`** (and `indeterminate_icon`, default `Minus`): `aria-checked="mixed"`,
+  `data-state="indeterminate"`; a click checks the box and calls `on_checked_change(true)`. On
+  `CheckboxRoot` too. `DataTable`'s select-all uses it for a partly selected page.
+- **`PopoverContentRoot` / `PopoverContent` `auto_focus`** (default true).
+- **`DatePicker` `disabled` and `id`**, so the picker can be switched off and a `Field` label can
+  point at it.
+- **`InputType::Tel`, `Url`, `Search`, `Date`.**
+- **`NativeSelect` `on_change`, `NativeSelectOption` and `NativeSelectOptGroup`** (with
+  `*Root` primitives).
+- **`SelectTrigger` `disabled`** and **`InputGroupButton` `disabled` and `type`**.
+- **`SliderThumb` `aria_label`**, `FieldContext::label_id` and `FieldControl::labelled_by`.
+- **`default_value`** on `Input`, `Textarea` and `NativeSelect`: what a form reset puts back, read
+  when the reset happens (so data that arrived after mount is honoured), else the current `value`.
+  A control's `form` prop is honoured by the reset listener. `utils::form::on_native_reset`.
+- **`PopoverContentRoot` `initial_focus`**, a selector `auto_focus` tries first.
+
+### Fixed
+
+- **A form reset now reaches a `model`.** `Input`, `Textarea` and `NativeSelect` went back to their
+  starting value on screen and left the caller's `model` holding the old one; they now write their
+  `default_value` into both.
+- **A popover moves focus into its content when it opens**, as Radix does (`auto_focus=false`
+  opts out); before, a keyboard user had to Tab through the page to reach it. A `DatePicker`
+  focuses the selected day, or the calendar's current day stop.
+- **`DataTable`'s select-all shows mixed** when some but not all rows are selected.
+- **A slider inside a `Field` has an accessible name**: the thumb points `aria-labelledby` at the
+  field's label.
+
 ## 0.5.0
 
 Icon slots reach through the composite components, the close and loading labels can be translated,

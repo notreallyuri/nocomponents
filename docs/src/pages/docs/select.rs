@@ -171,6 +171,12 @@ const API: &[ApiEntry] = &[
                 description: "Merged over the trigger's classes.",
             },
             Prop {
+                name: "disabled",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Disables this trigger on its own; it is also disabled whenever the `Select` or a surrounding `Field` is.",
+            },
+            Prop {
                 name: "children",
                 ty: "Children",
                 default: "",

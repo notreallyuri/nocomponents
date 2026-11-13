@@ -20,6 +20,9 @@ use web_sys::Node;
 pub struct FieldContext {
     /// Minted by the root, worn by the control, pointed at by the label's `for`.
     pub control_id: RwSignal<String>,
+    /// Empty until the label mounts and registers its own. A control that a `for` cannot name —
+    /// a `<span role="slider">` — points `aria-labelledby` at it instead.
+    pub label_id: RwSignal<String>,
     /// Empty until the matching part mounts and registers itself, the way `dialog.rs` does it.
     pub description_id: RwSignal<String>,
     pub error_id: RwSignal<String>,
@@ -71,6 +74,9 @@ pub struct FieldControl {
     /// attribute is omitted rather than rendered empty.
     pub id: Signal<Option<String>>,
     pub described_by: Signal<Option<String>>,
+    /// The id of the field's label, for a control `<label for>` cannot name. `None` outside a
+    /// field and until the label has mounted.
+    pub labelled_by: Signal<Option<String>>,
     pub invalid: Signal<bool>,
     pub disabled: Signal<bool>,
     /// Whether focus has been in the field around this control and left again. Always false
@@ -101,6 +107,9 @@ impl FieldControl {
                 Some(resolved).filter(|id| !id.is_empty())
             }),
             described_by: Signal::derive(move || ctx.and_then(|ctx| ctx.described_by())),
+            labelled_by: Signal::derive(move || {
+                ctx.and_then(|ctx| ctx.label_id.with(|id| (!id.is_empty()).then(|| id.clone())))
+            }),
             invalid: Signal::derive(move || ctx.is_some_and(|ctx| ctx.invalid.get())),
             disabled: Signal::derive(move || {
                 disabled.get() || ctx.is_some_and(|ctx| ctx.disabled.get())
@@ -194,6 +203,7 @@ pub fn FieldRoot(
 ) -> impl IntoView {
     let context = FieldContext {
         control_id: RwSignal::new(next_id("field-control")),
+        label_id: RwSignal::new(String::new()),
         description_id: RwSignal::new(String::new()),
         error_id: RwSignal::new(String::new()),
         invalid,
@@ -423,9 +433,22 @@ pub fn FieldLabelRoot(
     children: Children,
 ) -> impl IntoView {
     let ctx = use_field();
+    let id = next_id("field-label");
+    ctx.label_id.set(id.clone());
+    let own = id.clone();
+    on_cleanup(move || {
+        if ctx
+            .label_id
+            .try_get_untracked()
+            .is_some_and(|stored| stored == own)
+        {
+            ctx.label_id.set(String::new());
+        }
+    });
 
     view! {
         <label
+            id=id
             data-slot="field-label"
             r#for=move || ctx.control_id.get()
             data-invalid=move || ctx.invalid.get().then_some("true")

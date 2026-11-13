@@ -81,7 +81,8 @@ Components are named `<Name>Root`, `<Name>TriggerRoot`, `<Name>ContentRoot`, …
 
 `src/components/<name>.rs` — the shadcn-styled wrapper: same tree, named `<Name>`, `<Name>Trigger`, …,
 passing a `cn!(...)` class down into the matching `*Root`. Some components are style-only and have no
-primitive (`skeleton`, `spinner`, `badge`, `card`, `input`, `label`); `alert_dialog`, `date_picker`
+primitive (`skeleton`, `spinner`, `badge`, `card`, `input`, `label`; `input` shares its form-reset
+behaviour through `utils::form`); `alert_dialog`, `date_picker`
 and `combobox` are built on other primitives rather than one of their own. Both modules re-export
 everything through a `prelude`.
 

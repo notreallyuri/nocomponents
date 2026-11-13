@@ -259,6 +259,12 @@ const API: &[ApiEntry] = &[
                 description: "The title row under the sheet's grabber. Empty means a grabber and no row. Ignored when the content is not a sheet.",
             },
             Prop {
+                name: "auto_focus",
+                ty: "Signal<bool>",
+                default: "true",
+                description: "Move focus into the panel when it opens — onto its first focusable element, or the panel itself when it holds none — and, when the keyboard closes it, back onto the trigger. Applies to the bottom-sheet presentation too. Turn it off to leave focus where it was.",
+            },
+            Prop {
                 name: "children",
                 ty: "Children",
                 default: "",
@@ -347,7 +353,7 @@ pub fn Page() -> impl IntoView {
     view! {
         <DocLayout
             title="Popover"
-            description="Floating content anchored to a trigger element. Set `mobile_sheet` and it becomes a bottom sheet on phones; the Dropdown Menu page shows it. `container` portals it into an element of yours instead of the body."
+            description="Floating content anchored to a trigger element. Set `mobile_sheet` and it becomes a bottom sheet on phones; the Dropdown Menu page shows it. `container` portals it into an element of yours instead of the body. Opening moves focus into the panel (`auto_focus` opts out) and a keyboard close returns it to the trigger."
         >
             <div class="flex flex-col gap-8">
                 <DemoSection

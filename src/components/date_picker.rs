@@ -9,6 +9,7 @@ use crate::{
         chevron::{ChevronLeft, ChevronRight},
     },
     primitives::{
+        field::field_control_for_trigger,
         floating::{FloatingContext, FloatingRoot, TriggerAria},
         popover::{PopoverContentRoot, PopoverPortalRoot, use_popover},
     },
@@ -43,7 +44,9 @@ pub fn DatePicker(
     #[prop(into, default = 0.into())] week_starts_on: Signal<u32>,
     #[prop(optional, into)] min: MaybeProp<Date>,
     #[prop(optional, into)] max: MaybeProp<Date>,
-    #[prop(optional, into)] disabled: Option<Callback<Date, bool>>,
+    #[prop(optional, into)] disabled_dates: Option<Callback<Date, bool>>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional, into)] id: Signal<String>,
     #[prop(optional, into)] locale: Signal<String>,
     #[prop(optional, into)] side: Signal<Side>,
     #[prop(optional, into)] align: Signal<Align>,
@@ -73,6 +76,8 @@ pub fn DatePicker(
                 placeholder=placeholder
                 locale=locale
                 class=class
+                disabled=disabled
+                id=id
                 icon=icon.clone()
             />
             <DatePickerContent
@@ -84,7 +89,7 @@ pub fn DatePicker(
                 week_starts_on=week_starts_on
                 min=min
                 max=max
-                disabled=disabled
+                disabled_dates=disabled_dates
                 locale=locale
                 side=side
                 align=align
@@ -126,15 +131,20 @@ fn DatePickerTrigger(
     placeholder: Signal<String>,
     locale: Signal<String>,
     class: Signal<String>,
+    disabled: Signal<bool>,
+    id: Signal<String>,
     icon: Option<ViewFn>,
 ) -> impl IntoView {
     let ctx = use_popover();
     let names = Memo::new(move |_| DateNames::new(&locale.get()));
+    let field = field_control_for_trigger(ctx.trigger_id, ctx.trigger_ref, disabled);
 
     view! {
         <Button
             variant=ButtonVariant::Outline
             node_ref=ctx.trigger_ref
+            id=id
+            disabled=field.disabled
             on_click=Callback::new(move |_: ev::MouseEvent| ctx.toggle())
             class=move || {
                 cn!(
@@ -178,7 +188,7 @@ fn DatePickerContent(
     week_starts_on: Signal<u32>,
     min: MaybeProp<Date>,
     max: MaybeProp<Date>,
-    disabled: Option<Callback<Date, bool>>,
+    disabled_dates: Option<Callback<Date, bool>>,
     locale: Signal<String>,
     side: Signal<Side>,
     align: Signal<Align>,
@@ -208,6 +218,7 @@ fn DatePickerContent(
                 side=side
                 align=align
                 side_offset=side_offset
+                initial_focus="button[data-slot=calendar-day][tabindex='0']"
                 class="rounded-lg bg-popover shadow-md ring-1 ring-foreground/10 outline-none animation-duration-100 pointer-events-auto data-[state=closed]:pointer-events-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95"
             >
                 <Calendar
@@ -219,7 +230,7 @@ fn DatePickerContent(
                     week_starts_on=week_starts_on
                     min=min
                     max=max
-                    disabled=forward(disabled)
+                    disabled_dates=forward(disabled_dates)
                     locale=locale
                     prev_icon=icon_or(nav_icons.get_value().0, || view! { <ChevronLeft /> })
                     next_icon=icon_or(nav_icons.get_value().1, || view! { <ChevronRight /> })

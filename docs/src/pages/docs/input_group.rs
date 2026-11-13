@@ -221,6 +221,18 @@ const API: &[ApiEntry] = &[
                 description: "Called on press. The group leaves the click alone, so it reaches the button.",
             },
             Prop {
+                name: "disabled",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Disables the button.",
+            },
+            Prop {
+                name: "type",
+                ty: "ButtonType",
+                default: "ButtonType::Button",
+                description: "One of: Button, Submit, Reset. A button inside a `<form>` does not submit it unless asked.",
+            },
+            Prop {
                 name: "class",
                 ty: "Signal<String>",
                 default: "\"\"",

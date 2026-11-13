@@ -20,6 +20,8 @@ export default async (t) => {
 
   t.expect('the slider wears the id its field label points at', await t.ev(`document.getElementById([...${form}.querySelectorAll('label')].find((l) => l.textContent.trim() === 'Volume').htmlFor)?.getAttribute('role')`), 'slider');
 
+  t.expect('the slider is named by the field label through aria-labelledby', await t.ev(`(() => { const l = document.getElementById(${thumb}.getAttribute('aria-labelledby')); return l?.textContent.trim(); })()`), 'Volume');
+
   const shadows = `[...${form}.querySelectorAll('input[aria-hidden=true]')]`;
   t.expect('two radios, a switch and a checkbox keep a native input', await t.ev(`${shadows}.map((i) => i.type)`), ['radio', 'radio', 'checkbox', 'checkbox']);
   t.expect('four shadow inputs', await t.ev(`${shadows}.length`), 4);

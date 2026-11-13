@@ -42,11 +42,11 @@ view! {
 }"#;
 
 const BOUNDS: &str = r#"// `min` and `max` fence the grid — and disable the paging buttons at the ends.
-// `disabled` rules out anything else: here, weekends.
+// `disabled_dates` rules out anything else: here, weekends.
 <Calendar
     min=Date::today()
     max=Date::today().add_months(2)
-    disabled=|date: Date| matches!(date.weekday(), 0 | 6)
+    disabled_dates=|date: Date| matches!(date.weekday(), 0 | 6)
 />"#;
 
 const MULTIPLE: &str = r#"<Calendar mode=CalendarMode::Multiple selected=selected />"#;
@@ -117,10 +117,10 @@ const API: &[ApiEntry] = &[
                 description: "The latest date that can be picked.",
             },
             Prop {
-                name: "disabled",
+                name: "disabled_dates",
                 ty: "Option<Callback<Date, bool>>",
                 default: "None",
-                description: "Anything else that cannot be picked — weekends, days already taken. Called for each of the 42 cells on show.",
+                description: "Anything else that cannot be picked — weekends, days already taken. Called for each of the 42 cells on show. Named `disabled` before 0.6.0.",
             },
             Prop {
                 name: "locale",
@@ -267,14 +267,14 @@ pub fn Page() -> impl IntoView {
 
                 <DemoSection
                     title="Bounds"
-                    description="`min` and `max` fence the grid and stop the paging buttons at the ends; `disabled` rules out anything else — here, every weekend."
+                    description="`min` and `max` fence the grid and stop the paging buttons at the ends; `disabled_dates` rules out anything else — here, every weekend."
                     code=BOUNDS
                 >
                     <div class="flex justify-center">
                         <Calendar
                             min=Date::today()
                             max=Date::today().add_months(2)
-                            disabled=|date: Date| matches!(date.weekday(), 0 | 6)
+                            disabled_dates=|date: Date| matches!(date.weekday(), 0 | 6)
                         />
                     </div>
                 </DemoSection>

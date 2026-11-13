@@ -143,7 +143,7 @@ combobox = ["button", "command", "field", "floating"]
 command = ["dialog"]
 context_menu = ["dropdown_menu", "floating", "long_press", "roving_focus", "typeahead"]
 data_table = ["checkbox", "table"]
-date_picker = ["button", "calendar", "floating", "popover"]
+date_picker = ["button", "calendar", "field", "floating", "popover"]
 dialog = ["button", "dismiss", "field"]
 dismiss = []
 drag = []
@@ -212,6 +212,7 @@ features = [
   # The DOM the primitives reach for directly.
   "Element",
   "HtmlElement",
+  "FocusOptions",
   "KeyboardEvent",
   "NodeList",
   # Auto-scroll under a drag: which ancestor scrolls, and keeping a keyboard-moved item in view.

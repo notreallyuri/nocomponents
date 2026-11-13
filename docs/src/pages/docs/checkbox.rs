@@ -51,6 +51,52 @@ const DISABLED: &str = r#"{
     }
 }"#;
 
+const INDETERMINATE: &str = r#"{
+    let items = RwSignal::new(vec![true, false, false]);
+    let some = Signal::derive(move || {
+        items.with(|items| items.iter().any(|on| *on) && !items.iter().all(|on| *on))
+    });
+    let all = RwSignal::new(false);
+    Effect::new(move |_| all.set(items.with(|items| items.iter().all(|on| *on))));
+    view! {
+        <div class="flex flex-col gap-2">
+            <div class="flex items-center gap-2">
+                <Checkbox
+                    id="select-all"
+                    checked=all
+                    indeterminate=some
+                    attr:aria-label="Select all"
+                    on:click=move |_| {
+                        let next = !items.with_untracked(|items| items.iter().all(|on| *on));
+                        items.update(|items| items.iter_mut().for_each(|on| *on = next));
+                    }
+                />
+                <Label>"Select all"</Label>
+            </div>
+            <div class="ml-6 flex flex-col gap-2">
+                {(0..3)
+                    .map(|index| {
+                        let on = RwSignal::new(items.with_untracked(|items| items[index]));
+                        Effect::new(move |_| on.set(items.with(|items| items[index])));
+                        view! {
+                            <div class="flex items-center gap-2">
+                                <Checkbox
+                                    checked=on
+                                    attr:aria-label=format!("Item {}", index + 1)
+                                    on:click=move |_| {
+                                        items.update(|items| items[index] = !items[index])
+                                    }
+                                />
+                                <Label>{format!("Item {}", index + 1)}</Label>
+                            </div>
+                        }
+                    })
+                    .collect_view()}
+            </div>
+        </div>
+    }
+}"#;
+
 const API: &[ApiEntry] = &[ApiEntry {
     name: "Checkbox",
     description: "A box that is ticked or not. Renders a real checkbox role, not a styled input.",
@@ -78,6 +124,12 @@ const API: &[ApiEntry] = &[ApiEntry {
             ty: "Option<Callback<bool>>",
             default: "None",
             description: "Called with the new value whenever it is checked or unchecked, including when the signal passed as `checked` is written from outside.",
+        },
+        Prop {
+            name: "indeterminate",
+            ty: "Signal<bool>",
+            default: "false",
+            description: "Shows \"some, not all\" over `checked`: `aria-checked=\"mixed\"` and `data-state=\"indeterminate\"`. Clicking an indeterminate box checks it and calls `on_checked_change(true)`, even when `checked` was already true; clearing `indeterminate` is the caller's. A form submits it as unchecked.",
         },
         Prop {
             name: "disabled",
@@ -120,6 +172,12 @@ const API: &[ApiEntry] = &[ApiEntry {
             ty: "Option<ViewFn>",
             default: "Check",
             description: "The glyph, in place of the check mark. Any view — an `Icon`, an SVG of your own; see Icons.",
+        },
+        Prop {
+            name: "indeterminate_icon",
+            ty: "Option<ViewFn>",
+            default: "Minus",
+            description: "The glyph shown while `indeterminate` is on, in place of the dash.",
         },
     ],
 }];
@@ -193,6 +251,69 @@ pub fn Page() -> impl IntoView {
                             }
                         }
                     </div>
+                </DemoSection>
+
+                <DemoSection
+                    title="Indeterminate"
+                    description="`indeterminate` draws over `checked` for a parent box whose children are only partly on. A click checks it; the caller decides what the children do."
+                    code=INDETERMINATE
+                >
+                    {
+                        let items = RwSignal::new(vec![true, false, false]);
+                        let some = Signal::derive(move || {
+                            items
+                                .with(|items| {
+                                    items.iter().any(|on| *on) && !items.iter().all(|on| *on)
+                                })
+                        });
+                        let all = RwSignal::new(false);
+                        Effect::new(move |_| {
+                            all.set(items.with(|items| items.iter().all(|on| *on)))
+                        });
+                        view! {
+                            <div class="flex flex-col gap-2">
+                                <div class="flex items-center gap-2">
+                                    <Checkbox
+                                        id="select-all"
+                                        checked=all
+                                        indeterminate=some
+                                        attr:aria-label="Select all"
+                                        on:click=move |_| {
+                                            let next = !items
+                                                .with_untracked(|items| items.iter().all(|on| *on));
+                                            items
+                                                .update(|items| items.iter_mut().for_each(|on| *on = next));
+                                        }
+                                    />
+                                    <Label>"Select all"</Label>
+                                </div>
+                                <div class="ml-6 flex flex-col gap-2">
+                                    {(0..3)
+                                        .map(|index| {
+                                            let on = RwSignal::new(
+                                                items.with_untracked(|items| items[index]),
+                                            );
+                                            Effect::new(move |_| {
+                                                on.set(items.with(|items| items[index]))
+                                            });
+                                            view! {
+                                                <div class="flex items-center gap-2">
+                                                    <Checkbox
+                                                        checked=on
+                                                        attr:aria-label=format!("Item {}", index + 1)
+                                                        on:click=move |_| {
+                                                            items.update(|items| items[index] = !items[index])
+                                                        }
+                                                    />
+                                                    <Label>{format!("Item {}", index + 1)}</Label>
+                                                </div>
+                                            }
+                                        })
+                                        .collect_view()}
+                                </div>
+                            </div>
+                        }
+                    }
                 </DemoSection>
 
                 <ApiReference entries=API />

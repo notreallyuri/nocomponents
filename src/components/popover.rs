@@ -76,10 +76,12 @@ pub fn PopoverContent(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] mobile_sheet: Signal<bool>,
     #[prop(optional, into)] sheet_title: Signal<String>,
+    #[prop(default = true.into(), into)] auto_focus: Signal<bool>,
     children: Children,
 ) -> impl IntoView {
     view! {
         <PopoverContentRoot
+            auto_focus=auto_focus
             side=side
             align=align
             side_offset=side_offset

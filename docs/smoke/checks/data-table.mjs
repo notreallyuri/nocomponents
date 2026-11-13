@@ -10,6 +10,18 @@ export default async (t) => {
     t.ok('and highlights it', (await t.ev(`getComputedStyle((${cb}).closest('tr')).backgroundColor`)) !== bg0);
     await t.click(cb, 300);
     t.ok('deselecting clears it', (await t.ev(`(${cb}).closest('tr').dataset.state`)) !== 'selected');
+
+    const head = `document.querySelector('main table thead [role=checkbox]')`;
+    if (await t.exists(head)) {
+      t.expect('nothing selected: the select-all is unchecked', await t.attr(head, 'aria-checked'), 'false');
+      await t.click(cb, 300);
+      t.expect('some selected: the select-all is mixed', await t.attr(head, 'aria-checked'), 'mixed');
+      t.expect('and says so in data-state', await t.attr(head, 'data-state'), 'indeterminate');
+      await t.click(head, 300);
+      t.expect('clicking a mixed select-all selects the page', await t.attr(head, 'aria-checked'), 'true');
+      await t.click(head, 300);
+      t.expect('clicking it again clears the page', await t.attr(head, 'aria-checked'), 'false');
+    } else t.fail('select-all', 'no header checkbox');
   } else t.fail('selection', 'no row checkbox');
 
   const tbl = `document.querySelector('main table')`;

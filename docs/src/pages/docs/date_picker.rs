@@ -33,8 +33,12 @@ const RANGE: &str = r#"// The layer closes when the selection is finished — fo
 
 const FIELD: &str = r#"<Field>
     <FieldLabel>"Delivery date"</FieldLabel>
-    <DatePicker selected=selected min=Date::today() />
-    <FieldDescription>"Weekends are not available."</FieldDescription>
+    <DatePicker
+        selected=delivery
+        min=Date::today()
+        disabled_dates=|date: Date| matches!(date.weekday(), 0 | 6)
+    />
+    <FieldDescription>"Weekdays only, from today onwards."</FieldDescription>
 </Field>"#;
 
 const API: &[ApiEntry] = &[ApiEntry {
@@ -126,10 +130,22 @@ const API: &[ApiEntry] = &[ApiEntry {
             description: "The latest date that can be picked.",
         },
         Prop {
-            name: "disabled",
+            name: "disabled_dates",
             ty: "Option<Callback<Date, bool>>",
             default: "None",
-            description: "Anything else that cannot be picked.",
+            description: "Anything else that cannot be picked. Called for each of the 42 cells on show. Named `disabled` before 0.6.0.",
+        },
+        Prop {
+            name: "disabled",
+            ty: "Signal<bool>",
+            default: "false",
+            description: "Disables the button, and with it the picker. Also follows a disabled `Field` around it.",
+        },
+        Prop {
+            name: "id",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "The id written on the button. Empty leaves it to the surrounding `Field`, whose label then points at the button.",
         },
         Prop {
             name: "side",
@@ -249,7 +265,7 @@ pub fn Page() -> impl IntoView {
                         <DatePicker
                             selected=delivery
                             min=Date::today()
-                            disabled=|date: Date| matches!(date.weekday(), 0 | 6)
+                            disabled_dates=|date: Date| matches!(date.weekday(), 0 | 6)
                         />
                         <FieldDescription>"Weekdays only, from today onwards."</FieldDescription>
                     </Field>

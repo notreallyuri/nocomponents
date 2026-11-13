@@ -9,6 +9,7 @@ export default async (t) => {
   await t.click(trig, 500);
   t.expect('aria-expanded', await t.attr(trig, 'aria-expanded'), 'true');
   t.ok('calendar grid opens', await t.exists(`document.querySelector('[role=grid]')`));
+  await t.settle('focus lands on a day cell', `document.activeElement?.dataset?.slot`, 'calendar-day');
   await t.click(`document.querySelector('[role=grid] td:not([aria-disabled=true]) button')`, 500);
   const text = await t.text(trig);
   t.ok(`trigger shows the chosen date (${text})`, text !== null && !/pick a date/i.test(text) && /\d/.test(text));

@@ -10,8 +10,11 @@ use crate::{
     },
 };
 use floating_ui_leptos::{Placement, UseFloatingReturn, use_floating};
-use leptos::{either::Either, prelude::*};
+use leptos::{either::Either, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
+use web_sys::{FocusOptions, HtmlElement};
+
+const FOCUSABLE: &str = "a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex='-1'])";
 
 pub type PopoverContext = FloatingContext;
 
@@ -103,10 +106,22 @@ pub fn PopoverContentRoot(
     /// The title row shown at the top of the sheet. Empty means a grabber and no row.
     #[prop(optional, into)]
     sheet_title: Signal<String>,
+    /// Move focus into the popover when it opens: onto the first focusable element inside, or the
+    /// panel itself when there is none (it carries `tabindex="-1"` for that). Closing hands focus
+    /// back to the trigger when the keyboard closed it. Turn it off for a popover that should
+    /// leave focus where it is, such as one opened by hover. Happens however the popover came to
+    /// open, a controlled `open` set from code included.
+    #[prop(default = true.into(), into)]
+    auto_focus: Signal<bool>,
+    /// A CSS selector for what `auto_focus` lands on, tried before the first focusable element —
+    /// a date picker names the calendar's current day. Empty is the default behaviour.
+    #[prop(optional)]
+    initial_focus: &'static str,
     children: Children,
 ) -> impl IntoView {
     let ctx = use_popover();
     let floating_ref = ctx.content_ref;
+    let panel_ref = AnyNodeRef::new();
     let sheet = use_sheet_presentation(mobile_sheet);
 
     let UseFloatingReturn {
@@ -121,6 +136,20 @@ pub fn PopoverContentRoot(
     );
 
     let ready = Signal::derive(move || sheet.get() || is_positioned.get());
+
+    Effect::new(move |was_shown: Option<bool>| {
+        let shown = ctx.is_open.get() && ready.get();
+
+        if shown && was_shown != Some(true) && auto_focus.get_untracked() {
+            request_animation_frame(move || {
+                if ctx.is_open.get_untracked() {
+                    focus_into(panel_ref, initial_focus);
+                }
+            });
+        }
+
+        shown
+    });
 
     view! {
         <SheetScrim sheet=sheet open=ctx.is_open.into() />
@@ -139,6 +168,8 @@ pub fn PopoverContentRoot(
             class=move || shell_class(sheet.get(), "fixed z-50 w-max pointer-events-none")
         >
             <div
+                node_ref=panel_ref
+                tabindex="-1"
                 id=move || ctx.content_id.get()
                 role="dialog"
                 aria-labelledby=move || ctx.trigger_id.get()
@@ -170,5 +201,40 @@ pub fn PopoverContentRoot(
                 {children()}
             </div>
         </div>
+    }
+}
+
+/// `preferred` if it matches, else the first focusable element inside `panel`, else `panel`
+/// itself. Left alone when focus has already moved inside — an `autofocus` the caller wrote wins.
+/// The panel may be gone by the time a frame fires, which is not an error.
+fn focus_into(panel: AnyNodeRef, preferred: &str) {
+    let Some(panel) = panel.try_get_untracked().flatten() else {
+        return;
+    };
+
+    let active = document().active_element();
+    if active.as_ref() != Some(&panel) && panel.contains(active.as_deref()) {
+        return;
+    }
+
+    let first = |selector: &str| {
+        panel.query_selector_all(selector).ok().and_then(|found| {
+            (0..found.length())
+                .filter_map(|index| found.item(index))
+                .filter_map(|node| node.dyn_into::<HtmlElement>().ok())
+                .find(|el| el.get_attribute("aria-hidden").as_deref() != Some("true"))
+        })
+    };
+
+    let target = (!preferred.is_empty())
+        .then(|| first(preferred))
+        .flatten()
+        .or_else(|| first(FOCUSABLE))
+        .or_else(|| panel.clone().dyn_into::<HtmlElement>().ok());
+
+    if let Some(target) = target {
+        let options = FocusOptions::new();
+        options.set_prevent_scroll(true);
+        let _ = target.focus_with_options(&options);
     }
 }

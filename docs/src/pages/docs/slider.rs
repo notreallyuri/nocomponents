@@ -154,6 +154,12 @@ const API: &[ApiEntry] = &[
                 default: "\"\"",
                 description: "Merged over the thumb's classes.",
             },
+            Prop {
+                name: "aria_label",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "What the thumb is called. Empty inside a `Field` leaves it to the field's label: a `<label for>` cannot name a `<span role=\"slider\">`, so the thumb points `aria-labelledby` at the label instead.",
+            },
         ],
     },
 ];

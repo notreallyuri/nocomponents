@@ -1,5 +1,10 @@
 use crate::utils::controllable::forward;
-use crate::{cn, primitives::native_select::NativeSelectRoot};
+use crate::{
+    cn,
+    primitives::native_select::{
+        NativeSelectOptGroupRoot, NativeSelectOptionRoot, NativeSelectRoot,
+    },
+};
 use leptos::{ev, prelude::*};
 
 #[derive(Default, Clone, Copy)]
@@ -24,12 +29,14 @@ pub fn NativeSelect(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(default = None, into)] model: Option<RwSignal<String>>,
     #[prop(optional, into)] value: Signal<String>,
+    #[prop(optional, into)] default_value: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] id: Signal<String>,
     #[prop(optional, into)] name: Signal<String>,
     #[prop(optional, into)] required: Signal<bool>,
     #[prop(optional, into)] form: Signal<String>,
     #[prop(optional, into)] on_blur: Option<Callback<ev::FocusEvent>>,
+    #[prop(optional, into)] on_change: Option<Callback<String>>,
     children: Children,
 ) -> impl IntoView {
     view! {
@@ -37,11 +44,13 @@ pub fn NativeSelect(
             id=id
             model=model
             value=value
+            default_value=default_value
             disabled=disabled
             name=name
             required=required
             form=form
             on_blur=forward(on_blur)
+            on_change=forward(on_change)
             class=move || {
                 cn!(
                     "w-full appearance-none rounded-lg border border-input bg-transparent py-1 pr-8 pl-2.5 transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:bg-input/30 dark:disabled:bg-input/80 [&>optgroup]:bg-popover [&>option]:bg-popover",
@@ -55,5 +64,33 @@ pub fn NativeSelect(
         >
             {children()}
         </NativeSelectRoot>
+    }
+}
+
+#[component]
+pub fn NativeSelectOption(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] value: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <NativeSelectOptionRoot class=class value=value disabled=disabled>
+            {children()}
+        </NativeSelectOptionRoot>
+    }
+}
+
+#[component]
+pub fn NativeSelectOptGroup(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] label: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    children: Children,
+) -> impl IntoView {
+    view! {
+        <NativeSelectOptGroupRoot class=class label=label disabled=disabled>
+            {children()}
+        </NativeSelectOptGroupRoot>
     }
 }

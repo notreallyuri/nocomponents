@@ -88,10 +88,12 @@ pub fn SliderRange(#[prop(optional, into)] class: Signal<String>) -> impl IntoVi
 pub fn SliderThumb(
     #[prop(default = 0)] index: usize,
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] aria_label: Signal<String>,
 ) -> impl IntoView {
     view! {
         <SliderThumbRoot
             index=index
+            aria_label=aria_label
             class=move || {
                 cn!(
                     "absolute block size-4 shrink-0 rounded-full border border-primary bg-background shadow-sm transition-[color,box-shadow] outline-none hover:ring-4 hover:ring-ring/50 focus-visible:ring-4 focus-visible:ring-ring/50 data-[state=dragging]:ring-4 data-[state=dragging]:ring-ring/50 data-[disabled=true]:pointer-events-none",
