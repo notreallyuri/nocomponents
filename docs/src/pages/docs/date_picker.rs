@@ -167,6 +167,18 @@ const API: &[ApiEntry] = &[ApiEntry {
             default: "Calendar",
             description: "The glyph, in place of the calendar glyph on the trigger. Any view — an `Icon`, an SVG of your own; see Icons.",
         },
+        Prop {
+            name: "prev_icon",
+            ty: "Option<ViewFn>",
+            default: "ChevronLeft",
+            description: "The glyph, in place of the previous-month arrow on the calendar inside. Any view — an `Icon`, an SVG of your own; see Icons.",
+        },
+        Prop {
+            name: "next_icon",
+            ty: "Option<ViewFn>",
+            default: "ChevronRight",
+            description: "The glyph, in place of the next-month arrow on the calendar inside. Any view — an `Icon`, an SVG of your own; see Icons.",
+        },
     ],
 }];
 

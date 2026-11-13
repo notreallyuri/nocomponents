@@ -4,9 +4,12 @@ use crate::{
         checkbox::Checkbox,
         table::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow},
     },
-    icons::chevron::{ChevronDown, ChevronUp},
+    icons::{
+        check::Check,
+        chevron::{ChevronDown, ChevronUp},
+    },
     primitives::table::{SelectionState, SortDirection, TableSortHeaderRoot},
-    utils::icon::IconSlot,
+    utils::icon::{IconSlot, icon_or},
 };
 use leptos::prelude::*;
 use std::cmp::Ordering;
@@ -55,11 +58,13 @@ pub fn DataTable<T>(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] sort_ascending_icon: Option<ViewFn>,
     #[prop(optional, into)] sort_descending_icon: Option<ViewFn>,
+    #[prop(optional, into)] check_icon: Option<ViewFn>,
 ) -> impl IntoView
 where
     T: Clone + PartialEq + Send + Sync + 'static,
 {
     let sort_icons = StoredValue::new((sort_ascending_icon, sort_descending_icon));
+    let check_icon = StoredValue::new(check_icon);
     let sort = sort.unwrap_or_default();
     let sorted = Memo::new(move |_| {
         let mut rows = rows.get();
@@ -127,6 +132,7 @@ where
                                         >
                                             <Checkbox
                                                 checked=all
+                                                icon=icon_or(check_icon.get_value(), || view! { <Check /> })
                                                 attr:aria-label="Select all rows"
                                                 on:click=move |_| {
                                                     let ids = page_ids.get_untracked();
@@ -265,6 +271,7 @@ where
                                                 <TableCell class="w-10">
                                                     <Checkbox
                                                         checked=checked
+                                                        icon=icon_or(check_icon.get_value(), || view! { <Check /> })
                                                         attr:aria-label="Select row"
                                                         on:click=move |_| selection.toggle(&id)
                                                     />

@@ -161,6 +161,12 @@ const API: &[ApiEntry] = &[
                 default: "ChevronDown",
                 description: "The glyph, in place of the descending-sort arrow. Any view — an `Icon`, an SVG of your own; see Icons.",
             },
+            Prop {
+                name: "check_icon",
+                ty: "Option<ViewFn>",
+                default: "Check",
+                description: "The glyph, in place of the tick in the row and select-all checkboxes. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
         ],
     },
     ApiEntry {

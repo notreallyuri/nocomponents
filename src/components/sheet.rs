@@ -103,6 +103,7 @@ pub fn SheetContent(
     #[prop(optional, into)] id: Option<String>,
     #[prop(default = true.into(), into)] show_close: Signal<bool>,
     #[prop(optional, into)] close_icon: Option<ViewFn>,
+    #[prop(default = "Close".into(), into)] close_label: Signal<String>,
     children: ChildrenFn,
 ) -> impl IntoView {
     let context = use_dialog();
@@ -152,7 +153,7 @@ pub fn SheetContent(
                                             fallback=|| view! { <X /> }
                                             class="flex size-4 items-center justify-center [&>svg]:size-full"
                                         />
-                                        <span class="sr-only">"Close"</span>
+                                        <span class="sr-only">{move || close_label.get()}</span>
                                     </button>
                                 }
                             })

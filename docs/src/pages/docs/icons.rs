@@ -150,7 +150,7 @@ const API: &[ApiEntry] = &[
     },
     ApiEntry {
         name: "icon slots",
-        description: "The prop every component with a glyph takes. A part with one glyph calls it `icon`; a part that swaps glyphs names each after what it shows (`play_icon`, `pause_icon`, `copied_icon`).",
+        description: "The prop every component with a glyph takes. A part with one glyph calls it `icon`; a part that swaps glyphs names each after what it shows (`play_icon`, `pause_icon`, `copied_icon`). A component built from other parts passes their slots through: plain props of the same names up to three glyphs (`DatePicker` takes `prev_icon` and `next_icon`), and beyond that an `<Name>Icons` struct such as `VideoPlayerIcons`.",
         props: &[Prop {
             name: "icon",
             ty: "Option<ViewFn>",

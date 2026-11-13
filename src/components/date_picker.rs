@@ -4,7 +4,10 @@ use crate::{
         button::{Button, ButtonVariant},
         calendar::Calendar,
     },
-    icons::calendar::Calendar as CalendarIcon,
+    icons::{
+        calendar::Calendar as CalendarIcon,
+        chevron::{ChevronLeft, ChevronRight},
+    },
     primitives::{
         floating::{FloatingContext, FloatingRoot, TriggerAria},
         popover::{PopoverContentRoot, PopoverPortalRoot, use_popover},
@@ -12,7 +15,7 @@ use crate::{
     utils::{
         controllable::{controllable, forward},
         date::DateNames,
-        icon::IconSlot,
+        icon::{IconSlot, icon_or},
     },
 };
 use leptos::{ev, prelude::*};
@@ -47,9 +50,12 @@ pub fn DatePicker(
     #[prop(optional, into)] side_offset: Signal<SideOffset>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] icon: Option<ViewFn>,
+    #[prop(optional, into)] prev_icon: Option<ViewFn>,
+    #[prop(optional, into)] next_icon: Option<ViewFn>,
 ) -> impl IntoView {
     let ctx = FloatingContext::default();
     let selected = controllable(selected, default_selected, on_selected_change);
+    let nav_icons = StoredValue::new((prev_icon, next_icon));
 
     view! {
         <FloatingRoot
@@ -83,6 +89,7 @@ pub fn DatePicker(
                 side=side
                 align=align
                 side_offset=side_offset
+                nav_icons=nav_icons
             />
         </FloatingRoot>
     }
@@ -176,6 +183,7 @@ fn DatePickerContent(
     side: Signal<Side>,
     align: Signal<Align>,
     side_offset: Signal<SideOffset>,
+    nav_icons: StoredValue<(Option<ViewFn>, Option<ViewFn>)>,
 ) -> impl IntoView {
     let ctx = use_popover();
 
@@ -213,6 +221,8 @@ fn DatePickerContent(
                     max=max
                     disabled=forward(disabled)
                     locale=locale
+                    prev_icon=icon_or(nav_icons.get_value().0, || view! { <ChevronLeft /> })
+                    next_icon=icon_or(nav_icons.get_value().1, || view! { <ChevronRight /> })
                     class="border-0 bg-transparent"
                 />
             </PopoverContentRoot>

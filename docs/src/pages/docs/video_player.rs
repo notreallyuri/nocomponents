@@ -12,9 +12,9 @@ use nocomponents::{
         dropdown_menu::{DropdownMenuItem, DropdownMenuLabel},
         toggle_group::{ToggleGroup, ToggleGroupItem},
         video_player::{
-            VideoPlayer, VideoPlayerCaptionItems, VideoPlayerFullscreenButton, VideoPlayerMenu,
-            VideoPlayerPlayButton, VideoPlayerSeek, VideoPlayerSpeedItems, VideoPlayerTime,
-            VideoPlayerVolumeControl,
+            VideoPlayer, VideoPlayerCaptionItems, VideoPlayerFullscreenButton, VideoPlayerIcons,
+            VideoPlayerMenu, VideoPlayerPlayButton, VideoPlayerSeek, VideoPlayerSpeedItems,
+            VideoPlayerTime, VideoPlayerVolumeControl,
         },
     },
     icons::check::Check,
@@ -86,6 +86,26 @@ const MENU: &str = r#"// The menu takes whatever you put in it. These two groups
     <VideoPlayerCaptionSizeItems submenu=true />
 </VideoPlayerMenu>"#;
 
+const ICONS: &str = r#"// The default controls draw fourteen glyphs, so they come in one struct and
+// not fourteen props. Whatever is left out keeps its built-in glyph.
+<VideoPlayer
+    src="/tears-of-steel.mp4"
+    poster="/tears-of-steel.jpg"
+    class="max-w-xl"
+    icons=VideoPlayerIcons {
+        play: Some(
+            ViewFn::from(|| {
+                view! {
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M5 3l15 9-15 9z" />
+                    </svg>
+                }
+            }),
+        ),
+        ..Default::default()
+    }
+/>"#;
+
 const API: &[ApiEntry] = &[
     ApiEntry {
         name: "VideoPlayer",
@@ -144,6 +164,12 @@ const API: &[ApiEntry] = &[
                 ty: "Signal<String>",
                 default: "\"\"",
                 description: "Merged over the player's classes. It is `aspect-video` by default, which a class can override.",
+            },
+            Prop {
+                name: "icons",
+                ty: "VideoPlayerIcons",
+                default: "VideoPlayerIcons::default()",
+                description: "Glyphs for the default controls, in place of the built-in ones. Fields: `play`, `pause`, `replay`, `previous`, `next`, `volume`, `muted`, `enter_fullscreen`, `exit_fullscreen`, `settings`, `captions`, `check`, `submenu` and `buffering`, each an `Option<ViewFn>` that falls back to the built-in glyph. The bar's glyphs apply only to the default controls — with `controls` set, pass each part its own icon prop. See Icons.",
             },
             Prop {
                 name: "children",
@@ -288,6 +314,12 @@ const API: &[ApiEntry] = &[
                 ty: "Option<ViewFn>",
                 default: "LoaderCircle",
                 description: "The glyph, in place of the spinner. It is turned for you. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
+            Prop {
+                name: "label",
+                ty: "Signal<String>",
+                default: "\"Loading\"",
+                description: "The spinner's accessible name. Translate it here.",
             },
         ],
     },
@@ -441,6 +473,18 @@ const API: &[ApiEntry] = &[
                 default: "\"\"",
                 description: "Merged over the group's classes.",
             },
+            Prop {
+                name: "volume_icon",
+                ty: "Option<ViewFn>",
+                default: "Volume",
+                description: "The glyph, in place of the speaker glyph on the mute button. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
+            Prop {
+                name: "muted_icon",
+                ty: "Option<ViewFn>",
+                default: "VolumeOff",
+                description: "The glyph, in place of the glyph shown while muted. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
         ],
     },
     ApiEntry {
@@ -489,6 +533,12 @@ const API: &[ApiEntry] = &[
                 default: "Check",
                 description: "The glyph, in place of the check mark on the chosen rate. Any view — an `Icon`, an SVG of your own; see Icons.",
             },
+            Prop {
+                name: "submenu_icon",
+                ty: "Option<ViewFn>",
+                default: "ChevronRight",
+                description: "The glyph, in place of the chevron on the submenu's row. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
         ],
     },
     ApiEntry {
@@ -507,6 +557,12 @@ const API: &[ApiEntry] = &[
                 default: "Check",
                 description: "The glyph, in place of the check mark on the chosen track. Any view — an `Icon`, an SVG of your own; see Icons.",
             },
+            Prop {
+                name: "submenu_icon",
+                ty: "Option<ViewFn>",
+                default: "ChevronRight",
+                description: "The glyph, in place of the chevron on the submenu's row. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
         ],
     },
     ApiEntry {
@@ -524,6 +580,12 @@ const API: &[ApiEntry] = &[
                 ty: "Option<ViewFn>",
                 default: "Check",
                 description: "The glyph, in place of the check mark on the chosen size. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
+            Prop {
+                name: "submenu_icon",
+                ty: "Option<ViewFn>",
+                default: "ChevronRight",
+                description: "The glyph, in place of the chevron on the submenu's row. Any view — an `Icon`, an SVG of your own; see Icons.",
             },
         ],
     },
@@ -646,6 +708,8 @@ pub fn Page() -> impl IntoView {
     let subtitles_poster = poster_source.clone();
     let menu_source = source.clone();
     let menu_poster = poster_source.clone();
+    let icons_source = source.clone();
+    let icons_poster = poster_source.clone();
     let en_track = href("/tears-of-steel.en.vtt");
     let pt_track = href("/tears-of-steel.pt.vtt");
 
@@ -817,6 +881,32 @@ pub fn Page() -> impl IntoView {
                                     </div>
                                 }
                                     .into_any()
+                            }
+                        />
+                    </div>
+                </DemoSection>
+
+                <DemoSection
+                    title="Icons"
+                    description="Every glyph in the default player can be swapped through one `VideoPlayerIcons` value. Here the play button, in the bar and on the paused frame, is a plain triangle; the rest are untouched. With a `controls` callback you compose the parts yourself, and each takes its own icon prop."
+                    code=ICONS
+                >
+                    <div class="flex justify-center">
+                        <VideoPlayer
+                            src=icons_source
+                            poster=icons_poster
+                            class="max-w-xl"
+                            icons=VideoPlayerIcons {
+                                play: Some(
+                                    ViewFn::from(|| {
+                                        view! {
+                                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                                <path d="M5 3l15 9-15 9z" />
+                                            </svg>
+                                        }
+                                    }),
+                                ),
+                                ..Default::default()
                             }
                         />
                     </div>
