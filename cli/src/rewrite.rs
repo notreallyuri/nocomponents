@@ -1,4 +1,5 @@
-//! Rewrites a file from the library's `src/components/` so it compiles inside another crate.
+//! Rewrites a file from the library's `src/components/` or `src/icons/` so it compiles inside
+//! another crate.
 //!
 //! Imports are nested trees (`use crate::{cn, components::button::…, primitives::…}`), so
 //! `crate::components::` is not a substring of what has to change. Each `use` is flattened to one
@@ -7,7 +8,15 @@
 pub struct Rewritten {
     pub source: String,
     pub component_deps: Vec<String>,
-    pub uses_icons: bool,
+    /// The icon files it names (`chevron`, `icon`), which are installed beside the components.
+    pub icon_deps: Vec<String>,
+}
+
+/// Where the two installed trees live, as Rust paths: `crate::components::nc` and
+/// `crate::icons::nc` by default.
+pub struct Targets<'a> {
+    pub components: &'a str,
+    pub icons: &'a str,
 }
 
 struct UseStatement {
@@ -19,25 +28,21 @@ struct UseStatement {
     paths: Vec<String>,
 }
 
-pub fn rewrite(source: &str, module_path: &str) -> Rewritten {
+pub fn rewrite(source: &str, to: &Targets) -> Rewritten {
     let uses = find_uses(source);
 
     let mut component_deps = Vec::new();
-    let mut uses_icons = false;
+    let mut icon_deps = Vec::new();
     let mut out = String::with_capacity(source.len());
     let mut cursor = 0;
 
     for u in &uses {
-        out.push_str(&rewrite_body(&source[cursor..u.start], module_path));
+        out.push_str(&rewrite_body(&source[cursor..u.start], to));
 
         let mut lines: Vec<String> = Vec::new();
         for path in &u.paths {
-            note_dep(path, &mut component_deps, &mut uses_icons);
-            lines.push(format!(
-                "{}use {};",
-                u.visibility,
-                rewrite_path(path, module_path)
-            ));
+            note_dep(path, &mut component_deps, &mut icon_deps);
+            lines.push(format!("{}use {};", u.visibility, rewrite_path(path, to)));
         }
         lines.sort();
         let lines: Vec<String> = lines
@@ -57,37 +62,47 @@ pub fn rewrite(source: &str, module_path: &str) -> Rewritten {
 
         cursor = u.end;
     }
-    out.push_str(&rewrite_body(&source[cursor..], module_path));
+    out.push_str(&rewrite_body(&source[cursor..], to));
 
     // Paths in expression position, which the import scan cannot see.
     for path in inline_paths(source) {
-        note_dep(&path, &mut component_deps, &mut uses_icons);
+        note_dep(&path, &mut component_deps, &mut icon_deps);
     }
     component_deps.sort();
     component_deps.dedup();
+    icon_deps.sort();
+    icon_deps.dedup();
 
     Rewritten {
         source: out,
         component_deps,
-        uses_icons,
+        icon_deps,
     }
 }
 
-fn note_dep(path: &str, deps: &mut Vec<String>, uses_icons: &mut bool) {
-    if let Some(rest) = path.strip_prefix("crate::components::")
-        && let Some(name) = rest.split("::").next()
-        && !name.is_empty()
-    {
-        deps.push(name.to_string());
-    }
-    if path.starts_with("crate::icons") {
-        *uses_icons = true;
+fn note_dep(path: &str, components: &mut Vec<String>, icons: &mut Vec<String>) {
+    for (prefix, deps) in [
+        ("crate::components::", components),
+        ("crate::icons::", icons),
+    ] {
+        if let Some(rest) = path.strip_prefix(prefix)
+            && let Some(name) = rest.split("::").next()
+            && !name.is_empty()
+        {
+            // `crate::icons::Icon` is the re-export in the library's `mod.rs`; installed, the
+            // wrapper is the file `icon.rs`.
+            let name = if name == "Icon" { "icon" } else { name };
+            deps.push(name.to_string());
+        }
     }
 }
 
-fn rewrite_path(path: &str, module_path: &str) -> String {
+fn rewrite_path(path: &str, to: &Targets) -> String {
     if let Some(rest) = path.strip_prefix("crate::components::") {
-        format!("{module_path}::{rest}")
+        format!("{}::{rest}", to.components)
+    } else if let Some(rest) = path.strip_prefix("crate::icons::") {
+        let rest = if rest == "Icon" { "icon::Icon" } else { rest };
+        format!("{}::{rest}", to.icons)
     } else if let Some(rest) = path.strip_prefix("crate::") {
         format!("nocomponents::{rest}")
     } else if path == "leptos_node_ref" || path.starts_with("leptos_node_ref::") {
@@ -97,10 +112,10 @@ fn rewrite_path(path: &str, module_path: &str) -> String {
     }
 }
 
-fn rewrite_body(body: &str, module_path: &str) -> String {
-    body.replace("crate::components::", &format!("{module_path}::"))
+fn rewrite_body(body: &str, to: &Targets) -> String {
+    body.replace("crate::components::", &format!("{}::", to.components))
         .replace("crate::primitives::", "nocomponents::primitives::")
-        .replace("crate::icons::", "nocomponents::icons::")
+        .replace("crate::icons::", &format!("{}::", to.icons))
         .replace("crate::utils::", "nocomponents::utils::")
         .replace("js_sys::", "nocomponents::deps::js_sys::")
 }
@@ -259,10 +274,13 @@ fn expand(item: &str, prefix: &str, out: &mut Vec<String>) {
 mod tests {
     use super::*;
 
-    const MP: &str = "crate::components::nc";
+    const TO: Targets = Targets {
+        components: "crate::components::nc",
+        icons: "crate::icons::nc",
+    };
 
     fn rw(src: &str) -> Rewritten {
-        rewrite(src, MP)
+        rewrite(src, &TO)
     }
 
     #[test]
@@ -323,11 +341,11 @@ mod tests {
         let out = rw("pub(crate) use crate::icons::a::{B, C};\n");
         assert!(
             out.source
-                .contains("pub(crate) use nocomponents::icons::a::B;")
+                .contains("pub(crate) use crate::icons::nc::a::B;")
         );
         assert!(
             out.source
-                .contains("pub(crate) use nocomponents::icons::a::C;")
+                .contains("pub(crate) use crate::icons::nc::a::C;")
         );
     }
 
@@ -343,7 +361,7 @@ mod tests {
             rw("mod m {\n    #[allow(unused_imports)]\n    use crate::icons::a::{B, C};\n}\n");
         assert_eq!(
             out.source,
-            "mod m {\n    #[allow(unused_imports)]\n    use nocomponents::icons::a::B;\n    #[allow(unused_imports)]\n    use nocomponents::icons::a::C;\n}\n"
+            "mod m {\n    #[allow(unused_imports)]\n    use crate::icons::nc::a::B;\n    #[allow(unused_imports)]\n    use crate::icons::nc::a::C;\n}\n"
         );
     }
 
@@ -352,9 +370,9 @@ mod tests {
         let out = rw("use crate::icons::calendar::{\n    Calendar as\n    CalendarIcon,\n};\n");
         assert!(
             out.source
-                .contains("use nocomponents::icons::calendar::Calendar as CalendarIcon;")
+                .contains("use crate::icons::nc::calendar::Calendar as CalendarIcon;")
         );
-        assert!(out.uses_icons);
+        assert_eq!(out.icon_deps, vec!["calendar"]);
     }
 
     #[test]
@@ -390,5 +408,34 @@ mod tests {
     fn leaves_a_body_that_names_nothing_of_ours_untouched() {
         let src = "#[component]\npub fn Card() -> impl IntoView {\n    view! { <div class=\"p-4\" /> }\n}\n";
         assert_eq!(rw(src).source, src);
+    }
+
+    #[test]
+    fn an_icon_file_names_the_wrapper_in_the_installed_tree() {
+        let out = rw("use crate::{cn, icons::icon::Icon};\n");
+        assert!(out.source.contains("use crate::icons::nc::icon::Icon;"));
+        assert!(out.source.contains("use nocomponents::cn;"));
+        assert_eq!(out.icon_deps, vec!["icon"]);
+    }
+
+    #[test]
+    fn the_re_exported_wrapper_is_the_icon_file() {
+        let out = rw("use crate::icons::Icon;\n");
+        assert!(out.source.contains("use crate::icons::nc::icon::Icon;"));
+        assert_eq!(out.icon_deps, vec!["icon"]);
+    }
+
+    #[test]
+    fn a_component_lists_the_icons_it_falls_back_on() {
+        let out = rw(
+            "use crate::{\n    icons::{check::Check, chevron::ChevronDown},\n    utils::icon::IconSlot,\n};\nfn f() { view! { <crate::icons::x::X /> } }\n",
+        );
+        assert_eq!(out.icon_deps, vec!["check", "chevron", "x"]);
+        assert!(
+            out.source
+                .contains("use nocomponents::utils::icon::IconSlot;")
+        );
+        assert!(out.source.contains("<crate::icons::nc::x::X />"));
+        assert!(out.component_deps.is_empty());
     }
 }

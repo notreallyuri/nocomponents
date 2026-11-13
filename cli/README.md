@@ -12,8 +12,8 @@ to point into `~/.cargo/registry`, and the tokens the classes are written agains
 missing.
 
 So the styled layer is copied into your `src/`, where Tailwind already scans it, and you own it
-afterwards. What stays an ordinary dependency is everything with no classes in it — the behaviour
-primitives, the icons, `utils`, `middleware`.
+afterwards. So are the icons the components fall back on. What stays an ordinary dependency is
+everything with no classes in it — the behaviour primitives, `utils`, `middleware`.
 
 ## Install
 
@@ -40,7 +40,8 @@ project loads. Import a font and point `--font-sans` at it when you want one.
 
 `components add` copies each component into the install directory, together with anything it is
 built on — `sidebar` brings `sheet`, `skeleton`, `tooltip`, `separator` and `input` with it — and
-turns on the matching Cargo features. `components list` shows everything available, marking what is
+turns on the matching Cargo features. The glyphs those components fall back on (a chevron, a check,
+a close cross) and the `Icon` wrapper they are drawn with go into the icon directory beside them. `components list` shows everything available, marking what is
 already installed.
 
 An `add` never overwrites a file that is already there, and it says *which* kind of file it left
@@ -68,6 +69,27 @@ now) or `not in lock` (installed before the lock existed, or copied in by hand, 
 to compare against). After upgrading the `nocomponents` dependency it is the list of what is safe
 to refresh with `add --force` and what to diff first.
 
+`status` lists the installed icons too, in their own section.
+
+## Icons
+
+```bash
+cargo nocli icons list        # every glyph, * marks the installed ones
+cargo nocli icons add x plus  # install more, for your own use
+```
+
+Every component takes its glyphs through an `icon` prop, so you can hand it anything. The installed
+icons are what it draws when you do not: redraw `src/icons/nc/chevron.rs` and every component that
+falls back on a chevron draws yours. Because they are yours to redraw, a component's `--force`
+refreshes an icon that is unchanged but never one you have edited; `icons add <name> --force`
+replaces it.
+
+A project's own icon set belongs beside `nc`, not inside it (`src/icons/app.rs`, declared in
+`src/icons/mod.rs` outside the nocli block), so nothing the CLI writes ever touches it.
+
+Installing from a release before 0.4, which ships no icon sources, keeps the old behaviour: the
+components draw `nocomponents::icons::…` and the `icons` feature is turned on.
+
 ```bash
 cargo nocli components remove button
 ```
@@ -87,10 +109,12 @@ css = "styles/globals.css"
 
 [paths]
 components = "src/components/nc"
+icons = "src/icons/nc"
 ```
 
-`paths.components` has to be under `src/` — an installed component that is built on another one
-needs to be able to name it, and only a directory under `src/` has a module path.
+Both paths have to be under `src/` — an installed component needs to be able to name what it is
+built on and the icons it draws, and only a directory under `src/` has a module path. A config
+written before `icons` existed gets the default.
 
 The `mod.rs` in there is written from the directory on every `add` and `remove`, but only between
 its two markers:
@@ -121,7 +145,8 @@ An installed file is compiled by your crate, so every path in it is redirected:
 | in the library | as installed |
 | --- | --- |
 | `crate::components::button` | `crate::components::nc::button` |
-| `crate::primitives`, `crate::icons`, `crate::utils`, `crate::cn` | `nocomponents::…` |
+| `crate::icons::chevron` | `crate::icons::nc::chevron` |
+| `crate::primitives`, `crate::utils`, `crate::cn` | `nocomponents::…` |
 | `leptos_node_ref`, `js_sys` | `nocomponents::deps::…` |
 | `leptos` | unchanged |
 

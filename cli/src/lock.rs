@@ -36,10 +36,20 @@ impl State {
     }
 }
 
+/// Which installed tree a name belongs to. `calendar` is a component and an icon both, so the
+/// two are recorded apart.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Kind {
+    Component,
+    Icon,
+}
+
 #[derive(Serialize, Deserialize, Default, Debug)]
 pub struct Lock {
     #[serde(default)]
     components: BTreeMap<String, String>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    icons: BTreeMap<String, String>,
 }
 
 pub fn hash(text: &str) -> String {
@@ -65,7 +75,7 @@ impl Lock {
     }
 
     pub fn save(&self) -> Result<()> {
-        if self.components.is_empty() {
+        if self.components.is_empty() && self.icons.is_empty() {
             let _ = fs::remove_file(LOCK_FILE);
             return Ok(());
         }
@@ -73,16 +83,30 @@ impl Lock {
         fs::write(LOCK_FILE, text).with_context(|| format!("writing {LOCK_FILE}"))
     }
 
-    pub fn record(&mut self, name: &str, source: &str) {
-        self.components.insert(name.to_string(), hash(source));
+    fn map(&self, kind: Kind) -> &BTreeMap<String, String> {
+        match kind {
+            Kind::Component => &self.components,
+            Kind::Icon => &self.icons,
+        }
     }
 
-    pub fn forget(&mut self, name: &str) {
-        self.components.remove(name);
+    fn map_mut(&mut self, kind: Kind) -> &mut BTreeMap<String, String> {
+        match kind {
+            Kind::Component => &mut self.components,
+            Kind::Icon => &mut self.icons,
+        }
     }
 
-    pub fn state(&self, name: &str, on_disk: &str) -> State {
-        match self.components.get(name) {
+    pub fn record(&mut self, kind: Kind, name: &str, source: &str) {
+        self.map_mut(kind).insert(name.to_string(), hash(source));
+    }
+
+    pub fn forget(&mut self, kind: Kind, name: &str) {
+        self.map_mut(kind).remove(name);
+    }
+
+    pub fn state(&self, kind: Kind, name: &str, on_disk: &str) -> State {
+        match self.map(kind).get(name) {
             None => State::Unrecorded,
             Some(recorded) if *recorded == hash(on_disk) => State::Untouched,
             Some(_) => State::Edited,
@@ -132,24 +156,59 @@ mod tests {
     #[test]
     fn tells_an_edited_file_from_an_untouched_one() {
         let mut lock = Lock::default();
-        lock.record("button", "fn button() {}");
+        lock.record(Kind::Component, "button", "fn button() {}");
 
-        assert_eq!(lock.state("button", "fn button() {}"), State::Untouched);
         assert_eq!(
-            lock.state("button", "fn button() { edited }"),
+            lock.state(Kind::Component, "button", "fn button() {}"),
+            State::Untouched
+        );
+        assert_eq!(
+            lock.state(Kind::Component, "button", "fn button() { edited }"),
             State::Edited
         );
-        assert_eq!(lock.state("dialog", "anything"), State::Unrecorded);
+        assert_eq!(
+            lock.state(Kind::Component, "dialog", "anything"),
+            State::Unrecorded
+        );
     }
 
     #[test]
     fn forgetting_a_component_leaves_the_rest() {
         let mut lock = Lock::default();
-        lock.record("button", "a");
-        lock.record("dialog", "b");
-        lock.forget("button");
+        lock.record(Kind::Component, "button", "a");
+        lock.record(Kind::Component, "dialog", "b");
+        lock.forget(Kind::Component, "button");
 
-        assert_eq!(lock.state("button", "a"), State::Unrecorded);
-        assert_eq!(lock.state("dialog", "b"), State::Untouched);
+        assert_eq!(
+            lock.state(Kind::Component, "button", "a"),
+            State::Unrecorded
+        );
+        assert_eq!(lock.state(Kind::Component, "dialog", "b"), State::Untouched);
+    }
+
+    #[test]
+    fn a_component_and_an_icon_of_the_same_name_are_kept_apart() {
+        let mut lock = Lock::default();
+        lock.record(Kind::Component, "calendar", "the component");
+        lock.record(Kind::Icon, "calendar", "the glyph");
+
+        assert_eq!(
+            lock.state(Kind::Component, "calendar", "the component"),
+            State::Untouched
+        );
+        assert_eq!(
+            lock.state(Kind::Icon, "calendar", "the glyph"),
+            State::Untouched
+        );
+        assert_eq!(
+            lock.state(Kind::Icon, "calendar", "the component"),
+            State::Edited
+        );
+    }
+
+    #[test]
+    fn a_lock_from_before_icons_reads_with_none() {
+        let lock: Lock = toml::from_str("[components]\nbutton = \"00\"\n").unwrap();
+        assert_eq!(lock.state(Kind::Icon, "x", ""), State::Unrecorded);
     }
 }

@@ -40,6 +40,24 @@ enum Command {
         #[command(subcommand)]
         command: Components,
     },
+    /// Work with the icons the components fall back on.
+    Icons {
+        #[command(subcommand)]
+        command: Icons,
+    },
+}
+
+#[derive(Subcommand)]
+enum Icons {
+    /// Install icons as source, and the `Icon` wrapper they are drawn with.
+    Add {
+        names: Vec<String>,
+        /// Overwrite icons that are already installed, edited ones included.
+        #[arg(long)]
+        force: bool,
+    },
+    /// Show every icon, marking the ones already installed.
+    List,
 }
 
 #[derive(Subcommand)]
@@ -60,7 +78,7 @@ enum Components {
     },
     /// Show every component, marking the ones already installed.
     List,
-    /// Show which installed components are edited, unchanged, or not in the lock.
+    /// Show which installed components and icons are edited, unchanged, or not in the lock.
     Status,
 }
 
@@ -92,6 +110,13 @@ async fn run(cli: Nocli) -> Result<()> {
             Components::Remove { names, force } => install::remove(&names, force),
             Components::List => install::list(&source).await,
             Components::Status => install::status(),
+        },
+        Command::Icons { command } => match command {
+            Icons::Add { names, .. } if names.is_empty() => {
+                anyhow::bail!("name at least one icon — `cargo nocli icons list` shows them")
+            }
+            Icons::Add { names, force } => install::add_icons(&source, &names, force).await,
+            Icons::List => install::list_icons(&source).await,
         },
     }
 }

@@ -155,6 +155,18 @@ impl Source {
         }
     }
 
+    pub async fn icon(&self, name: &str) -> Result<String> {
+        match self {
+            Source::Repository(release) => {
+                get_text(&release.raw(&format!("src/icons/{name}.rs")).await?)
+                    .await
+                    .with_context(|| format!("no icon called `{name}`"))
+            }
+            Source::Checkout(dir) => read(&dir.join(format!("src/icons/{name}.rs")))
+                .with_context(|| format!("no icon called `{name}`")),
+        }
+    }
+
     pub async fn stylesheet(&self, name: &str) -> Result<String> {
         match self {
             Source::Repository(release) => {
@@ -165,21 +177,29 @@ impl Source {
     }
 
     pub async fn catalogue(&self) -> Result<Vec<String>> {
+        self.listing("src/components").await
+    }
+
+    pub async fn icon_catalogue(&self) -> Result<Vec<String>> {
+        self.listing("src/icons").await
+    }
+
+    async fn listing(&self, dir: &str) -> Result<Vec<String>> {
         let mut names = match self {
             Source::Repository(release) => {
                 #[derive(serde::Deserialize)]
                 struct Entry {
                     name: String,
                 }
-                let entries: Vec<Entry> = get(&release.contents("src/components").await?)
+                let entries: Vec<Entry> = get(&release.contents(dir).await?)
                     .await?
                     .json()
                     .await
                     .context("reading the component listing")?;
                 entries.into_iter().map(|e| e.name).collect::<Vec<_>>()
             }
-            Source::Checkout(dir) => std::fs::read_dir(dir.join("src/components"))
-                .context("reading src/components")?
+            Source::Checkout(root) => std::fs::read_dir(root.join(dir))
+                .with_context(|| format!("reading {dir}"))?
                 .filter_map(|e| e.ok())
                 .map(|e| e.file_name().to_string_lossy().into_owned())
                 .collect(),
