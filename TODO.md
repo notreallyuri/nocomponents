@@ -976,10 +976,10 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
 
 - [x] **Controlled and uncontrolled** — every stateful root takes `x`, `default_x` and
       `on_x_change`, resolved in the primitive by `utils::controllable`; the styled layer forwards.
-- [x] **A form reset reaches a `model`-bound native control** — landed after 0.5.0.
+- [x] **A form reset reaches a `model`-bound native control** — landed in 0.6.0.
       `Input`, `TextareaRoot` and `NativeSelectRoot` listen through `utils::form::on_native_reset`
       and write what they held at mount back into `model` and the element.
-- [x] **A slider is named inside a `Field`** — landed after 0.5.0. `FieldLabelRoot` publishes
+- [x] **A slider is named inside a `Field`** — landed in 0.6.0. `FieldLabelRoot` publishes
       `label_id`, `FieldControl::labelled_by` reads it, and the thumb points `aria-labelledby` at
       it unless given its own `aria_label`.
 - [x] **`src/components/` carried comments** (`floating_menu.rs` 19 lines, `kanban.rs` 5,
@@ -1000,8 +1000,8 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
 - [x] `breadcrumb`: `BreadcrumbLink` takes `render` since 0.4.
 - [x] `button`: `aria_label`, `id`, `name` and `value` since 0.4, on `ButtonRoot` too.
 - [ ] `calendar`: no `number_of_months` (`components/calendar.rs:13`).
-- [x] `checkbox`: `indeterminate` and `indeterminate_icon` (default `Minus`) — landed after
-      0.5.0; `DataTable`'s select-all uses it instead of the wrapper `span`.
+- [x] `checkbox`: `indeterminate` and `indeterminate_icon` (default `Minus`) — landed in
+      0.6.0; `DataTable`'s select-all uses it instead of the wrapper `span`.
 - [ ] `command`: `CommandInput` wraps the `<input>` in a fixed `div`
       (`components/command.rs:50`), so the caller's `class` reaches the input and nothing reaches
       the row with the icon — you cannot change its height or border.
@@ -1013,8 +1013,8 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       prefix handed down from the root through context. `Group`, `Shortcut`, `CheckboxItem`,
       `RadioGroup` and `RadioItem` are now re-exported under `ContextMenu*` names.
 - [ ] `data_table`: `empty` is a string, so "No results" cannot be a node. (The select-all is mixed
-      now — landed after 0.5.0.)
-- [x] `date_picker`: `disabled: Signal<bool>` and `id` landed after 0.5.0; the per-date callback is
+      now — landed in 0.6.0.)
+- [x] `date_picker`: `disabled: Signal<bool>` and `id` landed in 0.6.0; the per-date callback is
       `disabled_dates` on `DatePicker` and `Calendar` (breaking, 0.6.0).
 - [ ] `dialog`: no `DialogOverlay`/`DialogContent` split — the portal's `class` styles the panel
       and the overlay is fixed. (`modal` and `DialogClose` are not missing; both landed
@@ -1040,9 +1040,9 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       on `ImageCropper` (`components/image_cropper.rs:12`). The resize handles are
       `aria-hidden="true"` (`primitives/image_cropper.rs:386`) with no keyboard path, so the crop
       can be moved and not resized without a pointer.
-- [x] `input`: `InputType` has `Tel`, `Url`, `Search` and `Date` — landed after 0.5.0.
+- [x] `input`: `InputType` has `Tel`, `Url`, `Search` and `Date` — landed in 0.6.0.
       (`on_input` and `on_change` landed in 0.4.)
-- [ ] `input_group`: `InputGroupButton` takes `disabled` and `type` now (landed after 0.5.0). Still
+- [ ] `input_group`: `InputGroupButton` takes `disabled` and `type` now (landed in 0.6.0). Still
       open: `InputGroupInput` and `InputGroupTextarea` forward only
       the subset of `Input`'s and `Textarea`'s props they list (:49), so whatever `Input` gains
       does not reach them until someone remembers.
@@ -1056,7 +1056,7 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       them. (`MenubarSubContent` used to mount into `document.body`; it
       goes through `FloatingPortal` now, like `DropdownMenuSubContent`.)
 - [x] `native_select`: `NativeSelectOption`, `NativeSelectOptGroup` and `on_change` — landed
-      after 0.5.0.
+      in 0.6.0.
 - [ ] `navigation_menu`: `NavigationMenu` exposes `value` and not the primitive's
       `open_delay`/`close_delay` (`components/navigation_menu.rs:13`,
       `primitives/navigation_menu.rs:127-128`), so the hover timing is fixed.
@@ -1065,12 +1065,12 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       the first page's "Previous" is a live link to nowhere. `PaginationLink` is a plain `<a>` with
       no `render`, so a router link has to be wrapped; and an unset `href` writes `href=""`.
 - [ ] `popover`: `Popover` takes no `class` (`components/popover.rs:11`), no `PopoverAnchor`.
-      (Opening now moves focus into the content, `auto_focus` to opt out — landed after 0.5.0.)
+      (Opening now moves focus into the content, `auto_focus` to opt out — landed in 0.6.0.)
 - [ ] `resizable`: no `collapsible` or `collapsed_size` (`components/resizable.rs:32`).
 - [ ] `scroll_area`: the styled component always renders a vertical scrollbar and takes only
       `horizontal` for the other (`components/scroll_area.rs:11-30`) — no `ScrollBar` part and no
       `orientation`, so a horizontal-only area has an inert vertical track.
-- [ ] `select`: `SelectTrigger` takes `disabled` now (landed after 0.5.0); still no `size`, no `SelectGroup`, `SelectLabel`,
+- [ ] `select`: `SelectTrigger` takes `disabled` now (landed in 0.6.0); still no `size`, no `SelectGroup`, `SelectLabel`,
       `SelectSeparator` or the scroll buttons, and `SelectValue` takes no `class`.
 - [x] `sheet`: `SheetContent` takes `show_close` and `close_icon` since 0.4, and the sidebar's
       mobile branch uses `show_close=false` rather than `[&>button]:hidden`. `modal` was never
@@ -1096,7 +1096,7 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
 The rest of what noaweb asked for landed (sortable, drawer snap points, long-press, mobile sheets,
 the small items and the CLI friction); what follows is what those left behind.
 
-- [x] **The phone sheet presentation is static.** Landed after 0.5.0: a close button in the header
+- [x] **The phone sheet presentation is static.** Landed in 0.6.0: a close button in the header
       (`sheet_show_close`, `sheet_close_label`, `sheet_close_icon`), drag-to-dismiss from the header
       only (`primitives::sheet_drag`, deciding with the drawer's `settle` now in `utils::settle`),
       `sheet_snap_points` on all five content parts, `container` on every portalled floating layer,
@@ -1371,7 +1371,7 @@ are the menus that both float and rove, and each belongs to whichever batch it g
       declaring the oldest library its rewriting rules still produce valid source for — which
       wants a semver comparison and cannot fire until there are two releases to compare.
 
-- [x] Both crates are on crates.io — `nocomponents` 0.5.0 and `nocomponents-cli` 0.4.0 (tags `v0.5.0`
+- [x] Both crates are on crates.io — `nocomponents` 0.6.0 and `nocomponents-cli` 0.4.0 (tags `v0.6.0`
       and `v0.4.0`) — and all 67 components install and compile as a foreign crate (`--from` a
       checkout, wasm32).
 - [x] `DropdownMenuItemVariant` is re-exported by the installed `dropdown_menu.rs` (0.3.0).

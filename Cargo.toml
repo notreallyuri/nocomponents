@@ -1,6 +1,6 @@
 [package]
 name = "nocomponents"
-version = "0.5.0"
+version = "0.6.0"
 edition = "2024"
 description = "Unstyled behaviour primitives for Leptos, and a shadcn/ui-styled layer you install as source you own"
 repository = "https://github.com/notreallyuri/nocomponents"

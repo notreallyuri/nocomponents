@@ -9,7 +9,24 @@ touched; `cargo nocli components status` and a diff are how you deal with those.
 installed before the lock existed reads `not in lock`: the tool cannot tell whether it was edited,
 so diff it too and `components add <name> --force` to record it.
 
-## Unreleased
+## 0.6.0
+
+Forms and focus behave on the sign-in and account screens a port starts with, and the phone sheet
+can be closed and dragged like one. One rename breaks callers, and phone sheets change by default;
+both are below. `cargo-nocli` is unchanged (0.4.0).
+
+### Upgrading from 0.5
+
+Bump to `0.6`, `cargo update -p nocomponents`, then `cargo nocli components update` and
+`--apply`. By hand:
+
+- `Calendar` and `DatePicker`: rename `disabled=` (the per-date callback) to `disabled_dates=`.
+  `disabled` on `DatePicker` is now a `Signal<bool>` that disables the whole picker.
+- Phone sheets now show a header close button and drag to dismiss; `DialogPortal`'s corner close
+  hides in a sheet. Opt out per layer with `sheet_show_close=false` / `sheet_draggable=false`.
+- A dropdown menu, context menu or select open as a sheet closes when the window crosses `md`.
+- A popover moves focus into itself on open; `auto_focus=false` keeps it on the trigger.
+- A form reset now writes into a `model`: pass `default_value` to say what it resets to.
 
 ### Breaking
 
