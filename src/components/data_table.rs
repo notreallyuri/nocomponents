@@ -117,30 +117,23 @@ where
                                         all.set(checked);
                                     }
                                 });
+                                let mixed = Signal::derive(move || {
+                                    selection.state(&page_ids.get()) == SelectionState::Some
+                                });
 
                                 view! {
                                     <TableHead class="w-10">
-                                        <span
-                                            data-state=move || {
-                                                match selection.state(&page_ids.get()) {
-                                                    SelectionState::None => "none",
-                                                    SelectionState::Some => "some",
-                                                    SelectionState::All => "all",
-                                                }
+                                        <Checkbox
+                                            checked=all
+                                            indeterminate=mixed
+                                            icon=icon_or(check_icon.get_value(), || view! { <Check /> })
+                                            attr:aria-label="Select all rows"
+                                            on:click=move |_| {
+                                                let ids = page_ids.get_untracked();
+                                                let picked = selection.state(&ids) == SelectionState::All;
+                                                selection.set_all(&ids, !picked);
                                             }
-                                            class="inline-flex data-[state=some]:opacity-60"
-                                        >
-                                            <Checkbox
-                                                checked=all
-                                                icon=icon_or(check_icon.get_value(), || view! { <Check /> })
-                                                attr:aria-label="Select all rows"
-                                                on:click=move |_| {
-                                                    let ids = page_ids.get_untracked();
-                                                    let picked = selection.state(&ids) == SelectionState::All;
-                                                    selection.set_all(&ids, !picked);
-                                                }
-                                            />
-                                        </span>
+                                        />
                                     </TableHead>
                                 }
                             })

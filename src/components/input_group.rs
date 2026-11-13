@@ -1,7 +1,7 @@
 use crate::{
     cn,
     components::{
-        button::{Button, ButtonSize, ButtonVariant},
+        button::{Button, ButtonSize, ButtonType, ButtonVariant},
         input::{Input, InputType},
         textarea::Textarea,
     },
@@ -121,6 +121,8 @@ pub fn InputGroupButton(
     #[prop(default = ButtonSize::Xs.into(), into)] size: Signal<ButtonSize>,
     #[prop(optional, into)] on_click: Option<Callback<ev::MouseEvent>>,
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional)] r#type: ButtonType,
     children: ChildrenFn,
 ) -> impl IntoView {
     let on_click = Callback::new(move |e: ev::MouseEvent| {
@@ -134,6 +136,8 @@ pub fn InputGroupButton(
             variant=variant
             size=size
             on_click=on_click
+            disabled=disabled
+            r#type=r#type
             class=move || cn!("rounded-md", class.get())
             children=children
         />

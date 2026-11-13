@@ -9,6 +9,97 @@ touched; `cargo nocli components status` and a diff are how you deal with those.
 installed before the lock existed reads `not in lock`: the tool cannot tell whether it was edited,
 so diff it too and `components add <name> --force` to record it.
 
+## 0.6.0
+
+Forms and focus behave on the sign-in and account screens a port starts with, and the phone sheet
+can be closed and dragged like one. One rename breaks callers, and phone sheets change by default;
+both are below. `cargo-nocli` is unchanged (0.4.0).
+
+### Upgrading from 0.5
+
+Bump to `0.6`, `cargo update -p nocomponents`, then `cargo nocli components update` and
+`--apply`. By hand:
+
+- `Calendar` and `DatePicker`: rename `disabled=` (the per-date callback) to `disabled_dates=`.
+  `disabled` on `DatePicker` is now a `Signal<bool>` that disables the whole picker.
+- Phone sheets now show a header close button and drag to dismiss; `DialogPortal`'s corner close
+  hides in a sheet. Opt out per layer with `sheet_show_close=false` / `sheet_draggable=false`.
+- A dropdown menu, context menu or select open as a sheet closes when the window crosses `md`.
+- A popover moves focus into itself on open; `auto_focus=false` keeps it on the trigger.
+- A form reset now writes into a `model`: pass `default_value` to say what it resets to.
+
+### Breaking
+
+- **`Calendar` and `DatePicker`: the per-date callback is `disabled_dates`.** `disabled` was a
+  `Callback<Date, bool>` here and a `Signal<bool>` everywhere else; it is now the signal on
+  `DatePicker`. Migration: rename `disabled=|date| …` to `disabled_dates=|date| …`. The primitive
+  `CalendarRoot` keeps `disabled`.
+
+### Changed
+
+- **A `mobile_sheet` layer's header now has defaults you did not have in 0.5.** On
+  `DropdownMenuContent`, `ContextMenuContent`, `SelectContent`, `PopoverContent` and `DialogPortal`
+  (and their `*Root`s), below `md`:
+  - a close button is shown in the header row — opt out with `sheet_show_close=false`;
+  - dragging the header (grabber and title) moves and dismisses the sheet, and the header is
+    `position: sticky` with `touch-action: none` — opt out with `sheet_draggable=false`, which also
+    drops the `touch-action`;
+  - `DialogPortal` hides its corner close button in a sheet, the header's taking its place (it
+    follows `show_close`, so `show_close=false` removes both) — there is no separate switch;
+  - the title is `font-semibold text-foreground` rather than `font-medium`.
+- **In a sheet, a menu, context menu or select is built as a frame around the role element.** The
+  header sits beside the `role="menu"` / `role="listbox"` element, not inside it, and the classes,
+  the drag transform and `data-dragging`, `data-snap` and `data-state` are on the frame
+  (`data-slot="menu-sheet"`). Floating markup is unchanged. Such a layer closes if the window
+  crosses `md` while it is open.
+
+### Added
+
+- **`Checkbox` `indeterminate`** (and `indeterminate_icon`, default `Minus`): `aria-checked="mixed"`,
+  `data-state="indeterminate"`; a click checks the box and calls `on_checked_change(true)`. On
+  `CheckboxRoot` too. `DataTable`'s select-all uses it for a partly selected page.
+- **`PopoverContentRoot` / `PopoverContent` `auto_focus`** (default true).
+- **`DatePicker` `disabled` and `id`**, so the picker can be switched off and a `Field` label can
+  point at it.
+- **`InputType::Tel`, `Url`, `Search`, `Date`.**
+- **`NativeSelect` `on_change`, `NativeSelectOption` and `NativeSelectOptGroup`** (with
+  `*Root` primitives).
+- **`SelectTrigger` `disabled`** and **`InputGroupButton` `disabled` and `type`**.
+- **`SliderThumb` `aria_label`**, `FieldContext::label_id` and `FieldControl::labelled_by`.
+- **`default_value`** on `Input`, `Textarea` and `NativeSelect`: what a form reset puts back, read
+  when the reset happens (so data that arrived after mount is honoured), else the current `value`.
+  A control's `form` prop is honoured by the reset listener. `utils::form::on_native_reset`.
+- **`PopoverContentRoot` `initial_focus`**, a selector `auto_focus` tries first.
+- **The phone sheet can be closed and dragged.** On `DropdownMenuContent`, `ContextMenuContent`,
+  `SelectContent`, `PopoverContent` and `DialogPortal` (and their `*Root`s) a sheet now has a close
+  button in its header row — `sheet_show_close` (default true), `sheet_close_label` (default
+  "Close"), `sheet_close_icon` — and dragging the header down moves the panel with the pointer and,
+  on release, springs back or dismisses it by the drawer's own rule (`data-dragging`, no transition
+  while dragging). The body is not a handle, so scrolling a list never drags the sheet.
+  `sheet_draggable` turns the drag off. `sheet_snap_points` (fractions of the viewport height) gives it several resting heights:
+  it opens at the first, settles on the nearest, a flick moves one, and a release below the
+  lowest dismisses; the active index is `data-snap`. `DialogPortal` hides its corner close button
+  in a sheet, since the header carries one. New primitive `sheet_drag` (`use_sheet_grab`,
+  `SheetGrab`), and `utils::settle` (`settle`, `Settle`, `settle_drag`), which the drawer now
+  re-exports. The sheet title reads as a heading (`font-semibold text-foreground`).
+- **`container` on every portalled floating layer**: `DropdownMenuPortal` (and `ContextMenuPortal`),
+  `SelectPortal`, `MenubarPortal`, and `HoverCardContent`, `TooltipContent`, `ComboboxContent` (with
+  the matching `*PortalRoot`s), as `PopoverPortal` already had.
+- **A floating layer presented as a sheet no longer attaches `use_floating`'s auto-update**
+  (`floating_options_unless_sheet`).
+
+### Fixed
+
+- **A form reset now reaches a `model`.** `Input`, `Textarea` and `NativeSelect` went back to their
+  starting value on screen and left the caller's `model` holding the old one; they now write their
+  `default_value` into both.
+- **A popover moves focus into its content when it opens**, as Radix does (`auto_focus=false`
+  opts out); before, a keyboard user had to Tab through the page to reach it. A `DatePicker`
+  focuses the selected day, or the calendar's current day stop.
+- **`DataTable`'s select-all shows mixed** when some but not all rows are selected.
+- **A slider inside a `Field` has an accessible name**: the thumb points `aria-labelledby` at the
+  field's label.
+
 ## 0.5.0
 
 Icon slots reach through the composite components, the close and loading labels can be translated,

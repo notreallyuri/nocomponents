@@ -7,8 +7,12 @@
 //! Given `snap_points` it also rests at more than one height: the panel is as tall as the highest
 //! point and slides to whichever one is active, a release settles on the nearest (a flick moves
 //! one point, a drag below `dismiss_below` throws it away), and the decision itself is the pure
-//! [`settle`].
+//! [`settle_drag`] over [`settle`], shared with the phone sheets.
 
+pub use crate::utils::settle::{
+    DEFAULT_DISMISS_BELOW, DEFAULT_SNAP_FLICK_VELOCITY, Settle, settle,
+};
+use crate::utils::settle::{FLICK_WINDOW, Release, settle_drag};
 use crate::{
     primitives::{
         dialog::{DialogContentRoot, DialogRoot, use_dialog},
@@ -23,88 +27,11 @@ use leptos::{context::Provider, ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
 use web_sys::Element;
 
-/// How far the panel must travel, as a fraction of its own length, before a release dismisses.
-const DISTANCE_THRESHOLD: f64 = 0.25;
-/// Pixels per millisecond past which a release counts as a flick regardless of distance.
-const VELOCITY_THRESHOLD: f64 = 0.4;
-/// How recently the pointer must have moved for a release to count as a flick at all.
-const FLICK_WINDOW: f64 = 100.0;
 /// How much a panel gives up, and how far it slides back, while a nested drawer sits over it.
 const RECEDE_SCALE: f64 = 0.96;
 const RECEDE_SHIFT: f64 = 14.0;
 /// Depth past which the recede stops compounding; further back the panel would be a sliver.
 const RECEDE_MAX_STEPS: usize = 3;
-
-/// Below this share of the viewport, along the drawer's axis, a released snapping drawer is
-/// dismissed.
-pub const DEFAULT_DISMISS_BELOW: f64 = 0.22;
-/// Pixels per millisecond past which a release on a snapping drawer moves one snap point.
-pub const DEFAULT_SNAP_FLICK_VELOCITY: f64 = 0.6;
-
-/// Where a released snapping drawer comes to rest.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum Settle {
-    /// Rest at this snap point.
-    Snap(f64),
-    Dismiss,
-}
-
-/// Decides where a released drawer goes.
-///
-/// - `position` is how much of the viewport the drawer covers along its axis at the release, as a
-///   fraction: the same unit as `snap_points`, so `0.4` is a panel 40 percent of the way across.
-/// - `velocity` is the release speed in pixels per millisecond, positive toward dismissal (the
-///   panel shrinking) and zero for a release after a pause.
-/// - `dismiss_below` is the position under which the drawer is thrown away however it got there.
-/// - `flick_threshold` is the speed, in either direction, that counts as a flick.
-///
-/// Below `dismiss_below` it dismisses; a flick moves one snap point from `position` in its
-/// direction, past the lowest dismissing and past the highest staying on it; anything slower goes
-/// to the nearest. With no snap points there is a single rest at the full extent, `Snap(1.0)`.
-pub fn settle(
-    position: f64,
-    velocity: f64,
-    snap_points: &[f64],
-    dismiss_below: f64,
-    flick_threshold: f64,
-) -> Settle {
-    const EPSILON: f64 = 1e-9;
-
-    let mut points: Vec<f64> = snap_points.to_vec();
-    if points.is_empty() {
-        points.push(1.0);
-    }
-    points.sort_by(|a, b| a.total_cmp(b));
-
-    if position < dismiss_below {
-        return Settle::Dismiss;
-    }
-
-    if velocity > flick_threshold {
-        return match points
-            .iter()
-            .rev()
-            .find(|point| **point < position - EPSILON)
-        {
-            Some(point) => Settle::Snap(*point),
-            None => Settle::Dismiss,
-        };
-    }
-
-    if velocity < -flick_threshold {
-        return match points.iter().find(|point| **point > position + EPSILON) {
-            Some(point) => Settle::Snap(*point),
-            None => Settle::Snap(points[points.len() - 1]),
-        };
-    }
-
-    let nearest = points
-        .iter()
-        .min_by(|a, b| (position - **a).abs().total_cmp(&(position - **b).abs()))
-        .copied()
-        .unwrap_or(1.0);
-    Settle::Snap(nearest)
-}
 
 #[derive(Copy, Clone)]
 pub struct DrawerContext {
@@ -376,45 +303,7 @@ pub fn DrawerContentRoot(
 
         let travel = ctx.offset.get_untracked();
         let length = length.get_value();
-
-        if let Some(current) = untrack(|| ctx.current_snap()) {
-            let extent = extent.get_value();
-            let velocity = if end.idle < FLICK_WINDOW {
-                ctx.travel(end.velocity_x, end.velocity_y)
-            } else {
-                0.0
-            };
-            let position = if extent > 0.0 {
-                current - travel / extent
-            } else {
-                current
-            };
-            let settled = ctx.snap_points.with_untracked(|points| {
-                settle(
-                    position,
-                    velocity,
-                    points,
-                    ctx.dismiss_below.get_untracked(),
-                    ctx.flick_velocity.get_untracked(),
-                )
-            });
-
-            match settled {
-                Settle::Snap(snap) => {
-                    if (snap - current).abs() > f64::EPSILON {
-                        ctx.active_snap.set(Some(snap));
-                    }
-                    ctx.offset.set(0.0);
-                }
-                Settle::Dismiss => {
-                    dialog.close();
-                    ctx.offset.set(length);
-                    ctx.active_snap.set(None);
-                }
-            }
-            return;
-        }
-
+        let current = untrack(|| ctx.current_snap());
         // A pause before release is a placement, not a throw; the velocity is projected onto the
         // drag axis, so a shove back toward the edge comes out negative and does not dismiss.
         let velocity = if end.idle < FLICK_WINDOW {
@@ -423,16 +312,37 @@ pub fn DrawerContentRoot(
             0.0
         };
 
-        let far_enough = length > 0.0 && travel / length > DISTANCE_THRESHOLD;
-        let fast_enough = velocity > VELOCITY_THRESHOLD && travel > 0.0;
+        let settled = ctx.snap_points.with_untracked(|points| {
+            settle_drag(
+                Release {
+                    travel,
+                    length,
+                    extent: extent.get_value(),
+                    current,
+                    velocity,
+                },
+                points,
+                ctx.dismiss_below.get_untracked(),
+                ctx.flick_velocity.get_untracked(),
+            )
+        });
 
-        if far_enough || fast_enough {
-            dialog.close();
-            // Carry on to closed rather than zeroing, which would rewind the panel before
-            // sliding it out. The effect below clears the offset on the next open.
-            ctx.offset.set(length);
-        } else {
-            ctx.offset.set(0.0);
+        match settled {
+            Settle::Snap(snap) => {
+                if current.is_some_and(|current| (snap - current).abs() > f64::EPSILON) {
+                    ctx.active_snap.set(Some(snap));
+                }
+                ctx.offset.set(0.0);
+            }
+            Settle::Dismiss => {
+                dialog.close();
+                // Carry on to closed rather than zeroing, which would rewind the panel before
+                // sliding it out. The effect below clears the offset on the next open.
+                ctx.offset.set(length);
+                if current.is_some() {
+                    ctx.active_snap.set(None);
+                }
+            }
         }
     });
 
@@ -570,96 +480,5 @@ pub fn DrawerHandleRoot(#[prop(optional, into)] class: Signal<String>) -> impl I
             aria-hidden="true"
             class=class
         ></div>
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    const POINTS: [f64; 2] = [0.40, 0.88];
-    const BELOW: f64 = 0.22;
-    const FLICK: f64 = 0.6;
-
-    fn settled(position: f64, velocity: f64) -> Settle {
-        settle(position, velocity, &POINTS, BELOW, FLICK)
-    }
-
-    #[test]
-    fn a_slow_release_goes_to_the_nearest_snap() {
-        assert_eq!(settled(0.45, 0.0), Settle::Snap(0.40));
-        assert_eq!(settled(0.70, 0.0), Settle::Snap(0.88));
-        assert_eq!(settled(0.64, 0.0), Settle::Snap(0.40));
-        assert_eq!(settled(0.65, 0.1), Settle::Snap(0.88));
-        assert_eq!(settled(0.95, -0.2), Settle::Snap(0.88));
-    }
-
-    #[test]
-    fn a_slow_release_between_the_floor_and_the_lowest_snap_returns_to_it() {
-        assert_eq!(settled(0.25, 0.0), Settle::Snap(0.40));
-    }
-
-    #[test]
-    fn a_flick_up_moves_one_snap() {
-        assert_eq!(settled(0.42, -1.0), Settle::Snap(0.88));
-        assert_eq!(settled(0.40, -0.7), Settle::Snap(0.88));
-    }
-
-    #[test]
-    fn a_flick_up_from_the_highest_stays_on_it() {
-        assert_eq!(settled(0.88, -2.0), Settle::Snap(0.88));
-        assert_eq!(settled(0.90, -2.0), Settle::Snap(0.88));
-    }
-
-    #[test]
-    fn a_flick_down_moves_one_snap() {
-        assert_eq!(settled(0.86, 1.0), Settle::Snap(0.40));
-        assert_eq!(settled(0.88, 0.7), Settle::Snap(0.40));
-        assert_eq!(settled(0.45, 1.0), Settle::Snap(0.40));
-    }
-
-    #[test]
-    fn a_flick_down_from_the_lowest_dismisses() {
-        assert_eq!(settled(0.40, 1.0), Settle::Dismiss);
-        assert_eq!(settled(0.35, 0.9), Settle::Dismiss);
-    }
-
-    #[test]
-    fn a_release_below_the_floor_dismisses_however_slowly() {
-        assert_eq!(settled(0.21, 0.0), Settle::Dismiss);
-        assert_eq!(settled(0.10, -0.1), Settle::Dismiss);
-        assert_eq!(settled(0.21, -5.0), Settle::Dismiss);
-        assert_eq!(settled(0.22, 0.0), Settle::Snap(0.40));
-    }
-
-    #[test]
-    fn a_speed_at_the_threshold_is_not_yet_a_flick() {
-        assert_eq!(settled(0.45, FLICK), Settle::Snap(0.40));
-        assert_eq!(settled(0.70, -FLICK), Settle::Snap(0.88));
-    }
-
-    #[test]
-    fn the_order_the_points_are_given_in_does_not_matter() {
-        let reversed = [0.88, 0.40];
-        assert_eq!(
-            settle(0.42, -1.0, &reversed, BELOW, FLICK),
-            Settle::Snap(0.88)
-        );
-        assert_eq!(settle(0.40, 1.0, &reversed, BELOW, FLICK), Settle::Dismiss);
-    }
-
-    #[test]
-    fn a_single_snap_is_a_rest_that_a_flick_down_dismisses() {
-        assert_eq!(settle(0.6, 0.0, &[0.6], BELOW, FLICK), Settle::Snap(0.6));
-        assert_eq!(settle(0.6, 0.9, &[0.6], BELOW, FLICK), Settle::Dismiss);
-        assert_eq!(settle(0.6, -0.9, &[0.6], BELOW, FLICK), Settle::Snap(0.6));
-    }
-
-    #[test]
-    fn no_snap_points_is_one_rest_at_the_full_extent() {
-        assert_eq!(settle(0.97, 0.0, &[], BELOW, FLICK), Settle::Snap(1.0));
-        assert_eq!(settle(0.5, 0.0, &[], BELOW, FLICK), Settle::Snap(1.0));
-        assert_eq!(settle(0.5, 0.9, &[], BELOW, FLICK), Settle::Dismiss);
-        assert_eq!(settle(0.1, 0.0, &[], BELOW, FLICK), Settle::Dismiss);
     }
 }

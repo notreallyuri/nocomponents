@@ -3,8 +3,6 @@ use crate::{
     cn,
     primitives::dropzone::{DropzoneRoot, use_dropzone},
 };
-// Through `leptos` rather than `web_sys` directly: an installed component may only name leptos
-// and what `deps` re-exports, and the consumer compiling this file has leptos either way.
 use leptos::{prelude::*, web_sys::File};
 
 #[component]

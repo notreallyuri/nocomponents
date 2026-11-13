@@ -113,7 +113,8 @@ async function startTrunk() {
   );
   const origin = `http://127.0.0.1:${port}`;
   console.log(`trunk: building into ${dist}, serving ${origin} (the first build takes minutes)`);
-  const end = Date.now() + 10 * 60 * 1000;
+  const minutes = Number(process.env.SMOKE_BUILD_TIMEOUT_MIN) || 10;
+  const end = Date.now() + minutes * 60 * 1000;
   let last = Date.now();
   for (;;) {
     if (t.spawnError) throw new Error(`could not start trunk: ${t.spawnError.message}`);
@@ -124,7 +125,7 @@ async function startTrunk() {
       const r = await fetch(`${origin}/docs`).catch(() => null);
       if (r?.status === 200) return origin;
     }
-    if (Date.now() > end) throw new Error(`trunk did not finish within 10 minutes:\n${t.out}`);
+    if (Date.now() > end) throw new Error(`trunk did not finish within ${minutes} minutes:\n${t.out}`);
     if (Date.now() - last > 30000) {
       console.log('trunk: still building...');
       last = Date.now();

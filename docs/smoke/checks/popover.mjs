@@ -7,6 +7,7 @@ export default async (t) => {
   await t.click(trig, 500);
   t.expect('aria-expanded', await t.attr(trig, 'aria-expanded'), 'true');
   t.expect('content slot', await t.exists(`document.querySelector('[data-slot=popover-content]')`), true);
+  t.expect('opening moves focus into the content', await t.ev(`document.querySelector('[data-slot=popover-content]').contains(document.activeElement)`), true);
   await t.clickAt(1150, 860, 600);
   t.expect('outside click closes', await t.attr(trig, 'aria-expanded'), 'false');
   t.expect('a pointer close does not pull focus back onto the trigger', await t.ev(`document.activeElement === ${trig}`), false);
@@ -23,6 +24,7 @@ export default async (t) => {
   const inner = `document.querySelector('[data-slot=popover-content] input')`;
   await t.click(formTrig, 500);
   if (!(await t.exists(inner))) return t.fail('form popover', 'no input inside the panel');
+  t.expect('focus lands on the first focusable element inside', await t.ev(`document.activeElement === ${inner}`), true);
   await t.focus(inner);
   await t.clickAt(1150, 860, 600);
   t.expect('form popover closed by an outside click', await t.attr(formTrig, 'aria-expanded'), 'false');

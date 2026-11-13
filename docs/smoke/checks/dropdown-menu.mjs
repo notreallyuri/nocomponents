@@ -1,4 +1,5 @@
 import { demoBtn, menuItem, q, qa, activeText } from '../cdp.mjs';
+import { dragBy } from '../lib.mjs';
 
 const openMenus = `[...document.querySelectorAll('[role=menu]')].filter((m) => m.closest('[data-state]')?.dataset.state !== 'closed' && getComputedStyle(m).visibility !== 'hidden').length`;
 const radios = `[...document.querySelectorAll('[role=menuitemradio]')].map((e) => e.textContent.trim() + '=' + e.getAttribute('aria-checked')).join(' ')`;
@@ -107,6 +108,7 @@ export default async (t) => {
 
   // On phones: the same menu is a bottom sheet, and only below md.
   const sheetEl = `document.querySelector('[data-slot=dropdown-menu-content]')`;
+  const frameEl = `document.querySelector('[data-slot=menu-sheet]')`;
   const presentation = `${sheetEl}?.dataset.presentation ?? null`;
   const open = `${demoBtn('Sort by')}.getAttribute('aria-expanded')`;
 
@@ -123,9 +125,10 @@ export default async (t) => {
   t.ok('scrim is present', await t.ev(`!!document.querySelector('[data-slot=menu-sheet-scrim]')`));
   t.expect('title row shows sheet_title', await t.ev(`document.querySelector('[data-slot=menu-sheet-title]')?.textContent`), 'Sort by');
   t.ok('grabber is present', await t.ev(`!!document.querySelector('[data-slot=sheet-grabber]')`));
-  const box = await t.ev(`(() => { const r = ${sheetEl}.getBoundingClientRect(); return [r.left, r.right, r.bottom, innerWidth, innerHeight]; })()`);
+  const box = await t.ev(`(() => { const r = ${frameEl}.getBoundingClientRect(); return [r.left, r.right, r.bottom, innerWidth, innerHeight]; })()`);
   t.ok('anchored to the bottom edge and full width', box && Math.abs(box[2] - box[4]) <= 1 && box[0] <= 1 && Math.abs(box[1] - box[3]) <= 1);
   t.ok('menu has focus inside', await t.ev(`${sheetEl}.contains(document.activeElement)`));
+  t.ok('the header is a sibling of the menu, not inside it', await t.ev(`!${sheetEl}.querySelector('[data-slot=menu-sheet-header]') && ${frameEl}.querySelector('[data-slot=menu-sheet-header]')?.nextElementSibling === ${sheetEl}`));
 
   await t.click(menuItem('Size'), 400);
   await t.settle('an item click closes the sheet', open, 'false');
@@ -137,6 +140,39 @@ export default async (t) => {
   await t.key('Escape', 400);
   await t.settle('Escape closes the sheet', open, 'false');
   t.expect('focus returns to the trigger after Escape', await t.ev(`document.activeElement === ${demoBtn('Sort by')}`), true);
+
+  const header = `document.querySelector('[data-slot=menu-sheet-header]')`;
+  const closeBtn = `document.querySelector('[data-slot=menu-sheet-close]')`;
+
+  await t.click(demoBtn('Sort by'), 500);
+  t.ok('the sheet header has a close button', await t.exists(closeBtn));
+  t.expect('named Close', await t.attr(closeBtn, 'aria-label'), 'Close');
+  t.ok('drawn with the cross glyph', await t.ev(`!!${closeBtn}.querySelector('svg')`));
+  await t.click(closeBtn, 400);
+  await t.settle('the close button closes the sheet', open, 'false');
+
+  await t.click(demoBtn('Sort by'), 500);
+  t.expect('at rest a sheet is not dragging', await t.ev(`${frameEl}.dataset.dragging ?? null`), null);
+  let midDrag;
+  await dragBy(t, header, 30, {
+    mid: async () => {
+      midDrag = await t.ev(`[${frameEl}.dataset.dragging, ${frameEl}.style.transform, ${frameEl}.style.transition]`);
+    },
+  });
+  t.expect('a drag marks the panel as dragging', midDrag?.[0], 'true');
+  t.ok('moves it with the pointer', /30px/.test(midDrag?.[1] ?? ''), midDrag?.[1]);
+  t.ok('with no easing', /none/.test(midDrag?.[2] ?? ''), midDrag?.[2]);
+  t.expect('a short drag springs back and stays open', await t.attr(demoBtn('Sort by'), 'aria-expanded'), 'true');
+  t.expect('the mark is gone after the release', await t.ev(`${frameEl}.dataset.dragging ?? null`), null);
+  t.ok('and the panel is back at rest', await t.ev(`${frameEl}.style.transform === ''`));
+
+  await dragBy(t, header, 400);
+  await t.settle('a drag of the header past the threshold dismisses the sheet', open, 'false');
+
+  await t.click(demoBtn('Sort by'), 500);
+  t.expect('it reopens at rest', await t.ev(`${frameEl}.style.transform === ''`), true);
+  await t.key('Escape', 400);
+  await t.settle('Escape closes it again', open, 'false');
 
   await t.click(demoBtn('Sort by'), 500);
   await t.clickAt(195, 60, 400);

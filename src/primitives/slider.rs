@@ -356,6 +356,10 @@ pub fn SliderThumbRoot(
     #[prop(default = 0)]
     index: usize,
     #[prop(optional, into)] class: Signal<String>,
+    /// What the thumb is called. Empty leaves it to the surrounding `Field`'s label, which the
+    /// thumb points `aria-labelledby` at — a `<label for>` cannot name a `<span role="slider">`.
+    #[prop(optional, into)]
+    aria_label: Signal<String>,
 ) -> impl IntoView {
     let ctx = use_slider();
 
@@ -410,6 +414,14 @@ pub fn SliderThumbRoot(
         <span
             role="slider"
             id=move || if index == 0 { ctx.field.id.get() } else { None }
+            aria-label=move || non_empty(aria_label)
+            aria-labelledby=move || {
+                if aria_label.with(|label| label.is_empty()) {
+                    ctx.field.labelled_by.get()
+                } else {
+                    None
+                }
+            }
             aria-describedby=move || ctx.field.described_by.get()
             aria-invalid=move || ctx.field.invalid.get().then_some("true")
             data-slot="slider-thumb"

@@ -17,3 +17,22 @@ export async function layerRoundTrip(t, trigger, { role = 'dialog', settleMs = 6
   await t.key('Escape', settleMs);
   t.expect('Escape collapses the trigger', await t.attr(trigger, 'aria-expanded'), 'false');
 }
+
+// Presses on `from` (a selector expression), drags it by `dy` pixels down (negative is up) in
+// steps, optionally pauses, runs `mid` while the pointer is still down, and releases. `hold` is how
+// long the pointer rests before the release: past the library's flick window it is a placement,
+// not a throw.
+export async function dragBy(t, from, dy, { hold = 250, mid } = {}) {
+  const [x, y] = await t.center(from);
+  await t.mouse('mouseMoved', x, y);
+  await t.mouse('mousePressed', x, y);
+  const steps = Math.max(8, Math.ceil(Math.abs(dy) / 12));
+  for (let i = 1; i <= steps; i++) {
+    await t.mouse('mouseMoved', x, y + (dy * i) / steps);
+    await t.sleep(16);
+  }
+  if (hold) await t.sleep(hold);
+  if (mid) await mid();
+  await t.mouse('mouseReleased', x, y + dy);
+  await t.sleep(500);
+}

@@ -84,6 +84,25 @@ const CONTROLLED: &str = r#"{
     }
 }"#;
 
+const SNAP_POINTS: &str = r#"<Dialog>
+    <DialogTrigger variant=ButtonVariant::Outline>"Open filters"</DialogTrigger>
+    <DialogPortal
+        mobile_sheet=true
+        sheet_title="Filters"
+        sheet_snap_points=vec![0.4, 0.9]
+    >
+        <DialogHeader>
+            <DialogTitle>"Filters"</DialogTitle>
+            <DialogDescription>
+                "Drag the header row (grabber and title) up for the full list, down to peek, and past the lowest point to dismiss."
+            </DialogDescription>
+        </DialogHeader>
+        <DialogFooter class="mt-4">
+            <Button>"Apply"</Button>
+        </DialogFooter>
+    </DialogPortal>
+</Dialog>"#;
+
 /// Read off the `#[component]` signatures in `src/components/dialog.rs`, in declaration order.
 const API: &[ApiEntry] = &[
     ApiEntry {
@@ -184,13 +203,43 @@ const API: &[ApiEntry] = &[
                 name: "mobile_sheet",
                 ty: "Signal<bool>",
                 default: "false",
-                description: "Below the `md` breakpoint (768px), present the panel as a bottom sheet instead of a centred panel: no positioning, `data-presentation=\"sheet\"`. At `md` and up nothing changes, and it is written as `\"floating\"`. The overlay is the scrim, and Escape and a tap on it close the dialog as before.",
+                description: "Below the `md` breakpoint (768px), present the panel as a bottom sheet instead of a centred panel: no positioning, `data-presentation=\"sheet\"`. At `md` and up nothing changes, and it is written as `\"floating\"`. The overlay is the scrim. Escape, a tap on it and the header's close button (when `show_close` is on) close the dialog, and dragging the header down dismisses it.",
             },
             Prop {
                 name: "sheet_title",
                 ty: "Signal<String>",
                 default: "\"\"",
-                description: "The title row under the sheet's grabber. Empty means a grabber and no row. Ignored when the content is not a sheet.",
+                description: "The title in the sheet's header row, beside the close button. Empty shows no title. Ignored when the content is not a sheet.",
+            },
+            Prop {
+                name: "sheet_snap_points",
+                ty: "Signal<Vec<f64>>",
+                default: "vec![]",
+                description: "The heights the sheet rests at, as fractions of the viewport height — `vec![0.4, 0.9]` is a peek and a tall. The sheet is as tall as the highest and opens at the first; dragging its header settles on the nearest, a flick moves one point, and a release below the lowest dismisses it. `data-snap` carries the active index. Empty is a sheet as tall as its content. Ignored when the content is not a sheet.",
+            },
+            Prop {
+                name: "sheet_show_close",
+                ty: "Signal<bool>",
+                default: "true",
+                description: "Whether the sheet's header has a close button. Present only in a sheet, and only while `show_close` is on; the corner button gives way to it.",
+            },
+            Prop {
+                name: "sheet_close_label",
+                ty: "Signal<String>",
+                default: "\"Close\"",
+                description: "The sheet close button's screen-reader text. Translate it here.",
+            },
+            Prop {
+                name: "sheet_close_icon",
+                ty: "Option<ViewFn>",
+                default: "X",
+                description: "The glyph of the sheet's close button, in place of the cross; falls back to `close_icon`. Any view; see Icons.",
+            },
+            Prop {
+                name: "sheet_draggable",
+                ty: "Signal<bool>",
+                default: "true",
+                description: "Whether dragging the sheet's header row (grabber and title) moves and dismisses it. Off, the header is inert: no `touch-action: none`, and the scrim, Escape and the close button remain.",
             },
             Prop {
                 name: "children",
@@ -402,6 +451,31 @@ pub fn Page() -> impl IntoView {
                             </div>
                         }
                     }
+                </DemoSection>
+
+                <DemoSection
+                    title="Snap points on a phone"
+                    description="Below the md breakpoint (768px) this is a bottom sheet that rests at 40 and 90 percent of the screen height: it opens at the first, dragging its header row (grabber and title) settles on the nearest, and a drag below the lowest dismisses it. Narrow the window to see it; from md up it is the centred dialog."
+                    code=SNAP_POINTS
+                >
+                    <Dialog>
+                        <DialogTrigger variant=ButtonVariant::Outline>"Open filters"</DialogTrigger>
+                        <DialogPortal
+                            mobile_sheet=true
+                            sheet_title="Filters"
+                            sheet_snap_points=vec![0.4, 0.9]
+                        >
+                            <DialogHeader>
+                                <DialogTitle>"Filters"</DialogTitle>
+                                <DialogDescription>
+                                    "Drag the header row (grabber and title) up for the full list, down to peek, and past the lowest point to dismiss."
+                                </DialogDescription>
+                            </DialogHeader>
+                            <DialogFooter class="mt-4">
+                                <Button>"Apply"</Button>
+                            </DialogFooter>
+                        </DialogPortal>
+                    </Dialog>
                 </DemoSection>
 
                 <ApiReference entries=API />

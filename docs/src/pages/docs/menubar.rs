@@ -142,12 +142,20 @@ const API: &[ApiEntry] = &[
     ApiEntry {
         name: "MenubarPortal",
         description: "Renders the menu at the end of the document, mounted only while it is open — plus 150ms for the exit animation.",
-        props: &[Prop {
-            name: "children",
-            ty: "ChildrenFn",
-            default: "",
-            description: "The content. Re-run on each mount, hence `ChildrenFn`.",
-        }],
+        props: &[
+            Prop {
+                name: "container",
+                ty: "Option<AnyNodeRef>",
+                default: "None",
+                description: "Mount the layer in this element instead of `<body>` — a sticky or fixed ancestor it should move with, so scrolling does not leave it behind until the next position update. A fullscreen element still wins when the container is not inside it.",
+            },
+            Prop {
+                name: "children",
+                ty: "ChildrenFn",
+                default: "",
+                description: "The content. Re-run on each mount, hence `ChildrenFn`.",
+            },
+        ],
     },
     ApiEntry {
         name: "MenubarContent",

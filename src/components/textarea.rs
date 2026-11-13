@@ -7,6 +7,7 @@ pub fn Textarea(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(default = None, into)] model: Option<RwSignal<String>>,
     #[prop(optional, into)] value: Signal<String>,
+    #[prop(optional, into)] default_value: Signal<String>,
     #[prop(optional, into)] id: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(default = false)] auto_resize: bool,
@@ -25,6 +26,7 @@ pub fn Textarea(
     view! {
         <TextareaRoot
             value=value
+            default_value=default_value
             model=model
             id=id
             disabled=disabled

@@ -25,7 +25,7 @@ pub fn Calendar(
     #[prop(into, default = 0.into())] week_starts_on: Signal<u32>,
     #[prop(optional, into)] min: MaybeProp<Date>,
     #[prop(optional, into)] max: MaybeProp<Date>,
-    #[prop(optional, into)] disabled: Option<Callback<Date, bool>>,
+    #[prop(optional, into)] disabled_dates: Option<Callback<Date, bool>>,
     #[prop(optional, into)] locale: Signal<String>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] prev_icon: Option<ViewFn>,
@@ -43,7 +43,7 @@ pub fn Calendar(
             week_starts_on=week_starts_on
             min=min
             max=max
-            disabled=forward(disabled)
+            disabled=forward(disabled_dates)
             locale=locale
             class=move || {
                 cn!("w-fit rounded-lg border bg-background p-3 text-foreground", class.get())

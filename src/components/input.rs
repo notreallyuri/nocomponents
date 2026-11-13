@@ -1,5 +1,10 @@
-use crate::{cn, primitives::field::FieldControl, utils::form::non_empty};
+use crate::{
+    cn,
+    primitives::field::FieldControl,
+    utils::form::{non_empty, on_native_reset},
+};
 use leptos::prelude::*;
+use leptos_node_ref::AnyNodeRef;
 
 #[derive(Default, Clone, Copy, PartialEq)]
 pub enum InputType {
@@ -9,6 +14,10 @@ pub enum InputType {
     Password,
     Number,
     File,
+    Tel,
+    Url,
+    Search,
+    Date,
 }
 
 impl InputType {
@@ -19,6 +28,10 @@ impl InputType {
             InputType::Password => "password",
             InputType::Number => "number",
             InputType::File => "file",
+            InputType::Tel => "tel",
+            InputType::Url => "url",
+            InputType::Search => "search",
+            InputType::Date => "date",
         }
     }
 }
@@ -29,6 +42,7 @@ pub fn Input(
     #[prop(optional, into)] input_type: Signal<InputType>,
     #[prop(default = None, into)] model: Option<RwSignal<String>>,
     #[prop(optional, into)] value: Signal<String>,
+    #[prop(optional, into)] default_value: Signal<String>,
     #[prop(optional, into)] id: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] name: Signal<String>,
@@ -41,9 +55,12 @@ pub fn Input(
     #[prop(optional, into)] on_change: Option<Callback<String>>,
 ) -> impl IntoView {
     let field = FieldControl::new(id, disabled);
+    let node_ref = AnyNodeRef::new();
+    on_native_reset(node_ref, form, model, default_value, value);
 
     view! {
         <input
+            node_ref=node_ref
             data-slot="input"
             type=move || input_type.get().as_str()
             id=move || field.id.get()

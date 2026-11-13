@@ -98,7 +98,7 @@ const API: &[ApiEntry] = &[
     },
     ApiEntry {
         name: "KanbanCard",
-        description: "A drag source. Follows the pointer while it is in hand, without leaving the list — so the gap it came from stays open and no column reflows underneath.",
+        description: "A drag source. Follows the pointer while it is in hand, without leaving the list — so the gap it came from stays open and no column reflows underneath. Lifted rather than faded while dragging, and never transitioned in transform, which would make it lag the cursor by the duration.",
         props: &[
             Prop {
                 name: "id",

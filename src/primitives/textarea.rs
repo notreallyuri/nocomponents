@@ -1,13 +1,24 @@
-use crate::{cn, primitives::field::FieldControl, utils::form::non_empty};
+use crate::{
+    cn,
+    primitives::field::FieldControl,
+    utils::form::{non_empty, on_native_reset},
+};
 use leptos::{prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
 use web_sys::HtmlElement;
 
+/// A multi-line text control. When its `<form>` is reset it goes back to `default_value` (else
+/// `value`), read at that moment, and writes that into `model` too, so the caller's signal and the
+/// screen agree.
 #[component]
 pub fn TextareaRoot(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(default = None, into)] model: Option<RwSignal<String>>,
     #[prop(optional, into)] value: Signal<String>,
+    /// What a reset of the form puts back, read when the reset happens. Empty means unset, and
+    /// the current `value` is used. Never the `model`'s own earlier contents.
+    #[prop(optional, into)]
+    default_value: Signal<String>,
     #[prop(optional, into)] id: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(default = false)] auto_resize: bool,
@@ -44,6 +55,8 @@ pub fn TextareaRoot(
     let field = FieldControl::new(id, disabled);
     // One ref whether or not the caller wanted it: auto-resize measures through the same node.
     let node_ref = node_ref.unwrap_or_default();
+
+    on_native_reset(node_ref, form, model, default_value, value);
 
     let resize = move || {
         if auto_resize

@@ -41,7 +41,7 @@ icons = "src/icons/nc""#;
 
 const CARGO: &str = r#"[dependencies]
 leptos = { version = "0.8", features = ["csr"] }
-nocomponents = { version = "0.5", features = [
+nocomponents = { version = "0.6", features = [
     "primitives", "theme",
     "button", "dialog", "sidebar",
 ] }"#;

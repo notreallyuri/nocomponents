@@ -7,9 +7,11 @@ use crate::{
 };
 use leptos::prelude::*;
 use nocomponents::components::{
-    button::{Button, ButtonSize, ButtonVariant},
+    button::{Button, ButtonSize, ButtonType, ButtonVariant},
     input::{Input, InputType},
     label::Label,
+    native_select::{NativeSelect, NativeSelectOption},
+    textarea::Textarea,
 };
 
 const DEFAULT: &str = r#"<Input attr:placeholder="Enter text..." />"#;
@@ -61,6 +63,45 @@ const REVEAL: &str = r#"{
     }
 }"#;
 
+const MORE_TYPES: &str = r#"<div class="flex flex-col gap-3 max-w-sm">
+    <Input input_type=InputType::Tel attr:placeholder="+44 20 7946 0000" />
+    <Input input_type=InputType::Url attr:placeholder="https://example.com" />
+    <Input input_type=InputType::Search attr:placeholder="Search..." />
+    <Input input_type=InputType::Date />
+</div>"#;
+
+const RESET: &str = r#"{
+    let name = RwSignal::new("Ada".to_string());
+    let default_name = RwSignal::new("Ada".to_string());
+    let bio = RwSignal::new("Mathematician".to_string());
+    let role = RwSignal::new("editor".to_string());
+    view! {
+        <form class="flex max-w-sm flex-col gap-3">
+            <Input model=name default_value=default_name />
+            <Textarea model=bio default_value="Mathematician" rows=2 />
+            <NativeSelect model=role default_value="editor">
+                <NativeSelectOption value="admin">"Admin"</NativeSelectOption>
+                <NativeSelectOption value="editor">"Editor"</NativeSelectOption>
+            </NativeSelect>
+            <Button
+                variant=ButtonVariant::Ghost
+                on_click=move |_| {
+                    default_name.set("Grace".to_string());
+                    name.set("Grace".to_string());
+                }
+            >
+                "Load profile"
+            </Button>
+            <Button r#type=ButtonType::Reset variant=ButtonVariant::Outline>
+                "Reset"
+            </Button>
+            <p data-reset-output class="text-sm text-muted-foreground">
+                {move || format!("{} / {} / {}", name.get(), bio.get(), role.get())}
+            </p>
+        </form>
+    }
+}"#;
+
 const DISABLED: &str = r#"<Input attr:disabled=true value="Cannot edit this" class="max-w-sm" />"#;
 
 const FILE: &str = r#"<Input input_type=InputType::File class="max-w-sm" />"#;
@@ -79,19 +120,25 @@ const API: &[ApiEntry] = &[ApiEntry {
             name: "input_type",
             ty: "Signal<InputType>",
             default: "Text",
-            description: "One of: Text, Email, Password, Number, File.",
+            description: "One of: Text, Email, Password, Number, File, Tel, Url, Search, Date.",
         },
         Prop {
             name: "model",
             ty: "Option<RwSignal<String>>",
             default: "None",
-            description: "Two-way binding. Pass this or `value`, not both.",
+            description: "Two-way binding. Pass this or `value`, not both. A reset of the surrounding `<form>` (or the one named by `form`) writes `default_value` into it; see `default_value`.",
         },
         Prop {
             name: "value",
             ty: "Signal<String>",
             default: "\"\"",
             description: "One-way: the field shows it and never writes back.",
+        },
+        Prop {
+            name: "default_value",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "What a reset of the form puts back, read at the moment of the reset — so a profile loaded after mount is honoured, as with React's `defaultValue`. Empty means unset, and the current `value` is used instead. Never the `model`'s own earlier contents. The result is written to the field and to `model`.",
         },
         Prop {
             name: "id",
@@ -194,6 +241,19 @@ pub fn Page() -> impl IntoView {
                 </DemoSection>
 
                 <DemoSection
+                    title="More types"
+                    description="Tel, Url, Search and Date join the first five: a phone keyboard, URL validation, a clear button, a date picker, all the browser's."
+                    code=MORE_TYPES
+                >
+                    <div class="flex flex-col gap-3 max-w-sm">
+                        <Input input_type=InputType::Tel attr:placeholder="+44 20 7946 0000" />
+                        <Input input_type=InputType::Url attr:placeholder="https://example.com" />
+                        <Input input_type=InputType::Search attr:placeholder="Search..." />
+                        <Input input_type=InputType::Date />
+                    </div>
+                </DemoSection>
+
+                <DemoSection
                     title="Controlled"
                     description="Value bound to a signal via the model prop."
                     code=CONTROLLED
@@ -207,6 +267,46 @@ pub fn Page() -> impl IntoView {
                                     "Value: " {move || value.get()}
                                 </p>
                             </div>
+                        }
+                    }
+                </DemoSection>
+
+                <DemoSection
+                    title="Resetting a form"
+                    description="Load profile stands for data that arrives after mount: it moves the default and the field together, and a reset returns to the new one. A reset puts `Input`, `Textarea` and `NativeSelect` back to their `default_value` — read when the reset happens, so a value that arrived late is honoured — and writes it into their `model`, so the signal and the screen agree afterwards."
+                    code=RESET
+                >
+                    {
+                        let name = RwSignal::new("Ada".to_string());
+                        let default_name = RwSignal::new("Ada".to_string());
+                        let bio = RwSignal::new("Mathematician".to_string());
+                        let role = RwSignal::new("editor".to_string());
+                        view! {
+                            <form class="flex max-w-sm flex-col gap-3">
+                                <Input model=name default_value=default_name />
+                                <Textarea model=bio default_value="Mathematician" rows=2 />
+                                <NativeSelect model=role default_value="editor">
+                                    <NativeSelectOption value="admin">"Admin"</NativeSelectOption>
+                                    <NativeSelectOption value="editor">"Editor"</NativeSelectOption>
+                                </NativeSelect>
+                                <Button
+                                    variant=ButtonVariant::Ghost
+                                    on_click=move |_| {
+                                        default_name.set("Grace".to_string());
+                                        name.set("Grace".to_string());
+                                    }
+                                >
+                                    "Load profile"
+                                </Button>
+                                <Button r#type=ButtonType::Reset variant=ButtonVariant::Outline>
+                                    "Reset"
+                                </Button>
+                                <p data-reset-output class="text-sm text-muted-foreground">
+                                    {move || {
+                                        format!("{} / {} / {}", name.get(), bio.get(), role.get())
+                                    }}
+                                </p>
+                            </form>
                         }
                     }
                 </DemoSection>

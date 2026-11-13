@@ -159,6 +159,12 @@ const API: &[ApiEntry] = &[
                 description: "Merged over the label's classes.",
             },
             Prop {
+                name: "container",
+                ty: "Option<AnyNodeRef>",
+                default: "None",
+                description: "Mount the layer in this element instead of `<body>` — a sticky or fixed ancestor it should move with, so scrolling does not leave it behind until the next position update. A fullscreen element still wins when the container is not inside it.",
+            },
+            Prop {
                 name: "children",
                 ty: "ChildrenFn",
                 default: "",

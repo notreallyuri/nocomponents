@@ -57,8 +57,6 @@ pub fn TreeRow(
                 cn!(
                     "group/tree-row flex h-8 min-w-0 cursor-default items-center gap-1.5 rounded-md pr-2 text-sm transition-colors",
                     "hover:bg-accent hover:text-accent-foreground",
-                    // The item is what takes focus, and the row is its direct child — a `group-*`
-                    // would ring every row under a focused branch, since it matches any ancestor.
                     "[[data-slot=tree-item]:focus-visible>&]:ring-2 [[data-slot=tree-item]:focus-visible>&]:ring-ring",
                     "data-[active=true]:bg-accent data-[active=true]:font-medium data-[active=true]:text-accent-foreground",
                     class.get(),

@@ -26,6 +26,7 @@ use crate::{
 };
 use floating_ui_leptos::{Placement, UseFloatingReturn, use_floating};
 use leptos::{either::Either, prelude::*, wasm_bindgen::JsCast};
+use leptos_node_ref::AnyNodeRef;
 use web_sys::HtmlElement;
 
 pub type ComboboxContext = FloatingContext;
@@ -130,12 +131,18 @@ pub fn ComboboxTriggerRoot(
 }
 
 #[component]
-pub fn ComboboxPortalRoot(children: ChildrenFn) -> impl IntoView {
+pub fn ComboboxPortalRoot(
+    /// Mount the layer in this element instead of `<body>` — a sticky or fixed ancestor it should
+    /// move with. The fullscreen element still wins when the container is not inside it.
+    #[prop(default = None)]
+    container: Option<AnyNodeRef>,
+    children: ChildrenFn,
+) -> impl IntoView {
     let ctx = use_combobox();
     let children = StoredValue::new(children);
 
     view! {
-        <FloatingPortal>
+        <FloatingPortal container=container>
             <Show when=move || {
                 ctx.is_mounted.get()
             }>{children.with_value(|children| children())}</Show>

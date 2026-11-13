@@ -14,7 +14,8 @@ node docs/smoke/run.mjs --no-sweep            # checks only
 It exits non-zero on any failure, with a `FAIL <page>: <label>: <detail>` line for each.
 
 Without `--url` it starts its own `trunk serve` on a free port into a temporary `--dist`, so it never
-fights a `trunk serve` of yours on :3000. The first build takes minutes; later ones reuse `target/`.
+fights a `trunk serve` of yours on :3000. The first build takes minutes; later ones reuse `target/`. `SMOKE_BUILD_TIMEOUT_MIN` raises the
+10-minute limit on that build.
 It then starts `chromium` (first of `chromium`, `chromium-browser`, `google-chrome` on `PATH`;
 `CHROME=/path/to/binary` overrides; `CHROME_NO_SANDBOX=1` adds `--no-sandbox`, which a root-run
 container needs). Both are killed by process group on exit, failure and SIGINT.

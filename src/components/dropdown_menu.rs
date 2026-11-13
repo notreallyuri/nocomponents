@@ -1,7 +1,7 @@
 use crate::{
     cn,
     components::button::{Button, ButtonSize, ButtonVariant},
-    icons::{check::Check, chevron::ChevronRight, circle::Circle},
+    icons::{check::Check, chevron::ChevronRight, circle::Circle, x::X},
     primitives::dropdown_menu::{
         DropdownMenuCheckboxItemRoot, DropdownMenuContentRoot, DropdownMenuGroupRoot,
         DropdownMenuItemRoot, DropdownMenuPortalRoot, DropdownMenuRadioGroupRoot,
@@ -9,16 +9,21 @@ use crate::{
         DropdownMenuSubRoot, DropdownMenuSubTriggerRoot, DropdownMenuTriggerRoot,
     },
     primitives::floating::FloatingPortal,
-    utils::{controllable::forward, icon::IconSlot},
+    utils::{
+        controllable::forward,
+        icon::{IconSlot, slot_view},
+    },
 };
 use leptos::{either::Either, ev, prelude::*};
+use leptos_node_ref::AnyNodeRef;
 
 #[allow(unused_imports)]
 pub use crate::primitives::dropdown_menu::DropdownMenuItemVariant;
 #[allow(unused_imports)]
 pub use crate::utils::types::{Align, Side, SideOffset, TriggerRender};
 
-pub const MENU_SHEET_CLASS: &str = "data-[presentation=sheet]:w-full data-[presentation=sheet]:max-h-[85dvh] data-[presentation=sheet]:overflow-y-auto data-[presentation=sheet]:rounded-b-none data-[presentation=sheet]:rounded-t-xl data-[presentation=sheet]:border-x-0 data-[presentation=sheet]:border-b-0 data-[presentation=sheet]:px-4 data-[presentation=sheet]:pb-[max(1rem,env(safe-area-inset-bottom))] data-[presentation=sheet]:data-[state=open]:slide-in-from-bottom-full data-[presentation=sheet]:data-[state=closed]:slide-out-to-bottom-full data-[presentation=sheet]:data-[state=open]:zoom-in-100 data-[presentation=sheet]:data-[state=closed]:zoom-out-100 data-[presentation=sheet]:[&_[data-slot=dropdown-menu-item]]:min-h-11";
+pub const MENU_SHEET_CLASS: &str = "data-[presentation=sheet]:w-full data-[presentation=sheet]:max-h-[85dvh] data-[presentation=sheet]:overflow-y-auto data-[presentation=sheet]:rounded-b-none data-[presentation=sheet]:rounded-t-xl data-[presentation=sheet]:border-x-0 data-[presentation=sheet]:border-b-0 data-[presentation=sheet]:px-4 data-[presentation=sheet]:pb-[max(1rem,env(safe-area-inset-bottom))] data-[presentation=sheet]:data-[state=open]:slide-in-from-bottom-full data-[presentation=sheet]:data-[state=closed]:slide-out-to-bottom-full data-[presentation=sheet]:data-[state=open]:zoom-in-100 data-[presentation=sheet]:data-[state=closed]:zoom-out-100 data-[presentation=sheet]:[&_[data-slot=dropdown-menu-item]]:min-h-11 [&_[data-slot=menu-sheet-title]]:px-1 [&_[data-slot=menu-sheet-title]]:pb-2 [&_[data-slot=menu-sheet-title]]:text-sm [&_[data-slot=menu-sheet-title]]:font-semibold [&_[data-slot=menu-sheet-title]]:text-foreground [&_[data-slot=menu-sheet-close]]:flex [&_[data-slot=menu-sheet-close]]:size-8 [&_[data-slot=menu-sheet-close]]:items-center [&_[data-slot=menu-sheet-close]]:justify-center [&_[data-slot=menu-sheet-close]]:rounded-md [&_[data-slot=menu-sheet-close]]:text-muted-foreground [&_[data-slot=menu-sheet-close]]:outline-none [&_[data-slot=menu-sheet-close]]:hover:bg-accent [&_[data-slot=menu-sheet-close]]:hover:text-accent-foreground [&_[data-slot=menu-sheet-close]]:focus-visible:ring-2 [&_[data-slot=menu-sheet-close]]:focus-visible:ring-ring data-[presentation=sheet]:transition-transform data-[presentation=sheet]:duration-200 motion-reduce:data-[presentation=sheet]:transition-none data-[presentation=sheet]:data-[dragging=true]:transition-none";
+pub const SHEET_CLOSE_ICON: &str = "flex size-4 items-center justify-center [&>svg]:size-full";
 
 #[component]
 pub fn DropdownMenu(
@@ -77,8 +82,11 @@ pub fn DropdownMenuTrigger(
 }
 
 #[component]
-pub fn DropdownMenuPortal(children: ChildrenFn) -> impl IntoView {
-    view! { <DropdownMenuPortalRoot children=children /> }
+pub fn DropdownMenuPortal(
+    #[prop(default = None)] container: Option<AnyNodeRef>,
+    children: ChildrenFn,
+) -> impl IntoView {
+    view! { <DropdownMenuPortalRoot container=container children=children /> }
 }
 
 #[component]
@@ -89,6 +97,11 @@ pub fn DropdownMenuContent(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] mobile_sheet: Signal<bool>,
     #[prop(optional, into)] sheet_title: Signal<String>,
+    #[prop(optional, into)] sheet_snap_points: Signal<Vec<f64>>,
+    #[prop(default = true.into(), into)] sheet_show_close: Signal<bool>,
+    #[prop(default = "Close".into(), into)] sheet_close_label: Signal<String>,
+    #[prop(optional, into)] sheet_close_icon: Option<ViewFn>,
+    #[prop(default = true.into(), into)] sheet_draggable: Signal<bool>,
     children: Children,
 ) -> impl IntoView {
     view! {
@@ -98,6 +111,13 @@ pub fn DropdownMenuContent(
             side_offset=side_offset
             mobile_sheet=mobile_sheet
             sheet_title=sheet_title
+            sheet_snap_points=sheet_snap_points
+            sheet_show_close=sheet_show_close
+            sheet_draggable=sheet_draggable
+            sheet_close_label=sheet_close_label
+            sheet_close_icon=Some(
+                slot_view(sheet_close_icon, ViewFn::from(|| view! { <X /> }), SHEET_CLOSE_ICON),
+            )
             class=move || {
                 cn!(
                     "z-50 min-w-32 overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md pointer-events-auto data-[state=closed]:pointer-events-none",

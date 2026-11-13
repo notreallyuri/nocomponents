@@ -92,7 +92,7 @@ const API: &[ApiEntry] = &[
     },
     ApiEntry {
         name: "TreeRow",
-        description: "The part you see and click. Indented by its own depth, and carrying the twisty when the item has children.",
+        description: "The part you see and click. Indented by its own depth, and carrying the twisty when the item has children. Its focus ring comes from the item being focused, not from a group class, which would ring every row under a focused branch.",
         props: &[
             Prop {
                 name: "active",

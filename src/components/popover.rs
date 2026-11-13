@@ -1,9 +1,12 @@
 use crate::{
     cn,
     components::button::{Button, ButtonSize, ButtonVariant},
+    icons::x::X,
     primitives::popover::{PopoverContentRoot, PopoverPortalRoot, PopoverRoot, PopoverTriggerRoot},
-    utils::controllable::forward,
+    utils::{controllable::forward, icon::slot_view},
 };
+
+const SHEET_CLOSE_ICON: &str = "flex size-4 items-center justify-center [&>svg]:size-full";
 use leptos::{either::Either, prelude::*};
 use leptos_node_ref::AnyNodeRef;
 
@@ -76,20 +79,34 @@ pub fn PopoverContent(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] mobile_sheet: Signal<bool>,
     #[prop(optional, into)] sheet_title: Signal<String>,
+    #[prop(optional, into)] sheet_snap_points: Signal<Vec<f64>>,
+    #[prop(default = true.into(), into)] sheet_show_close: Signal<bool>,
+    #[prop(default = "Close".into(), into)] sheet_close_label: Signal<String>,
+    #[prop(optional, into)] sheet_close_icon: Option<ViewFn>,
+    #[prop(default = true.into(), into)] sheet_draggable: Signal<bool>,
+    #[prop(default = true.into(), into)] auto_focus: Signal<bool>,
     children: Children,
 ) -> impl IntoView {
     view! {
         <PopoverContentRoot
+            auto_focus=auto_focus
             side=side
             align=align
             side_offset=side_offset
             mobile_sheet=mobile_sheet
             sheet_title=sheet_title
+            sheet_snap_points=sheet_snap_points
+            sheet_show_close=sheet_show_close
+            sheet_draggable=sheet_draggable
+            sheet_close_label=sheet_close_label
+            sheet_close_icon=Some(
+                slot_view(sheet_close_icon, ViewFn::from(|| view! { <X /> }), SHEET_CLOSE_ICON),
+            )
             class=move || {
                 let base_one = "flex flex-col gap-2 py-4 rounded-lg bg-popover text-sm text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-none animation-duration-100 fill-mode-forwards pointer-events-auto data-[state=closed]:pointer-events-none";
                 let animations = "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2";
                 let base_two = "has-data-[slot=popover-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl";
-                let sheet = "data-[presentation=sheet]:w-full data-[presentation=sheet]:max-h-[85dvh] data-[presentation=sheet]:overflow-y-auto data-[presentation=sheet]:rounded-b-none data-[presentation=sheet]:rounded-t-xl data-[presentation=sheet]:ring-0 data-[presentation=sheet]:border-t data-[presentation=sheet]:pb-[max(1.5rem,env(safe-area-inset-bottom))] data-[presentation=sheet]:data-[state=open]:slide-in-from-bottom-full data-[presentation=sheet]:data-[state=closed]:slide-out-to-bottom-full data-[presentation=sheet]:data-[state=open]:zoom-in-100 data-[presentation=sheet]:data-[state=closed]:zoom-out-100";
+                let sheet = "data-[presentation=sheet]:w-full data-[presentation=sheet]:max-h-[85dvh] data-[presentation=sheet]:overflow-y-auto data-[presentation=sheet]:rounded-b-none data-[presentation=sheet]:rounded-t-xl data-[presentation=sheet]:ring-0 data-[presentation=sheet]:border-t data-[presentation=sheet]:pb-[max(1.5rem,env(safe-area-inset-bottom))] data-[presentation=sheet]:data-[state=open]:slide-in-from-bottom-full data-[presentation=sheet]:data-[state=closed]:slide-out-to-bottom-full data-[presentation=sheet]:data-[state=open]:zoom-in-100 data-[presentation=sheet]:data-[state=closed]:zoom-out-100 [&_[data-slot=menu-sheet-title]]:px-4 [&_[data-slot=menu-sheet-title]]:pb-2 [&_[data-slot=menu-sheet-title]]:text-sm [&_[data-slot=menu-sheet-title]]:font-semibold [&_[data-slot=menu-sheet-title]]:text-foreground [&_[data-slot=menu-sheet-close]]:flex [&_[data-slot=menu-sheet-close]]:size-8 [&_[data-slot=menu-sheet-close]]:items-center [&_[data-slot=menu-sheet-close]]:justify-center [&_[data-slot=menu-sheet-close]]:rounded-md [&_[data-slot=menu-sheet-close]]:text-muted-foreground [&_[data-slot=menu-sheet-close]]:outline-none [&_[data-slot=menu-sheet-close]]:hover:bg-accent [&_[data-slot=menu-sheet-close]]:hover:text-accent-foreground [&_[data-slot=menu-sheet-close]]:focus-visible:ring-2 [&_[data-slot=menu-sheet-close]]:focus-visible:ring-ring data-[presentation=sheet]:transition-transform data-[presentation=sheet]:duration-200 motion-reduce:data-[presentation=sheet]:transition-none data-[presentation=sheet]:data-[dragging=true]:transition-none";
                 let base_class = format!("{base_one} {animations} {base_two} {sheet}");
                 cn!(base_class.as_str(), class.get())
             }
