@@ -2,7 +2,7 @@ use crate::{
     cn,
     icons::{check::Check, copy::Copy},
     primitives::code::{CodeBlockContentRoot, CodeBlockRoot, CodeCopyRoot, use_code},
-    utils::icon::IconSlot,
+    utils::icon::{IconSlot, icon_or},
 };
 use leptos::{either::Either, prelude::*};
 
@@ -35,6 +35,8 @@ pub fn CodeBlock(
     #[prop(optional)] language: Language,
     #[prop(default = true)] copyable: bool,
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] copy_icon: Option<ViewFn>,
+    #[prop(optional, into)] copied_icon: Option<ViewFn>,
 ) -> impl IntoView {
     let has_header = move || !label.with(|label| label.is_empty());
 
@@ -65,9 +67,11 @@ pub fn CodeBlock(
             {copyable
                 .then(|| {
                     view! {
-                        <CodeCopyButton class=move || {
-                            if has_header() { "top-0.5" } else { "top-3" }
-                        } />
+                        <CodeCopyButton
+                            class=move || { if has_header() { "top-0.5" } else { "top-3" } }
+                            copy_icon=icon_or(copy_icon, || view! { <Copy /> })
+                            copied_icon=icon_or(copied_icon, || view! { <Check /> })
+                        />
                     }
                 })}
 

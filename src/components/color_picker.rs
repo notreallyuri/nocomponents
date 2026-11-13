@@ -5,12 +5,13 @@ use crate::{
         select::{Select, SelectContent, SelectItem, SelectPortal, SelectTrigger},
         separator::Separator,
     },
+    icons::{check::Check, chevron::ChevronDown},
     primitives::color_picker::{
         ColorPickerAreaRoot, ColorPickerChannelRoot, ColorPickerInputRoot, ColorPickerPresetRoot,
         ColorPickerRail, ColorPickerRailRoot, ColorPickerRoot, ColorPickerSwatchRoot,
         use_color_picker,
     },
-    utils::types::Orientation,
+    utils::{icon::icon_or, types::Orientation},
 };
 use leptos::{either::Either, prelude::*};
 
@@ -20,15 +21,20 @@ pub use crate::utils::color::ColorFormat;
 const CHEQUER: &str = "background-image: linear-gradient(45deg, var(--color-border) 25%, transparent 25%, transparent 75%, var(--color-border) 75%), linear-gradient(45deg, var(--color-border) 25%, transparent 25%, transparent 75%, var(--color-border) 75%); background-size: 8px 8px; background-position: 0 0, 4px 4px;";
 
 #[component]
-fn ColorPickerFields() -> impl IntoView {
+fn ColorPickerFields(select_icon: Option<ViewFn>, check_icon: Option<ViewFn>) -> impl IntoView {
     let ctx = use_color_picker();
+    let select_icon = StoredValue::new(select_icon);
+    let check_icon = StoredValue::new(check_icon);
     let selection = ctx.format_selection();
 
     view! {
         <InputGroup class="h-9 flex-nowrap gap-1 px-1.5">
             <InputGroupAddon>
                 <Select value=selection class="w-auto">
-                    <SelectTrigger class="h-7 w-19 gap-1 border-0 bg-transparent px-1.5 font-mono text-xs uppercase focus:ring-0 focus:ring-offset-0">
+                    <SelectTrigger
+                        icon=icon_or(select_icon.get_value(), || view! { <ChevronDown /> })
+                        class="h-7 w-19 gap-1 border-0 bg-transparent px-1.5 font-mono text-xs uppercase focus:ring-0 focus:ring-offset-0"
+                    >
                         <span class="truncate">{move || ctx.format.get().label()}</span>
                     </SelectTrigger>
                     <SelectPortal>
@@ -37,7 +43,11 @@ fn ColorPickerFields() -> impl IntoView {
                                 .into_iter()
                                 .map(|format| {
                                     view! {
-                                        <SelectItem value=format.as_str() class="font-mono text-xs">
+                                        <SelectItem
+                                            value=format.as_str()
+                                            icon=icon_or(check_icon.get_value(), || view! { <Check /> })
+                                            class="font-mono text-xs"
+                                        >
                                             {format.label()}
                                         </SelectItem>
                                     }
@@ -91,6 +101,8 @@ pub fn ColorPicker(
     #[prop(optional, into)] with_alpha: Signal<bool>,
     #[prop(optional, into)] presets: Signal<Vec<&'static str>>,
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] select_icon: Option<ViewFn>,
+    #[prop(optional, into)] check_icon: Option<ViewFn>,
 ) -> impl IntoView {
     view! {
         <ColorPickerRoot
@@ -163,7 +175,7 @@ pub fn ColorPicker(
                 </div>
             </div>
 
-            <ColorPickerFields />
+            <ColorPickerFields select_icon=select_icon check_icon=check_icon />
 
             {move || {
                 (!presets.with(|presets| presets.is_empty()))

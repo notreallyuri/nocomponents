@@ -122,6 +122,18 @@ const API: &[ApiEntry] = &[
                 default: "\"\"",
                 description: "Merged over the block's classes.",
             },
+            Prop {
+                name: "copy_icon",
+                ty: "Option<ViewFn>",
+                default: "Copy",
+                description: "The glyph, in place of the copy glyph on the button. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
+            Prop {
+                name: "copied_icon",
+                ty: "Option<ViewFn>",
+                default: "Check",
+                description: "The glyph, in place of the glyph shown once copied. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
         ],
     },
     ApiEntry {

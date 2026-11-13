@@ -1,5 +1,5 @@
 use crate::utils::{
-    icon::IconSlot,
+    icon::{IconSlot, icon_or},
     types::{Align, Side},
 };
 use crate::{
@@ -10,6 +10,7 @@ use crate::{
     },
     icons::{
         check::Check,
+        chevron::ChevronRight,
         loader::LoaderCircle,
         media::{
             Captions, Maximize, Minimize, Pause, Play, Replay, Settings, SkipBack, SkipForward,
@@ -40,6 +41,24 @@ const SUBMENU_TRIGGER: &str = "focus:bg-white/15 focus:text-white hover:bg-white
 const ICON: &str = "flex size-4 shrink-0 items-center justify-center [&>svg]:size-full";
 const CHECK: &str = "flex size-3.5 shrink-0 items-center justify-center [&>svg]:size-full";
 const SUBMENU_CONTENT: &str = "min-w-40 border-white/15 bg-black/85 text-white backdrop-blur";
+
+#[derive(Clone, Default)]
+pub struct VideoPlayerIcons {
+    pub play: Option<ViewFn>,
+    pub pause: Option<ViewFn>,
+    pub replay: Option<ViewFn>,
+    pub previous: Option<ViewFn>,
+    pub next: Option<ViewFn>,
+    pub volume: Option<ViewFn>,
+    pub muted: Option<ViewFn>,
+    pub enter_fullscreen: Option<ViewFn>,
+    pub exit_fullscreen: Option<ViewFn>,
+    pub settings: Option<ViewFn>,
+    pub captions: Option<ViewFn>,
+    pub check: Option<ViewFn>,
+    pub submenu: Option<ViewFn>,
+    pub buffering: Option<ViewFn>,
+}
 
 #[component]
 pub fn VideoPlayerVideo(
@@ -127,12 +146,13 @@ pub fn VideoPlayerBadge(
 pub fn VideoPlayerBuffering(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] icon: Option<ViewFn>,
+    #[prop(default = "Loading".into(), into)] label: Signal<String>,
 ) -> impl IntoView {
     view! {
         <span
             data-slot="video-player-buffering"
             role="status"
-            aria-label="Loading"
+            aria-label=move || label.get()
             class=move || {
                 cn!(
                     "pointer-events-none absolute inset-0 m-auto flex size-12 items-center justify-center text-white opacity-0 transition-opacity group-data-[waiting=true]/surface:opacity-100 group-data-[waiting=true]/surface:delay-300",
@@ -408,9 +428,11 @@ pub fn VideoPlayer(
     #[prop(optional, into)] on_skip: Option<Callback<VideoPlayerStep>>,
     #[prop(optional, into)] controls: Option<Callback<(), AnyView>>,
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional)] icons: VideoPlayerIcons,
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     let controls = StoredValue::new(controls);
+    let icons = StoredValue::new(icons);
     view! {
         <VideoPlayerRoot
             mode=mode
@@ -445,9 +467,19 @@ pub fn VideoPlayer(
                     mode.get()
                         .interactive()
                         .then(|| {
+                            let icons = icons.get_value();
                             view! {
-                                <VideoPlayerBadge />
-                                <VideoPlayerBuffering />
+                                <VideoPlayerBadge
+                                    play_icon=icon_or(icons.play.clone(), || view! { <Play /> })
+                                    replay_icon=icon_or(
+                                        icons.replay.clone(),
+                                        || view! { <Replay /> },
+                                    )
+                                />
+                                <VideoPlayerBuffering icon=icon_or(
+                                    icons.buffering.clone(),
+                                    || view! { <LoaderCircle /> },
+                                ) />
                             }
                         })
                 }}
@@ -472,41 +504,135 @@ pub fn VideoPlayer(
                 let mode = mode.get();
                 (mode.has_controls() && controls.with_value(|controls| controls.is_none()))
                     .then(|| {
+                        let glyphs = icons.get_value();
                         view! {
                             <VideoPlayerControls>
                                 <VideoPlayerSeek />
                                 <div class="flex items-center gap-1">
-                                    <VideoPlayerPlayButton />
+                                    <VideoPlayerPlayButton
+                                        play_icon=icon_or(glyphs.play.clone(), || view! { <Play /> })
+                                        pause_icon=icon_or(
+                                            glyphs.pause.clone(),
+                                            || view! { <Pause /> },
+                                        )
+                                        replay_icon=icon_or(
+                                            glyphs.replay.clone(),
+                                            || view! { <Replay /> },
+                                        )
+                                    />
                                     {mode
                                         .has_skip()
                                         .then(|| {
                                             view! {
-                                                <VideoPlayerSkipButton step=VideoPlayerStep::Previous />
-                                                <VideoPlayerSkipButton step=VideoPlayerStep::Next />
+                                                <VideoPlayerSkipButton
+                                                    step=VideoPlayerStep::Previous
+                                                    icon=icon_or(
+                                                        glyphs.previous.clone(),
+                                                        || view! { <SkipBack /> },
+                                                    )
+                                                />
+                                                <VideoPlayerSkipButton
+                                                    step=VideoPlayerStep::Next
+                                                    icon=icon_or(
+                                                        glyphs.next.clone(),
+                                                        || view! { <SkipForward /> },
+                                                    )
+                                                />
                                             }
                                         })}
                                     {mode
                                         .has_volume()
-                                        .then(|| view! { <VideoPlayerVolumeControl /> })}
+                                        .then(|| {
+                                            view! {
+                                                <VideoPlayerVolumeControl
+                                                    volume_icon=icon_or(
+                                                        glyphs.volume.clone(),
+                                                        || view! { <Volume /> },
+                                                    )
+                                                    muted_icon=icon_or(
+                                                        glyphs.muted.clone(),
+                                                        || view! { <VolumeOff /> },
+                                                    )
+                                                />
+                                            }
+                                        })}
                                     {mode.has_timestamp().then(|| view! { <VideoPlayerTime /> })}
                                     <div class="flex-1" />
                                     {mode
                                         .has_timestamp()
-                                        .then(|| view! { <VideoPlayerCaptionsButton /> })}
+                                        .then(|| {
+                                            view! {
+                                                <VideoPlayerCaptionsButton icon=icon_or(
+                                                    glyphs.captions.clone(),
+                                                    || view! { <Captions /> },
+                                                ) />
+                                            }
+                                        })}
                                     {mode
                                         .has_timestamp()
                                         .then(|| {
                                             view! {
-                                                <VideoPlayerMenu>
-                                                    <VideoPlayerSpeedItems submenu=true />
-                                                    <VideoPlayerCaptionItems submenu=true />
-                                                    <VideoPlayerCaptionSizeItems submenu=true />
+                                                <VideoPlayerMenu icon=icon_or(
+                                                    glyphs.settings.clone(),
+                                                    || view! { <Settings /> },
+                                                )>
+                                                    {move || {
+                                                        let icons = icons.get_value();
+                                                        view! {
+                                                            <VideoPlayerSpeedItems
+                                                                submenu=true
+                                                                check_icon=icon_or(
+                                                                    icons.check.clone(),
+                                                                    || view! { <Check /> },
+                                                                )
+                                                                submenu_icon=icon_or(
+                                                                    icons.submenu.clone(),
+                                                                    || view! { <ChevronRight /> },
+                                                                )
+                                                            />
+                                                            <VideoPlayerCaptionItems
+                                                                submenu=true
+                                                                check_icon=icon_or(
+                                                                    icons.check.clone(),
+                                                                    || view! { <Check /> },
+                                                                )
+                                                                submenu_icon=icon_or(
+                                                                    icons.submenu.clone(),
+                                                                    || view! { <ChevronRight /> },
+                                                                )
+                                                            />
+                                                            <VideoPlayerCaptionSizeItems
+                                                                submenu=true
+                                                                check_icon=icon_or(
+                                                                    icons.check.clone(),
+                                                                    || view! { <Check /> },
+                                                                )
+                                                                submenu_icon=icon_or(
+                                                                    icons.submenu.clone(),
+                                                                    || view! { <ChevronRight /> },
+                                                                )
+                                                            />
+                                                        }
+                                                    }}
                                                 </VideoPlayerMenu>
                                             }
                                         })}
                                     {mode
                                         .has_fullscreen()
-                                        .then(|| view! { <VideoPlayerFullscreenButton /> })}
+                                        .then(|| {
+                                            view! {
+                                                <VideoPlayerFullscreenButton
+                                                    enter_icon=icon_or(
+                                                        glyphs.enter_fullscreen.clone(),
+                                                        || view! { <Maximize /> },
+                                                    )
+                                                    exit_icon=icon_or(
+                                                        glyphs.exit_fullscreen.clone(),
+                                                        || view! { <Minimize /> },
+                                                    )
+                                                />
+                                            }
+                                        })}
                                 </div>
                             </VideoPlayerControls>
                         }
@@ -522,10 +648,15 @@ const RATES: &[f64] = &[0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
 pub fn VideoPlayerVolumeControl(
     #[prop(default = true)] collapsible: bool,
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] volume_icon: Option<ViewFn>,
+    #[prop(optional, into)] muted_icon: Option<ViewFn>,
 ) -> impl IntoView {
     view! {
         <div class=move || cn!("group/volume flex items-center gap-1", class.get())>
-            <VideoPlayerMuteButton />
+            <VideoPlayerMuteButton
+                volume_icon=icon_or(volume_icon, || view! { <Volume /> })
+                muted_icon=icon_or(muted_icon, || view! { <VolumeOff /> })
+            />
             <VideoPlayerVolume class=if collapsible {
                 "w-0 opacity-0 transition-[width,opacity] duration-200 group-hover/volume:w-16 group-hover/volume:opacity-100 group-focus-within/volume:w-16 group-focus-within/volume:opacity-100 [@media(hover:none)]:w-16 [@media(hover:none)]:opacity-100"
             } else {
@@ -581,9 +712,11 @@ pub fn VideoPlayerMenu(
 pub fn VideoPlayerSpeedItems(
     #[prop(default = false)] submenu: bool,
     #[prop(optional, into)] check_icon: Option<ViewFn>,
+    #[prop(optional, into)] submenu_icon: Option<ViewFn>,
 ) -> impl IntoView {
     let ctx = use_video_player();
     let check_icon = StoredValue::new(check_icon);
+    let submenu_icon = StoredValue::new(submenu_icon);
 
     let rows = move || {
         RATES
@@ -615,7 +748,12 @@ pub fn VideoPlayerSpeedItems(
     if submenu {
         Either::Left(view! {
             <DropdownMenuSub>
-                <DropdownMenuSubTrigger class=SUBMENU_TRIGGER>"Speed"</DropdownMenuSubTrigger>
+                <DropdownMenuSubTrigger
+                    class=SUBMENU_TRIGGER
+                    icon=icon_or(submenu_icon.get_value(), || view! { <ChevronRight /> })
+                >
+                    "Speed"
+                </DropdownMenuSubTrigger>
                 <DropdownMenuSubContent class=SUBMENU_CONTENT>{rows()}</DropdownMenuSubContent>
             </DropdownMenuSub>
         })
@@ -631,9 +769,11 @@ pub fn VideoPlayerSpeedItems(
 pub fn VideoPlayerCaptionItems(
     #[prop(default = false)] submenu: bool,
     #[prop(optional, into)] check_icon: Option<ViewFn>,
+    #[prop(optional, into)] submenu_icon: Option<ViewFn>,
 ) -> impl IntoView {
     let ctx = use_video_player();
     let check_icon = StoredValue::new(check_icon);
+    let submenu_icon = StoredValue::new(submenu_icon);
 
     let rows = move || {
         view! {
@@ -691,7 +831,13 @@ pub fn VideoPlayerCaptionItems(
                     Either::Left(
                         view! {
                             <DropdownMenuSub>
-                                <DropdownMenuSubTrigger class=SUBMENU_TRIGGER>
+                                <DropdownMenuSubTrigger
+                                    class=SUBMENU_TRIGGER
+                                    icon=icon_or(
+                                        submenu_icon.get_value(),
+                                        || view! { <ChevronRight /> },
+                                    )
+                                >
                                     "Subtitles"
                                 </DropdownMenuSubTrigger>
                                 <DropdownMenuSubContent class=SUBMENU_CONTENT>
@@ -718,9 +864,11 @@ pub fn VideoPlayerCaptionItems(
 pub fn VideoPlayerCaptionSizeItems(
     #[prop(default = false)] submenu: bool,
     #[prop(optional, into)] check_icon: Option<ViewFn>,
+    #[prop(optional, into)] submenu_icon: Option<ViewFn>,
 ) -> impl IntoView {
     let ctx = use_video_player();
     let check_icon = StoredValue::new(check_icon);
+    let submenu_icon = StoredValue::new(submenu_icon);
 
     let rows = move || {
         VideoPlayerCaptionSize::ALL
@@ -761,7 +909,13 @@ pub fn VideoPlayerCaptionSizeItems(
                     Either::Left(
                         view! {
                             <DropdownMenuSub>
-                                <DropdownMenuSubTrigger class=SUBMENU_TRIGGER>
+                                <DropdownMenuSubTrigger
+                                    class=SUBMENU_TRIGGER
+                                    icon=icon_or(
+                                        submenu_icon.get_value(),
+                                        || view! { <ChevronRight /> },
+                                    )
+                                >
                                     "Subtitle size"
                                 </DropdownMenuSubTrigger>
                                 <DropdownMenuSubContent class=SUBMENU_CONTENT>

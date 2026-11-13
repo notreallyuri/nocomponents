@@ -2,10 +2,48 @@
 
 The styled layer is installed, not depended on, so a release has two halves: the crate, which this
 file is about, and the files `cargo nocli` copied into your project, which are yours and which an
-upgrade does not touch. After bumping the dependency, run `cargo nocli components status` to see
-which installed components are `unchanged`, `edited` or `not in lock`, then `cargo nocli components
-add <name> --force` for each unchanged one, and diff the rest. A component installed before the
-lock existed reads `not in lock`: the tool cannot tell whether it was edited, so diff it too.
+upgrade does not touch. After bumping the dependency and running `cargo update -p nocomponents`,
+run `cargo nocli components update` to see which installed components and icons are outdated, then
+`cargo nocli components update --apply` to rewrite the unchanged ones. Edited files are never
+touched; `cargo nocli components status` and a diff are how you deal with those. A component
+installed before the lock existed reads `not in lock`: the tool cannot tell whether it was edited,
+so diff it too and `components add <name> --force` to record it.
+
+## 0.5.0
+
+Icon slots reach through the composite components, the close and loading labels can be translated,
+and the CLI learns to bring unchanged installed files up to date on its own. Purely additive.
+
+### Upgrading from 0.4
+
+Bump to `0.5`, `cargo install nocomponents-cli` (0.4.0), `cargo update -p nocomponents`, then
+`cargo nocli components update` and `--apply`. A refreshed `code`, `date_picker`, `data_table`,
+`color_picker` or `video_player` names `nocomponents::utils::icon::icon_or`, so it needs the 0.5
+crate; one you leave as it is keeps compiling against 0.5 unchanged.
+
+### Added
+
+- **Composite icon pass-through.** The components built out of other parts now take the glyphs
+  those parts draw: `CodeBlock` `copy_icon` and `copied_icon`, `DatePicker` `prev_icon` and
+  `next_icon`, `DataTable` `check_icon`, `ColorPicker` `select_icon` and `check_icon`, and
+  `VideoPlayer` `icons: VideoPlayerIcons`, one struct for the player's glyphs, written with
+  `..Default::default()` so whatever is left out keeps its built-in one. Only the default controls
+  use it; a `controls` callback composes the parts, and each passes its own.
+- **`VideoPlayerVolumeControl` `volume_icon` and `muted_icon`**, and `submenu_icon` on the
+  `*Items` parts of the video player's menu.
+- **`close_label`** (default "Close") on DialogPortal, SheetContent and DrawerContent, and
+  **`label`** (default "Loading") on VideoPlayerBuffering, so the screen-reader text can be
+  translated.
+- **`utils::icon::icon_or`**, which composites use to forward an optional slot with the inner
+  part's fallback glyph.
+
+### cargo-nocli 0.4.0
+
+- `components update [--apply]` compares every installed component and icon with the release in
+  `Cargo.lock`, and with `--apply` rewrites the ones still unchanged, installing any new dependency
+  they gained. Files edited here, not in the lock, or not in the release are listed and left alone.
+- `icons remove <names> [--force]`, the counterpart of `components remove`: refuses an icon that
+  something installed still uses, or one that has been edited.
 
 ## 0.4.0
 

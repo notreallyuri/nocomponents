@@ -34,3 +34,13 @@ pub fn IconSlot(
         </span>
     }
 }
+
+/// The caller's icon, or `fallback`, as the `ViewFn` a part's `icon` prop takes.
+///
+/// A composite that holds an `Option<ViewFn>` for a glyph it does not draw itself cannot hand the
+/// option to the inner part: those props are `optional`, so their setter takes the view and not
+/// the `Option`. This is the one place that unwraps it. `fallback` must be the glyph the inner
+/// part would have drawn.
+pub fn icon_or(icon: Option<ViewFn>, fallback: impl Into<ViewFn>) -> ViewFn {
+    icon.unwrap_or_else(|| fallback.into())
+}

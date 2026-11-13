@@ -76,6 +76,18 @@ const API: &[ApiEntry] = &[
                 default: "\"\"",
                 description: "Merged over the picker's classes.",
             },
+            Prop {
+                name: "select_icon",
+                ty: "Option<ViewFn>",
+                default: "ChevronDown",
+                description: "The glyph, in place of the chevron on the format select. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
+            Prop {
+                name: "check_icon",
+                ty: "Option<ViewFn>",
+                default: "Check",
+                description: "The glyph, in place of the tick on the chosen format in that select. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
         ],
     },
     ApiEntry {

@@ -239,6 +239,12 @@ const API: &[ApiEntry] = &[
                 default: "X",
                 description: "The glyph, in place of the close cross. Any view — an `Icon`, an SVG of your own; see Icons.",
             },
+            Prop {
+                name: "close_label",
+                ty: "Signal<String>",
+                default: "\"Close\"",
+                description: "The close button's screen-reader text. Translate it here.",
+            },
         ],
     },
     ApiEntry {

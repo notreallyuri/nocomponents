@@ -167,6 +167,24 @@ impl Source {
         }
     }
 
+    pub async fn component_opt(&self, name: &str) -> Result<Option<String>> {
+        self.file_opt(&format!("src/components/{name}.rs")).await
+    }
+
+    pub async fn icon_opt(&self, name: &str) -> Result<Option<String>> {
+        self.file_opt(&format!("src/icons/{name}.rs")).await
+    }
+
+    async fn file_opt(&self, path: &str) -> Result<Option<String>> {
+        match self {
+            Source::Repository(release) => match get_opt(&release.raw(path).await?).await? {
+                Some(response) => Ok(Some(response.text().await?)),
+                None => Ok(None),
+            },
+            Source::Checkout(dir) => read_opt(&dir.join(path)),
+        }
+    }
+
     pub async fn stylesheet(&self, name: &str) -> Result<String> {
         match self {
             Source::Repository(release) => {
@@ -219,7 +237,24 @@ fn read(path: &Path) -> Result<String> {
     std::fs::read_to_string(path).with_context(|| format!("reading {}", path.display()))
 }
 
+fn read_opt(path: &Path) -> Result<Option<String>> {
+    match std::fs::read_to_string(path) {
+        Ok(text) => Ok(Some(text)),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(e) => Err(e).with_context(|| format!("reading {}", path.display())),
+    }
+}
+
 async fn get(url: &str) -> Result<reqwest::Response> {
+    get_opt(url).await?.with_context(|| {
+        format!(
+            "{url} returned 404 — either that release is not tagged in the repository, or the \
+             file is not in it.\nWork against a tree instead with `--from <path>`."
+        )
+    })
+}
+
+async fn get_opt(url: &str) -> Result<Option<reqwest::Response>> {
     let response = reqwest::Client::new()
         .get(url)
         .header("User-Agent", AGENT)
@@ -228,17 +263,36 @@ async fn get(url: &str) -> Result<reqwest::Response> {
         .with_context(|| format!("fetching {url}"))?;
 
     if response.status() == reqwest::StatusCode::NOT_FOUND {
-        anyhow::bail!(
-            "{url} returned 404 — either that release is not tagged in the repository, or the \
-             file is not in it.\nWork against a tree instead with `--from <path>`."
-        );
+        return Ok(None);
     }
     if !response.status().is_success() {
         anyhow::bail!("{url} returned {}", response.status());
     }
-    Ok(response)
+    Ok(Some(response))
 }
 
 async fn get_text(url: &str) -> Result<String> {
     Ok(get(url).await?.text().await?)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn a_file_missing_from_a_checkout_is_none_not_an_error() {
+        let dir = std::env::temp_dir().join(format!("nocli-remote-{}", std::process::id()));
+        std::fs::create_dir_all(dir.join("src/components")).unwrap();
+        std::fs::write(dir.join("src/components/button.rs"), "fn button() {}").unwrap();
+        let source = Source::new(Some(dir.clone())).unwrap();
+
+        let here = source.component_opt("button").await.unwrap();
+        let gone = source.component_opt("nothing").await.unwrap();
+        let icon = source.icon_opt("nothing").await.unwrap();
+        std::fs::remove_dir_all(&dir).unwrap();
+
+        assert_eq!(here.as_deref(), Some("fn button() {}"));
+        assert_eq!(gone, None);
+        assert_eq!(icon, None);
+    }
 }

@@ -27,7 +27,7 @@ pub async fn run(source: &Source) -> Result<()> {
         .into_iter()
         .map(String::from)
         .collect();
-    if !crate::install::ships_icons(source).await {
+    if !crate::install::ships_icons(source).await? {
         features.insert("icons".to_string());
     }
     manifest::add_dependency(&features, source.checkout())?;

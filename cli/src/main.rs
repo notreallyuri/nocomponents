@@ -58,6 +58,13 @@ enum Icons {
     },
     /// Show every icon, marking the ones already installed.
     List,
+    /// Remove installed icons.
+    Remove {
+        names: Vec<String>,
+        /// Remove even an icon that has been edited, or that something installed still uses.
+        #[arg(long)]
+        force: bool,
+    },
 }
 
 #[derive(Subcommand)]
@@ -80,6 +87,12 @@ enum Components {
     List,
     /// Show which installed components and icons are edited, unchanged, or not in the lock.
     Status,
+    /// Compare installed components and icons with the release in Cargo.lock.
+    Update {
+        /// Write the unchanged files that are outdated; edited ones are never touched.
+        #[arg(long)]
+        apply: bool,
+    },
 }
 
 #[tokio::main]
@@ -110,6 +123,7 @@ async fn run(cli: Nocli) -> Result<()> {
             Components::Remove { names, force } => install::remove(&names, force),
             Components::List => install::list(&source).await,
             Components::Status => install::status(),
+            Components::Update { apply } => install::update(&source, apply).await,
         },
         Command::Icons { command } => match command {
             Icons::Add { names, .. } if names.is_empty() => {
@@ -117,6 +131,10 @@ async fn run(cli: Nocli) -> Result<()> {
             }
             Icons::Add { names, force } => install::add_icons(&source, &names, force).await,
             Icons::List => install::list_icons(&source).await,
+            Icons::Remove { names, .. } if names.is_empty() => {
+                anyhow::bail!("name at least one icon to remove")
+            }
+            Icons::Remove { names, force } => install::remove_icons(&names, force),
         },
     }
 }

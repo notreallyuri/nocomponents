@@ -737,6 +737,108 @@ const API: &[ApiEntry] = &[
             },
         ],
     },
+    ApiEntry {
+        name: "SidebarTree",
+        description: "A tree of expandable rows for the sidebar — a file list, a nested outline. Hidden when the sidebar collapses to icons.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the tree's classes.",
+            },
+            Prop {
+                name: "label",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The tree's accessible name.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "`SidebarTreeItem`s.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SidebarTreeItem",
+        description: "One node of the tree: a row and, optionally, the group of children it opens.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the item's classes.",
+            },
+            Prop {
+                name: "default_open",
+                ty: "bool",
+                default: "false",
+                description: "Start expanded.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "A `SidebarTreeRow`, and a `SidebarTreeGroup` when it has children.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SidebarTreeRow",
+        description: "The row itself — what is pressed, focused and highlighted. Draws the disclosure chevron when its item has a group.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the row's classes.",
+            },
+            Prop {
+                name: "active",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "The current page's row.",
+            },
+            Prop {
+                name: "on_select",
+                ty: "Option<Callback<MouseEvent>>",
+                default: "None",
+                description: "Called when the row is selected.",
+            },
+            Prop {
+                name: "icon",
+                ty: "Option<ViewFn>",
+                default: "ChevronRight",
+                description: "The glyph, in place of the disclosure chevron. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
+            Prop {
+                name: "children",
+                ty: "Children",
+                default: "",
+                description: "The label.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SidebarTreeGroup",
+        description: "The indented list of an item's children, shown while the item is open.",
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the group's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "ChildrenFn",
+                default: "",
+                description: "The nested `SidebarTreeItem`s. Re-run on each mount, hence `ChildrenFn`.",
+            },
+        ],
+    },
 ];
 
 #[component]
