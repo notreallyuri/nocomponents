@@ -5,6 +5,13 @@ land and add new ones rather than keeping a parallel list elsewhere. Closed item
 the reasoning is in the commit that closed them, and anything still to do about one is its own open
 item rather than a sentence buried in a closed one.
 
+## Priority
+
+- [x] `cargo nocli components update [--apply]`: classifies installed files against the release in
+      `Cargo.lock` and rewrites only the unchanged outdated ones.
+- [ ] Three-way merge for files edited here and changed upstream (`update` lists them; today the
+      project diffs by hand).
+
 ## Bugs
 
 - [x] Dialog content resolved a *different* dialog's context: leptos' `Portal` mounts under an
@@ -1115,14 +1122,12 @@ the small items and the CLI friction); what follows is what those left behind.
 Components take their glyphs through `icon` slots and fall back on Lucide glyphs installed as
 source (`/docs/icons`). What that left:
 
-- [ ] The composite components do not pass icon slots down to the parts they build: `Code` to its
-      `CodeCopyButton`, `VideoPlayer` to its default controls, `DatePicker` to its calendar's
-      month arrows. A caller wanting all-custom icons there composes the parts, or redraws the
-      installed glyph files.
-- [ ] `SidebarTreeRow` and the other sidebar tree parts are not in the sidebar page's API table.
-- [ ] The close buttons' screen-reader text ("Close") and the buffering indicator's "Loading" are
-      fixed English; they want a label prop for localisation.
-- [ ] `cargo nocli icons remove`, the counterpart of `components remove`.
+- [x] Composites pass icon slots down — `CodeBlock` `copy_icon`/`copied_icon`, `DatePicker` `prev_icon`/`next_icon`, `VideoPlayer` `icons: VideoPlayerIcons`, `DataTable` `check_icon`, `ColorPicker` `select_icon`/`check_icon` — landed after 0.4.0.
+- [x] The sidebar tree parts are in the sidebar page's API table — landed after 0.4.0.
+- [x] Localisable labels: `close_label` on DialogPortal/SheetContent/DrawerContent, `label` on VideoPlayerBuffering — landed after 0.4.0.
+- [ ] `DataTable`'s "Select all rows" / "Select row" aria-labels are fixed English.
+- [ ] Composites repeat their inner part's fallback glyph through `utils::icon::icon_or` (an `optional, into` slot's setter takes `ViewFn`, not `Option<ViewFn>`, so an `Option` can't be forwarded as is); if a part's default glyph changes, its composites must change with it — a slot type that accepts both a closure and an `Option` would remove the duplication.
+- [x] `cargo nocli icons remove`, the counterpart of `components remove` — landed.
 
 ## Docs site
 
