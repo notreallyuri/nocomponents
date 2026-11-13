@@ -134,6 +134,18 @@ const API: &[ApiEntry] = &[
                 default: "\"\"",
                 description: "Merged over the calendar's classes.",
             },
+            Prop {
+                name: "prev_icon",
+                ty: "Option<ViewFn>",
+                default: "ChevronLeft",
+                description: "The glyph, in place of the previous-month arrow. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
+            Prop {
+                name: "next_icon",
+                ty: "Option<ViewFn>",
+                default: "ChevronRight",
+                description: "The glyph, in place of the next-month arrow. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
         ],
     },
     ApiEntry {

@@ -993,14 +993,10 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
 - [ ] `alert_dialog`: no `AlertDialogOverlay`/`AlertDialogContent` split — the portal's `class`
       styles the panel, the overlay is fixed — and no `modal`, which `DialogRoot` has and the styled
       wrapper hides.
-- [ ] `badge`: a hardcoded `<div>` with no `render`, so a badge cannot be a link
-      (`components/badge.rs:35`), while the variants write `[a&]:hover:…` modifiers
-      (:18-29) that can only match when the badge *is* an `<a>` — on a `<div>` they are dead
-      classes. Either add `render` (the `StyledRender` shape) or drop the modifiers.
-- [ ] `breadcrumb`: `BreadcrumbLink` has no `render`, so it cannot be a router's `A`
-      (`components/breadcrumb.rs:52`).
-- [ ] `button`: no `id`, `name`, `value` or `aria-label` passthrough
-      (`components/button.rs:85`), so a submit button's `name` cannot be set.
+- [x] `badge`: `render` (the `StyledRender` shape) since 0.4, so a badge can be an `<a>` or a
+      router `A` and the variants' `[a&]:hover:…` modifiers apply. It renders a `<span>` now.
+- [x] `breadcrumb`: `BreadcrumbLink` takes `render` since 0.4.
+- [x] `button`: `aria_label`, `id`, `name` and `value` since 0.4, on `ButtonRoot` too.
 - [ ] `calendar`: no `number_of_months` (`components/calendar.rs:13`).
 - [ ] `checkbox`: no `indeterminate` and no `aria-checked="mixed"` (`primitives/checkbox.rs:25`),
       which `DataTable`'s select-all needs and fakes with a wrapper `span` at the moment.
@@ -1019,12 +1015,10 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
 - [ ] `date_picker`: no way to disable the picker — its `disabled` is a per-date
       `Callback<Date, bool>` (`components/date_picker.rs:21`), the same name meaning two things next
       to every other component's `Signal<bool>` — and no `id` for a `Field` label to point at.
-- [ ] `dialog`: no `modal` on the styled `Dialog` although `DialogRoot` has it
-      (`components/dialog.rs:13`, `primitives/dialog.rs:46-53`). No `DialogClose`: the close button is
-      hardcoded inside `DialogPortal` (:76-87), so a footer "Cancel" has to call `ctx.close()` by
-      hand. No `DialogOverlay`/`DialogContent` split either — the portal's `class` styles the
-      panel and the overlay is fixed (and unconditional, `components/dialog.rs:63-67`, so exposing
-      `modal` means gating it the way `DrawerContent` does).
+- [ ] `dialog`: no `DialogOverlay`/`DialogContent` split — the portal's `class` styles the panel
+      and the overlay is fixed. (`modal` is not missing: it has been on the styled `Dialog` root
+      since 0.2.0, and the overlay is already gated on it; this item said otherwise until 0.4.
+      `DialogClose` and `close_icon` landed in 0.4.)
 - [ ] `drawer`: no `DrawerPortal` or `DrawerOverlay` — the overlay is built inside `DrawerContent` and only when `modal`
       (:66-75), so a non-default overlay means rewriting the content.
 - [x] `dropdown_menu`: `class` on every part (noaweb's patch), sub-trigger click opens, `data-align`
@@ -1045,17 +1039,15 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       on `ImageCropper` (`components/image_cropper.rs:12`). The resize handles are
       `aria-hidden="true"` (`primitives/image_cropper.rs:386`) with no keyboard path, so the crop
       can be moved and not resized without a pointer.
-- [ ] `input`: no `on_input` or `on_change` (`components/input.rs:27`). `InputType` has five
-      variants (:5) and lacks `Tel`, `Url`, `Search` and `Date`.
+- [ ] `input`: `InputType` has five variants and lacks `Tel`, `Url`, `Search` and `Date`.
+      (`on_input` and `on_change` landed in 0.4.)
 - [ ] `input_group`: `InputGroupButton` takes no `disabled` and no `type`
       (`components/input_group.rs:116`), and `InputGroupInput` and `InputGroupTextarea` forward only
       the subset of `Input`'s and `Textarea`'s props they list (:49), so whatever `Input` gains
       does not reach them until someone remembers.
-- [ ] `item`: a hardcoded `<div>` with no `render`, whose classes assume it may be an `<a>`
-      (`[a]:hover:bg-accent/50`, `components/item.rs:88`) — an `Item` that links has to wrap itself.
-      `ItemMediaVariant` lacks shadcn's `Image` (:39-43).
-- [ ] `label`: no `html_for` (`components/label.rs:5`), so a `Label` outside a `Field` — which is
-      most uses of the bare component — cannot be tied to its control without `attr:for=…`.
+- [ ] `item`: `ItemMediaVariant` lacks shadcn's `Image`. (`render`, so an `Item` can be a router
+      link, landed in 0.4.)
+- [x] `label`: `html_for` since 0.4.
 - [ ] `menubar`: `MenubarSub` takes no `class` (`components/menubar.rs:157`) and
       `MenubarSubTrigger` no `disabled` (:162) — see `dropdown_menu`, which this is built on.
       None of `MenubarGroup`, `MenubarCheckboxItem`, `MenubarRadioGroup`, `MenubarRadioItem` or
@@ -1085,11 +1077,11 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
 - [ ] `select`: no `disabled` or `size` on
       `SelectTrigger` (:25) though the root takes `disabled`, no `SelectGroup`, `SelectLabel`,
       `SelectSeparator` or the scroll buttons, and `SelectValue` takes no `class`.
-- [ ] `sheet`: `SheetContent` has no `modal` (`components/sheet.rs:35`); the close button is
-      hardcoded like the dialog's (:98-103), and is why the sidebar's mobile branch has to hide it
-      with `[&>button]:hidden`.
+- [x] `sheet`: `SheetContent` takes `show_close` and `close_icon` since 0.4, and the sidebar's
+      mobile branch uses `show_close=false` rather than `[&>button]:hidden`. `modal` was never
+      missing — it is on the `Sheet` root, where the dialog has it.
 - [ ] `slider`: no `inverted` (`components/slider.rs:8`).
-- [ ] `textarea`: no `on_input` (`components/textarea.rs:6`) — the same hole as `input`.
+- [x] `textarea`: `on_input` since 0.4, on `TextareaRoot` too.
 - [ ] `toast`: `duration` is hardcoded `5000.0` in the provider's defaults
       (`primitives/toast.rs:223`) with no `default_duration`, and there are no
       `ToastTitle`/`ToastDescription`/`ToastAction`/`ToastClose` parts: a toast can only be built
@@ -1100,10 +1092,9 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
 - [ ] `video_player`: the three menu parts take no `class` and hardcode the item classes
       (`VideoPlayerSpeedItems` `components/video_player.rs:437`, `VideoPlayerCaptionItems` :479,
       `VideoPlayerCaptionSizeItems` :556), and `VideoPlayerMenu`'s `class` goes to the trigger
-      (:419) while the content's is fixed (:428). Nothing draws `ctx.waiting` (buffering) or
-      `ctx.ended` (a replay) in the styled player (`primitives/video_player.rs:259-260`, set at
-      :910-919), so the player sits silent over a stalled stream; `idle_delay`, `preload` and
-      `playsinline` are not exposed (:678, :867-869).
+      (:419) while the content's is fixed (:428). (Buffering — `VideoPlayerBuffering`, from
+      `data-waiting` — the replay glyph once `data-ended`, and `idle_delay`, `preload` and
+      `playsinline` on the styled player landed in 0.4.)
 
 ### From the noaweb port (2026-11-05)
 
@@ -1118,6 +1109,20 @@ the small items and the CLI friction); what follows is what those left behind.
       exposed on `Popover` only, though it lives in `FloatingPortal` and every floating layer
       could take it. Visually, the sheet's title row looks like one more item (no weight or
       colour of its own) and the panel's top corners are square where a sheet usually rounds them.
+
+### Icons (0.4)
+
+Components take their glyphs through `icon` slots and fall back on Lucide glyphs installed as
+source (`/docs/icons`). What that left:
+
+- [ ] The composite components do not pass icon slots down to the parts they build: `Code` to its
+      `CodeCopyButton`, `VideoPlayer` to its default controls, `DatePicker` to its calendar's
+      month arrows. A caller wanting all-custom icons there composes the parts, or redraws the
+      installed glyph files.
+- [ ] `SidebarTreeRow` and the other sidebar tree parts are not in the sidebar page's API table.
+- [ ] The close buttons' screen-reader text ("Close") and the buffering indicator's "Loading" are
+      fixed English; they want a label prop for localisation.
+- [ ] `cargo nocli icons remove`, the counterpart of `components remove`.
 
 ## Docs site
 

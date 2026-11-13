@@ -203,6 +203,12 @@ const API: &[ApiEntry] = &[
                 default: "None",
                 description: "The button's contents. A `ComboboxValue` when left out.",
             },
+            Prop {
+                name: "icon",
+                ty: "Option<ViewFn>",
+                default: "ChevronDown",
+                description: "The glyph, in place of the chevron. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
         ],
     },
     ApiEntry {
@@ -328,6 +334,12 @@ const API: &[ApiEntry] = &[
                 ty: "ChildrenFn",
                 default: "",
                 description: "The item's contents. Re-run on each mount, hence `ChildrenFn`.",
+            },
+            Prop {
+                name: "icon",
+                ty: "Option<ViewFn>",
+                default: "Check",
+                description: "The glyph, in place of the check mark on the chosen item. Any view — an `Icon`, an SVG of your own; see Icons.",
             },
         ],
     },

@@ -5,6 +5,7 @@ use crate::{
         CarouselButtonRoot, CarouselContentRoot, CarouselItemRoot, CarouselRoot, CarouselStep,
         use_carousel,
     },
+    utils::icon::IconSlot,
 };
 use leptos::prelude::*;
 
@@ -65,16 +66,18 @@ pub fn CarouselItem(
 pub fn CarouselPrevious(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional, into)] icon: Option<ViewFn>,
 ) -> impl IntoView {
-    view! { <CarouselButton step=CarouselStep::Previous class=class disabled=disabled /> }
+    view! { <CarouselButton step=CarouselStep::Previous class=class disabled=disabled icon=icon /> }
 }
 
 #[component]
 pub fn CarouselNext(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional, into)] icon: Option<ViewFn>,
 ) -> impl IntoView {
-    view! { <CarouselButton step=CarouselStep::Next class=class disabled=disabled /> }
+    view! { <CarouselButton step=CarouselStep::Next class=class disabled=disabled icon=icon /> }
 }
 
 #[component]
@@ -82,6 +85,7 @@ fn CarouselButton(
     step: CarouselStep,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
+    icon: Option<ViewFn>,
 ) -> impl IntoView {
     let ctx = use_carousel();
     let previous = step == CarouselStep::Previous;
@@ -102,12 +106,19 @@ fn CarouselButton(
                 )
             }
         >
-            {move || match (previous, ctx.orientation.get()) {
-                (true, Orientation::Horizontal) => view! { <ChevronLeft /> }.into_any(),
-                (false, Orientation::Horizontal) => view! { <ChevronRight /> }.into_any(),
-                (true, Orientation::Vertical) => view! { <ChevronUp /> }.into_any(),
-                (false, Orientation::Vertical) => view! { <ChevronDown /> }.into_any(),
-            }}
+            <IconSlot
+                icon=icon
+                fallback=move || {
+                    move || match (previous, ctx.orientation.get()) {
+                        (true, Orientation::Horizontal) => view! { <ChevronLeft /> }.into_any(),
+                        (false, Orientation::Horizontal) => view! { <ChevronRight /> }.into_any(),
+                        (true, Orientation::Vertical) => view! { <ChevronUp /> }.into_any(),
+                        (false, Orientation::Vertical) => view! { <ChevronDown /> }.into_any(),
+                    }
+                }
+                data_slot="carousel-icon"
+                class="flex size-4 shrink-0 items-center justify-center [&>svg]:size-full"
+            />
             <span class="sr-only">{if previous { "Previous slide" } else { "Next slide" }}</span>
         </CarouselButtonRoot>
     }

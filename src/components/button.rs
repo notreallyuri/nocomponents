@@ -95,6 +95,10 @@ pub fn Button(
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional)] r#type: ButtonType,
     #[prop(default = None, into)] render: Option<Callback<StyledRender, AnyView>>,
+    #[prop(optional, into)] aria_label: Signal<String>,
+    #[prop(optional, into)] id: Signal<String>,
+    #[prop(optional, into)] name: Signal<String>,
+    #[prop(optional, into)] value: Signal<String>,
     #[prop(optional)] children: Option<ChildrenFn>,
 ) -> impl IntoView {
     let merged_classes = Signal::derive(move || {
@@ -115,6 +119,10 @@ pub fn Button(
             r#type=r#type
             render=render
             children=children
+            aria_label=aria_label
+            id=id
+            name=name
+            value=value
         />
     }
 }

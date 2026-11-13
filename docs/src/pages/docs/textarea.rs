@@ -96,6 +96,12 @@ const API: &[ApiEntry] = &[ApiEntry {
             default: "false",
             description: "Grow with the text instead of scrolling, re-measured on every input.",
         },
+        Prop {
+            name: "on_input",
+            ty: "Option<Callback<String>>",
+            default: "None",
+            description: "Every edit, with the text as it stands.",
+        },
     ],
 }];
 

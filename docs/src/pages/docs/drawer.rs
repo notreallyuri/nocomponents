@@ -227,6 +227,18 @@ const API: &[ApiEntry] = &[
                 default: "",
                 description: "The panel's contents. Re-run on each mount, hence `ChildrenFn`.",
             },
+            Prop {
+                name: "show_close",
+                ty: "Signal<bool>",
+                default: "true",
+                description: "Whether the corner close button is drawn.",
+            },
+            Prop {
+                name: "close_icon",
+                ty: "Option<ViewFn>",
+                default: "X",
+                description: "The glyph, in place of the close cross. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
         ],
     },
     ApiEntry {

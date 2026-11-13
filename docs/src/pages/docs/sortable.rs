@@ -207,6 +207,12 @@ const API: &[ApiEntry] = &[
                 default: "a grip icon",
                 description: "What the handle shows.",
             },
+            Prop {
+                name: "icon",
+                ty: "Option<ViewFn>",
+                default: "Grip",
+                description: "The glyph, in place of the grip (unused when `children` are given). Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
         ],
     },
 ];

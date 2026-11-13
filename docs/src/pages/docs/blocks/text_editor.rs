@@ -16,7 +16,7 @@ use nocomponents::{
         toggle_group::{ToggleGroup, ToggleGroupItem},
         tooltip::{Tooltip, TooltipContent, TooltipTrigger},
     },
-    icons::IconRoot,
+    icons::Icon,
     primitives::toggle_group::ToggleGroupType,
     utils::types::Orientation,
 };
@@ -158,63 +158,63 @@ const STYLES: &[Style] = &[
 fn icon(slug: &str) -> AnyView {
     match slug {
         "bold" => view! {
-            <IconRoot class="size-4">
+            <Icon view_box="0 0 24 24" stroke_width=2.0 class="size-4">
                 <path d="M6 12h9a4 4 0 0 1 0 8H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h7a4 4 0 0 1 0 8" />
-            </IconRoot>
+            </Icon>
         }
         .into_any(),
         "italic" => view! {
-            <IconRoot class="size-4">
+            <Icon view_box="0 0 24 24" stroke_width=2.0 class="size-4">
                 <path d="M19 4h-9M14 20H5M15 4 9 20" />
-            </IconRoot>
+            </Icon>
         }
         .into_any(),
         "strike" => view! {
-            <IconRoot class="size-4">
+            <Icon view_box="0 0 24 24" stroke_width=2.0 class="size-4">
                 <path d="M16 4H9a3 3 0 0 0-2.83 4" />
                 <path d="M14 12a4 4 0 0 1 0 8H6" />
                 <path d="M4 12h16" />
-            </IconRoot>
+            </Icon>
         }
         .into_any(),
         "code" => view! {
-            <IconRoot class="size-4">
+            <Icon view_box="0 0 24 24" stroke_width=2.0 class="size-4">
                 <path d="m16 18 6-6-6-6M8 6l-6 6 6 6" />
-            </IconRoot>
+            </Icon>
         }
         .into_any(),
         "h1" => view! {
-            <IconRoot class="size-4">
+            <Icon view_box="0 0 24 24" stroke_width=2.0 class="size-4">
                 <path d="M4 12h8M4 18V6M12 18V6" />
                 <path d="m17 12 3-2v8" />
-            </IconRoot>
+            </Icon>
         }
         .into_any(),
         "h2" => view! {
-            <IconRoot class="size-4">
+            <Icon view_box="0 0 24 24" stroke_width=2.0 class="size-4">
                 <path d="M4 12h8M4 18V6M12 18V6" />
                 <path d="M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-4-1" />
-            </IconRoot>
+            </Icon>
         }
         .into_any(),
         "quote" => view! {
-            <IconRoot class="size-4">
+            <Icon view_box="0 0 24 24" stroke_width=2.0 class="size-4">
                 <path d="M17 6H3M21 12H8M21 18H8M3 12v6" />
-            </IconRoot>
+            </Icon>
         }
         .into_any(),
         "bullet" => view! {
-            <IconRoot class="size-4">
+            <Icon view_box="0 0 24 24" stroke_width=2.0 class="size-4">
                 <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
-            </IconRoot>
+            </Icon>
         }
         .into_any(),
         _ => view! {
-            <IconRoot class="size-4">
+            <Icon view_box="0 0 24 24" stroke_width=2.0 class="size-4">
                 <path d="M10 6h11M10 12h11M10 18h11" />
                 <path d="M4 6h1v4M4 10h2" />
                 <path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1" />
-            </IconRoot>
+            </Icon>
         }
         .into_any(),
     }

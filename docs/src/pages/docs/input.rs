@@ -141,6 +141,18 @@ const API: &[ApiEntry] = &[ApiEntry {
             default: "\"\"",
             description: "The `id` of a `<form>` it belongs to when it is not inside one. Empty means the one around it.",
         },
+        Prop {
+            name: "on_input",
+            ty: "Option<Callback<String>>",
+            default: "None",
+            description: "Every edit, with the text as it stands — for reacting to typing without owning the value through `model`.",
+        },
+        Prop {
+            name: "on_change",
+            ty: "Option<Callback<String>>",
+            default: "None",
+            description: "The committed value, when the field loses focus or Enter is pressed.",
+        },
     ],
 }];
 

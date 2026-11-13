@@ -140,6 +140,12 @@ const API: &[ApiEntry] = &[
                 default: "false",
                 description: "Disables it beyond the automatic end-of-track rule.",
             },
+            Prop {
+                name: "icon",
+                ty: "Option<ViewFn>",
+                default: "ChevronLeft",
+                description: "The glyph, in place of the arrow (left, or up when vertical). Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
         ],
     },
     ApiEntry {
@@ -157,6 +163,12 @@ const API: &[ApiEntry] = &[
                 ty: "Signal<bool>",
                 default: "false",
                 description: "Disables it beyond the automatic end-of-track rule.",
+            },
+            Prop {
+                name: "icon",
+                ty: "Option<ViewFn>",
+                default: "ChevronRight",
+                description: "The glyph, in place of the arrow (right, or down when vertical). Any view — an `Icon`, an SVG of your own; see Icons.",
             },
         ],
     },

@@ -60,6 +60,12 @@ const API: &[ApiEntry] = &[ApiEntry {
             default: "\"\"",
             description: "Merged over the size classes.",
         },
+        Prop {
+            name: "icon",
+            ty: "Option<ViewFn>",
+            default: "LoaderCircle",
+            description: "The glyph, in place of the spinning glyph — it turns whatever you give it. Any view — an `Icon`, an SVG of your own; see Icons.",
+        },
     ],
 }];
 

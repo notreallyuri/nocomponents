@@ -37,6 +37,8 @@ pub fn Input(
     #[prop(optional, into)] placeholder: Signal<String>,
     #[prop(optional, into)] autocomplete: Signal<String>,
     #[prop(optional, into)] form: Signal<String>,
+    #[prop(optional, into)] on_input: Option<Callback<String>>,
+    #[prop(optional, into)] on_change: Option<Callback<String>>,
 ) -> impl IntoView {
     let field = FieldControl::new(id, disabled);
 
@@ -56,8 +58,17 @@ pub fn Input(
             aria-invalid=move || field.invalid.get().then_some("true")
             prop:value=move || { if let Some(m) = model { m.get() } else { value.get() } }
             on:input=move |ev| {
+                let text = event_target_value(&ev);
                 if let Some(m) = model {
-                    m.set(event_target_value(&ev));
+                    m.set(text.clone());
+                }
+                if let Some(cb) = on_input {
+                    cb.run(text);
+                }
+            }
+            on:change=move |ev| {
+                if let Some(cb) = on_change {
+                    cb.run(event_target_value(&ev));
                 }
             }
             class=move || {

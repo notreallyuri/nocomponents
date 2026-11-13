@@ -14,7 +14,10 @@
 //! `submit` — a button that means nothing in particular submits the form it happens to be inside.
 //! Here the default is [`ButtonType::Button`] and a submit is asked for by name.
 
-use crate::{primitives::field::field_disabled, utils::types::StyledRender};
+use crate::{
+    primitives::field::field_disabled,
+    utils::{form::non_empty, types::StyledRender},
+};
 use leptos::{
     either::Either,
     ev,
@@ -63,6 +66,15 @@ pub fn ButtonRoot(
     #[prop(default = None, into)]
     render: Option<Callback<StyledRender, AnyView>>,
     #[prop(default = None)] children: Option<ChildrenFn>,
+    /// The accessible name, for a button whose only content is an icon. Empty leaves it to the
+    /// content. Written onto the caller's element too when `render` is used.
+    #[prop(optional, into)]
+    aria_label: Signal<String>,
+    #[prop(optional, into)] id: Signal<String>,
+    /// What the button submits under, with `value`, when it is the one that submitted a form.
+    #[prop(optional, into)]
+    name: Signal<String>,
+    #[prop(optional, into)] value: Signal<String>,
 ) -> impl IntoView {
     let node_ref = node_ref.unwrap_or_default();
     let disabled = field_disabled(disabled);
@@ -76,6 +88,17 @@ pub fn ButtonRoot(
             };
 
             let _ = el.set_attribute("data-slot", "button");
+            match non_empty(aria_label) {
+                Some(label) => {
+                    let _ = el.set_attribute("aria-label", &label);
+                }
+                None => {
+                    let _ = el.remove_attribute("aria-label");
+                }
+            }
+            if let Some(id) = non_empty(id) {
+                let _ = el.set_attribute("id", &id);
+            }
 
             if disabled.get() {
                 let _ = el.set_attribute("aria-disabled", "true");
@@ -156,6 +179,10 @@ pub fn ButtonRoot(
                 data-slot="button"
                 type=r#type.as_str()
                 node_ref=node_ref
+                aria-label=move || non_empty(aria_label)
+                id=move || non_empty(id)
+                name=move || non_empty(name)
+                value=move || non_empty(value)
                 disabled=move || disabled.get()
                 data-disabled=move || disabled.get().then_some("true")
                 on:click=handle_click

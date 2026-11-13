@@ -46,16 +46,20 @@ where Tailwind already scans it, together with anything it is built on — `side
 `skeleton`, `tooltip`, `separator` and `input` — and turns on the matching Cargo features. It never
 overwrites a file you have edited unless you pass `--force`.
 
-Everything with no classes in it stays an ordinary dependency: the primitives, the icons, `utils`,
+The icons a component falls back on are installed the same way, into `src/icons/nc`, and are
+yours to redraw. Every component also takes its glyphs from you through an `icon` prop, so there is
+no icon set to depend on — see [Icons](https://notreallyuri.github.io/nocomponents/docs/icons).
+
+Everything with no classes in it stays an ordinary dependency: the primitives, `utils`,
 `middleware`. If you only want those, skip the CLI:
 
 ```toml
 [dependencies]
-nocomponents = { version = "0.3", features = ["primitives", "dialog", "tooltip"] }
+nocomponents = { version = "0.4", features = ["primitives", "dialog", "tooltip"] }
 ```
 
 See [the CLI's README](https://github.com/notreallyuri/nocomponents/blob/main/cli/README.md) for
-the rest — `components list`, `components remove`, the
+the rest — `components list`, `components remove`, `icons add`, the
 lockfile, and what gets rewritten in an installed file.
 
 ## A styled component
@@ -114,7 +118,7 @@ Two kinds, and you almost always want some of each.
 | feature | what it turns on |
 | --- | --- |
 | `primitives` | behaviour, ARIA, `data-*` — no classes |
-| `icons` | the icon set the styled layer draws |
+| `icons` | the fallback glyphs, compiled in-crate; installed as source by the CLI, so a project does not need it |
 | `components` | the styled layer (implies `primitives` + `icons`) |
 | `theme` | `ThemeProvider`, light/dark/system over `localStorage` |
 | `highlight` | syntax highlighting for the `code` component |
@@ -126,7 +130,7 @@ imports, so cargo works out the closure:
 
 ```toml
 # exactly the dialog primitive and what it needs, and nothing else
-nocomponents = { version = "0.3", features = ["primitives", "dialog"] }
+nocomponents = { version = "0.4", features = ["primitives", "dialog"] }
 ```
 
 With no features at all only `utils`, `middleware` and `deps` exist, so `--features full` is what
@@ -160,6 +164,6 @@ Apache-2.0. The styled layer's design, class choices and component names come fr
 [shadcn/ui](https://ui.shadcn.com), and the primitives' behaviour follows
 [Radix UI](https://www.radix-ui.com); both are MIT, and their notices are reproduced in
 [`NOTICE`](https://github.com/notreallyuri/nocomponents/blob/main/NOTICE) as that licence
-requires. The icons are [Lucide](https://lucide.dev), ISC.
+requires. The fallback icons are [Lucide](https://lucide.dev), ISC.
 
 This is a re-implementation for Leptos, not a port of their code.

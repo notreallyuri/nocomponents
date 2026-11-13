@@ -127,12 +127,26 @@ const API: &[ApiEntry] = &[
     ApiEntry {
         name: "CodeCopyButton",
         description: "The copy trigger for the enclosing block. Swaps to a check for a moment after copying.",
-        props: &[Prop {
-            name: "class",
-            ty: "Signal<String>",
-            default: "\"\"",
-            description: "Merged over the button's classes.",
-        }],
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the button's classes.",
+            },
+            Prop {
+                name: "copy_icon",
+                ty: "Option<ViewFn>",
+                default: "Copy",
+                description: "The glyph, in place of the copy glyph. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
+            Prop {
+                name: "copied_icon",
+                ty: "Option<ViewFn>",
+                default: "Check",
+                description: "The glyph, in place of the glyph shown once copied. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
+        ],
     },
 ];
 

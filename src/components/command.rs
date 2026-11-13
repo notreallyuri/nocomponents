@@ -11,6 +11,7 @@ use crate::{
         dialog::DialogRoot,
     },
     utils::controllable::forward,
+    utils::icon::IconSlot,
 };
 use leptos::prelude::*;
 
@@ -58,10 +59,16 @@ pub fn CommandInput(
     #[prop(optional, into)] placeholder: Signal<String>,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional)] auto_focus: bool,
+    #[prop(optional, into)] icon: Option<ViewFn>,
 ) -> impl IntoView {
     view! {
         <div class="flex h-11 items-center gap-2 border-b px-3">
-            <Search class="size-4 shrink-0 text-muted-foreground" />
+            <IconSlot
+                icon=icon
+                fallback=|| view! { <Search /> }
+                data_slot="command-input-icon"
+                class="flex size-4 shrink-0 items-center justify-center text-muted-foreground [&>svg]:size-full"
+            />
             <CommandInputRoot
                 placeholder=placeholder
                 auto_focus=auto_focus

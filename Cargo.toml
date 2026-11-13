@@ -1,6 +1,6 @@
 [package]
 name = "nocomponents"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2024"
 description = "Unstyled behaviour primitives for Leptos, and a shadcn/ui-styled layer you install as source you own"
 repository = "https://github.com/notreallyuri/nocomponents"
@@ -259,3 +259,9 @@ features = [
 [dev-dependencies]
 # `tests/features.rs` reads this file back, to check the feature table against the imports.
 toml = "1.0"
+
+# The docs app's debug wasm was 2.2 GB, nearly all of it DWARF, and past that rust-lld segfaults
+# rather than erroring. Line tables keep panic locations in the browser console at a fraction of
+# the size. Only this workspace's builds read it; a consumer's own profile is untouched.
+[profile.dev]
+debug = "line-tables-only"

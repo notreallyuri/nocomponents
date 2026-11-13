@@ -161,6 +161,12 @@ const API: &[ApiEntry] = &[ApiEntry {
             default: "\"\"",
             description: "Merged over the button's classes; the calendar itself is styled by `Calendar`.",
         },
+        Prop {
+            name: "icon",
+            ty: "Option<ViewFn>",
+            default: "Calendar",
+            description: "The glyph, in place of the calendar glyph on the trigger. Any view — an `Icon`, an SVG of your own; see Icons.",
+        },
     ],
 }];
 

@@ -36,6 +36,10 @@ pub fn TextareaRoot(
     /// what the reader has highlighted cannot be written without it.
     #[prop(optional)]
     node_ref: Option<AnyNodeRef>,
+    /// Every edit, with the text as it now stands — for a caller that reacts to typing without
+    /// owning the value through `model`.
+    #[prop(optional, into)]
+    on_input: Option<Callback<String>>,
 ) -> impl IntoView {
     let field = FieldControl::new(id, disabled);
     // One ref whether or not the caller wanted it: auto-resize measures through the same node.
@@ -86,8 +90,12 @@ pub fn TextareaRoot(
             aria-invalid=move || field.invalid.get().then_some("true")
             prop:value=move || if let Some(m) = model { m.get() } else { value.get() }
             on:input=move |ev| {
+                let text = event_target_value(&ev);
                 if let Some(m) = model {
-                    m.set(event_target_value(&ev));
+                    m.set(text.clone());
+                }
+                if let Some(cb) = on_input {
+                    cb.run(text);
                 }
                 if auto_resize {
                     resize();

@@ -5,7 +5,7 @@ use crate::{
         SelectContentRoot, SelectItemRoot, SelectPortalRoot, SelectRoot, SelectTriggerRoot,
         use_select_label,
     },
-    utils::controllable::forward,
+    utils::{controllable::forward, icon::IconSlot},
 };
 use leptos::prelude::*;
 
@@ -47,6 +47,7 @@ pub fn Select(
 #[component]
 pub fn SelectTrigger(
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] icon: Option<ViewFn>,
     children: Children,
 ) -> impl IntoView {
     view! {
@@ -56,7 +57,15 @@ pub fn SelectTrigger(
                 "aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
                 class.get()
             )
-        }>{children()} <ChevronDown class="text-muted-foreground" /></SelectTriggerRoot>
+        }>
+            {children()}
+            <IconSlot
+                icon=icon
+                fallback=|| view! { <ChevronDown /> }
+                data_slot="select-icon"
+                class="flex size-4 shrink-0 items-center justify-center text-muted-foreground [&>svg]:size-full"
+            />
+        </SelectTriggerRoot>
     }
 }
 
@@ -103,6 +112,7 @@ pub fn SelectItem(
     #[prop(optional, into)] label: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] icon: Option<ViewFn>,
     children: Children,
 ) -> impl IntoView {
     view! {
@@ -118,7 +128,12 @@ pub fn SelectItem(
             }
         >
             <span class="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
-                <Check class="hidden group-data-[state=checked]:block" />
+                <IconSlot
+                    icon=icon
+                    fallback=|| view! { <Check /> }
+                    data_slot="select-item-indicator"
+                    class="hidden size-4 shrink-0 items-center justify-center group-data-[state=checked]:flex [&>svg]:size-full"
+                />
             </span>
             {children()}
         </SelectItemRoot>

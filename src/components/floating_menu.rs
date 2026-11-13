@@ -3,7 +3,7 @@ use crate::{
     components::tooltip::{Tooltip, TooltipContent, TooltipTrigger},
     icons::ellipsis::Ellipsis,
     primitives::floating_menu::{FloatingMenuHandleRoot, FloatingMenuRoot, use_floating_menu},
-    utils::types::Side,
+    utils::{icon::IconSlot, types::Side},
 };
 use leptos::{either::Either, ev, prelude::*};
 
@@ -54,6 +54,7 @@ pub fn FloatingMenu(
 pub fn FloatingMenuHandle(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional, into)] icon: Option<ViewFn>,
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     view! {
@@ -70,7 +71,12 @@ pub fn FloatingMenuHandle(
             }
         >
             // The grip turns with the panel, so it always reads as the short edge you take hold of.
-            <Ellipsis class="size-3.5 shrink-0 text-muted-foreground group-data-[orientation=horizontal]:rotate-90 [[data-orientation=horizontal]>&]:rotate-90" />
+            <IconSlot
+                icon=icon
+                fallback=|| view! { <Ellipsis /> }
+                data_slot="floating-menu-handle-icon"
+                class="flex size-3.5 shrink-0 items-center justify-center text-muted-foreground [[data-orientation=horizontal]>&]:rotate-90 [&>svg]:size-full"
+            />
             {children.map(|children| children())}
         </FloatingMenuHandleRoot>
     }

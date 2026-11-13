@@ -118,6 +118,12 @@ const API: &[ApiEntry] = &[
                 default: "",
                 description: "The row's label.",
             },
+            Prop {
+                name: "icon",
+                ty: "Option<ViewFn>",
+                default: "ChevronRight",
+                description: "The glyph, in place of the disclosure chevron (turned a quarter when open). Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
         ],
     },
     ApiEntry {

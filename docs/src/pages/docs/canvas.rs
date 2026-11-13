@@ -453,12 +453,32 @@ const API: &[ApiEntry] = &[
     ApiEntry {
         name: "CanvasControls",
         description: "Zoom out, the current zoom as a percentage (press it to reset), zoom in, and fit. Fit reads the nodes out of the DOM rather than from a registry the caller keeps in step — nodes can come and go without telling anybody, and an empty board is left alone rather than fitted to nothing.",
-        props: &[Prop {
-            name: "class",
-            ty: "Signal<String>",
-            default: "\"\"",
-            description: "Merged over the panel's classes.",
-        }],
+        props: &[
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the panel's classes.",
+            },
+            Prop {
+                name: "zoom_out_icon",
+                ty: "Option<ViewFn>",
+                default: "Minus",
+                description: "The glyph, in place of the zoom-out glyph. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
+            Prop {
+                name: "zoom_in_icon",
+                ty: "Option<ViewFn>",
+                default: "Plus",
+                description: "The glyph, in place of the zoom-in glyph. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
+            Prop {
+                name: "fit_icon",
+                ty: "Option<ViewFn>",
+                default: "Maximize",
+                description: "The glyph, in place of the fit-to-view glyph. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
+        ],
     },
     ApiEntry {
         name: "CanvasBackground",
@@ -475,6 +495,24 @@ const API: &[ApiEntry] = &[
                 ty: "Signal<String>",
                 default: "\"\"",
                 description: "Merged over the background's classes.",
+            },
+            Prop {
+                name: "zoom_out_icon",
+                ty: "Option<ViewFn>",
+                default: "Minus",
+                description: "The glyph, in place of the zoom-out glyph. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
+            Prop {
+                name: "zoom_in_icon",
+                ty: "Option<ViewFn>",
+                default: "Plus",
+                description: "The glyph, in place of the zoom-in glyph. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
+            Prop {
+                name: "fit_icon",
+                ty: "Option<ViewFn>",
+                default: "Maximize",
+                description: "The glyph, in place of the fit-to-view glyph. Any view — an `Icon`, an SVG of your own; see Icons.",
             },
         ],
     },

@@ -1,4 +1,4 @@
-use crate::utils::controllable::forward;
+use crate::utils::{controllable::forward, icon::IconSlot};
 use crate::{
     cn,
     icons::chevron::ChevronRight,
@@ -43,6 +43,7 @@ pub fn TreeRow(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] active: Signal<bool>,
     #[prop(optional, into)] on_select: Option<Callback<ev::MouseEvent>>,
+    #[prop(optional, into)] icon: Option<ViewFn>,
     children: Children,
 ) -> impl IntoView {
     let item = use_tree_item();
@@ -68,7 +69,12 @@ pub fn TreeRow(
         >
             <span class="flex size-4 shrink-0 items-center justify-center">
                 <Show when=has_group>
-                    <ChevronRight class="size-3.5 text-muted-foreground transition-transform group-data-[state=open]/tree-row:rotate-90" />
+                    <IconSlot
+                        icon=icon.clone()
+                        fallback=|| view! { <ChevronRight /> }
+                        data_slot="tree-icon"
+                        class="flex size-3.5 items-center justify-center text-muted-foreground transition-transform group-data-[state=open]/tree-row:rotate-90 [&>svg]:size-full"
+                    />
                 </Show>
             </span>
             <span class="truncate">{children()}</span>

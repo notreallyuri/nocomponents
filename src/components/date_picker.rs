@@ -12,6 +12,7 @@ use crate::{
     utils::{
         controllable::{controllable, forward},
         date::DateNames,
+        icon::IconSlot,
     },
 };
 use leptos::{ev, prelude::*};
@@ -45,6 +46,7 @@ pub fn DatePicker(
     #[prop(optional, into)] align: Signal<Align>,
     #[prop(optional, into)] side_offset: Signal<SideOffset>,
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] icon: Option<ViewFn>,
 ) -> impl IntoView {
     let ctx = FloatingContext::default();
     let selected = controllable(selected, default_selected, on_selected_change);
@@ -65,6 +67,7 @@ pub fn DatePicker(
                 placeholder=placeholder
                 locale=locale
                 class=class
+                icon=icon.clone()
             />
             <DatePickerContent
                 mode=mode
@@ -116,6 +119,7 @@ fn DatePickerTrigger(
     placeholder: Signal<String>,
     locale: Signal<String>,
     class: Signal<String>,
+    icon: Option<ViewFn>,
 ) -> impl IntoView {
     let ctx = use_popover();
     let names = Memo::new(move |_| DateNames::new(&locale.get()));
@@ -133,7 +137,12 @@ fn DatePickerTrigger(
             }
             attr:data-empty=move || selected.with(|selected| selected.is_empty()).to_string()
         >
-            <CalendarIcon class="text-muted-foreground" />
+            <IconSlot
+                icon=icon.clone()
+                fallback=|| view! { <CalendarIcon /> }
+                data_slot="date-picker-icon"
+                class="flex size-4 shrink-0 items-center justify-center text-muted-foreground [&>svg]:size-full"
+            />
             <span class="truncate">
                 {move || {
                     names

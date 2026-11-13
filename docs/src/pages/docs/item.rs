@@ -124,6 +124,12 @@ const API: &[ApiEntry] = &[
                 default: "",
                 description: "Media, content, actions, and optionally a header and a footer.",
             },
+            Prop {
+                name: "render",
+                ty: "Option<Callback<StyledRender, AnyView>>",
+                default: "None",
+                description: "Render as something else — a router `<A>`, so the whole row is a link. Handed the classes and a node ref.",
+            },
         ],
     },
     ApiEntry {

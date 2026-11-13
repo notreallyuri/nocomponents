@@ -6,7 +6,7 @@ use crate::{
         ComboboxContentRoot, ComboboxItemRoot, ComboboxPortalRoot, ComboboxRoot,
         ComboboxTriggerRoot, use_combobox,
     },
-    utils::controllable::forward,
+    utils::{controllable::forward, icon::IconSlot},
 };
 use leptos::{either::Either, prelude::*};
 
@@ -53,9 +53,11 @@ pub fn ComboboxTrigger(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(default = None, into)] render: Option<Callback<TriggerRender, AnyView>>,
+    #[prop(optional, into)] icon: Option<ViewFn>,
     #[prop(optional)] children: Option<ChildrenFn>,
 ) -> impl IntoView {
     let children = StoredValue::new(children);
+    let icon = StoredValue::new(icon);
 
     let styled = Callback::new(move |trigger: TriggerRender| {
         view! {
@@ -74,7 +76,12 @@ pub fn ComboboxTrigger(
                             None => Either::Right(view! { <ComboboxValue /> }),
                         })
                 }}
-                <ChevronDown class="ml-2 shrink-0 text-muted-foreground" />
+                <IconSlot
+                    icon=icon.get_value()
+                    fallback=|| view! { <ChevronDown /> }
+                    data_slot="combobox-icon"
+                    class="ml-2 flex size-4 shrink-0 items-center justify-center text-muted-foreground [&>svg]:size-full"
+                />
             </Button>
         }
         .into_any()
@@ -153,6 +160,7 @@ pub fn ComboboxItem(
     #[prop(default = None, into)] selected: Option<Signal<bool>>,
     #[prop(into, default = true.into())] close_on_select: Signal<bool>,
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] icon: Option<ViewFn>,
     children: ChildrenFn,
 ) -> impl IntoView {
     view! {
@@ -173,7 +181,12 @@ pub fn ComboboxItem(
             }
         >
             <span class="absolute left-2 flex size-3.5 items-center justify-center">
-                <Check class="hidden group-data-[selected]/combobox-item:block" />
+                <IconSlot
+                    icon=icon.clone()
+                    fallback=|| view! { <Check /> }
+                    data_slot="combobox-item-indicator"
+                    class="hidden size-4 shrink-0 items-center justify-center group-data-[selected]/combobox-item:flex [&>svg]:size-full"
+                />
             </span>
             {children()}
         </ComboboxItemRoot>

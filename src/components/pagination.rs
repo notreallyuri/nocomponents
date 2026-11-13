@@ -2,9 +2,11 @@ use crate::{
     cn,
     components::button::{ButtonSize, ButtonVariant},
     icons::chevron::{ChevronLeft, ChevronRight},
-    utils::types::AsClass,
+    utils::{icon::IconSlot, types::AsClass},
 };
 use leptos::prelude::*;
+
+const ICON_CLASS: &str = "flex size-4 shrink-0 items-center justify-center [&>svg]:size-full";
 
 fn link_class(active: bool, size: ButtonSize) -> String {
     let variant = if active {
@@ -82,6 +84,7 @@ pub fn PaginationLink(
 pub fn PaginationPrevious(
     #[prop(optional, into)] href: Signal<String>,
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] icon: Option<ViewFn>,
 ) -> impl IntoView {
     view! {
         <PaginationLink
@@ -90,7 +93,12 @@ pub fn PaginationPrevious(
             class=move || cn!("gap-1 px-2.5 sm:pl-2.5", class.get())
             attr:aria-label="Go to previous page"
         >
-            <ChevronLeft />
+            <IconSlot
+                icon=icon
+                fallback=|| view! { <ChevronLeft /> }
+                data_slot="pagination-icon"
+                class=ICON_CLASS
+            />
             <span class="hidden sm:block">"Previous"</span>
         </PaginationLink>
     }
@@ -100,6 +108,7 @@ pub fn PaginationPrevious(
 pub fn PaginationNext(
     #[prop(optional, into)] href: Signal<String>,
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] icon: Option<ViewFn>,
 ) -> impl IntoView {
     view! {
         <PaginationLink
@@ -109,7 +118,12 @@ pub fn PaginationNext(
             attr:aria-label="Go to next page"
         >
             <span class="hidden sm:block">"Next"</span>
-            <ChevronRight />
+            <IconSlot
+                icon=icon
+                fallback=|| view! { <ChevronRight /> }
+                data_slot="pagination-icon"
+                class=ICON_CLASS
+            />
         </PaginationLink>
     }
 }

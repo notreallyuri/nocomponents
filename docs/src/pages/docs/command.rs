@@ -191,6 +191,12 @@ const API: &[ApiEntry] = &[
                 default: "false",
                 description: "Takes focus on mount. A palette in a dialog does not need it — the dialog focuses the first thing it contains, which is this.",
             },
+            Prop {
+                name: "icon",
+                ty: "Option<ViewFn>",
+                default: "Search",
+                description: "The glyph, in place of the magnifier. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
         ],
     },
     ApiEntry {

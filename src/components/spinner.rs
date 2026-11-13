@@ -1,8 +1,9 @@
 use crate::{
     cn,
     icons::loader::{Loader, LoaderCircle},
+    utils::icon::IconSlot,
 };
-use leptos::{either::Either, prelude::*};
+use leptos::prelude::*;
 
 #[derive(Default, Clone, Copy)]
 pub enum SpinnerVariant {
@@ -39,6 +40,7 @@ pub fn Spinner(
     #[prop(optional, into)] size: Signal<SpinnerSize>,
     #[prop(optional, into)] label: Signal<String>,
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] icon: Option<ViewFn>,
 ) -> impl IntoView {
     let name = move || {
         let label = label.get();
@@ -49,22 +51,29 @@ pub fn Spinner(
         }
     };
 
-    move || match variant.get() {
-        SpinnerVariant::Default => Either::Left(view! {
-            <LoaderCircle
-                attr:data-slot="spinner"
-                attr:role="status"
-                attr:aria-label=name
-                class=move || { cn!("size-4 animate-spin", size.get().as_class(), class.get()) }
+    view! {
+        <span
+            data-slot="spinner"
+            role="status"
+            aria-label=name
+            class=move || {
+                cn!(
+                    "inline-flex size-4 shrink-0 animate-spin items-center justify-center",
+                    size.get().as_class(),
+                    class.get()
+                )
+            }
+        >
+            <IconSlot
+                icon=icon
+                fallback=move || {
+                    move || match variant.get() {
+                        SpinnerVariant::Default => view! { <LoaderCircle /> }.into_any(),
+                        SpinnerVariant::Lined => view! { <Loader /> }.into_any(),
+                    }
+                }
+                class="flex size-full items-center justify-center [&>svg]:size-full"
             />
-        }),
-        SpinnerVariant::Lined => Either::Right(view! {
-            <Loader
-                attr:data-slot="spinner"
-                attr:role="status"
-                attr:aria-label=name
-                class=move || { cn!("size-4 animate-spin", size.get().as_class(), class.get()) }
-            />
-        }),
+        </span>
     }
 }

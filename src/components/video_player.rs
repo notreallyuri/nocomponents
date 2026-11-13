@@ -1,4 +1,7 @@
-use crate::utils::types::{Align, Side};
+use crate::utils::{
+    icon::IconSlot,
+    types::{Align, Side},
+};
 use crate::{
     cn,
     components::dropdown_menu::{
@@ -7,9 +10,10 @@ use crate::{
     },
     icons::{
         check::Check,
+        loader::LoaderCircle,
         media::{
-            Captions, Maximize, Minimize, Pause, Play, Settings, SkipBack, SkipForward, Volume,
-            VolumeOff,
+            Captions, Maximize, Minimize, Pause, Play, Replay, Settings, SkipBack, SkipForward,
+            Volume, VolumeOff,
         },
     },
     primitives::{
@@ -33,6 +37,8 @@ const CONTROL: &str = "inline-flex size-8 shrink-0 items-center justify-center r
 const MENU_ITEM: &str =
     "justify-between gap-4 focus:bg-white/15 focus:text-white hover:bg-white/15 hover:text-white";
 const SUBMENU_TRIGGER: &str = "focus:bg-white/15 focus:text-white hover:bg-white/15 hover:text-white data-[state=open]:bg-white/15 data-[state=open]:text-white";
+const ICON: &str = "flex size-4 shrink-0 items-center justify-center [&>svg]:size-full";
+const CHECK: &str = "flex size-3.5 shrink-0 items-center justify-center [&>svg]:size-full";
 const SUBMENU_CONTENT: &str = "min-w-40 border-white/15 bg-black/85 text-white backdrop-blur";
 
 #[component]
@@ -42,6 +48,8 @@ pub fn VideoPlayerVideo(
     #[prop(default = false)] autoplay: bool,
     #[prop(default = false)] r#loop: bool,
     #[prop(optional, into)] muted: Signal<bool>,
+    #[prop(default = true)] playsinline: bool,
+    #[prop(default = "metadata")] preload: &'static str,
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
@@ -52,6 +60,8 @@ pub fn VideoPlayerVideo(
             autoplay=autoplay
             r#loop=r#loop
             muted=muted
+            playsinline=playsinline
+            preload=preload
             class=move || { cn!("size-full object-contain", class.get()) }
         >
             {children.map(|children| children())}
@@ -72,7 +82,14 @@ pub fn VideoPlayerSurface(
 }
 
 #[component]
-pub fn VideoPlayerBadge(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
+pub fn VideoPlayerBadge(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] play_icon: Option<ViewFn>,
+    #[prop(optional, into)] replay_icon: Option<ViewFn>,
+) -> impl IntoView {
+    let ctx = use_video_player();
+    let icons = StoredValue::new((play_icon, replay_icon));
+
     view! {
         <span class=move || {
             cn!(
@@ -80,7 +97,54 @@ pub fn VideoPlayerBadge(#[prop(optional, into)] class: Signal<String>) -> impl I
                 class.get()
             )
         }>
-            <Play class="size-7" />
+            {move || {
+                let (play, replay) = icons.get_value();
+                if ctx.ended.get() {
+                    view! {
+                        <IconSlot
+                            icon=replay
+                            fallback=|| view! { <Replay /> }
+                            class="flex size-7 items-center justify-center [&>svg]:size-full"
+                        />
+                    }
+                        .into_any()
+                } else {
+                    view! {
+                        <IconSlot
+                            icon=play
+                            fallback=|| view! { <Play /> }
+                            class="flex size-7 items-center justify-center [&>svg]:size-full"
+                        />
+                    }
+                        .into_any()
+                }
+            }}
+        </span>
+    }
+}
+
+#[component]
+pub fn VideoPlayerBuffering(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] icon: Option<ViewFn>,
+) -> impl IntoView {
+    view! {
+        <span
+            data-slot="video-player-buffering"
+            role="status"
+            aria-label="Loading"
+            class=move || {
+                cn!(
+                    "pointer-events-none absolute inset-0 m-auto flex size-12 items-center justify-center text-white opacity-0 transition-opacity group-data-[waiting=true]/surface:opacity-100 group-data-[waiting=true]/surface:delay-300",
+                    class.get()
+                )
+            }
+        >
+            <IconSlot
+                icon=icon
+                fallback=|| view! { <LoaderCircle /> }
+                class="flex size-8 animate-spin items-center justify-center [&>svg]:size-full"
+            />
         </span>
     }
 }
@@ -136,18 +200,30 @@ pub fn VideoPlayerControls(
 }
 
 #[component]
-pub fn VideoPlayerPlayButton(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
+pub fn VideoPlayerPlayButton(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] play_icon: Option<ViewFn>,
+    #[prop(optional, into)] pause_icon: Option<ViewFn>,
+    #[prop(optional, into)] replay_icon: Option<ViewFn>,
+) -> impl IntoView {
     let ctx = use_video_player();
+    let icons = StoredValue::new((play_icon, pause_icon, replay_icon));
 
     view! {
         <VideoPlayerPlayRoot class=move || {
             cn!(CONTROL, class.get())
         }>
             {move || {
+                let (play, pause, replay) = icons.get_value();
                 if ctx.playing.get() {
-                    Either::Left(view! { <Pause /> })
+                    view! { <IconSlot icon=pause fallback=|| view! { <Pause /> } class=ICON /> }
+                        .into_any()
+                } else if ctx.ended.get() {
+                    view! { <IconSlot icon=replay fallback=|| view! { <Replay /> } class=ICON /> }
+                        .into_any()
                 } else {
-                    Either::Right(view! { <Play /> })
+                    view! { <IconSlot icon=play fallback=|| view! { <Play /> } class=ICON /> }
+                        .into_any()
                 }
             }}
         </VideoPlayerPlayRoot>
@@ -158,30 +234,49 @@ pub fn VideoPlayerPlayButton(#[prop(optional, into)] class: Signal<String>) -> i
 pub fn VideoPlayerSkipButton(
     step: VideoPlayerStep,
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] icon: Option<ViewFn>,
 ) -> impl IntoView {
     view! {
         <VideoPlayerSkipRoot step=step class=move || cn!(CONTROL, class.get())>
-            {match step {
-                VideoPlayerStep::Previous => Either::Left(view! { <SkipBack /> }),
-                VideoPlayerStep::Next => Either::Right(view! { <SkipForward /> }),
-            }}
+            <IconSlot
+                icon=icon
+                fallback=move || match step {
+                    VideoPlayerStep::Previous => view! { <SkipBack /> }.into_any(),
+                    VideoPlayerStep::Next => view! { <SkipForward /> }.into_any(),
+                }
+                class=ICON
+            />
         </VideoPlayerSkipRoot>
     }
 }
 
 #[component]
-pub fn VideoPlayerMuteButton(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
+pub fn VideoPlayerMuteButton(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] volume_icon: Option<ViewFn>,
+    #[prop(optional, into)] muted_icon: Option<ViewFn>,
+) -> impl IntoView {
     let ctx = use_video_player();
+    let icons = StoredValue::new((volume_icon, muted_icon));
 
     view! {
         <VideoPlayerMuteRoot class=move || {
             cn!(CONTROL, class.get())
         }>
             {move || {
+                let (volume, muted) = icons.get_value();
                 if ctx.muted.get() || ctx.volume.get() <= 0.0 {
-                    Either::Left(view! { <VolumeOff /> })
+                    Either::Left(
+                        view! {
+                            <IconSlot icon=muted fallback=|| view! { <VolumeOff /> } class=ICON />
+                        },
+                    )
                 } else {
-                    Either::Right(view! { <Volume /> })
+                    Either::Right(
+                        view! {
+                            <IconSlot icon=volume fallback=|| view! { <Volume /> } class=ICON />
+                        },
+                    )
                 }
             }}
         </VideoPlayerMuteRoot>
@@ -267,18 +362,32 @@ pub fn VideoPlayerTime(
 }
 
 #[component]
-pub fn VideoPlayerFullscreenButton(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
+pub fn VideoPlayerFullscreenButton(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] enter_icon: Option<ViewFn>,
+    #[prop(optional, into)] exit_icon: Option<ViewFn>,
+) -> impl IntoView {
     let ctx = use_video_player();
+    let icons = StoredValue::new((enter_icon, exit_icon));
 
     view! {
         <VideoPlayerFullscreenRoot class=move || {
             cn!(CONTROL, class.get())
         }>
             {move || {
+                let (enter, exit) = icons.get_value();
                 if ctx.fullscreen.get() {
-                    Either::Left(view! { <Minimize /> })
+                    Either::Left(
+                        view! {
+                            <IconSlot icon=exit fallback=|| view! { <Minimize /> } class=ICON />
+                        },
+                    )
                 } else {
-                    Either::Right(view! { <Maximize /> })
+                    Either::Right(
+                        view! {
+                            <IconSlot icon=enter fallback=|| view! { <Maximize /> } class=ICON />
+                        },
+                    )
                 }
             }}
         </VideoPlayerFullscreenRoot>
@@ -293,6 +402,9 @@ pub fn VideoPlayer(
     #[prop(default = false)] autoplay: bool,
     #[prop(default = false)] r#loop: bool,
     #[prop(optional, into)] muted: Signal<bool>,
+    #[prop(default = true)] playsinline: bool,
+    #[prop(default = "metadata")] preload: &'static str,
+    #[prop(default = 2500)] idle_delay: u64,
     #[prop(optional, into)] on_skip: Option<Callback<VideoPlayerStep>>,
     #[prop(optional, into)] controls: Option<Callback<(), AnyView>>,
     #[prop(optional, into)] class: Signal<String>,
@@ -303,6 +415,7 @@ pub fn VideoPlayer(
         <VideoPlayerRoot
             mode=mode
             on_skip=on_skip
+            idle_delay=idle_delay
             class=move || {
                 cn!(
                     "relative isolate aspect-video w-full overflow-hidden rounded-xl bg-black outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
@@ -315,12 +428,29 @@ pub fn VideoPlayer(
                 )
             }
         >
-            <VideoPlayerVideo src=src poster=poster autoplay=autoplay r#loop=r#loop muted=muted>
+            <VideoPlayerVideo
+                src=src
+                poster=poster
+                autoplay=autoplay
+                r#loop=r#loop
+                muted=muted
+                playsinline=playsinline
+                preload=preload
+            >
                 {children.map(|children| children())}
             </VideoPlayerVideo>
 
             <VideoPlayerSurface>
-                {move || mode.get().interactive().then(|| view! { <VideoPlayerBadge /> })}
+                {move || {
+                    mode.get()
+                        .interactive()
+                        .then(|| {
+                            view! {
+                                <VideoPlayerBadge />
+                                <VideoPlayerBuffering />
+                            }
+                        })
+                }}
             </VideoPlayerSurface>
 
             <VideoPlayerCaptions />
@@ -420,9 +550,11 @@ fn MenuOpenGuard() -> impl IntoView {
 pub fn VideoPlayerMenu(
     #[prop(default = "Settings".into(), into)] label: Signal<String>,
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] icon: Option<ViewFn>,
     children: ChildrenFn,
 ) -> impl IntoView {
     let children = StoredValue::new(children);
+    let icon = StoredValue::new(icon);
 
     view! {
         <DropdownMenu>
@@ -432,7 +564,7 @@ pub fn VideoPlayerMenu(
                 attr:aria-label=move || label.get()
                 attr:data-video-player-menu=""
             >
-                <Settings />
+                <IconSlot icon=icon.get_value() fallback=|| view! { <Settings /> } class=ICON />
             </DropdownMenuTriggerRoot>
             <DropdownMenuContent
                 side=Side::Top
@@ -446,8 +578,12 @@ pub fn VideoPlayerMenu(
 }
 
 #[component]
-pub fn VideoPlayerSpeedItems(#[prop(default = false)] submenu: bool) -> impl IntoView {
+pub fn VideoPlayerSpeedItems(
+    #[prop(default = false)] submenu: bool,
+    #[prop(optional, into)] check_icon: Option<ViewFn>,
+) -> impl IntoView {
     let ctx = use_video_player();
+    let check_icon = StoredValue::new(check_icon);
 
     let rows = move || {
         RATES
@@ -462,9 +598,13 @@ pub fn VideoPlayerSpeedItems(#[prop(default = false)] submenu: bool) -> impl Int
                         <span>
                             {if rate == 1.0 { "Normal".to_string() } else { format!("{rate}×") }}
                         </span>
-                        <Check class=move || {
-                            cn!("size-3.5", if chosen.get() { "opacity-100" } else { "opacity-0" })
-                        } />
+                        <IconSlot
+                            icon=check_icon.get_value()
+                            fallback=|| view! { <Check /> }
+                            class=move || {
+                                cn!(CHECK, if chosen.get() { "opacity-100" } else { "opacity-0" })
+                            }
+                        />
                     </DropdownMenuItem>
                 }
             })
@@ -488,8 +628,12 @@ pub fn VideoPlayerSpeedItems(#[prop(default = false)] submenu: bool) -> impl Int
 }
 
 #[component]
-pub fn VideoPlayerCaptionItems(#[prop(default = false)] submenu: bool) -> impl IntoView {
+pub fn VideoPlayerCaptionItems(
+    #[prop(default = false)] submenu: bool,
+    #[prop(optional, into)] check_icon: Option<ViewFn>,
+) -> impl IntoView {
     let ctx = use_video_player();
+    let check_icon = StoredValue::new(check_icon);
 
     let rows = move || {
         view! {
@@ -498,12 +642,15 @@ pub fn VideoPlayerCaptionItems(#[prop(default = false)] submenu: bool) -> impl I
                 on_click=Callback::new(move |_| ctx.set_text_track(None))
             >
                 <span>"Off"</span>
-                <Check class=move || {
-                    cn!(
-                        "size-3.5",
-                        if ctx.active_track.get().is_none() { "opacity-100" } else { "opacity-0" },
-                    )
-                } />
+                <IconSlot
+                    icon=check_icon.get_value()
+                    fallback=|| view! { <Check /> }
+                    class=move || {
+                        cn!(
+                            CHECK, if ctx.active_track.get().is_none() { "opacity-100" } else { "opacity-0" }
+                        )
+                    }
+                />
             </DropdownMenuItem>
             <For each=move || ctx.tracks.get() key=|track| track.index let:track>
                 {
@@ -514,16 +661,19 @@ pub fn VideoPlayerCaptionItems(#[prop(default = false)] submenu: bool) -> impl I
                             on_click=Callback::new(move |_| ctx.set_text_track(Some(index)))
                         >
                             <span>{track.label.clone()}</span>
-                            <Check class=move || {
-                                cn!(
-                                    "size-3.5",
-                                    if ctx.active_track.get() == Some(index) {
+                            <IconSlot
+                                icon=check_icon.get_value()
+                                fallback=|| view! { <Check /> }
+                                class=move || {
+                                    cn!(
+                                        CHECK, if ctx.active_track.get() == Some(index) {
                                         "opacity-100"
                                     } else {
                                         "opacity-0"
-                                    },
-                                )
-                            } />
+                                    }
+                                    )
+                                }
+                            />
                         </DropdownMenuItem>
                     }
                 }
@@ -565,8 +715,12 @@ pub fn VideoPlayerCaptionItems(#[prop(default = false)] submenu: bool) -> impl I
 }
 
 #[component]
-pub fn VideoPlayerCaptionSizeItems(#[prop(default = false)] submenu: bool) -> impl IntoView {
+pub fn VideoPlayerCaptionSizeItems(
+    #[prop(default = false)] submenu: bool,
+    #[prop(optional, into)] check_icon: Option<ViewFn>,
+) -> impl IntoView {
     let ctx = use_video_player();
+    let check_icon = StoredValue::new(check_icon);
 
     let rows = move || {
         VideoPlayerCaptionSize::ALL
@@ -578,16 +732,19 @@ pub fn VideoPlayerCaptionSizeItems(#[prop(default = false)] submenu: bool) -> im
                         on_click=Callback::new(move |_| ctx.caption_size.set(size))
                     >
                         <span>{size.label()}</span>
-                        <Check class=move || {
-                            cn!(
-                                "size-3.5",
-                                if ctx.caption_size.get() == size {
-                                    "opacity-100"
-                                } else {
-                                    "opacity-0"
-                                },
-                            )
-                        } />
+                        <IconSlot
+                            icon=check_icon.get_value()
+                            fallback=|| view! { <Check /> }
+                            class=move || {
+                                cn!(
+                                    CHECK, if ctx.caption_size.get() == size {
+                                                   "opacity-100"
+                                               } else {
+                                                   "opacity-0"
+                                               }
+                                )
+                            }
+                        />
                     </DropdownMenuItem>
                 }
             })
@@ -628,8 +785,12 @@ pub fn VideoPlayerCaptionSizeItems(#[prop(default = false)] submenu: bool) -> im
 }
 
 #[component]
-pub fn VideoPlayerCaptionsButton(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
+pub fn VideoPlayerCaptionsButton(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] icon: Option<ViewFn>,
+) -> impl IntoView {
     let ctx = use_video_player();
+    let icon = StoredValue::new(icon);
     view! {
         <Show when=move || !ctx.tracks.get().is_empty()>
             <VideoPlayerCaptionsToggleRoot class=move || {
@@ -639,7 +800,7 @@ pub fn VideoPlayerCaptionsButton(#[prop(optional, into)] class: Signal<String>) 
                     class.get(),
                 )
             }>
-                <Captions />
+                <IconSlot icon=icon.get_value() fallback=|| view! { <Captions /> } class=ICON />
             </VideoPlayerCaptionsToggleRoot>
         </Show>
     }

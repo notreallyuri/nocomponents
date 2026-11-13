@@ -2,6 +2,7 @@ use crate::{
     cn,
     icons::{check::Check, copy::Copy},
     primitives::code::{CodeBlockContentRoot, CodeBlockRoot, CodeCopyRoot, use_code},
+    utils::icon::IconSlot,
 };
 use leptos::{either::Either, prelude::*};
 
@@ -81,8 +82,13 @@ pub fn CodeBlock(
 }
 
 #[component]
-pub fn CodeCopyButton(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
+pub fn CodeCopyButton(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] copy_icon: Option<ViewFn>,
+    #[prop(optional, into)] copied_icon: Option<ViewFn>,
+) -> impl IntoView {
     let ctx = use_code();
+    let icon_class = "flex size-3.5 items-center justify-center [&>svg]:size-full";
 
     view! {
         <CodeCopyRoot class=move || {
@@ -93,9 +99,25 @@ pub fn CodeCopyButton(#[prop(optional, into)] class: Signal<String>) -> impl Int
         }>
             {move || {
                 if ctx.copied.get() {
-                    Either::Left(view! { <Check class="size-3.5" /> })
+                    Either::Left(
+                        view! {
+                            <IconSlot
+                                icon=copied_icon.clone()
+                                fallback=|| view! { <Check /> }
+                                class=icon_class
+                            />
+                        },
+                    )
                 } else {
-                    Either::Right(view! { <Copy class="size-3.5" /> })
+                    Either::Right(
+                        view! {
+                            <IconSlot
+                                icon=copy_icon.clone()
+                                fallback=|| view! { <Copy /> }
+                                class=icon_class
+                            />
+                        },
+                    )
                 }
             }}
         </CodeCopyRoot>

@@ -17,7 +17,10 @@ cargo nocli init"#;
 const ADD: &str = r#"cargo nocli components add button dialog
 
 #   added     src/components/nc/button.rs
-#   added     src/components/nc/dialog.rs"#;
+#   added     src/components/nc/dialog.rs
+#
+#   needed by src/icons/nc/icon.rs
+#   needed by src/icons/nc/x.rs"#;
 
 const ADD_DEPS: &str = r#"cargo nocli components add sidebar
 
@@ -33,12 +36,13 @@ const CONFIG: &str = r#"[style]
 css = "styles/globals.css"
 
 [paths]
-components = "src/components/nc""#;
+components = "src/components/nc"
+icons = "src/icons/nc""#;
 
 const CARGO: &str = r#"[dependencies]
 leptos = { version = "0.8", features = ["csr"] }
-nocomponents = { version = "0.1", features = [
-    "primitives", "icons", "theme",
+nocomponents = { version = "0.4", features = [
+    "primitives", "theme",
     "button", "dialog", "sidebar",
 ] }"#;
 
@@ -86,9 +90,19 @@ pub fn Page() -> impl IntoView {
                         into your own "
                     </span>
                     <code class="rounded bg-muted px-1 py-0.5 text-xs text-foreground">"src/"</code>
-                    ", where Tailwind already scans it, and it is yours to edit afterwards. What
-                    stays an ordinary dependency is everything with no classes in it: the behaviour
-                    primitives, the icons, "
+                    ", where Tailwind already scans it, and it is yours to edit afterwards. So are
+                    the icons the components fall back on, which land in "
+                    <code class="rounded bg-muted px-1 py-0.5 text-xs text-foreground">
+                        "src/icons/nc"
+                    </code> " — see "
+                    <a
+                        href="/docs/icons"
+                        class="font-medium text-foreground underline underline-offset-4"
+                    >
+                        "Icons"
+                    </a>
+                    ". What stays an ordinary dependency is everything with no classes in it: the
+                    behaviour primitives, "
                     <code class="rounded bg-muted px-1 py-0.5 text-xs text-foreground">
                         "utils"
                     </code> " and "
@@ -115,7 +129,7 @@ pub fn Page() -> impl IntoView {
 
                 <DemoSection
                     title="3. Add components"
-                    description="Each one is copied into the install directory, and the matching Cargo features are switched on."
+                    description="Each one is copied into the install directory, the icons it falls back on into the icon directory, and the matching Cargo features are switched on."
                 >
                     <CodeBlock code=ADD language=Language::Shell />
                 </DemoSection>
@@ -145,7 +159,7 @@ pub fn Page() -> impl IntoView {
 
                 <DemoSection
                     title="Configuration"
-                    description="paths.components has to be under src/ — a component built on another needs to be able to name it, and only a directory under src/ has a module path. The mod.rs in there is rewritten on every add; the components beside it are yours."
+                    description="Both paths have to be under src/ — a component needs to be able to name what it is built on and the icons it draws, and only a directory under src/ has a module path. Each mod.rs is rewritten between its nocli markers on every add; the files beside it are yours."
                 >
                     <CodeBlock code=CONFIG language=Language::Rust label="nocomponents.toml" />
                 </DemoSection>

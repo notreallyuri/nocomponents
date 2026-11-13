@@ -18,6 +18,12 @@ pub struct StyleConfig {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PathConfig {
     pub components: String,
+    #[serde(default = "default_icons")]
+    pub icons: String,
+}
+
+fn default_icons() -> String {
+    "src/icons/nc".to_string()
 }
 
 impl Default for Config {
@@ -28,6 +34,7 @@ impl Default for Config {
             },
             paths: PathConfig {
                 components: "src/components/nc".to_string(),
+                icons: default_icons(),
             },
         }
     }
@@ -50,22 +57,25 @@ impl Config {
 
     /// The install directory as a Rust path: `src/components/nc` is `crate::components::nc`.
     pub fn module_path(&self) -> Result<String> {
-        let rel = self
-            .paths
-            .components
-            .trim_start_matches("./")
-            .trim_matches('/');
-
-        let rest = rel
-            .strip_prefix("src/")
-            .filter(|rest| !rest.is_empty())
-            .ok_or_else(|| {
-                anyhow::anyhow!("paths.components ({rel}) has to name a directory under `src/`")
-            })?;
-
-        let segments: Vec<&str> = rest.split('/').filter(|s| !s.is_empty()).collect();
-        Ok(format!("crate::{}", segments.join("::")))
+        module_path_of("paths.components", &self.paths.components)
     }
+
+    /// The icon directory as a Rust path: `src/icons/nc` is `crate::icons::nc`.
+    pub fn icons_module_path(&self) -> Result<String> {
+        module_path_of("paths.icons", &self.paths.icons)
+    }
+}
+
+fn module_path_of(key: &str, dir: &str) -> Result<String> {
+    let rel = dir.trim_start_matches("./").trim_matches('/');
+
+    let rest = rel
+        .strip_prefix("src/")
+        .filter(|rest| !rest.is_empty())
+        .ok_or_else(|| anyhow::anyhow!("{key} ({rel}) has to name a directory under `src/`"))?;
+
+    let segments: Vec<&str> = rest.split('/').filter(|s| !s.is_empty()).collect();
+    Ok(format!("crate::{}", segments.join("::")))
 }
 
 #[cfg(test)]
@@ -76,6 +86,7 @@ mod tests {
         Config {
             paths: PathConfig {
                 components: components.to_string(),
+                icons: default_icons(),
             },
             ..Config::default()
         }
@@ -89,6 +100,15 @@ mod tests {
         );
         assert_eq!(at("./src/ui/").module_path().unwrap(), "crate::ui");
         assert_eq!(at("src/a/b/c").module_path().unwrap(), "crate::a::b::c");
+    }
+
+    #[test]
+    fn a_config_from_before_icons_were_installed_gets_the_default() {
+        let config: Config =
+            toml::from_str("[style]\ncss = \"a.css\"\n\n[paths]\ncomponents = \"src/ui\"\n")
+                .unwrap();
+        assert_eq!(config.paths.icons, "src/icons/nc");
+        assert_eq!(config.icons_module_path().unwrap(), "crate::icons::nc");
     }
 
     #[test]

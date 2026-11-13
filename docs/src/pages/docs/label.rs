@@ -40,6 +40,12 @@ const API: &[ApiEntry] = &[ApiEntry {
             default: "",
             description: "The label text.",
         },
+        Prop {
+            name: "html_for",
+            ty: "Signal<String>",
+            default: "\"\"",
+            description: "The `id` of the control this labels, written as `for`. Inside a `Field` use `FieldLabel`, which finds it.",
+        },
     ],
 }];
 

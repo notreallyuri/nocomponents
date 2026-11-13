@@ -43,12 +43,16 @@ What a check cannot judge — layout, animation, how it looks — is still verif
 `leptosfmt` is what formats `view!` blocks, and `cargo fmt` leaves them alone. Run it on the files
 you changed, never over `src/` or `docs/src/`: 0.1.33 silently **deletes** Rust comments that sit
 inside a `view!` — e.g. on a `match` arm in an `on:keydown` handler — so a whole-tree run strips
-commentary out of files you never meant to touch.
+commentary out of files you never meant to touch. It also unwraps a braced closure prop whose
+parameter is typed — `on_value_change={move |v: Option<String>| …}` — into a form `view!` cannot
+parse; put the braces back, and check `cargo check -p docs` after every run.
 
 ## Feature flags
 
 Two kinds. The **layers** — `primitives`, `icons`, `components` (= primitives + icons), `theme`,
-`highlight`, and `full` (everything) — gate the modules in `src/lib.rs`. With no features only
+`highlight`, and `full` (everything) — gate the modules in `src/lib.rs`. `icons` is in-crate only
+since 0.4: the CLI installs `src/icons/` as source, like `src/components/`, and a consumer never
+needs the feature. With no features only
 `utils`, `middleware` and `deps` exist, so always check/build with `--features full`, which is what
 `docs` depends on.
 
@@ -112,7 +116,8 @@ missing.
 So the styled layer is **installed, not depended on**. `cli/` builds `cargo-nocli`, and
 `cargo nocli components add button dialog` copies `src/components/<name>.rs` into the project's own
 `src/`, where Tailwind already scans it. What stays a dependency is everything with no classes in
-it: the primitives, the icons, `utils`, `middleware`. `cargo nocli init` writes the config, installs
+it: the primitives, `utils`, `middleware`. The icons are installed too, into `paths.icons`
+(`src/icons/nc`) — see "Icons" below. `cargo nocli init` writes the config, installs
 `globals.css` and `animate.css` (minus the docs' font import and its `@source`, which a consumer
 must not inherit), and points `Trunk.toml` at a Tailwind. `/docs/installation` says all of this to
 the reader; `cli/README.md` says it to someone in the repo.
@@ -124,7 +129,8 @@ substring of the thing that must change. Each `use` is therefore flattened to on
 line, rewritten, and printed back:
 
 - `crate::components::x` → the install directory's module path (`crate::components::nc::x`),
-- `crate::{primitives,icons,utils}`, and `crate::cn` → `nocomponents::…`,
+- `crate::icons::x` → the icon directory's module path (`crate::icons::nc::x`),
+- `crate::{primitives,utils}`, and `crate::cn` → `nocomponents::…`,
 - `leptos_node_ref` and `js_sys` → `nocomponents::deps::…`.
 
 **The CLI reads a git tag, and the tag comes from the library, not from the CLI.** An installed
@@ -170,6 +176,17 @@ local to them. `ToastVariant` and `TabsListVariants` belong to their primitives 
 (`ButtonVariant`, `BadgeVariant`, `SheetSide`, …) are local, and keep the `AsClass` idiom.
 
 ## Cross-cutting patterns
+
+**Icons**: every glyph the styled layer draws goes through a slot — `icon: Option<ViewFn>` on a
+part with one glyph, `<what>_icon` per glyph on a part that swaps them (`play_icon`,
+`pause_icon`) — rendered with `utils::icon::IconSlot`, which draws the caller's view or the
+fallback in an `aria-hidden` span. The span carries the size, colour, rotation and visibility
+classes, and `[&>svg]:size-full` makes the icon fill it; never put those classes on the glyph,
+which may be the caller's. A new glyph is a file in `src/icons/` drawn with `Icon` (`view_box`
+required, `stroke_width` for outline sets). `Icon`'s size is the `width`/`height="1em"`
+*attributes*, which any CSS beats — keep it that way. Do not call the slot's prop `slot`: Leptos'
+`view!` reads a `slot` attribute as a slot marker and fails with "slots cannot be used inside HTML
+elements". Never add an icon from a set whose licence is not ISC/MIT-compatible.
 
 **Context**: each stateful primitive defines a `Copy + Clone` `<Name>Context` holding `RwSignal`s, a
 `provide_context` in its `*Root`, and a `use_<name>()` that `expect_context`s it (`use_tabs`,

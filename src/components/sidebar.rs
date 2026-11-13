@@ -15,6 +15,7 @@ use crate::{
         },
         tree::{TreeGroupRoot, TreeItemRoot, TreeRoot, TreeRowRoot, use_tree_item},
     },
+    utils::icon::IconSlot,
     utils::{controllable::forward, types::AsClass},
 };
 use leptos::{either::Either, ev, prelude::*};
@@ -154,11 +155,12 @@ pub fn Sidebar(
             Either::Left(view! {
                 <Sheet open=ctx.open_mobile>
                     <SheetContent
+                        show_close=false
                         side=ctx.side
                         id=ctx.content_id.get_untracked()
                         class=move || {
                             cn!(
-                                "w-[var(--sidebar-width-mobile,18rem)] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden",
+                                "w-[var(--sidebar-width-mobile,18rem)] bg-sidebar p-0 text-sidebar-foreground",
                                 class.get(),
                             )
                         }
@@ -229,6 +231,7 @@ pub fn SidebarInset(
 pub fn SidebarTrigger(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional, into)] icon: Option<ViewFn>,
     #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     view! {
@@ -246,7 +249,12 @@ pub fn SidebarTrigger(
                 None => {
                     Either::Right(
                         view! {
-                            <PanelLeft />
+                            <IconSlot
+                                icon=icon
+                                fallback=|| view! { <PanelLeft /> }
+                                data_slot="sidebar-trigger-icon"
+                                class="flex size-4 shrink-0 items-center justify-center [&>svg]:size-full"
+                            />
                             <span class="sr-only">"Toggle sidebar"</span>
                         },
                     )
@@ -606,6 +614,7 @@ pub fn SidebarTreeRow(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] active: Signal<bool>,
     #[prop(optional, into)] on_select: Option<Callback<ev::MouseEvent>>,
+    #[prop(optional, into)] icon: Option<ViewFn>,
     children: Children,
 ) -> impl IntoView {
     let item = use_tree_item();
@@ -628,7 +637,12 @@ pub fn SidebarTreeRow(
         >
             <span class="flex size-4 shrink-0 items-center justify-center">
                 <Show when=has_group>
-                    <ChevronRight class="size-3.5 text-sidebar-foreground/70 transition-transform group-data-[state=open]/tree-row:rotate-90" />
+                    <IconSlot
+                        icon=icon.clone()
+                        fallback=|| view! { <ChevronRight /> }
+                        data_slot="sidebar-tree-icon"
+                        class="flex size-3.5 items-center justify-center text-sidebar-foreground/70 transition-transform group-data-[state=open]/tree-row:rotate-90 [&>svg]:size-full"
+                    />
                 </Show>
             </span>
             <span class="truncate">{children()}</span>

@@ -6,7 +6,7 @@ use crate::{
         CanvasBackgroundRoot, CanvasMarqueeRoot, CanvasNodeLabelRoot, CanvasNodeRoot, CanvasRoot,
         CanvasViewportRoot, use_canvas,
     },
-    utils::types::AsClass,
+    utils::{icon::IconSlot, types::AsClass},
 };
 use leptos::prelude::*;
 use leptos_node_ref::AnyNodeRef;
@@ -130,8 +130,14 @@ pub fn CanvasMarquee(
 }
 
 #[component]
-pub fn CanvasControls(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
+pub fn CanvasControls(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] zoom_out_icon: Option<ViewFn>,
+    #[prop(optional, into)] zoom_in_icon: Option<ViewFn>,
+    #[prop(optional, into)] fit_icon: Option<ViewFn>,
+) -> impl IntoView {
     let ctx = use_canvas();
+    let icon_class = "flex size-3.5 items-center justify-center [&>svg]:size-full";
     let button = "inline-flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none";
 
     view! {
@@ -150,7 +156,7 @@ pub fn CanvasControls(#[prop(optional, into)] class: Signal<String>) -> impl Int
                 class=button
                 on:click=move |_| ctx.zoom_out()
             >
-                <Minus class="size-3.5" />
+                <IconSlot icon=zoom_out_icon fallback=|| view! { <Minus /> } class=icon_class />
             </button>
             <button
                 type="button"
@@ -161,7 +167,7 @@ pub fn CanvasControls(#[prop(optional, into)] class: Signal<String>) -> impl Int
                 {move || format!("{}%", (ctx.viewport.get().zoom * 100.0).round())}
             </button>
             <button type="button" aria-label="Zoom in" class=button on:click=move |_| ctx.zoom_in()>
-                <Plus class="size-3.5" />
+                <IconSlot icon=zoom_in_icon fallback=|| view! { <Plus /> } class=icon_class />
             </button>
             <div class="mx-0.5 h-4 w-px bg-border" />
             <button
@@ -170,7 +176,7 @@ pub fn CanvasControls(#[prop(optional, into)] class: Signal<String>) -> impl Int
                 class=button
                 on:click=move |_| ctx.fit_content(48.0)
             >
-                <Maximize class="size-3.5" />
+                <IconSlot icon=fit_icon fallback=|| view! { <Maximize /> } class=icon_class />
             </button>
         </div>
     }

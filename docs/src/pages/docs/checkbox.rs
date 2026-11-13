@@ -115,6 +115,12 @@ const API: &[ApiEntry] = &[ApiEntry {
             default: "\"\"",
             description: "The `id` of a `<form>` it belongs to when it is not inside one. Empty means the one around it.",
         },
+        Prop {
+            name: "icon",
+            ty: "Option<ViewFn>",
+            default: "Check",
+            description: "The glyph, in place of the check mark. Any view — an `Icon`, an SVG of your own; see Icons.",
+        },
     ],
 }];
 

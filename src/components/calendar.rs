@@ -4,7 +4,7 @@ use crate::{
     primitives::calendar::{
         CalendarCaptionRoot, CalendarDayRoot, CalendarGridRoot, CalendarNavRoot, CalendarRoot,
     },
-    utils::controllable::forward,
+    utils::{controllable::forward, icon::IconSlot},
 };
 use leptos::prelude::*;
 
@@ -28,6 +28,8 @@ pub fn Calendar(
     #[prop(optional, into)] disabled: Option<Callback<Date, bool>>,
     #[prop(optional, into)] locale: Signal<String>,
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] prev_icon: Option<ViewFn>,
+    #[prop(optional, into)] next_icon: Option<ViewFn>,
 ) -> impl IntoView {
     view! {
         <CalendarRoot
@@ -49,14 +51,24 @@ pub fn Calendar(
         >
             <div class="mb-2 flex items-center justify-between gap-2">
                 <CalendarNavRoot months=-1 class=NAV_CLASS>
-                    <ChevronLeft />
+                    <IconSlot
+                        icon=prev_icon
+                        fallback=|| view! { <ChevronLeft /> }
+                        data_slot="calendar-icon"
+                        class=ICON_CLASS
+                    />
                     <span class="sr-only">"Previous month"</span>
                 </CalendarNavRoot>
 
                 <CalendarCaptionRoot class="text-sm font-medium" />
 
                 <CalendarNavRoot months=1 class=NAV_CLASS>
-                    <ChevronRight />
+                    <IconSlot
+                        icon=next_icon
+                        fallback=|| view! { <ChevronRight /> }
+                        data_slot="calendar-icon"
+                        class=ICON_CLASS
+                    />
                     <span class="sr-only">"Next month"</span>
                 </CalendarNavRoot>
             </div>
@@ -70,6 +82,8 @@ pub fn Calendar(
         </CalendarRoot>
     }
 }
+
+const ICON_CLASS: &str = "flex size-4 shrink-0 items-center justify-center [&>svg]:size-full";
 
 const NAV_CLASS: &str = "inline-flex size-7 items-center justify-center rounded-md border bg-background text-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50";
 

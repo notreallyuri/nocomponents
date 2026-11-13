@@ -827,6 +827,8 @@ pub fn VideoPlayerRoot(
                 data-state=move || if ctx.playing.get() { "playing" } else { "paused" }
                 data-active=move || ctx.controls_visible().then_some("true")
                 data-fullscreen=move || ctx.fullscreen.get().then_some("true")
+                data-waiting=move || ctx.waiting.get().then_some("true")
+                data-ended=move || ctx.ended.get().then_some("true")
                 // A player is one tab stop and the keys work from anywhere inside it, which is
                 // what makes it operable without tabbing through six buttons first.
                 tabindex=move || mode.get().interactive().then_some("0")
@@ -952,6 +954,8 @@ pub fn VideoPlayerSurfaceRoot(
         <div
             data-slot="video-player-surface"
             data-state=move || if ctx.playing.get() { "playing" } else { "paused" }
+            data-waiting=move || ctx.waiting.get().then_some("true")
+            data-ended=move || ctx.ended.get().then_some("true")
             // Nothing to press in the uncontrolled mode, so nothing to stand in the way either.
             style=move || (!interactive()).then_some("pointer-events: none;")
             on:click=move |_| {

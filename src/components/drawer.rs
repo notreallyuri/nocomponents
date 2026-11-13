@@ -8,7 +8,7 @@ use crate::{
             DrawerHandleRoot, DrawerRoot, use_drawer,
         },
     },
-    utils::{controllable::forward, types::AsClass},
+    utils::{controllable::forward, icon::IconSlot, types::AsClass},
 };
 use leptos::prelude::*;
 
@@ -80,10 +80,13 @@ pub fn Drawer(
 pub fn DrawerContent(
     #[prop(default = true)] handle: bool,
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(default = true.into(), into)] show_close: Signal<bool>,
+    #[prop(optional, into)] close_icon: Option<ViewFn>,
     children: ChildrenFn,
 ) -> impl IntoView {
     let ctx = use_dialog();
     let modal = ctx.modal;
+    let close_icon = StoredValue::new(close_icon);
     let stored_children = StoredValue::new(children);
     let side_class = DrawerSide(use_drawer().side).as_class();
 
@@ -115,13 +118,27 @@ pub fn DrawerContent(
                 }>
                     {handle.then(|| view! { <DrawerHandle /> })}
                     {stored_children.with_value(|children| children())}
-                    <button
-                        on:click=move |_| ctx.close()
-                        class="absolute top-4 right-4 rounded-sm opacity-70 transition-opacity outline-none hover:opacity-100 focus-visible:ring-3 focus-visible:ring-ring/50"
-                    >
-                        <X />
-                        <span class="sr-only">"Close"</span>
-                    </button>
+                    {move || {
+                        show_close
+                            .get()
+                            .then(|| {
+                                view! {
+                                    <button
+                                        type="button"
+                                        data-slot="drawer-close"
+                                        on:click=move |_| ctx.close()
+                                        class="absolute top-4 right-4 rounded-sm opacity-70 transition-opacity outline-none hover:opacity-100 focus-visible:ring-3 focus-visible:ring-ring/50"
+                                    >
+                                        <IconSlot
+                                            icon=close_icon.get_value()
+                                            fallback=|| view! { <X /> }
+                                            class="flex size-4 items-center justify-center [&>svg]:size-full"
+                                        />
+                                        <span class="sr-only">"Close"</span>
+                                    </button>
+                                }
+                            })
+                    }}
                 </DrawerContentRoot>
             </div>
         </DialogPortalRoot>

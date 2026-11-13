@@ -141,6 +141,12 @@ const API: &[ApiEntry] = &[
                 default: "None",
                 description: "A label beside the grip. Leave it out for a bare grip.",
             },
+            Prop {
+                name: "icon",
+                ty: "Option<ViewFn>",
+                default: "Ellipsis",
+                description: "The glyph, in place of the grip. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
         ],
     },
     ApiEntry {

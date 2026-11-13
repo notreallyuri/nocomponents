@@ -142,6 +142,12 @@ const API: &[ApiEntry] = &[
                 default: "\"\"",
                 description: "Merged over the link's classes.",
             },
+            Prop {
+                name: "icon",
+                ty: "Option<ViewFn>",
+                default: "ChevronLeft",
+                description: "The glyph, in place of the arrow. Any view — an `Icon`, an SVG of your own; see Icons.",
+            },
         ],
     },
     ApiEntry {
@@ -159,6 +165,12 @@ const API: &[ApiEntry] = &[
                 ty: "Signal<String>",
                 default: "\"\"",
                 description: "Merged over the link's classes.",
+            },
+            Prop {
+                name: "icon",
+                ty: "Option<ViewFn>",
+                default: "ChevronRight",
+                description: "The glyph, in place of the arrow. Any view — an `Icon`, an SVG of your own; see Icons.",
             },
         ],
     },

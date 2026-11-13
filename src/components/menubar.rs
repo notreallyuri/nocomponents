@@ -9,6 +9,7 @@ use crate::{
         menubar::{MenubarMenuRoot, MenubarRoot, MenubarTriggerRoot, use_menubar},
     },
     utils::controllable::forward,
+    utils::icon::IconSlot,
 };
 use leptos::{ev, prelude::*};
 
@@ -170,6 +171,7 @@ pub fn MenubarSub(children: ChildrenFn) -> impl IntoView {
 #[component]
 pub fn MenubarSubTrigger(
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] icon: Option<ViewFn>,
     children: Children,
 ) -> impl IntoView {
     view! {
@@ -179,7 +181,13 @@ pub fn MenubarSubTrigger(
                 class.get()
             )
         }>
-            {children()} <crate::icons::chevron::ChevronRight class="ml-auto" />
+            {children()}
+            <IconSlot
+                icon=icon
+                fallback=|| view! { <crate::icons::chevron::ChevronRight /> }
+                data_slot="menubar-sub-icon"
+                class="ml-auto flex size-4 shrink-0 items-center justify-center [&>svg]:size-full"
+            />
         </DropdownMenuSubTriggerRoot>
     }
 }

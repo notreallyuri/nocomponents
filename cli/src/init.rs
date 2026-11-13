@@ -22,10 +22,14 @@ pub async fn run(source: &Source) -> Result<()> {
 
     index_html(&config)?;
 
-    let features = ["primitives", "icons", "theme"]
+    // `icons` is only for a release from before the glyphs were installed as source.
+    let mut features: std::collections::BTreeSet<String> = ["primitives", "theme"]
         .into_iter()
         .map(String::from)
         .collect();
+    if !crate::install::ships_icons(source).await {
+        features.insert("icons".to_string());
+    }
     manifest::add_dependency(&features, source.checkout())?;
 
     println!("\nNow add components: cargo nocli components add button dialog");

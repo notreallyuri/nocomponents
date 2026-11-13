@@ -937,7 +937,7 @@ fn char_literal_end(source: &str, i: usize) -> Option<usize> {
 mod tests {
     use super::*;
 
-    fn kinds<'a>(src: &'a str, lang: Language) -> Vec<(TokenKind, &'a str)> {
+    fn kinds(src: &str, lang: Language) -> Vec<(TokenKind, &str)> {
         tokenize(src, lang)
             .into_iter()
             .map(|t| (t.kind, t.text))

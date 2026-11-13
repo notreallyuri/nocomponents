@@ -6,10 +6,17 @@ use crate::{
     layout::doc_layout::DocLayout,
 };
 use leptos::prelude::*;
+use leptos_router::components::A;
 use nocomponents::components::breadcrumb::{
     Breadcrumb, BreadcrumbEllipsis, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage,
-    BreadcrumbSeparator,
+    BreadcrumbSeparator, StyledRender,
 };
+
+const ROUTER_LINK: &str = r#"<BreadcrumbItem>
+    <BreadcrumbLink render=Callback::new(|link: StyledRender| {
+        view! { <A href="/docs" attr:class=link.class>"Components"</A> }.into_any()
+    }) />
+</BreadcrumbItem>"#;
 
 const DEFAULT: &str = r#"<Breadcrumb>
     <BreadcrumbList>
@@ -118,6 +125,12 @@ const API: &[ApiEntry] = &[
                 default: "",
                 description: "The step's name.",
             },
+            Prop {
+                name: "render",
+                ty: "Option<Callback<StyledRender, AnyView>>",
+                default: "None",
+                description: "Render as something else — a router `<A>`. Handed the classes the link would have worn and a node ref; `children` are then unused, the callback writes its own.",
+            },
         ],
     },
     ApiEntry {
@@ -153,6 +166,12 @@ const API: &[ApiEntry] = &[
                 ty: "Option<Children>",
                 default: "None",
                 description: "Defaults to a chevron.",
+            },
+            Prop {
+                name: "icon",
+                ty: "Option<ViewFn>",
+                default: "ChevronRight",
+                description: "The glyph, in place of the chevron (unused when `children` are given). Any view — an `Icon`, an SVG of your own; see Icons.",
             },
         ],
     },
@@ -240,6 +259,31 @@ pub fn Page() -> impl IntoView {
                             <BreadcrumbSeparator>
                                 <span class="text-muted-foreground">"/"</span>
                             </BreadcrumbSeparator>
+                            <BreadcrumbItem>
+                                <BreadcrumbPage>"Breadcrumb"</BreadcrumbPage>
+                            </BreadcrumbItem>
+                        </BreadcrumbList>
+                    </Breadcrumb>
+                </DemoSection>
+
+                <DemoSection
+                    title="As a router link"
+                    description="render hands over the classes the link would have worn, so a leptos_router A navigates without a page load and still looks like the rest."
+                    code=ROUTER_LINK
+                >
+                    <Breadcrumb>
+                        <BreadcrumbList>
+                            <BreadcrumbItem>
+                                <BreadcrumbLink render=Callback::new(|link: StyledRender| {
+                                    view! {
+                                        <A href="/docs" attr:class=link.class>
+                                            "Components"
+                                        </A>
+                                    }
+                                        .into_any()
+                                }) />
+                            </BreadcrumbItem>
+                            <BreadcrumbSeparator />
                             <BreadcrumbItem>
                                 <BreadcrumbPage>"Breadcrumb"</BreadcrumbPage>
                             </BreadcrumbItem>
