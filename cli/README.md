@@ -114,6 +114,32 @@ An updated component can now be built on something that is not installed — a n
 new glyph. `--apply` installs those too (printed as `needed by`), turns on their Cargo features, and
 rewrites each directory's `mod.rs`.
 
+Before anything is fetched, `update` names the release it is comparing against and where that came
+from, because a `Cargo.toml` requirement such as `"0.3.0"` keeps `cargo update` on that release and
+the comparison with it:
+
+```
+comparing against nocomponents v0.3.0 (from Cargo.lock)
+```
+
+`add`, `icons add`, `list` and `init` print the same line (`installing from …`, `listing …`). With
+`--from` it reads `… the checkout at <path>`, and with no lock entry yet, `(latest on crates.io)`.
+
+When the release came from `Cargo.lock`, `update` also asks crates.io for the latest stable one
+and, if it is newer, ends with:
+
+```
+nocomponents 0.6.1 is available; this project is on 0.3.0. To move to it: cargo add nocomponents@0.6 && cargo nocli components update
+```
+
+The requirement is `major.minor` for a 0.x release and `major` from 1.0. This is a courtesy: a
+request that fails or times out (5 seconds) prints nothing, and `--from` never asks.
+
+The files are fetched up to eight at a time over one HTTP client, and results are sorted before
+anything is printed, so the output is the same as a sequential run. On a terminal, stderr shows a
+single `checking 12/49…` line that is erased when the fetching ends; when stderr is piped nothing
+extra is written.
+
 `update` first checks that the release exists, and stops with an error if it cannot be reached or
 is not tagged, rather than reporting every file as missing from it.
 

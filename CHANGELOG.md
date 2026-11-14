@@ -9,6 +9,19 @@ touched; `cargo nocli components status` and a diff are how you deal with those.
 installed before the lock existed reads `not in lock`: the tool cannot tell whether it was edited,
 so diff it too and `components add <name> --force` to record it.
 
+## cargo-nocli 0.4.1
+
+A CLI-only release; the library is unchanged (0.6.1).
+
+- Every command that reads a release now says which one first: `comparing against nocomponents
+  v0.3.0 (from Cargo.lock)`, `installing from …`, `… the checkout at <path>` for `--from`, and
+  `(latest on crates.io)` when there is no lock entry yet.
+- `components update` prints, after its summary, when crates.io has a newer release than the
+  locked one, with the `cargo add` line that moves to it. A failing request skips the hint.
+- `components update` fetches up to 8 files at a time over one shared HTTP client and shows
+  `checking 12/49…` on stderr while it does (terminals only). Measured on one machine, over the
+  network, for about 70 installed files: roughly 24 s before, 3 s after.
+
 ## 0.6.1
 
 Phone sheets: fixes for what a real iPhone showed. The fixes themselves are verified in Chromium
