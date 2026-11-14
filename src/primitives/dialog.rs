@@ -8,6 +8,7 @@ use crate::{
         controllable::controllable,
         modality::{last_input_was_keyboard, track_input_modality},
         next_id,
+        scroll_lock::use_scroll_lock,
         sheet::{SheetHeader, presentation_attr, use_sheet_presentation},
         types::TriggerRender,
     },
@@ -250,26 +251,9 @@ pub fn DialogPortalRoot(children: ChildrenFn) -> impl IntoView {
     let stored_children = StoredValue::new(children);
 
     // Only a modal dialog freezes the page behind it.
-    Effect::new(move |_| {
-        let is_open = context.is_open.get();
-        if context.modal
-            && let Some(body) = document().body()
-        {
-            if is_open {
-                let _ = body.style().set_property("overflow", "hidden");
-            } else {
-                let _ = body.style().remove_property("overflow");
-            }
-        }
-    });
-
-    on_cleanup(move || {
-        if context.modal
-            && let Some(body) = document().body()
-        {
-            let _ = body.style().remove_property("overflow");
-        }
-    });
+    use_scroll_lock(Signal::derive(move || {
+        context.modal && context.is_open.get()
+    }));
 
     view! {
         <Portal>

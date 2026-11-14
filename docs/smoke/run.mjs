@@ -143,23 +143,38 @@ function findChrome() {
   throw new Error('no chromium found on PATH (tried chromium, chromium-browser, google-chrome); set CHROME');
 }
 
-async function startChrome() {
+// A cold Chrome on a shared CI runner can take well over the 20 s a warm one needs, so the wait is
+// configurable and a launch that never opens its port is retried once with a fresh profile.
+const CHROME_START_SEC = Number(process.env.SMOKE_CHROME_START_SEC);
+const CHROME_START_MS = (Number.isFinite(CHROME_START_SEC) && CHROME_START_SEC > 0 ? CHROME_START_SEC : 20) * 1000;
+
+async function startChrome(attempt = 1) {
   const port = await freePort();
   const profile = mkdtempSync(join(tmpdir(), 'nocomponents-chrome-'));
   tmpdirs.push(profile);
   const argv = [
-    '--headless',
+    '--headless=new',
     `--remote-debugging-port=${port}`,
     `--user-data-dir=${profile}`,
     '--no-first-run',
     '--no-default-browser-check',
+    // A container's /dev/shm is small; Chrome's shared memory there is what stalls or crashes it.
+    '--disable-dev-shm-usage',
+    '--disable-gpu',
     'about:blank',
   ];
   if (process.env.CHROME_NO_SANDBOX) argv.unshift('--no-sandbox');
   const c = launch(findChrome(), argv);
   try {
-    return await Browser.connect(port);
+    return await Browser.connect(port, CHROME_START_MS);
   } catch (e) {
+    if (attempt < 2) {
+      console.log(`chrome: no debugging port after ${CHROME_START_MS / 1000}s, relaunching`);
+      try {
+        if (c.pid) process.kill(-c.pid, 'SIGKILL');
+      } catch {}
+      return startChrome(attempt + 1);
+    }
     throw new Error(`${e.message}\n${c.out}`);
   }
 }

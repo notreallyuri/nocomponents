@@ -1,5 +1,5 @@
 import { demoBtn } from '../cdp.mjs';
-import { dialogTrigger, dragBy } from '../lib.mjs';
+import { assertPageFrozen, dialogTrigger, dragBy, lockState } from '../lib.mjs';
 
 export default async (t) => {
   const trig = dialogTrigger();
@@ -58,6 +58,13 @@ export default async (t) => {
   t.expect('it reopens at the first point', await t.ev(snap), '0');
   await t.click(`${panel}.querySelector('[data-slot=menu-sheet-close]')`, 400);
   await t.settle('the header close button closes it', closedNow, true);
+  t.expect('closing the dialog unlocks the page', await t.ev(lockState), [false, '', '']);
+
+  await t.click(filters, 600);
+  await assertPageFrozen(t, [195, 40], 'dialog sheet');
+  await t.key('Escape', 500);
+  await t.settle('Escape closes it', closedNow, true);
+  t.expect('and unlocks the page', await t.ev(lockState), [false, '', '']);
 
   await t.viewport(1280, 900);
 };

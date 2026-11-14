@@ -10,7 +10,7 @@
 use crate::{
     primitives::{
         dropdown_menu::{
-            MenuRoot, focus_element, focus_item_under_pointer, focus_menu_off_item,
+            InlineSubmenus, MenuRoot, focus_element, focus_item_under_pointer, focus_menu_off_item,
             handle_menu_keys, placement_align, placement_side,
         },
         floating::{
@@ -224,6 +224,7 @@ pub fn ContextMenuContentRoot(
     let sheet = use_sheet_presentation(mobile_sheet);
     let close = Callback::new(move |_| ctx.close());
     let as_sheet = sheet.get_untracked();
+    provide_context(InlineSubmenus(as_sheet));
     let grab = use_sheet_grab(
         sheet,
         ctx.is_open.into(),

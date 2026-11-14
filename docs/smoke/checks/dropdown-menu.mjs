@@ -1,5 +1,5 @@
 import { demoBtn, menuItem, q, qa, activeText } from '../cdp.mjs';
-import { dragBy } from '../lib.mjs';
+import { assertPageFrozen, assertScrimDragFrozen, dragBy, lockState } from '../lib.mjs';
 
 const openMenus = `[...document.querySelectorAll('[role=menu]')].filter((m) => m.closest('[data-state]')?.dataset.state !== 'closed' && getComputedStyle(m).visibility !== 'hidden').length`;
 const radios = `[...document.querySelectorAll('[role=menuitemradio]')].map((e) => e.textContent.trim() + '=' + e.getAttribute('aria-checked')).join(' ')`;
@@ -130,8 +130,11 @@ export default async (t) => {
   t.ok('menu has focus inside', await t.ev(`${sheetEl}.contains(document.activeElement)`));
   t.ok('the header is a sibling of the menu, not inside it', await t.ev(`!${sheetEl}.querySelector('[data-slot=menu-sheet-header]') && ${frameEl}.querySelector('[data-slot=menu-sheet-header]')?.nextElementSibling === ${sheetEl}`));
 
+  await assertPageFrozen(t, [195, 60], 'dropdown sheet');
+
   await t.click(menuItem('Size'), 400);
   await t.settle('an item click closes the sheet', open, 'false');
+  t.expect('closing the sheet unlocks the page', await t.ev(lockState), [false, '', '']);
 
   await t.click(demoBtn('Sort by'), 500);
   t.expect('reopens as a sheet', await t.ev(presentation), 'sheet');
@@ -178,5 +181,12 @@ export default async (t) => {
   await t.clickAt(195, 60, 400);
   await t.settle('a tap on the scrim closes the sheet', open, 'false');
 
+  await t.click(demoBtn('Sort by'), 500);
+  await assertScrimDragFrozen(t, [195, 60], 'dropdown sheet');
+  await t.settle('a drag that starts on the scrim closes the sheet', open, 'false');
+
   await t.viewport(1280, 900);
+  await t.click(demoBtn('Sort by'), 400);
+  t.expect('a floating menu does not lock the page', await t.ev(lockState), [false, '', '']);
+  await t.key('Escape', 400);
 };

@@ -15,7 +15,8 @@ It exits non-zero on any failure, with a `FAIL <page>: <label>: <detail>` line f
 
 Without `--url` it starts its own `trunk serve` on a free port into a temporary `--dist`, so it never
 fights a `trunk serve` of yours on :3000. The first build takes minutes; later ones reuse `target/`. `SMOKE_BUILD_TIMEOUT_MIN` raises the
-10-minute limit on that build.
+10-minute limit on that build, and `SMOKE_CHROME_START_SEC` the 20 seconds Chrome gets to open its
+debugging port (a launch that misses it is retried once); CI raises both.
 It then starts `chromium` (first of `chromium`, `chromium-browser`, `google-chrome` on `PATH`;
 `CHROME=/path/to/binary` overrides; `CHROME_NO_SANDBOX=1` adds `--no-sandbox`, which a root-run
 container needs). Both are killed by process group on exit, failure and SIGINT.
