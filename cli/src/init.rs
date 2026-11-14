@@ -6,6 +6,7 @@ use std::{fs, path::Path};
 
 pub async fn run(source: &Source) -> Result<()> {
     manifest::require_cargo_project()?;
+    source.announce("installing from").await?;
 
     let config = if Path::new(crate::config::CONFIG_FILE).exists() {
         println!("{} is already here, keeping it", crate::config::CONFIG_FILE);

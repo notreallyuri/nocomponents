@@ -8,11 +8,49 @@ use crate::{
     rewrite::{self, Targets},
 };
 use anyhow::{Context, Result};
+use futures::{StreamExt, TryStreamExt, stream};
 use std::{
     collections::{BTreeSet, VecDeque},
     fs,
+    io::{IsTerminal, Write},
     path::Path,
+    sync::atomic::{AtomicUsize, Ordering},
 };
+
+const IN_FLIGHT: usize = 8;
+
+struct Progress {
+    total: usize,
+    done: AtomicUsize,
+    visible: bool,
+}
+
+impl Progress {
+    fn new(total: usize, remote: bool) -> Self {
+        Progress {
+            total,
+            done: AtomicUsize::new(0),
+            visible: remote && total > 0 && std::io::stderr().is_terminal(),
+        }
+    }
+
+    fn tick(&self) {
+        let done = self.done.fetch_add(1, Ordering::Relaxed) + 1;
+        if self.visible {
+            let mut err = std::io::stderr().lock();
+            let _ = write!(err, "\rchecking {done}/{}…", self.total);
+            let _ = err.flush();
+        }
+    }
+
+    fn finish(&self) {
+        if self.visible {
+            let mut err = std::io::stderr().lock();
+            let _ = write!(err, "\r\x1b[K");
+            let _ = err.flush();
+        }
+    }
+}
 
 /// One file to write, and what the run has to say about it.
 struct Outcome {
@@ -147,6 +185,7 @@ async fn install_components(
 
 pub async fn add(source: &Source, names: &[String], force: bool) -> Result<()> {
     manifest::require_cargo_project()?;
+    source.announce("installing from").await?;
     let config = Config::load()?;
     let module_path = config.module_path()?;
     let installs_icons = ships_icons(source).await?;
@@ -224,6 +263,7 @@ pub async fn add(source: &Source, names: &[String], force: bool) -> Result<()> {
 /// `cargo nocli icons add`: the named glyphs, and the wrapper they are drawn with.
 pub async fn add_icons(source: &Source, names: &[String], force: bool) -> Result<()> {
     manifest::require_cargo_project()?;
+    source.announce("installing from").await?;
     let config = Config::load()?;
     if !ships_icons(source).await? {
         anyhow::bail!(
@@ -610,34 +650,38 @@ struct Examined {
 
 async fn examine(
     source: &Source,
-    kind: Kind,
-    dir: &str,
+    files: Vec<(Kind, String, String)>,
     targets: &Targets<'_>,
     lock: &Lock,
-) -> Result<Vec<Examined>> {
-    let mut files = read_installed(Path::new(dir))?;
-    files.sort_by(|a, b| a.0.cmp(&b.0));
-
-    let mut out = Vec::new();
-    for (name, text) in files {
-        let fetched = match kind {
-            Kind::Component => source.component_opt(&name).await?,
-            Kind::Icon => source.icon_opt(&name).await?,
-        };
-        let upstream = fetched.map(|file| rewrite::rewrite(&file, targets));
-        let row = classify(
-            &text,
-            lock.recorded(kind, &name),
-            upstream.as_ref().map(|u| u.source.as_str()),
-        );
-        out.push(Examined {
-            kind,
-            name,
-            row,
-            upstream,
-        });
-    }
-    Ok(out)
+    progress: &Progress,
+) -> Result<(Vec<Examined>, Vec<Examined>)> {
+    let mut all: Vec<Examined> = stream::iter(files)
+        .map(|(kind, name, text)| {
+            Ok::<_, anyhow::Error>(async move {
+                let fetched = match kind {
+                    Kind::Component => source.component_opt(&name).await?,
+                    Kind::Icon => source.icon_opt(&name).await?,
+                };
+                progress.tick();
+                let upstream = fetched.map(|file| rewrite::rewrite(&file, targets));
+                let row = classify(
+                    &text,
+                    lock.recorded(kind, &name),
+                    upstream.as_ref().map(|u| u.source.as_str()),
+                );
+                Ok::<_, anyhow::Error>(Examined {
+                    kind,
+                    name,
+                    row,
+                    upstream,
+                })
+            })
+        })
+        .try_buffer_unordered(IN_FLIGHT)
+        .try_collect()
+        .await?;
+    all.sort_by(|a, b| a.name.cmp(&b.name));
+    Ok(all.into_iter().partition(|e| e.kind == Kind::Component))
 }
 
 fn print_rows(rows: &[Examined], dir: &str, what: &str) {
@@ -655,6 +699,15 @@ fn print_rows(rows: &[Examined], dir: &str, what: &str) {
 
 pub async fn update(source: &Source, apply: bool) -> Result<()> {
     manifest::require_cargo_project()?;
+    source.announce("comparing against").await?;
+    update_release(source, apply).await?;
+    if let Some(hint) = source.newer_release().await {
+        println!("\n{hint}");
+    }
+    Ok(())
+}
+
+async fn update_release(source: &Source, apply: bool) -> Result<()> {
     let config = Config::load()?;
     let module_path = config.module_path()?;
     let installs_icons = ships_icons(source).await?;
@@ -670,19 +723,25 @@ pub async fn update(source: &Source, apply: bool) -> Result<()> {
     source.catalogue().await?;
     let mut lock = Lock::load();
 
-    let components = examine(
-        source,
-        Kind::Component,
-        &config.paths.components,
-        &targets,
-        &lock,
-    )
-    .await?;
-    let icons = if installs_icons {
-        examine(source, Kind::Icon, &config.paths.icons, &targets, &lock).await?
+    let component_files = read_installed(Path::new(&config.paths.components))?;
+    let icon_files = if installs_icons {
+        read_installed(Path::new(&config.paths.icons))?
     } else {
         Vec::new()
     };
+    let progress = Progress::new(component_files.len() + icon_files.len(), source.is_remote());
+    let files: Vec<(Kind, String, String)> = component_files
+        .into_iter()
+        .map(|(name, text)| (Kind::Component, name, text))
+        .chain(
+            icon_files
+                .into_iter()
+                .map(|(name, text)| (Kind::Icon, name, text)),
+        )
+        .collect();
+    let examined = examine(source, files, &targets, &lock, &progress).await;
+    progress.finish();
+    let (components, icons) = examined?;
 
     let all = || components.iter().chain(icons.iter());
     let outdated = all().filter(|e| e.row == UpdateRow::Outdated).count();
@@ -917,6 +976,7 @@ fn status_rows(kind: Kind, files: &[(String, String)], lock: &Lock) -> Vec<(Stri
 }
 
 pub async fn list(source: &Source) -> Result<()> {
+    source.announce("listing").await?;
     let names = source.catalogue().await?;
     let dir = Config::load().ok().map(|c| c.paths.components);
     print_listing(&names, dir.as_deref(), "components");
@@ -924,6 +984,7 @@ pub async fn list(source: &Source) -> Result<()> {
 }
 
 pub async fn list_icons(source: &Source) -> Result<()> {
+    source.announce("listing").await?;
     let mut names = source.icon_catalogue().await?;
     names.retain(|name| name != "icon");
     let dir = Config::load().ok().map(|c| c.paths.icons);

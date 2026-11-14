@@ -12,6 +12,9 @@ a sentence buried in it.
       `Cargo.lock` and rewrites only the unchanged outdated ones.
 - [ ] Three-way merge for files edited here and changed upstream (`update` lists them; today the
       project diffs by hand).
+- [ ] `--backup` for `components update --apply`: copy replaced files to
+      `.nocli/backup/<timestamp>/` first (opt-in; not the default — a project under version
+      control doesn't need it).
 
 ## Bugs
 
