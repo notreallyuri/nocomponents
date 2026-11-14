@@ -81,6 +81,33 @@ const CONTROLLED: &str = r#"{
     }
 }"#;
 
+const ON_PHONES: &str = r#"{
+    let country = RwSignal::new(None::<String>);
+    view! {
+        <div class="w-48">
+            <Select value=country>
+                <SelectTrigger>
+                    <SelectValue placeholder="Pick a country..." />
+                </SelectTrigger>
+                <SelectPortal>
+                    <SelectContent mobile_sheet=true sheet_title="Country">
+                        {COUNTRIES
+                            .into_iter()
+                            .map(|name| view! { <SelectItem value=name>{name}</SelectItem> })
+                            .collect_view()}
+                    </SelectContent>
+                </SelectPortal>
+            </Select>
+        </div>
+    }
+}"#;
+
+const COUNTRIES: [&str; 22] = [
+    "Brazil", "Canada", "Chile", "China", "Denmark", "Egypt", "Finland", "France", "Germany",
+    "Ghana", "India", "Italy", "Japan", "Kenya", "Mexico", "Norway", "Peru", "Poland", "Spain",
+    "Sweden", "Turkey", "Uruguay",
+];
+
 const API: &[ApiEntry] = &[
     ApiEntry {
         name: "Select",
@@ -385,6 +412,35 @@ pub fn Page() -> impl IntoView {
                                 <p class="text-sm text-muted-foreground">
                                     "Last change: " {move || last.get()}
                                 </p>
+                            </div>
+                        }
+                    }
+                </DemoSection>
+
+                <DemoSection
+                    title="On phones"
+                    description="Set mobile_sheet and, below the md breakpoint (768px), the list is a bottom sheet instead of a popup under the trigger: a scrim, a grabber, the title from sheet_title and a close button, with the options scrolling inside it. From md up it is the list above; narrow the window to see it."
+                    code=ON_PHONES
+                >
+                    {
+                        let country = RwSignal::new(None::<String>);
+                        view! {
+                            <div class="w-48">
+                                <Select value=country>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Pick a country..." />
+                                    </SelectTrigger>
+                                    <SelectPortal>
+                                        <SelectContent mobile_sheet=true sheet_title="Country">
+                                            {COUNTRIES
+                                                .into_iter()
+                                                .map(|name| {
+                                                    view! { <SelectItem value=name>{name}</SelectItem> }
+                                                })
+                                                .collect_view()}
+                                        </SelectContent>
+                                    </SelectPortal>
+                                </Select>
                             </div>
                         }
                     }

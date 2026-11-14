@@ -68,4 +68,5 @@ jobs:
           CHROME: /usr/bin/google-chrome
           SMOKE_BUILD_TIMEOUT_MIN: 30
           CHROME_NO_SANDBOX: "1"
+          SMOKE_CHROME_START_SEC: 90
         run: node docs/smoke/run.mjs

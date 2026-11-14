@@ -7,9 +7,9 @@ use crate::{
 };
 use leptos::prelude::*;
 use nocomponents::components::context_menu::{
-    ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuLabel, ContextMenuPortal,
-    ContextMenuSeparator, ContextMenuSub, ContextMenuSubContent, ContextMenuSubTrigger,
-    ContextMenuTrigger,
+    ContextMenu, ContextMenuCheckboxItem, ContextMenuContent, ContextMenuItem, ContextMenuLabel,
+    ContextMenuPortal, ContextMenuRadioGroup, ContextMenuRadioItem, ContextMenuSeparator,
+    ContextMenuSub, ContextMenuSubContent, ContextMenuSubTrigger, ContextMenuTrigger,
 };
 
 const DEFAULT: &str = r#"<ContextMenu>
@@ -66,6 +66,41 @@ const SELECTION: &str = r#"<ContextMenu>
         </ContextMenuContent>
     </ContextMenuPortal>
 </ContextMenu>"#;
+
+const ON_PHONES: &str = r#"let show_grid = RwSignal::new(true);
+let zoom = RwSignal::new("100".to_string());
+
+view! {
+    <ContextMenu>
+        <ContextMenuTrigger class="...">"Right-click or press and hold"</ContextMenuTrigger>
+        <ContextMenuPortal>
+            <ContextMenuContent class="min-w-44" mobile_sheet=true sheet_title="Layer">
+                <ContextMenuItem>"Rename"</ContextMenuItem>
+                <ContextMenuItem>"Duplicate"</ContextMenuItem>
+                <ContextMenuSub>
+                    <ContextMenuSubTrigger>"Move to"</ContextMenuSubTrigger>
+                    <ContextMenuSubContent>
+                        <ContextMenuItem>"Front"</ContextMenuItem>
+                        <ContextMenuItem>"Forward"</ContextMenuItem>
+                        <ContextMenuItem>"Backward"</ContextMenuItem>
+                        <ContextMenuItem>"Back"</ContextMenuItem>
+                    </ContextMenuSubContent>
+                </ContextMenuSub>
+                <ContextMenuSeparator />
+                <ContextMenuCheckboxItem checked=show_grid>"Show grid"</ContextMenuCheckboxItem>
+                <ContextMenuSeparator />
+                <ContextMenuLabel>"Zoom"</ContextMenuLabel>
+                <ContextMenuRadioGroup value=zoom>
+                    <ContextMenuRadioItem value="50">"50%"</ContextMenuRadioItem>
+                    <ContextMenuRadioItem value="100">"100%"</ContextMenuRadioItem>
+                    <ContextMenuRadioItem value="200">"200%"</ContextMenuRadioItem>
+                </ContextMenuRadioGroup>
+                <ContextMenuSeparator />
+                <ContextMenuItem>"Delete"</ContextMenuItem>
+            </ContextMenuContent>
+        </ContextMenuPortal>
+    </ContextMenu>
+}"#;
 
 const AREA: &str = "flex h-32 items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground";
 
@@ -274,6 +309,64 @@ pub fn Page() -> impl IntoView {
                             </ContextMenuPortal>
                         </ContextMenu>
                     </div>
+                </DemoSection>
+
+                <DemoSection
+                    title="On phones"
+                    description="Set mobile_sheet and, below the md breakpoint (768px), the menu is a bottom sheet instead of a menu at the press point. A submenu opens in place, under its trigger, rather than beside it: tap Move to to expand it and tap again to fold it. Checkbox and radio items work as they do in the menu. From md up it is the floating menu; narrow the window to see it."
+                    code=ON_PHONES
+                >
+                    {
+                        let show_grid = RwSignal::new(true);
+                        let zoom = RwSignal::new("100".to_string());
+                        view! {
+                            <div class="w-full max-w-sm">
+                                <ContextMenu>
+                                    <ContextMenuTrigger class=AREA>
+                                        "Right-click or press and hold"
+                                    </ContextMenuTrigger>
+                                    <ContextMenuPortal>
+                                        <ContextMenuContent
+                                            class="min-w-44"
+                                            mobile_sheet=true
+                                            sheet_title="Layer"
+                                        >
+                                            <ContextMenuItem>"Rename"</ContextMenuItem>
+                                            <ContextMenuItem>"Duplicate"</ContextMenuItem>
+                                            <ContextMenuSub>
+                                                <ContextMenuSubTrigger>"Move to"</ContextMenuSubTrigger>
+                                                <ContextMenuSubContent>
+                                                    <ContextMenuItem>"Front"</ContextMenuItem>
+                                                    <ContextMenuItem>"Forward"</ContextMenuItem>
+                                                    <ContextMenuItem>"Backward"</ContextMenuItem>
+                                                    <ContextMenuItem>"Back"</ContextMenuItem>
+                                                </ContextMenuSubContent>
+                                            </ContextMenuSub>
+                                            <ContextMenuSeparator />
+                                            <ContextMenuCheckboxItem checked=show_grid>
+                                                "Show grid"
+                                            </ContextMenuCheckboxItem>
+                                            <ContextMenuSeparator />
+                                            <ContextMenuLabel>"Zoom"</ContextMenuLabel>
+                                            <ContextMenuRadioGroup value=zoom>
+                                                <ContextMenuRadioItem value="50">
+                                                    "50%"
+                                                </ContextMenuRadioItem>
+                                                <ContextMenuRadioItem value="100">
+                                                    "100%"
+                                                </ContextMenuRadioItem>
+                                                <ContextMenuRadioItem value="200">
+                                                    "200%"
+                                                </ContextMenuRadioItem>
+                                            </ContextMenuRadioGroup>
+                                            <ContextMenuSeparator />
+                                            <ContextMenuItem>"Delete"</ContextMenuItem>
+                                        </ContextMenuContent>
+                                    </ContextMenuPortal>
+                                </ContextMenu>
+                            </div>
+                        }
+                    }
                 </DemoSection>
 
                 <DemoSection

@@ -7,6 +7,7 @@ pub mod gif;
 pub mod icon;
 pub mod image;
 pub mod modality;
+pub mod scroll_lock;
 pub mod settle;
 pub mod sheet;
 pub mod types;

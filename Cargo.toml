@@ -1,6 +1,6 @@
 [package]
 name = "nocomponents"
-version = "0.6.0"
+version = "0.6.1"
 edition = "2024"
 description = "Unstyled behaviour primitives for Leptos, and a shadcn/ui-styled layer you install as source you own"
 repository = "https://github.com/notreallyuri/nocomponents"
@@ -222,6 +222,11 @@ features = [
   "CssStyleDeclaration",
   "ScrollIntoViewOptions",
   "ScrollLogicalPosition",
+  # The scroll lock under a modal layer: a touch has to be cancelled before the page takes it.
+  "TouchEvent",
+  "TouchList",
+  "Touch",
+  "AddEventListenerOptions",
   # `ThemeProvider`: the stored choice, and the system one.
   "Storage",
   "MediaQueryList",

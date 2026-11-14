@@ -30,6 +30,17 @@ pub fn use_dropdown() -> DropdownMenuContext {
     expect_context::<DropdownMenuContext>()
 }
 
+/// Whether the menu above is drawn as a phone sheet, in which case its submenus open in place:
+/// a floating panel beside a panel on the bottom edge has nowhere sensible to go. Provided by the
+/// content part and read by the sub parts, decided once when the content mounts, like the shape of
+/// the markup it describes.
+#[derive(Copy, Clone)]
+pub(crate) struct InlineSubmenus(pub(crate) bool);
+
+fn inline_submenus() -> bool {
+    use_context::<InlineSubmenus>().is_some_and(|inline| inline.0)
+}
+
 /// The outermost menu's context, reachable from inside a submenu, whose own `FloatingRoot`
 /// shadows it. Selecting an item has to close the whole tree, not just the panel it lives in.
 #[derive(Copy, Clone)]
@@ -277,6 +288,7 @@ pub fn DropdownMenuContentRoot(
     let sheet = use_sheet_presentation(mobile_sheet);
     let close = Callback::new(move |_| ctx.close());
     let as_sheet = sheet.get_untracked();
+    provide_context(InlineSubmenus(as_sheet));
     let grab = use_sheet_grab(
         sheet,
         ctx.is_open.into(),
@@ -658,6 +670,13 @@ pub fn DropdownMenuSubRoot(
     view! { <FloatingRoot class=class>{children()}</FloatingRoot> }
 }
 
+/// Whether a pointer event came from a mouse. Only a mouse hovers: a finger or a pen sends
+/// enter and leave around every tap, and a submenu that closes on the leave is gone before the
+/// tap's own click can open it.
+fn is_mouse(e: &ev::PointerEvent) -> bool {
+    e.pointer_type() == "mouse"
+}
+
 #[component]
 pub fn DropdownMenuSubTriggerRoot(
     #[prop(optional, into)] class: Signal<String>,
@@ -667,13 +686,15 @@ pub fn DropdownMenuSubTriggerRoot(
 ) -> impl IntoView {
     let ctx = use_dropdown();
     let hover = expect_context::<SubHoverState>();
+    let inline = inline_submenus();
+    let last_pointer = StoredValue::new(String::new());
 
     view! {
         <button
             type="button"
             data-slot="dropdown-menu-sub-trigger"
             role="menuitem"
-            aria-haspopup="menu"
+            aria-haspopup=(!inline).then_some("menu")
             aria-expanded=move || ctx.is_open.get().to_string()
             tabindex="-1"
             data-roving-item=""
@@ -682,10 +703,22 @@ pub fn DropdownMenuSubTriggerRoot(
             node_ref=ctx.trigger_ref
             class=class
             data-state=move || if ctx.is_open.get() { "open" } else { "closed" }
+            data-presentation=presentation_attr(inline)
             on:keydown=move |e| {
-                if matches!(e.key().as_str(), "ArrowRight" | "Enter" | " ") {
+                let key = e.key();
+                if inline && key == "ArrowLeft" && ctx.is_open.get_untracked() {
                     e.prevent_default();
                     e.stop_propagation();
+                    ctx.close();
+                    return;
+                }
+                if matches!(key.as_str(), "ArrowRight" | "Enter" | " ") {
+                    e.prevent_default();
+                    e.stop_propagation();
+                    if inline && key != "ArrowRight" && ctx.is_open.get_untracked() {
+                        ctx.close();
+                        return;
+                    }
                     ctx.open();
                     set_timeout(
                         move || focus_first_item(ctx.content_ref),
@@ -693,15 +726,27 @@ pub fn DropdownMenuSubTriggerRoot(
                     );
                 }
             }
+            on:pointerdown=move |e| last_pointer.set_value(e.pointer_type())
             on:click=move |e| {
                 e.stop_propagation();
-                ctx.open();
+                let by_mouse = last_pointer.get_value() == "mouse";
+                if (inline || !by_mouse) && ctx.is_open.get_untracked() {
+                    ctx.close();
+                } else {
+                    ctx.open();
+                }
             }
-            on:pointerenter=move |_| {
+            on:pointerenter=move |e| {
+                if inline || !is_mouse(&e) {
+                    return;
+                }
                 hover.0.set(true);
                 ctx.open();
             }
-            on:pointerleave=move |_| {
+            on:pointerleave=move |e| {
+                if inline || !is_mouse(&e) {
+                    return;
+                }
                 hover.0.set(false);
                 set_timeout(
                     move || {
@@ -718,6 +763,29 @@ pub fn DropdownMenuSubTriggerRoot(
     }
 }
 
+/// The portal of a submenu's content. A floating submenu is portalled and kept mounted for its
+/// exit animation like any floating layer; one inside a sheet is not portalled at all, and sits
+/// where the part is written, under its trigger, for as long as it is open.
+#[component]
+pub fn DropdownMenuSubPortalRoot(children: ChildrenFn) -> impl IntoView {
+    let ctx = use_dropdown();
+    let stored_children = StoredValue::new(children);
+
+    if inline_submenus() {
+        Either::Left(view! {
+            <Show when=move || ctx.is_open.get()>{stored_children.with_value(|c| c())}</Show>
+        })
+    } else {
+        Either::Right(view! {
+            <FloatingPortal>
+                <Show when=move || {
+                    ctx.is_mounted.get()
+                }>{stored_children.with_value(|c| c())}</Show>
+            </FloatingPortal>
+        })
+    }
+}
+
 #[component]
 pub fn DropdownMenuSubContentRoot(
     #[prop(optional, into)] side_offset: Signal<SideOffset>,
@@ -726,6 +794,33 @@ pub fn DropdownMenuSubContentRoot(
 ) -> impl IntoView {
     let ctx = use_dropdown();
     let floating_ref = ctx.content_ref;
+
+    if inline_submenus() {
+        return view! {
+            <div
+                node_ref=floating_ref
+                data-slot="dropdown-menu-sub-content"
+                id=move || ctx.content_id.get()
+                role="group"
+                aria-labelledby=move || ctx.trigger_id.get()
+                on:keydown=move |e| {
+                    if e.key() == "ArrowLeft" {
+                        e.prevent_default();
+                        e.stop_propagation();
+                        ctx.close();
+                        focus_element(ctx.trigger_ref);
+                    }
+                }
+                data-state=move || if ctx.is_open.get() { "open" } else { "closed" }
+                data-presentation="sheet"
+                class=class
+            >
+                {children()}
+            </div>
+        }
+        .into_any();
+    }
+
     let hover = expect_context::<SubHoverState>();
 
     let menu_ref = AnyNodeRef::new();
@@ -754,10 +849,15 @@ pub fn DropdownMenuSubContentRoot(
                 }
             }
             class="fixed z-50 w-max pointer-events-none"
-            on:pointerenter=move |_| {
-                hover.0.set(true);
+            on:pointerenter=move |e| {
+                if is_mouse(&e) {
+                    hover.0.set(true);
+                }
             }
-            on:pointerleave=move |_| {
+            on:pointerleave=move |e| {
+                if !is_mouse(&e) {
+                    return;
+                }
                 hover.0.set(false);
                 set_timeout(
                     move || {
@@ -800,4 +900,5 @@ pub fn DropdownMenuSubContentRoot(
             </div>
         </div>
     }
+    .into_any()
 }

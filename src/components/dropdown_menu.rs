@@ -6,9 +6,9 @@ use crate::{
         DropdownMenuCheckboxItemRoot, DropdownMenuContentRoot, DropdownMenuGroupRoot,
         DropdownMenuItemRoot, DropdownMenuPortalRoot, DropdownMenuRadioGroupRoot,
         DropdownMenuRadioItemRoot, DropdownMenuRoot, DropdownMenuSubContentRoot,
-        DropdownMenuSubRoot, DropdownMenuSubTriggerRoot, DropdownMenuTriggerRoot,
+        DropdownMenuSubPortalRoot, DropdownMenuSubRoot, DropdownMenuSubTriggerRoot,
+        DropdownMenuTriggerRoot,
     },
-    primitives::floating::FloatingPortal,
     utils::{
         controllable::forward,
         icon::{IconSlot, slot_view},
@@ -22,7 +22,7 @@ pub use crate::primitives::dropdown_menu::DropdownMenuItemVariant;
 #[allow(unused_imports)]
 pub use crate::utils::types::{Align, Side, SideOffset, TriggerRender};
 
-pub const MENU_SHEET_CLASS: &str = "data-[presentation=sheet]:w-full data-[presentation=sheet]:max-h-[85dvh] data-[presentation=sheet]:overflow-y-auto data-[presentation=sheet]:rounded-b-none data-[presentation=sheet]:rounded-t-xl data-[presentation=sheet]:border-x-0 data-[presentation=sheet]:border-b-0 data-[presentation=sheet]:px-4 data-[presentation=sheet]:pb-[max(1rem,env(safe-area-inset-bottom))] data-[presentation=sheet]:data-[state=open]:slide-in-from-bottom-full data-[presentation=sheet]:data-[state=closed]:slide-out-to-bottom-full data-[presentation=sheet]:data-[state=open]:zoom-in-100 data-[presentation=sheet]:data-[state=closed]:zoom-out-100 data-[presentation=sheet]:[&_[data-slot=dropdown-menu-item]]:min-h-11 [&_[data-slot=menu-sheet-title]]:px-1 [&_[data-slot=menu-sheet-title]]:pb-2 [&_[data-slot=menu-sheet-title]]:text-sm [&_[data-slot=menu-sheet-title]]:font-semibold [&_[data-slot=menu-sheet-title]]:text-foreground [&_[data-slot=menu-sheet-close]]:flex [&_[data-slot=menu-sheet-close]]:size-8 [&_[data-slot=menu-sheet-close]]:items-center [&_[data-slot=menu-sheet-close]]:justify-center [&_[data-slot=menu-sheet-close]]:rounded-md [&_[data-slot=menu-sheet-close]]:text-muted-foreground [&_[data-slot=menu-sheet-close]]:outline-none [&_[data-slot=menu-sheet-close]]:hover:bg-accent [&_[data-slot=menu-sheet-close]]:hover:text-accent-foreground [&_[data-slot=menu-sheet-close]]:focus-visible:ring-2 [&_[data-slot=menu-sheet-close]]:focus-visible:ring-ring data-[presentation=sheet]:transition-transform data-[presentation=sheet]:duration-200 motion-reduce:data-[presentation=sheet]:transition-none data-[presentation=sheet]:data-[dragging=true]:transition-none";
+pub const MENU_SHEET_CLASS: &str = "data-[presentation=sheet]:w-full data-[presentation=sheet]:max-h-[85dvh] data-[presentation=sheet]:overflow-y-auto data-[presentation=sheet]:overscroll-contain data-[presentation=sheet]:rounded-b-none data-[presentation=sheet]:rounded-t-xl data-[presentation=sheet]:border-x-0 data-[presentation=sheet]:border-b-0 data-[presentation=sheet]:px-4 data-[presentation=sheet]:pb-[max(1rem,env(safe-area-inset-bottom))] data-[presentation=sheet]:data-[state=open]:slide-in-from-bottom-full data-[presentation=sheet]:data-[state=closed]:slide-out-to-bottom-full data-[presentation=sheet]:data-[state=open]:zoom-in-100 data-[presentation=sheet]:data-[state=closed]:zoom-out-100 data-[presentation=sheet]:[&_[data-slot=dropdown-menu-item]]:min-h-11 [&_[data-slot=menu-sheet-title]]:px-1 [&_[data-slot=menu-sheet-title]]:pb-2 [&_[data-slot=menu-sheet-title]]:text-sm [&_[data-slot=menu-sheet-title]]:font-semibold [&_[data-slot=menu-sheet-title]]:text-foreground [&_[data-slot=menu-sheet-close]]:flex [&_[data-slot=menu-sheet-close]]:size-8 [&_[data-slot=menu-sheet-close]]:items-center [&_[data-slot=menu-sheet-close]]:justify-center [&_[data-slot=menu-sheet-close]]:rounded-md [&_[data-slot=menu-sheet-close]]:text-muted-foreground [&_[data-slot=menu-sheet-close]]:outline-none [&_[data-slot=menu-sheet-close]]:hover:bg-accent [&_[data-slot=menu-sheet-close]]:hover:text-accent-foreground [&_[data-slot=menu-sheet-close]]:focus-visible:ring-2 [&_[data-slot=menu-sheet-close]]:focus-visible:ring-ring data-[presentation=sheet]:transition-transform data-[presentation=sheet]:duration-200 motion-reduce:data-[presentation=sheet]:transition-none data-[presentation=sheet]:data-[dragging=true]:transition-none";
 pub const SHEET_CLOSE_ICON: &str = "flex size-4 items-center justify-center [&>svg]:size-full";
 
 #[component]
@@ -334,7 +334,7 @@ pub fn DropdownMenuSubTrigger(
             inset=inset
             class=move || {
                 cn!(
-                    "group flex w-full cursor-default select-none font-medium justify-between items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground data-[inset]:pl-8 disabled:pointer-events-none disabled:opacity-50",
+                    "group flex w-full cursor-default select-none font-medium justify-between items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground data-[inset]:pl-8 data-[presentation=sheet]:data-[state=open]:[&_[data-slot=dropdown-menu-sub-icon]]:rotate-90 disabled:pointer-events-none disabled:opacity-50",
                 class.get()
                 )
             }
@@ -344,7 +344,7 @@ pub fn DropdownMenuSubTrigger(
                 icon=icon
                 fallback=|| view! { <ChevronRight /> }
                 data_slot="dropdown-menu-sub-icon"
-                class="ml-auto flex size-4 shrink-0 items-center justify-center [&>svg]:size-full"
+                class="ml-auto flex size-4 shrink-0 items-center justify-center transition-transform [&>svg]:size-full"
             />
         </DropdownMenuSubTriggerRoot>
     }
@@ -356,24 +356,21 @@ pub fn DropdownMenuSubContent(
     #[prop(optional, into)] class: Signal<String>,
     children: ChildrenFn,
 ) -> impl IntoView {
-    let ctx = crate::primitives::dropdown_menu::use_dropdown();
     let children = StoredValue::new(children);
 
     view! {
-        <FloatingPortal>
-            <Show when=move || ctx.is_mounted.get()>
-                <DropdownMenuSubContentRoot
-                    side_offset=side_offset
-                    class=move || {
-                        cn!(
-                            "z-50 min-w-32 overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg pointer-events-auto data-[state=closed]:pointer-events-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+        <DropdownMenuSubPortalRoot>
+            <DropdownMenuSubContentRoot
+                side_offset=side_offset
+                class=move || {
+                    cn!(
+                        "z-50 min-w-32 overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg pointer-events-auto data-[state=closed]:pointer-events-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[presentation=sheet]:ml-4 data-[presentation=sheet]:min-w-0 data-[presentation=sheet]:rounded-none data-[presentation=sheet]:border-0 data-[presentation=sheet]:border-l data-[presentation=sheet]:bg-transparent data-[presentation=sheet]:p-0 data-[presentation=sheet]:pl-2 data-[presentation=sheet]:shadow-none data-[presentation=sheet]:data-[state=open]:animate-none data-[presentation=sheet]:data-[state=closed]:animate-none",
                             class.get()
-                        )
-                    }
-                >
-                    {children.with_value(|c| c())}
-                </DropdownMenuSubContentRoot>
-            </Show>
-        </FloatingPortal>
+                    )
+                }
+            >
+                {children.with_value(|c| c())}
+            </DropdownMenuSubContentRoot>
+        </DropdownMenuSubPortalRoot>
     }
 }

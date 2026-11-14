@@ -1101,6 +1101,11 @@ the small items and the CLI friction); what follows is what those left behind.
       only (`primitives::sheet_drag`, deciding with the drawer's `settle` now in `utils::settle`),
       `sheet_snap_points` on all five content parts, `container` on every portalled floating layer,
       a heading-weight title, and `use_floating` no longer attaches its auto-update under a sheet.
+- [x] **Phone-sheet fixes from a real iPhone** — landed in 0.6.1: the page no longer scrolls behind a
+      sheet (`utils::scroll_lock`, counted, with the iOS `touchmove` guard), submenus work on touch
+      and open inline inside a sheet (`DropdownMenuSubPortalRoot`), iOS date inputs match `h-8`, and
+      the Select and Context Menu pages have a phone-sheet demo. Unverified on a device: the iOS
+      Safari touch behaviours (only Chromium touch emulation is driven by `docs/smoke`).
 - [ ] Still open on the sheets: `SheetScrim`'s and the grabber's classes live in `utils/sheet.rs`,
       which a Tailwind build in a consumer's project does not scan (the same trap `src/components`
       exists to avoid) — they should move to the styled layer. `use_floating` still computes one

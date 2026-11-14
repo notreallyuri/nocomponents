@@ -126,7 +126,7 @@ pub fn SelectContent(
                 )
             }
         >
-            <div class="min-h-0 w-full flex-1 overflow-y-auto p-1">{children()}</div>
+            <div class="min-h-0 w-full flex-1 overflow-y-auto overscroll-contain p-1">{children()}</div>
         </SelectContentRoot>
     }
 }

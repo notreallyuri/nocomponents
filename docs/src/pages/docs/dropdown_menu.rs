@@ -674,7 +674,7 @@ pub fn Page() -> impl IntoView {
 
                 <DemoSection
                     title="With submenu"
-                    description="DropdownMenuSub nests a second menu that opens beside its trigger."
+                    description="DropdownMenuSub nests a second menu that opens beside its trigger, on hover with a mouse and on a tap with a finger or a pen. In a mobile_sheet it opens in place instead, under its trigger, and a tap folds it again."
                     code=WITH_SUBMENU
                 >
                     <DropdownMenu>

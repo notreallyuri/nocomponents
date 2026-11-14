@@ -9,6 +9,45 @@ touched; `cargo nocli components status` and a diff are how you deal with those.
 installed before the lock existed reads `not in lock`: the tool cannot tell whether it was edited,
 so diff it too and `components add <name> --force` to record it.
 
+## 0.6.1
+
+Phone sheets: fixes for what a real iPhone showed. The fixes themselves are verified in Chromium
+with touch emulation only; the iOS Safari behaviour they target is unverified. `cargo-nocli` is
+unchanged (0.4.0), and `cargo nocli components update --apply` brings the styled fixes into an
+installed project.
+
+### Added
+
+- `utils::scroll_lock` (`use_scroll_lock`): the counted page lock the sheets and modal dialogs use.
+- `DropdownMenuSubPortalRoot`, the portal of a submenu's content.
+- `data-presentation` (`"sheet"` or `"floating"`) on submenu triggers, and `"sheet"` on inline
+  submenu content.
+
+### Fixed
+
+- Dragging over a phone sheet scrolled the page behind it. Every sheet (dropdown menu, context menu,
+  select, popover, and a dialog or drawer) now freezes the page while it is open, through one
+  reference-counted lock in `utils::scroll_lock`: `overflow: hidden` on `<html>` and `<body>`,
+  restored on close and unmount, and nested layers do not unlock early. iOS Safari ignores that for
+  touch, so a non-passive `touchmove` listener also cancels any vertical move that does not start
+  in something that can still scroll that way; the scrim is `touch-action: none` and the sheet
+  scrollers are `overscroll-behavior: contain`. A floating menu or select still does not lock the
+  page. The dialog's own body lock is replaced by the same one.
+- Submenus did not work on touch. A finger or pen sends `pointerenter` and `pointerleave` around
+  every tap, and the leave closed the submenu before the tap's click could keep it open; only a
+  mouse hovers now, and a tap toggles. In a sheet a submenu opens in place, under its trigger, as an
+  indented group (`aria-expanded` and a turned chevron on the trigger; ArrowRight or Enter expands,
+  ArrowLeft folds back to the trigger) rather than as a floating panel beside the sheet. New
+  `DropdownMenuSubPortalRoot` is the portal that makes that choice; `DropdownMenuSubContent` uses it.
+- `Input` with `InputType::Date` was taller than its neighbours on iOS, which draws date fields
+  with its own appearance and ignores `h-8`.
+- The Select and Context Menu pages had no phone-sheet demo; both have one now.
+
+### Repo
+
+- The smoke runner waits longer for a cold Chrome on CI, retries a launch once, and passes
+  `--disable-dev-shm-usage`, `--disable-gpu` and `--headless=new`.
+
 ## 0.6.0
 
 Forms and focus behave on the sign-in and account screens a port starts with, and the phone sheet

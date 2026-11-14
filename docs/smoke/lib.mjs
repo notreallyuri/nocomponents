@@ -36,3 +36,63 @@ export async function dragBy(t, from, dy, { hold = 250, mid } = {}) {
   await t.mouse('mouseReleased', x, y + dy);
   await t.sleep(500);
 }
+
+// What a scroll-locked page looks like: the attribute on <html>, and the inline overflow the lock
+// writes on it and on <body>. Unlocked it is `[false, '', '']`.
+export const lockState = `[document.documentElement.hasAttribute('data-scroll-locked'), document.documentElement.style.overflow, document.body.style.overflow]`;
+
+// Dispatches one touch gesture: down at (x, y), moves to (x, y + dy) in steps, up. Needs touch
+// emulation on, which `withTouch` does.
+export async function touchDrag(t, x, y, dy, { steps = 6, hold = 0 } = {}) {
+  const send = (type, points) => t.send('Input.dispatchTouchEvent', { type, touchPoints: points });
+  await send('touchStart', [{ x, y }]);
+  for (let i = 1; i <= steps; i++) {
+    await send('touchMove', [{ x, y: y + (dy * i) / steps }]);
+    await t.sleep(16);
+  }
+  if (hold) await t.sleep(hold);
+  await send('touchEnd', []);
+  await t.sleep(300);
+}
+
+export async function touchTap(t, x, y, wait = 400) {
+  await t.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+  await t.sleep(60);
+  await t.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await t.sleep(wait);
+}
+
+export async function withTouch(t, fn) {
+  await t.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
+  try {
+    await fn();
+  } finally {
+    await t.send('Emulation.setTouchEmulationEnabled', { enabled: false });
+  }
+}
+
+// While a sheet is open the page behind it must not move: not by the wheel over the scrim, and not
+// by a finger dragged on its header. `scrimPoint` is a spot on the scrim. The sheet is left open.
+export async function assertPageFrozen(t, scrimPoint, label) {
+  t.expect(`${label}: an open sheet locks the page`, await t.ev(lockState), [true, 'hidden', 'hidden']);
+  const y0 = await t.ev('scrollY');
+  await t.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: scrimPoint[0], y: scrimPoint[1], deltaX: 0, deltaY: 400 });
+  await t.sleep(250);
+  t.expect(`${label}: a wheel over the scrim does not scroll the page`, await t.ev('scrollY'), y0);
+  await withTouch(t, async () => {
+    const [hx, hy] = await t.center(`document.querySelector('[data-slot=menu-sheet-header]')`);
+    await touchDrag(t, Math.round(hx), Math.round(hy), -40, { hold: 300 });
+    t.expect(`${label}: a finger dragged on the header does not scroll the page`, await t.ev('scrollY'), y0);
+    t.expect(`${label}: and the sheet is still open`, await t.ev(`!!document.querySelector('[data-slot=menu-sheet-header]')`), true);
+  });
+}
+
+// A finger dragged over the scrim must not scroll the page. A press there is an outside press, so
+// this closes the sheet as well.
+export async function assertScrimDragFrozen(t, scrimPoint, label) {
+  const y0 = await t.ev('scrollY');
+  await withTouch(t, async () => {
+    await touchDrag(t, scrimPoint[0], scrimPoint[1] + 60, -50);
+  });
+  t.expect(`${label}: a finger dragged over the scrim does not scroll the page`, await t.ev('scrollY'), y0);
+}
