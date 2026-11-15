@@ -240,12 +240,12 @@ pub fn DropdownMenuCheckboxItem(
             inset=inset
             class=move || {
                 cn!(
-                    "group relative flex cursor-default select-none items-center gap-2 rounded-sm py-1.5 pr-2 pl-8 text-sm font-medium outline-none transition-colors focus:bg-accent focus:text-accent-foreground hover:bg-accent hover:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50",
+                    "group relative flex cursor-default select-none items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm font-medium outline-none transition-colors focus:bg-accent focus:text-accent-foreground hover:bg-accent hover:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 data-[inset]:pl-8",
                     class.get()
                 )
             }
         >
-            <span class="pointer-events-none absolute left-2 flex size-3.5 items-center justify-center">
+            <span class="pointer-events-none absolute right-2 flex size-3.5 items-center justify-center">
                 <IconSlot
                     icon=icon
                     fallback=|| view! { <Check /> }
@@ -294,12 +294,12 @@ pub fn DropdownMenuRadioItem(
             inset=inset
             class=move || {
                 cn!(
-                    "group relative flex cursor-default select-none items-center gap-2 rounded-sm py-1.5 pr-2 pl-8 text-sm font-medium outline-none transition-colors focus:bg-accent focus:text-accent-foreground hover:bg-accent hover:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50",
+                    "group relative flex cursor-default select-none items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm font-medium outline-none transition-colors focus:bg-accent focus:text-accent-foreground hover:bg-accent hover:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 data-[inset]:pl-8",
                     class.get()
                 )
             }
         >
-            <span class="pointer-events-none absolute left-2 flex size-3.5 items-center justify-center">
+            <span class="pointer-events-none absolute right-2 flex size-3.5 items-center justify-center">
                 <IconSlot
                     icon=icon
                     fallback=|| view! { <Circle /> }

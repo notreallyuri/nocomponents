@@ -9,6 +9,33 @@ touched; `cargo nocli components status` and a diff are how you deal with those.
 installed before the lock existed reads `not in lock`: the tool cannot tell whether it was edited,
 so diff it too and `components add <name> --force` to record it.
 
+## 0.6.2
+
+The check and the dot sit at the right edge of the item they mark, and the label starts where an
+unmarked item's does. `cargo-nocli` is unchanged (0.4.1), and `cargo nocli components update
+--apply` brings this into an installed project.
+
+### Changed
+
+- `DropdownMenuCheckboxItem` and `DropdownMenuRadioItem` draw their indicator against the right
+  edge (`pr-8 pl-2`, the span at `right-2`) rather than in a left gutter, so a checkbox item's
+  label lines up with a plain `DropdownMenuItem`'s instead of being indented past it.
+  `ContextMenuCheckboxItem` and `ContextMenuRadioItem` are those same components under another
+  name, so a context menu follows.
+- `inset` on those two items now does what it does on a plain item. The left gutter they carried
+  was the indicator's, which made them permanently inset and the prop a no-op; they take
+  `data-[inset]:pl-8` like every other item instead.
+- `SelectItem` and `ComboboxItem` move their check the same way, which is also where shadcn/ui
+  draws the select's.
+
+### Upgrading from 0.6.1
+
+Nothing to change: no prop, name or attribute moved, and `data-slot` is where it was. An installed
+project sees none of this until `cargo nocli components update --apply`, and a file you edited is
+still yours — diff it. A layout built around the old left gutter (a trailing badge on a select
+item, say, or a `DropdownMenuShortcut` on a checkbox item, which now shares the right side with
+the indicator) is what to look at after updating.
+
 ## cargo-nocli 0.4.1
 
 A CLI-only release; the library is unchanged (0.6.1).
