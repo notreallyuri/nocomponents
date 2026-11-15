@@ -70,7 +70,18 @@ export default async (t) => {
   await t.click(menuItem('Top'));
   t.expect('click on a radio keeps the menu open', await t.attr(demoBtn('View'), 'aria-expanded'), 'true');
   t.ok('radio picked', (await t.ev(radios)).includes('Top=true'));
-  t.ok('only one radio checked', (await t.ev(radios)).split(' ').filter((s) => s.endsWith('=true')).length === 1);
+  t.ok('only one radio of the group checked', (await t.ev(radios)).split(' ').filter((s) => ['Top', 'Bottom', 'Right'].includes(s.split('=')[0]) && s.endsWith('=true')).length === 1);
+
+  // two radio groups side by side, the second rendered lazily: each keeps its own value
+  t.ok('the second group starts on row', (await t.ev(radios)).includes('row=true'));
+  await t.click(menuItem('column'));
+  const both = await t.ev(radios);
+  t.ok('choosing in the second group checks it', both.includes('column=true') && both.includes('row=false'));
+  t.ok('and leaves the first group alone', both.includes('Top=true'));
+  await t.click(menuItem('Bottom'));
+  const after = await t.ev(radios);
+  t.ok('choosing in the first group leaves the second alone', after.includes('Bottom=true') && after.includes('column=true'));
+  await t.click(menuItem('Top'));
 
   // keyboard: arrow order skips labels and separators, Enter/Space toggle and stay open
   const order = [];

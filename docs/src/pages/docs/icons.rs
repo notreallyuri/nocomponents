@@ -77,7 +77,7 @@ const REDRAW: &str = r#"// src/icons/nc/chevron.rs — yours. Redraw it and ever
 #[component]
 pub fn ChevronDown(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
     view! {
-        <Icon view_box="0 0 448 512" class=move || cn!("size-4", class.get())>
+        <Icon view_box="0 0 448 512" class=move || cn!("size-[var(--icon-size,1rem)]", class.get())>
             <path d="…your own artwork…" />
         </Icon>
     }
@@ -132,7 +132,7 @@ const API: &[ApiEntry] = &[
                 name: "class",
                 ty: "Signal<String>",
                 default: "\"\"",
-                description: "On the `<svg>`. The icon is `1em` square until a class or the component around it sizes it.",
+                description: "On the `<svg>`. The icon is `1em` square until a class on it, or the `--icon-size` the component around it sets, sizes it.",
             },
             Prop {
                 name: "label",

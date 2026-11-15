@@ -34,7 +34,7 @@ pub use crate::primitives::video_player::{
     VideoPlayerCaptionSize, VideoPlayerMode, VideoPlayerRail, VideoPlayerStep,
 };
 
-const CONTROL: &str = "inline-flex size-8 shrink-0 items-center justify-center rounded-md text-white outline-none transition-colors hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white/70 disabled:pointer-events-none disabled:opacity-40";
+const CONTROL: &str = "inline-flex size-8 pointer-coarse:size-11 shrink-0 items-center justify-center rounded-md text-white outline-none transition-colors hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white/70 disabled:pointer-events-none disabled:opacity-40";
 const MENU_ITEM: &str =
     "justify-between gap-4 focus:bg-white/15 focus:text-white hover:bg-white/15 hover:text-white";
 const SUBMENU_TRIGGER: &str = "focus:bg-white/15 focus:text-white hover:bg-white/15 hover:text-white data-[state=open]:bg-white/15 data-[state=open]:text-white";
@@ -310,7 +310,7 @@ pub fn VideoPlayerSeek(#[prop(optional, into)] class: Signal<String>) -> impl In
             rail=VideoPlayerRail::Seek
             class=move || {
                 cn!(
-                    "group/rail relative h-1.5 w-full cursor-pointer touch-none rounded-full bg-white/25 outline-none focus-visible:ring-2 focus-visible:ring-white/70 data-[disabled=true]:cursor-default data-[disabled=true]:opacity-50",
+                    "group/rail relative h-1.5 w-full cursor-pointer pointer-coarse:before:absolute pointer-coarse:before:inset-x-0 pointer-coarse:before:-inset-y-4 touch-none rounded-full bg-white/25 outline-none focus-visible:ring-2 focus-visible:ring-white/70 data-[disabled=true]:cursor-default data-[disabled=true]:opacity-50",
                     class.get()
                 )
             }
@@ -510,7 +510,10 @@ pub fn VideoPlayer(
                                 <VideoPlayerSeek />
                                 <div class="flex items-center gap-1">
                                     <VideoPlayerPlayButton
-                                        play_icon=icon_or(glyphs.play.clone(), || view! { <Play /> })
+                                        play_icon=icon_or(
+                                            glyphs.play.clone(),
+                                            || view! { <Play /> },
+                                        )
                                         pause_icon=icon_or(
                                             glyphs.pause.clone(),
                                             || view! { <Pause /> },

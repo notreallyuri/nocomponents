@@ -33,19 +33,15 @@ pub enum ToggleSize {
 impl AsClass for ToggleSize {
     fn as_class(&self) -> &'static str {
         match self {
-            ToggleSize::Xs => {
-                "h-6 min-w-6 gap-1 px-1.5 text-xs [&_svg:not([class*='size-'])]:size-3"
-            }
-            ToggleSize::Sm => {
-                "h-7 min-w-7 gap-1 px-2 text-[0.8rem] [&_svg:not([class*='size-'])]:size-3.5"
-            }
+            ToggleSize::Xs => "h-6 min-w-6 gap-1 px-1.5 text-xs [--icon-size:0.75rem]",
+            ToggleSize::Sm => "h-7 min-w-7 gap-1 px-2 text-[0.8rem] [--icon-size:0.875rem]",
             ToggleSize::Default => "h-8 min-w-8 gap-1.5 px-2.5",
             ToggleSize::Lg => "h-9 min-w-9 gap-1.5 px-2.5",
         }
     }
 }
 
-pub(crate) const TOGGLE_BASE: &str = "inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent text-sm font-medium whitespace-nowrap transition-all outline-none select-none data-[state=off]:hover:bg-muted data-[state=off]:hover:text-foreground data-[state=on]:bg-foreground/10 data-[state=on]:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4";
+pub(crate) const TOGGLE_BASE: &str = "inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent text-sm font-medium whitespace-nowrap transition-all outline-none select-none data-[state=off]:hover:bg-muted data-[state=off]:hover:text-foreground data-[state=on]:bg-foreground/10 data-[state=on]:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 [&_svg]:pointer-events-none [&_svg]:shrink-0 [--icon-size:1rem]";
 
 #[component]
 pub fn Toggle(

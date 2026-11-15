@@ -1,4 +1,4 @@
-use leptos::prelude::*;
+use leptos::{context::Provider, prelude::*};
 use std::time::Duration;
 
 #[derive(Copy, Clone, PartialEq)]
@@ -20,10 +20,10 @@ pub fn use_avatar() -> AvatarContext {
 
 #[component]
 pub fn AvatarRoot(children: Children) -> impl IntoView {
-    provide_context(AvatarContext {
+    let context = AvatarContext {
         status: RwSignal::new(ImageStatus::Idle),
-    });
-    view! { {children()} }
+    };
+    view! { <Provider value=context>{children()}</Provider> }
 }
 
 #[component]

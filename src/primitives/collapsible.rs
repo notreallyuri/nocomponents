@@ -5,7 +5,7 @@
 //! animate to. Closing keeps the content mounted for `unmount_delay`, so the exit animation has
 //! something to run on.
 
-use leptos::{ev, prelude::*, wasm_bindgen::JsCast};
+use leptos::{context::Provider, ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
 use std::time::Duration;
 use web_sys::HtmlElement;
@@ -118,12 +118,12 @@ pub fn CollapsibleRoot(
 
     on_cleanup(cancel_unmount);
 
-    provide_context(context);
-
     view! {
-        <div data-slot="collapsible" data-state=move || context.state() class=class>
-            {children()}
-        </div>
+        <Provider value=context>
+            <div data-slot="collapsible" data-state=move || context.state() class=class>
+                {children()}
+            </div>
+        </Provider>
     }
 }
 

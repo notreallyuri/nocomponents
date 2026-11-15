@@ -328,12 +328,12 @@ pub fn DialogContentRoot(
 
     let focus_trap = move |e: ev::KeyboardEvent| {
         // A non-modal dialog must not hold Tab: the page underneath is still the user's.
-        if !ctx.is_open.get() || !ctx.modal {
+        if !ctx.is_open.try_get_untracked().unwrap_or(false) || !ctx.modal {
             return;
         }
 
         if e.key() == "Tab"
-            && let Some(container) = content_ref.get()
+            && let Some(container) = content_ref.try_get_untracked().flatten()
         {
             let selector = "a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex='-1'])";
 
@@ -367,7 +367,8 @@ pub fn DialogContentRoot(
         }
     };
 
-    let _ = window_event_listener(ev::keydown, focus_trap);
+    let focus_trap_listener = window_event_listener(ev::keydown, focus_trap);
+    on_cleanup(move || focus_trap_listener.remove());
 
     Effect::new(move |_| {
         if ctx.is_open.get()

@@ -320,8 +320,7 @@ pub fn FloatingTrigger(
 
 #[component]
 pub fn FloatingProvider(context: FloatingContext, children: Children) -> impl IntoView {
-    provide_context(context);
-    children()
+    view! { <Provider value=context>{children()}</Provider> }
 }
 
 #[component]

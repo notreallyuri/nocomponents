@@ -118,7 +118,7 @@ pub fn BreadcrumbSeparator(
             role="presentation"
             aria-hidden="true"
             data-slot="breadcrumb-separator"
-            class=move || cn!("[&>svg]:size-3.5", class.get())
+            class=move || cn!("[--icon-size:0.875rem]", class.get())
         >
             {match children {
                 Some(children) => children(),

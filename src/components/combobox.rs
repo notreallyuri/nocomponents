@@ -177,7 +177,7 @@ pub fn ComboboxItem(
             close_on_select=close_on_select
             class=move || {
                 cn!(
-                    "group/combobox-item relative flex cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-none select-none data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0",
+                    "group/combobox-item relative flex cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-none select-none data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [--icon-size:1rem] [&_svg]:shrink-0",
                     class.get()
                 )
             }

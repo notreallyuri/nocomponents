@@ -138,11 +138,12 @@ export class Page {
     return r;
   }
 
-  async mouse(type, x, y, button = 'left') {
+  async mouse(type, x, y, button = 'left', modifiers = 0) {
     await this.send('Input.dispatchMouseEvent', {
       type,
       x,
       y,
+      modifiers,
       button: type === 'mouseMoved' ? 'none' : button,
       clickCount: type === 'mouseMoved' ? 0 : 1,
     });
@@ -154,11 +155,12 @@ export class Page {
     await sleep(wait);
   }
 
-  async click(sel, wait = 250) {
+  // `modifiers` is CDP's bitmask: Alt 1, Ctrl 2, Meta 4, Shift 8.
+  async click(sel, wait = 250, modifiers = 0) {
     const [x, y] = await this.center(sel);
-    await this.mouse('mouseMoved', x, y);
-    await this.mouse('mousePressed', x, y);
-    await this.mouse('mouseReleased', x, y);
+    await this.mouse('mouseMoved', x, y, 'left', modifiers);
+    await this.mouse('mousePressed', x, y, 'left', modifiers);
+    await this.mouse('mouseReleased', x, y, 'left', modifiers);
     await sleep(wait);
   }
 
@@ -175,12 +177,12 @@ export class Page {
     await sleep(80);
   }
 
-  async key(k, wait = 200) {
+  async key(k, wait = 200, modifiers = 0) {
     const codes = { Enter: 13, Escape: 27, ArrowDown: 40, ArrowUp: 38, ArrowRight: 39, ArrowLeft: 37, ' ': 32, Tab: 9, Home: 36, End: 35, Backspace: 8 };
     const code = codes[k] ?? k.toUpperCase().charCodeAt(0);
     const base = { key: k, code: k === ' ' ? 'Space' : k, windowsVirtualKeyCode: code };
-    await this.send('Input.dispatchKeyEvent', { type: 'keyDown', ...base, text: k === 'Enter' ? '\r' : k.length === 1 ? k : undefined });
-    await this.send('Input.dispatchKeyEvent', { type: 'keyUp', ...base });
+    await this.send('Input.dispatchKeyEvent', { type: 'keyDown', ...base, modifiers, text: k === 'Enter' ? '\r' : k.length === 1 ? k : undefined });
+    await this.send('Input.dispatchKeyEvent', { type: 'keyUp', ...base, modifiers });
     await sleep(wait);
   }
 

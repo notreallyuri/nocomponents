@@ -295,6 +295,8 @@ pub struct VideoPlayerContext {
     /// `<video>` in fullscreen draws the browser's own controls over ours.
     pub root_ref: AnyNodeRef,
     on_skip: Option<Callback<VideoPlayerStep>>,
+    idle: StoredValue<Option<TimeoutHandle>, LocalStorage>,
+    idle_delay: u64,
 }
 
 /// How far ahead of `time` the browser has buffered.
@@ -434,6 +436,12 @@ impl VideoPlayerContext {
         }
     }
 
+    /// Fullscreen for the whole player where the browser allows it, and for the `<video>` alone
+    /// where it does not.
+    ///
+    /// iPhone Safari has no element fullscreen, so `requestFullscreen` is missing there and the
+    /// only way in is the video's own `webkitEnterFullscreen`, which hands it to the system
+    /// player. web-sys binds neither, so the fallback is reached through `Reflect`.
     pub fn toggle_fullscreen(&self) {
         let document = document();
 
@@ -442,9 +450,64 @@ impl VideoPlayerContext {
             return;
         }
 
-        if let Some(root) = self.root_ref.get_untracked() {
-            let _ = root.request_fullscreen();
+        let video = self.media();
+
+        if let Some(video) = &video
+            && webkit_displaying_fullscreen(video)
+        {
+            call_webkit(video, "webkitExitFullscreen");
+            return;
         }
+
+        if document.fullscreen_enabled()
+            && let Some(root) = self.root_ref.get_untracked()
+            && root.request_fullscreen().is_ok()
+        {
+            return;
+        }
+
+        if let Some(video) = &video {
+            call_webkit(video, "webkitEnterFullscreen");
+        }
+    }
+
+    /// Shows the controls and starts the countdown that puts them away again, restarting it if it
+    /// was already running.
+    pub fn wake(&self) {
+        self.clear_idle();
+        self.active.set(true);
+
+        let ctx = *self;
+        let handle = set_timeout_with_handle(
+            move || {
+                // Never over a paused video, never out from under a pointer mid-scrub, and
+                // never out from under an open menu.
+                if ctx.playing.get_untracked()
+                    && !ctx.scrubbing.get_untracked()
+                    && !ctx.menu_open.get_untracked()
+                {
+                    ctx.active.set(false);
+                }
+            },
+            std::time::Duration::from_millis(self.idle_delay),
+        );
+        self.idle.set_value(handle.ok());
+    }
+
+    /// Puts the controls away now, for a tap on a playing video that finds them up. Does nothing
+    /// that [`Self::controls_visible`] would not undo: a paused video, a drag and an open menu
+    /// keep them up whatever this sets.
+    pub fn hide(&self) {
+        self.clear_idle();
+        self.active.set(false);
+    }
+
+    fn clear_idle(&self) {
+        self.idle.update_value(|handle| {
+            if let Some(handle) = handle.take() {
+                handle.clear();
+            }
+        });
     }
 
     pub fn skip(&self, step: VideoPlayerStep) {
@@ -635,6 +698,31 @@ impl VideoPlayerContext {
     }
 }
 
+/// Whether the video is in the system player that `webkitEnterFullscreen` opens. Not the
+/// document's fullscreen element, so `fullscreenchange` never reports it.
+fn webkit_displaying_fullscreen(video: &HtmlMediaElement) -> bool {
+    js_sys::Reflect::get(video, &"webkitDisplayingFullscreen".into())
+        .ok()
+        .and_then(|value| value.as_bool())
+        .unwrap_or(false)
+}
+
+/// Calls a WebKit-only method on the video, if this browser has it.
+fn call_webkit(video: &HtmlMediaElement, method: &str) {
+    if let Ok(function) = js_sys::Reflect::get(video, &method.into())
+        && let Some(function) = function.dyn_ref::<js_sys::Function>()
+    {
+        let _ = function.call0(video);
+    }
+}
+
+/// Whether a pointer event came from a mouse. Only a mouse hovers: a finger lifting is a
+/// `pointerleave` and a press is not a visit, so the hover rules would otherwise hide the
+/// controls under the very tap that is pressing them.
+fn is_mouse(e: &ev::PointerEvent) -> bool {
+    e.pointer_type() == "mouse"
+}
+
 /// Signals notify whether or not the value changed, and [`VideoPlayerContext::sync`] writes eight
 /// of them several times a second. Every one of those is a render if it is not guarded here.
 fn set_if_changed<T: PartialEq + Send + Sync + 'static>(signal: RwSignal<T>, value: T) {
@@ -703,45 +791,11 @@ pub fn VideoPlayerRoot(
         video_ref: AnyNodeRef::new(),
         root_ref,
         on_skip,
+        idle: StoredValue::new_local(None),
+        idle_delay,
     };
 
-    provide_context(ctx);
-
-    // The countdown that puts the controls away again. Held so it can be restarted rather than
-    // stacked, and cleared on cleanup: a timeout that fires into a disposed owner is a panic with
-    // no message and no line.
-    let idle = StoredValue::new_local(None::<TimeoutHandle>);
-    let wake = move || {
-        idle.update_value(|handle| {
-            if let Some(handle) = handle.take() {
-                handle.clear();
-            }
-        });
-        ctx.active.set(true);
-
-        let handle = set_timeout_with_handle(
-            move || {
-                // Never over a paused video, never out from under a pointer mid-scrub, and
-                // never out from under an open menu.
-                if ctx.playing.get_untracked()
-                    && !ctx.scrubbing.get_untracked()
-                    && !ctx.menu_open.get_untracked()
-                {
-                    ctx.active.set(false);
-                }
-            },
-            std::time::Duration::from_millis(idle_delay),
-        );
-        idle.set_value(handle.ok());
-    };
-
-    on_cleanup(move || {
-        idle.update_value(|handle| {
-            if let Some(handle) = handle.take() {
-                handle.clear();
-            }
-        });
-    });
+    on_cleanup(move || ctx.clear_idle());
 
     // Fullscreen is the document's to know, and it changes without us — Escape leaves it, and so
     // does the browser's own chrome.
@@ -815,7 +869,7 @@ pub fn VideoPlayerRoot(
         // Only once something was actually done with it, or this would eat Tab and every shortcut
         // the browser owns.
         e.prevent_default();
-        wake();
+        ctx.wake();
     };
 
     view! {
@@ -833,14 +887,32 @@ pub fn VideoPlayerRoot(
                 // what makes it operable without tabbing through six buttons first.
                 tabindex=move || mode.get().interactive().then_some("0")
                 on:keydown=on_keydown
-                on:pointermove=move |_| wake()
-                on:pointerdown=move |_| wake()
-                on:focusin=move |_| wake()
-                on:pointerleave=move |_| {
-                    if ctx.playing.get_untracked() && !ctx.scrubbing.get_untracked()
+                on:pointermove=move |e| {
+                    if is_mouse(&e) {
+                        ctx.wake();
+                    }
+                }
+                on:pointerdown=move |e| {
+                    if is_mouse(&e) {
+                        ctx.wake();
+                    }
+                }
+                // Only focus the keyboard put there: a tap focuses the root too, and would show
+                // the controls just before the tap's own click decides whether to hide them.
+                on:focusin=move |e| {
+                    let from_keyboard = e
+                        .target()
+                        .and_then(|target| target.dyn_into::<Element>().ok())
+                        .is_some_and(|target| target.matches(":focus-visible").unwrap_or(false));
+                    if from_keyboard {
+                        ctx.wake();
+                    }
+                }
+                on:pointerleave=move |e| {
+                    if is_mouse(&e) && ctx.playing.get_untracked() && !ctx.scrubbing.get_untracked()
                         && !ctx.menu_open.get_untracked()
                     {
-                        ctx.active.set(false);
+                        ctx.hide();
                     }
                 }
                 class=class
@@ -884,6 +956,50 @@ pub fn VideoPlayerVideoRoot(
         }
     });
 
+    // The system player that `webkitEnterFullscreen` opens is not the document's fullscreen, so
+    // `fullscreenchange` says nothing about it; the video's own events do. Wired by hand
+    // because the element is already at the most attributes a view can hold.
+    let webkit = StoredValue::new_local(
+        None::<(
+            HtmlMediaElement,
+            wasm_bindgen::closure::Closure<dyn FnMut(web_sys::Event)>,
+            wasm_bindgen::closure::Closure<dyn FnMut(web_sys::Event)>,
+        )>,
+    );
+    Effect::new(move |_| {
+        let Some(media) = ctx.media() else {
+            return;
+        };
+        if webkit.with_value(|wired| wired.is_some()) {
+            return;
+        }
+        let begin = wasm_bindgen::closure::Closure::<dyn FnMut(web_sys::Event)>::new(
+            move |_: web_sys::Event| set_if_changed(ctx.fullscreen, true),
+        );
+        let end = wasm_bindgen::closure::Closure::<dyn FnMut(web_sys::Event)>::new(
+            move |_: web_sys::Event| set_if_changed(ctx.fullscreen, false),
+        );
+        let _ = media.add_event_listener_with_callback(
+            "webkitbeginfullscreen",
+            begin.as_ref().unchecked_ref(),
+        );
+        let _ = media
+            .add_event_listener_with_callback("webkitendfullscreen", end.as_ref().unchecked_ref());
+        webkit.set_value(Some((media, begin, end)));
+    });
+    on_cleanup(move || {
+        if let Some((media, begin, end)) = webkit.try_update_value(|wired| wired.take()).flatten() {
+            let _ = media.remove_event_listener_with_callback(
+                "webkitbeginfullscreen",
+                begin.as_ref().unchecked_ref(),
+            );
+            let _ = media.remove_event_listener_with_callback(
+                "webkitendfullscreen",
+                end.as_ref().unchecked_ref(),
+            );
+        }
+    });
+
     view! {
         <video
             node_ref=ctx.video_ref
@@ -904,7 +1020,12 @@ pub fn VideoPlayerVideoRoot(
             // Never the browser's own bar: it would sit on top of ours, and in fullscreen it is
             // the only one that shows.
             controls=false
-            on:play=sync
+            // Playback starting is what starts the countdown, so a video that autoplays puts its
+            // controls away without anyone having to touch it.
+            on:play=move |_| {
+                ctx.sync();
+                ctx.wake();
+            }
             on:pause=sync
             on:ended=sync
             on:timeupdate=sync
@@ -925,6 +1046,7 @@ pub fn VideoPlayerVideoRoot(
             on:playing=move |_| {
                 ctx.waiting.set(false);
                 ctx.sync();
+                ctx.wake();
             }
             on:canplay=move |_| {
                 ctx.waiting.set(false);
@@ -949,6 +1071,30 @@ pub fn VideoPlayerSurfaceRoot(
 ) -> impl IntoView {
     let ctx = use_video_player();
     let interactive = move || ctx.mode.get().interactive();
+    // What pressed it last. A click carries no pointer type of its own, and it is the type that
+    // says what the tap is for: a mouse press plays and pauses, a finger or a pen shows and hides
+    // the controls.
+    let pressed_by = StoredValue::new_local(String::from("mouse"));
+
+    let on_click = move |_: ev::MouseEvent| {
+        if !interactive() {
+            return;
+        }
+        // Touch while playing: the controls are the thing a tap is after, and play and pause is
+        // their button. Paused there is nothing to show — the controls are already held up — and
+        // the frame carries a play badge, so that tap plays.
+        let touch = pressed_by.with_value(|kind| kind != "mouse");
+        pressed_by.set_value(String::from("mouse"));
+        if touch && ctx.playing.get_untracked() {
+            if ctx.controls_visible() {
+                ctx.hide();
+            } else {
+                ctx.wake();
+            }
+        } else {
+            ctx.toggle();
+        }
+    };
 
     view! {
         <div
@@ -958,11 +1104,8 @@ pub fn VideoPlayerSurfaceRoot(
             data-ended=move || ctx.ended.get().then_some("true")
             // Nothing to press in the uncontrolled mode, so nothing to stand in the way either.
             style=move || (!interactive()).then_some("pointer-events: none;")
-            on:click=move |_| {
-                if interactive() {
-                    ctx.toggle();
-                }
-            }
+            on:pointerdown=move |e| pressed_by.set_value(e.pointer_type())
+            on:click=on_click
             class=class
         >
             {children.map(|children| children())}
@@ -983,6 +1126,12 @@ pub fn VideoPlayerControlsRoot(
             data-mode=move || ctx.mode.get().as_str()
             data-active=move || ctx.controls_visible().then_some("true")
             data-state=move || if ctx.playing.get() { "playing" } else { "paused" }
+            // A press that starts on a control keeps the bar up for the countdown's length, so
+            // it is still there to receive the `click` when the finger lifts rather than fading
+            // out from under it. The styled layer takes `pointer-events` off a hidden bar, and a
+            // click on a bar that has gone to the surface behind it.
+            on:pointerdown=move |_| ctx.wake()
+            on:pointerup=move |_| ctx.wake()
             class=class
         >
             {children()}

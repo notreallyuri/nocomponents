@@ -224,11 +224,11 @@ pub fn FieldRoot(
         let staying = e
             .related_target()
             .and_then(|target| target.dyn_into::<Node>().ok())
-            .zip(field_ref.get())
+            .zip(field_ref.try_get().flatten())
             .is_some_and(|(target, field)| field.contains(Some(&target)));
 
         if !staying {
-            context.touched.set(true);
+            context.touched.try_set(true);
         }
     };
 

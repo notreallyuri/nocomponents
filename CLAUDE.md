@@ -185,7 +185,7 @@ fallback in an `aria-hidden` span. The span carries the size, colour, rotation a
 classes, and `[&>svg]:size-full` makes the icon fill it; never put those classes on the glyph,
 which may be the caller's. A new glyph is a file in `src/icons/` drawn with `Icon` (`view_box`
 required, `stroke_width` for outline sets). `Icon`'s size is the `width`/`height="1em"`
-*attributes*, which any CSS beats — keep it that way. Do not call the slot's prop `slot`: Leptos'
+*attributes*, which any CSS beats — keep it that way. A container never sizes icons with a `[&_svg]:size-*` descendant rule — that outranks a caller's own `size-6` on the icon. It sets `--icon-size` (`[--icon-size:0.75rem]`), which `Icon` and the glyphs read as `size-[var(--icon-size,…)]` (the bracket form: `tw_merge` does not know `size-(--x)` and would keep both); a caller's class replaces that default. A slot's `[&>svg]:size-full` stays, since there the slot is the size. Do not call the slot's prop `slot`: Leptos'
 `view!` reads a `slot` attribute as a slot marker and fails with "slots cannot be used inside HTML
 elements". Never add an icon from a set whose licence is not ISC/MIT-compatible.
 

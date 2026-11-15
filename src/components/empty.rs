@@ -12,7 +12,7 @@ impl AsClass for EmptyMediaVariant {
     fn as_class(&self) -> &'static str {
         match self {
             EmptyMediaVariant::Icon => {
-                "flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground [&_svg:not([class*='size-'])]:size-5"
+                "flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground [--icon-size:1.25rem]"
             }
             EmptyMediaVariant::Plain => "bg-transparent",
         }

@@ -12,6 +12,7 @@ use crate::{
     utils::{
         controllable::forward,
         icon::{IconSlot, slot_view},
+        types::StyledRender,
     },
 };
 use leptos::{either::Either, ev, prelude::*};
@@ -143,7 +144,8 @@ pub fn DropdownMenuItem(
     #[prop(optional, into)] variant: Signal<DropdownMenuItemVariant>,
     #[prop(default = true.into(), into)] close_on_select: Signal<bool>,
     #[prop(optional, into)] on_click: Option<Callback<ev::MouseEvent>>,
-    children: Children,
+    #[prop(default = None, into)] render: Option<Callback<StyledRender, AnyView>>,
+    #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     view! {
         <DropdownMenuItemRoot
@@ -152,6 +154,7 @@ pub fn DropdownMenuItem(
             variant=variant
             close_on_select=close_on_select
             on_click=forward(on_click)
+            render=render
             class=move || {
                 cn!(
                     "relative flex font-medium cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground hover:bg-accent hover:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 data-[inset]:pl-8 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 dark:data-[variant=destructive]:focus:bg-destructive/20 data-[variant=destructive]:focus:text-destructive data-[variant=destructive]:hover:bg-destructive/10 data-[variant=destructive]:hover:text-destructive data-[variant=destructive]:*:[svg]:text-destructive",
@@ -159,7 +162,7 @@ pub fn DropdownMenuItem(
                 )
             }
         >
-            {children()}
+            {children.map(|children| children())}
         </DropdownMenuItemRoot>
     }
 }

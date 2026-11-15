@@ -59,6 +59,11 @@ pub fn CheckboxRoot(
     /// The `id` of a `<form>` it belongs to when it is not inside one. Empty means the one around it.
     #[prop(optional, into)]
     form: Signal<String>,
+    /// Run on every click, before the box toggles, with the click itself. For what the event knows
+    /// and the change does not: shift-click range selection reads `shift_key()` here, and the
+    /// change arrives right after.
+    #[prop(optional, into)]
+    on_click: Option<Callback<ev::MouseEvent>>,
     children: Children,
 ) -> impl IntoView {
     let checked = controllable(checked, default_checked, on_checked_change);
@@ -68,9 +73,12 @@ pub fn CheckboxRoot(
     let initial = checked.get_untracked();
     on_form_reset(node_ref, move || checked.set(initial));
 
-    let toggle = move |_: ev::MouseEvent| {
+    let toggle = move |e: ev::MouseEvent| {
         if field.disabled.get() {
             return;
+        }
+        if let Some(cb) = on_click {
+            cb.run(e);
         }
         let was = checked.get_untracked();
         let next = next_checked(was, indeterminate.get_untracked());

@@ -136,6 +136,12 @@ const API: &[ApiEntry] = &[
                 default: "false",
                 description: "Stops it taking pointer events and marks it disabled.",
             },
+            Prop {
+                name: "on_keydown",
+                ty: "Option<Callback<ev::KeyboardEvent>>",
+                default: "None",
+                description: "Every key press while the control has focus.",
+            },
         ],
     },
     ApiEntry {
@@ -177,6 +183,12 @@ const API: &[ApiEntry] = &[
                 ty: "bool",
                 default: "false",
                 description: "Grow with the text instead of scrolling.",
+            },
+            Prop {
+                name: "on_keydown",
+                ty: "Option<Callback<ev::KeyboardEvent>>",
+                default: "None",
+                description: "Every key press while the control has focus.",
             },
         ],
     },

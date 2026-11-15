@@ -4,7 +4,7 @@ use crate::{
     primitives::checkbox::CheckboxRoot,
     utils::{controllable::forward, icon::IconSlot},
 };
-use leptos::prelude::*;
+use leptos::{ev, prelude::*};
 
 #[component]
 pub fn Checkbox(
@@ -19,6 +19,7 @@ pub fn Checkbox(
     #[prop(optional, into)] value: Signal<String>,
     #[prop(optional, into)] required: Signal<bool>,
     #[prop(optional, into)] form: Signal<String>,
+    #[prop(optional, into)] on_click: Option<Callback<ev::MouseEvent>>,
     #[prop(optional, into)] icon: Option<ViewFn>,
     #[prop(optional, into)] indeterminate_icon: Option<ViewFn>,
 ) -> impl IntoView {
@@ -31,6 +32,7 @@ pub fn Checkbox(
             value=value
             required=required
             form=form
+            on_click=forward(on_click)
             checked=checked
             default_checked=default_checked
             on_checked_change=forward(on_checked_change)

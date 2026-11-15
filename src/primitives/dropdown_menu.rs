@@ -11,11 +11,12 @@ use crate::{
     },
     utils::{
         controllable::controllable,
+        listen::listen_click,
         sheet::{
             SHEET_ROLE_STYLE, SheetScrim, close_when_presentation_changes, presentation_attr,
             use_sheet_presentation,
         },
-        types::{Align, Direction, Orientation, Side, SideOffset},
+        types::{Align, Direction, Orientation, Side, SideOffset, StyledRender},
     },
 };
 use floating_ui_leptos::{Placement, UseFloatingReturn, use_floating};
@@ -368,7 +369,7 @@ pub fn DropdownMenuContentRoot(
             class=move || if as_sheet { String::new() } else { class.get() }
             style=if as_sheet { SHEET_ROLE_STYLE } else { "" }
         >
-                {children()}
+            {children()}
         </div>
     };
 
@@ -462,7 +463,14 @@ pub fn DropdownMenuItemRoot(
     #[prop(default = true.into(), into)]
     close_on_select: Signal<bool>,
     #[prop(optional, into)] on_click: Option<Callback<ev::MouseEvent>>,
-    children: Children,
+    /// Render the item as something else — an `<a>` for a router link, say. Handed the class this
+    /// would have rendered, the node ref, and the resolved `disabled`. The role, `data-*`, roving
+    /// focus marker, click and close-on-select are written onto that node, so keys, typeahead and
+    /// selection behave as they do on the default `<div>`. The element is the caller's, so what
+    /// goes inside it is theirs too and `children` is not used.
+    #[prop(default = None, into)]
+    render: Option<Callback<StyledRender, AnyView>>,
+    #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     let ctx = use_dropdown();
 
@@ -483,24 +491,73 @@ pub fn DropdownMenuItemRoot(
         finish_select(target, close_on_select, ctx, menu_root);
     };
 
-    view! {
-        // `data-disabled` is what the styling, the roving focus and the "focus the first item"
-        // query all read; `aria-disabled` is what says so out loud. The item keeps its
-        // `data-roving-item` either way — it is skipped by being disabled, not by being invisible.
-        <div
-            data-slot="dropdown-menu-item"
-            role="menuitem"
-            tabindex="-1"
-            data-roving-item=""
-            data-disabled=move || disabled.get().then_some("true")
-            aria-disabled=move || disabled.get().then_some("true")
-            data-inset=move || inset.get().then_some("")
-            data-variant=move || variant.get().as_str()
-            on:click=handle_click
-            class=class
-        >
-            {children()}
-        </div>
+    match render {
+        Some(render_fn) => {
+            let node_ref = AnyNodeRef::new();
+
+            Effect::new(move |_| {
+                let Some(el) = node_ref.get() else {
+                    return;
+                };
+                let _ = el.set_attribute("data-slot", "dropdown-menu-item");
+                let _ = el.set_attribute("role", "menuitem");
+                let _ = el.set_attribute("tabindex", "-1");
+                let _ = el.set_attribute("data-roving-item", "");
+                let _ = el.set_attribute("data-variant", variant.get().as_str());
+
+                if disabled.get() {
+                    let _ = el.set_attribute("aria-disabled", "true");
+                    let _ = el.set_attribute("data-disabled", "true");
+                } else {
+                    let _ = el.remove_attribute("aria-disabled");
+                    let _ = el.remove_attribute("data-disabled");
+                }
+
+                if inset.get() {
+                    let _ = el.set_attribute("data-inset", "");
+                } else {
+                    let _ = el.remove_attribute("data-inset");
+                }
+            });
+
+            listen_click(node_ref, move |e| {
+                if disabled.get_untracked() {
+                    e.prevent_default();
+                    e.stop_immediate_propagation();
+                    return;
+                }
+                let target = e.current_target();
+                if let Some(cb) = on_click {
+                    cb.run(e);
+                }
+                finish_select(target, close_on_select, ctx, menu_root);
+            });
+
+            Either::Left(render_fn.run(StyledRender {
+                class,
+                node_ref,
+                disabled,
+            }))
+        }
+        None => Either::Right(view! {
+            // `data-disabled` is what the styling, the roving focus and the "focus the first item"
+            // query all read; `aria-disabled` is what says so out loud. The item keeps its
+            // `data-roving-item` either way — it is skipped by being disabled, not by being invisible.
+            <div
+                data-slot="dropdown-menu-item"
+                role="menuitem"
+                tabindex="-1"
+                data-roving-item=""
+                data-disabled=move || disabled.get().then_some("true")
+                aria-disabled=move || disabled.get().then_some("true")
+                data-inset=move || inset.get().then_some("")
+                data-variant=move || variant.get().as_str()
+                on:click=handle_click
+                class=class
+            >
+                {children.map(|children| children())}
+            </div>
+        }),
     }
 }
 
@@ -572,15 +629,17 @@ pub fn DropdownMenuRadioGroupRoot(
     #[prop(optional, into)] on_value_change: Option<Callback<String>>,
     children: Children,
 ) -> impl IntoView {
-    provide_context(RadioGroupContext {
+    let context = RadioGroupContext {
         value,
         on_value_change,
-    });
+    };
 
     view! {
-        <div data-slot="dropdown-menu-radio-group" role="group" class=class>
-            {children()}
-        </div>
+        <Provider value=context>
+            <div data-slot="dropdown-menu-radio-group" role="group" class=class>
+                {children()}
+            </div>
+        </Provider>
     }
 }
 
@@ -667,8 +726,12 @@ pub fn DropdownMenuSubRoot(
     #[prop(optional, into)] class: Signal<String>,
     children: ChildrenFn,
 ) -> impl IntoView {
-    provide_context(SubHoverState(RwSignal::new(false)));
-    view! { <FloatingRoot class=class>{children()}</FloatingRoot> }
+    let hover = SubHoverState(RwSignal::new(false));
+    view! {
+        <Provider value=hover>
+            <FloatingRoot class=class>{children()}</FloatingRoot>
+        </Provider>
+    }
 }
 
 /// Whether a pointer event came from a mouse. Only a mouse hovers: a finger or a pen sends
@@ -773,9 +836,9 @@ pub fn DropdownMenuSubPortalRoot(children: ChildrenFn) -> impl IntoView {
     let stored_children = StoredValue::new(children);
 
     if inline_submenus() {
-        Either::Left(view! {
-            <Show when=move || ctx.is_open.get()>{stored_children.with_value(|c| c())}</Show>
-        })
+        Either::Left(
+            view! { <Show when=move || ctx.is_open.get()>{stored_children.with_value(|c| c())}</Show> },
+        )
     } else {
         Either::Right(view! {
             <FloatingPortal>

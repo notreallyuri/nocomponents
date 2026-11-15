@@ -2,7 +2,7 @@ use crate::{
     primitives::roving_focus::use_roving_focus,
     utils::{controllable::controllable, next_id, types::Orientation},
 };
-use leptos::{ev, prelude::*, wasm_bindgen::JsCast};
+use leptos::{context::Provider, ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
 use web_sys::HtmlElement;
 
@@ -71,16 +71,18 @@ pub fn TabsRoot(
 ) -> impl IntoView {
     let current_tab = controllable(value, default_value, on_value_change);
 
-    provide_context(TabsContext {
+    let context = TabsContext {
         current_tab,
         orientation,
         id_prefix: StoredValue::new(next_id("tabs")),
-    });
+    };
 
     view! {
-        <div class=class data-orientation=move || orientation.get().as_str() data-slot="tabs">
-            {children()}
-        </div>
+        <Provider value=context>
+            <div class=class data-orientation=move || orientation.get().as_str() data-slot="tabs">
+                {children()}
+            </div>
+        </Provider>
     }
 }
 

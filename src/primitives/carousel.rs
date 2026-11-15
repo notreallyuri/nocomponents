@@ -277,8 +277,6 @@ pub fn CarouselRoot(
         track_ref: AnyNodeRef::new(),
     };
 
-    provide_context(ctx);
-
     // A write to `index` from outside is a request to go there. The track reports its own moves
     // back through `sync`, which writes the slide nearest the start; when `index` already names
     // that slide there is nothing to scroll, so the two directions settle instead of chasing each

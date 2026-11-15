@@ -6,6 +6,7 @@ use crate::{
         textarea::Textarea,
     },
     primitives::input_group::{InputGroupAddonRoot, InputGroupRoot},
+    utils::controllable::forward,
 };
 use leptos::{ev, prelude::*};
 
@@ -38,7 +39,7 @@ pub fn InputGroupAddon(
             align=align
             class=move || {
                 cn!(
-                    "flex items-center gap-1.5 text-sm text-muted-foreground select-none data-[align=inline-end]:ml-auto data-[align=block-start]:w-full data-[align=block-end]:w-full [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+                    "flex items-center gap-1.5 text-sm text-muted-foreground select-none data-[align=inline-end]:ml-auto data-[align=block-start]:w-full data-[align=block-end]:w-full [&_svg]:pointer-events-none [&_svg]:shrink-0 [--icon-size:1rem]",
                     class.get()
                 )
             }
@@ -56,9 +57,11 @@ pub fn InputGroupInput(
     #[prop(optional, into)] value: Signal<String>,
     #[prop(optional, into)] id: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional, into)] on_keydown: Option<Callback<ev::KeyboardEvent>>,
 ) -> impl IntoView {
     view! {
         <Input
+            on_keydown=forward(on_keydown)
             input_type=input_type
             model=model
             value=value
@@ -82,9 +85,11 @@ pub fn InputGroupTextarea(
     #[prop(optional, into)] id: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(default = false)] auto_resize: bool,
+    #[prop(optional, into)] on_keydown: Option<Callback<ev::KeyboardEvent>>,
 ) -> impl IntoView {
     view! {
         <Textarea
+            on_keydown=forward(on_keydown)
             model=model
             value=value
             id=id

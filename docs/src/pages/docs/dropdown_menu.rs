@@ -38,6 +38,7 @@ const DEFAULT: &str = r#"<DropdownMenu>
 
 const CHOICES: &str = r#"let show_status = RwSignal::new(true);
 let position = RwSignal::new("bottom".to_string());
+let direction = RwSignal::new("row".to_string());
 
 view! {
     <DropdownMenu>
@@ -63,6 +64,20 @@ view! {
                     <DropdownMenuRadioItem value="top">"Top"</DropdownMenuRadioItem>
                     <DropdownMenuRadioItem value="bottom">"Bottom"</DropdownMenuRadioItem>
                     <DropdownMenuRadioItem value="right">"Right"</DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>"Layout direction"</DropdownMenuLabel>
+                <DropdownMenuRadioGroup value=direction>
+                    {move || {
+                        ["row", "column"]
+                            .into_iter()
+                            .map(|value| {
+                                view! {
+                                    <DropdownMenuRadioItem value=value>{value}</DropdownMenuRadioItem>
+                                }
+                            })
+                            .collect_view()
+                    }}
                 </DropdownMenuRadioGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem variant=DropdownMenuItemVariant::Destructive>
@@ -324,9 +339,15 @@ const API: &[ApiEntry] = &[
                 description: "Called before the menu closes.",
             },
             Prop {
+                name: "render",
+                ty: "Option<Callback<StyledRender, AnyView>>",
+                default: "None",
+                description: "Render the row as something else — a router's `A`, so a menu row can be a link. Handed the `class` the row would have worn, the node ref and the resolved `disabled`. The role, `data-*`, roving focus, typeahead and close-on-select are written onto that node, so the keys behave as on the default row. A link has no `disabled` attribute: it is announced as `aria-disabled` and its click is refused. `children` is not used; what the row holds is the callback's.",
+            },
+            Prop {
                 name: "children",
-                ty: "Children",
-                default: "",
+                ty: "Option<Children>",
+                default: "None",
                 description: "The row's label.",
             },
         ],
@@ -617,6 +638,7 @@ const API: &[ApiEntry] = &[
 pub fn Page() -> impl IntoView {
     let show_status = RwSignal::new(true);
     let position = RwSignal::new("bottom".to_string());
+    let direction = RwSignal::new("row".to_string());
 
     view! {
         <DocLayout
@@ -732,6 +754,22 @@ pub fn Page() -> impl IntoView {
                                     <DropdownMenuRadioItem value="right">
                                         "Right"
                                     </DropdownMenuRadioItem>
+                                </DropdownMenuRadioGroup>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuLabel>"Layout direction"</DropdownMenuLabel>
+                                <DropdownMenuRadioGroup value=direction>
+                                    {move || {
+                                        ["row", "column"]
+                                            .into_iter()
+                                            .map(|value| {
+                                                view! {
+                                                    <DropdownMenuRadioItem value=value>
+                                                        {value}
+                                                    </DropdownMenuRadioItem>
+                                                }
+                                            })
+                                            .collect_view()
+                                    }}
                                 </DropdownMenuRadioGroup>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem variant=DropdownMenuItemVariant::Destructive>

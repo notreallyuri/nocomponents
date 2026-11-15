@@ -133,6 +133,13 @@ fn elements_in(dir: &Path) -> BTreeMap<String, Vec<String>> {
     for entry in fs::read_dir(dir).expect("reading the layer") {
         let entry = entry.expect("a directory entry");
         let name = entry.file_name().to_string_lossy().into_owned();
+        // `sortable/window.rs` is part of `sortable`: a submodule's imports count for its parent.
+        if entry.path().is_dir() {
+            out.entry(name)
+                .or_insert_with(Vec::new)
+                .extend(submodule_paths(&entry.path()));
+            continue;
+        }
         let Some(stem) = name.strip_suffix(".rs") else {
             continue;
         };
@@ -140,7 +147,24 @@ fn elements_in(dir: &Path) -> BTreeMap<String, Vec<String>> {
             continue;
         }
         let source = fs::read_to_string(entry.path()).expect("reading a source file");
-        out.insert(stem.to_string(), paths(&source));
+        out.entry(stem.to_string())
+            .or_insert_with(Vec::new)
+            .extend(paths(&source));
+    }
+    out
+}
+
+fn submodule_paths(dir: &Path) -> Vec<String> {
+    let mut out = Vec::new();
+    for entry in fs::read_dir(dir).expect("reading a submodule directory") {
+        let path = entry.expect("a directory entry").path();
+        if path.is_dir() {
+            out.extend(submodule_paths(&path));
+        } else if path.extension().is_some_and(|ext| ext == "rs") {
+            out.extend(paths(
+                &fs::read_to_string(&path).expect("reading a source file"),
+            ));
+        }
     }
     out
 }

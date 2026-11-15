@@ -216,9 +216,15 @@ const API: &[ApiEntry] = &[
                 description: "Run before the bar closes.",
             },
             Prop {
+                name: "render",
+                ty: "Option<Callback<StyledRender, AnyView>>",
+                default: "None",
+                description: "Render the item as something else — a router's `A`. Handed the `class`, the node ref and the resolved `disabled`; the menu attributes, keys and close-on-select are written onto that node. `children` is not used.",
+            },
+            Prop {
                 name: "children",
-                ty: "Children",
-                default: "",
+                ty: "Option<Children>",
+                default: "None",
                 description: "The item's contents.",
             },
         ],

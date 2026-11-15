@@ -52,7 +52,7 @@ pub fn ButtonGroupText(
             data-slot="button-group-text"
             class=move || {
                 cn!(
-                    "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-border bg-muted px-2.5 text-sm font-medium text-muted-foreground [&_svg:not([class*='size-'])]:size-4",
+                    "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-border bg-muted px-2.5 text-sm font-medium text-muted-foreground [--icon-size:1rem]",
                     class.get()
                 )
             }
