@@ -9,6 +9,41 @@ touched; `cargo nocli components status` and a diff are how you deal with those.
 installed before the lock existed reads `not in lock`: the tool cannot tell whether it was edited,
 so diff it too and `components add <name> --force` to record it.
 
+## 0.6.3
+
+A tap on a phone sheet's scrim closes the sheet and nothing else. It used to close it on the press
+and hand the click that followed to whatever was under the finger: a button, a link, a tab. The
+fix is in the primitives, which are the dependency, so bumping it is the whole upgrade; installed
+components are unchanged. `cargo-nocli` is unchanged (0.4.1).
+
+### Fixed
+
+- `DropdownMenu`, `ContextMenu`, `Select` and `Popover` (and so `Combobox` and `DatePicker`) with
+  `mobile_sheet`: the layer used to dismiss on a window `pointerdown`, the scrim went
+  `pointer-events-none` at once, and the `click` that followed fell through it. In sheet
+  presentation the layer is now modal, and the scrim closes it on `click` and cancels it, so the
+  whole tap ends on the scrim. Floating menus on desktop are unchanged: an outside press closes
+  them and still reaches what it pressed.
+
+### Added
+
+- `LayerBounds::modal_while(Signal<bool>)`: a layer that is modal while the signal is true, read
+  at the moment of the press.
+- `FloatingContext::sheet` and `floating::track_sheet`, which a content root uses to say it is
+  currently a sheet.
+
+### Changed
+
+- `SheetScrim` takes a required `close: Callback<()>`.
+- A finger dragged across the scrim no longer closes the sheet, since a drag ends without a click.
+  Dragging the sheet itself down still does.
+
+### Upgrading from 0.6.2
+
+Bump the dependency and `cargo update -p nocomponents`. Code that builds a `FloatingContext` as a
+struct literal without `..Default::default()` needs the new `sheet` field, and a direct
+`SheetScrim` needs `close`.
+
 ## 0.6.2
 
 The check and the dot sit at the right edge of the item they mark, and the label starts where an

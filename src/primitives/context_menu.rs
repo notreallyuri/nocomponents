@@ -15,7 +15,7 @@ use crate::{
         },
         floating::{
             FloatingContext, FloatingRoot, floating_options_unless_sheet, shell_class,
-            side_placement,
+            side_placement, track_sheet,
         },
         long_press::{DEFAULT_DELAY_MS, use_long_press},
         roving_focus::use_roving_focus,
@@ -223,6 +223,7 @@ pub fn ContextMenuContentRoot(
     let floating_ref = ctx.content_ref;
     let sheet = use_sheet_presentation(mobile_sheet);
     let close = Callback::new(move |_| ctx.close());
+    track_sheet(ctx, sheet);
     let as_sheet = sheet.get_untracked();
     provide_context(InlineSubmenus(as_sheet));
     let grab = use_sheet_grab(
@@ -297,7 +298,7 @@ pub fn ContextMenuContentRoot(
     };
 
     view! {
-        <SheetScrim sheet=sheet open=ctx.is_open.into() />
+        <SheetScrim sheet=sheet open=ctx.is_open.into() close=close />
         <div
             node_ref=floating_ref
             style=move || {

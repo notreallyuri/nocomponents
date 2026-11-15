@@ -1,5 +1,5 @@
 import { byText, q, qa } from '../cdp.mjs';
-import { assertPageFrozen, lockState } from '../lib.mjs';
+import { assertPageFrozen, assertScrimTapInert, lockState, withTouch } from '../lib.mjs';
 
 const triggers = `[...document.querySelectorAll('main [data-slot=select-trigger]')]`;
 
@@ -41,5 +41,15 @@ export default async (t) => {
   await t.settle('picking closes the sheet', `${phone}.getAttribute('aria-expanded')`, 'false');
   t.expect('and unlocks the page', await t.ev(lockState), [false, '', '']);
   t.expect('the trigger shows the pick', await t.ev(`${phone}.textContent.trim()`), 'China');
+
+  await withTouch(t, () =>
+    assertScrimTapInert(t, {
+      label: 'select sheet',
+      isOpen: `${phone}.getAttribute('aria-expanded') === 'true'`,
+      reopen: async () => {
+        if ((await t.attr(phone, 'aria-expanded')) !== 'true') await t.click(phone, 500);
+      },
+    }),
+  );
   await t.viewport(1280, 900);
 };

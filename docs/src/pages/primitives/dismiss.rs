@@ -20,7 +20,7 @@ use_dismissable_layer(
     // What counts as "inside": a press landing in either is not an outside
     // press. A floating layer names its trigger as well as its content, or
     // pressing the trigger to close would close it and reopen it at once.
-    LayerBounds::new(content_ref).and(trigger_ref),
+    LayerBounds::new(content_ref, trigger_ref),
     move || is_open.set(false),
 );"#;
 
@@ -32,13 +32,18 @@ const API: &[Signature] = &[
     },
     Signature {
         name: "LayerBounds::new",
-        shape: "fn(AnyNodeRef) -> LayerBounds",
-        what: "The element a press must land inside to count as inside.",
+        shape: "fn(AnyNodeRef, AnyNodeRef) -> LayerBounds",
+        what: "The content and the trigger: a press landing in either counts as inside.",
     },
     Signature {
         name: "LayerBounds::modal",
-        shape: "fn(self) -> LayerBounds",
+        shape: "fn() -> LayerBounds",
         what: "A modal layer ignores outside presses entirely — it is dismissed by Escape, or by something it owns. Nothing beneath it is reachable to be pressed.",
+    },
+    Signature {
+        name: "LayerBounds::modal_while",
+        shape: "fn(self, Signal<bool>) -> LayerBounds",
+        what: "Modal while the signal is true, read at the moment of the press. For a layer that floats at one width and is a sheet at another: in the sheet, its scrim is the only way out, and it closes on click so the whole tap ends on it.",
     },
     Signature {
         name: "dismiss_topmost",
@@ -61,7 +66,7 @@ const RULES: &[Signature] = &[
     Signature {
         name: "pointerdown, not click",
         shape: "the event",
-        what: "A layer that closed on click would still be open while the press was held, and would hand the release to whatever it was covering.",
+        what: "A layer that closed on click would still be open while the press was held, and would hand the release to whatever it was covering. A scrim is the exception: it covers everything, so it closes on click, and the layer above it stays modal until then.",
     },
 ];
 

@@ -12,11 +12,13 @@ use std::cell::{Cell, RefCell};
 use web_sys::Node;
 
 /// What a pointerdown has to land in to count as inside a layer. A layer with no bounds —
-/// `LayerBounds::modal()` — is never dismissed from outside and stops the cascade at itself.
+/// `LayerBounds::modal()` — is never dismissed from outside and stops the cascade at itself, and
+/// so is one whose [`modal_while`](LayerBounds::modal_while) signal is true.
 #[derive(Clone, Copy, Default)]
 pub struct LayerBounds {
     content: Option<AnyNodeRef>,
     trigger: Option<AnyNodeRef>,
+    modal_while: Option<Signal<bool>>,
 }
 
 impl LayerBounds {
@@ -25,6 +27,17 @@ impl LayerBounds {
         Self {
             content: Some(content),
             trigger: Some(trigger),
+            modal_while: None,
+        }
+    }
+
+    /// While `when` is true the layer behaves like [`modal`](LayerBounds::modal): outside
+    /// pointerdowns neither dismiss it nor go past it to the layers below. For a layer that is
+    /// floating at one width and a sheet at another, where the sheet's scrim closes it instead.
+    pub fn modal_while(self, when: Signal<bool>) -> Self {
+        Self {
+            modal_while: Some(when),
+            ..self
         }
     }
 
@@ -34,7 +47,8 @@ impl LayerBounds {
     }
 
     fn dismisses_on_outside(&self) -> bool {
-        self.content.is_some() || self.trigger.is_some()
+        (self.content.is_some() || self.trigger.is_some())
+            && !self.modal_while.is_some_and(|when| when.get_untracked())
     }
 
     /// The trigger counts as inside, or clicking it while open would dismiss and then reopen.
@@ -150,7 +164,8 @@ fn install_escape_listener() {
 
 /// Registers `is_open` as a dismissable layer, for the length of the signal being true. Escape
 /// runs `on_dismiss` only when it is topmost; a pointerdown outside `bounds` runs it unless the
-/// layer is modal. Call once per layer root, in the root itself.
+/// layer is modal, or is modal at that moment through [`LayerBounds::modal_while`]. Call once per
+/// layer root, in the root itself.
 pub fn use_dismissable_layer(
     is_open: RwSignal<bool>,
     bounds: LayerBounds,
@@ -170,4 +185,39 @@ pub fn use_dismissable_layer(
     });
 
     on_cleanup(move || remove(id));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn bounds() -> LayerBounds {
+        LayerBounds::new(AnyNodeRef::new(), AnyNodeRef::new())
+    }
+
+    #[test]
+    fn modal_does_not_dismiss_on_outside() {
+        let _owner = Owner::new();
+        assert!(!LayerBounds::modal().dismisses_on_outside());
+    }
+
+    #[test]
+    fn bounded_dismisses_on_outside() {
+        let _owner = Owner::new();
+        assert!(bounds().dismisses_on_outside());
+    }
+
+    #[test]
+    fn modal_while_follows_the_signal() {
+        let owner = Owner::new();
+        owner.set();
+        let sheet = RwSignal::new(false);
+        let layer = bounds().modal_while(sheet.into());
+
+        assert!(layer.dismisses_on_outside());
+        sheet.set(true);
+        assert!(!layer.dismisses_on_outside());
+        sheet.set(false);
+        assert!(layer.dismisses_on_outside());
+    }
 }

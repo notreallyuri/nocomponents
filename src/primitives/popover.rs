@@ -2,7 +2,7 @@ use crate::{
     primitives::{
         floating::{
             FloatingContext, FloatingPortal, FloatingRoot, FloatingTrigger, TriggerAria,
-            TriggerRender, floating_options_unless_sheet, shell_class, side_placement,
+            TriggerRender, floating_options_unless_sheet, shell_class, side_placement, track_sheet,
         },
         sheet_drag::use_sheet_grab,
     },
@@ -147,6 +147,7 @@ pub fn PopoverContentRoot(
     let panel_ref = AnyNodeRef::new();
     let sheet = use_sheet_presentation(mobile_sheet);
     let close = Callback::new(move |_| ctx.close());
+    track_sheet(ctx, sheet);
     let grab = use_sheet_grab(
         sheet,
         ctx.is_open.into(),
@@ -183,7 +184,7 @@ pub fn PopoverContentRoot(
     });
 
     view! {
-        <SheetScrim sheet=sheet open=ctx.is_open.into() />
+        <SheetScrim sheet=sheet open=ctx.is_open.into() close=close />
         // The positioned shell, hidden until floating-ui has measured it.
         <div
             node_ref=floating_ref

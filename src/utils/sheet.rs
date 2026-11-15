@@ -48,14 +48,19 @@ pub fn presentation_attr(sheet: bool) -> &'static str {
     if sheet { "sheet" } else { "floating" }
 }
 
-/// Dims the page behind a floating layer shown as a sheet. A press on it is an outside press, so
-/// the layer's dismissable bounds close it without a handler of its own.
+/// Dims the page behind a floating layer shown as a sheet, and closes the layer when tapped.
+///
+/// It closes on `click`, not `pointerdown`. A layer that closed on the press would stop the scrim
+/// catching pointer events mid-gesture, and the click that follows the press would then reach
+/// whatever lies beneath — a button, a link — and activate it. On click the scrim is still there
+/// for the whole tap, and the layer's dismissable bounds stay modal while it is a sheet (see
+/// `FloatingContext::sheet`), so nothing else reacts to the press.
 ///
 /// While the sheet is open it also freezes the page behind it ([`use_scroll_lock`]), and its own
 /// `touch-action` is off so a finger dragged over it cannot start a scroll. A dialog does not need
 /// this: its overlay is already a scrim, and its portal holds the lock.
 #[component]
-pub fn SheetScrim(sheet: Signal<bool>, open: Signal<bool>) -> impl IntoView {
+pub fn SheetScrim(sheet: Signal<bool>, open: Signal<bool>, close: Callback<()>) -> impl IntoView {
     use_scroll_lock(Signal::derive(move || sheet.get() && open.get()));
 
     view! {
@@ -64,6 +69,10 @@ pub fn SheetScrim(sheet: Signal<bool>, open: Signal<bool>) -> impl IntoView {
                 aria-hidden="true"
                 data-slot="menu-sheet-scrim"
                 style="touch-action: none;"
+                on:click=move |e| {
+                    e.prevent_default();
+                    close.run(());
+                }
                 data-state=move || if open.get() { "open" } else { "closed" }
                 class="fixed inset-0 z-50 bg-black/40 animation-duration-100 fill-mode-forwards data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:pointer-events-none"
             ></div>
