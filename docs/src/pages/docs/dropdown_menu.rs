@@ -303,7 +303,7 @@ const API: &[ApiEntry] = &[
                 name: "inset",
                 ty: "Signal<bool>",
                 default: "false",
-                description: "Writes `data-inset`, which indents the row to line up with items that carry an indicator.",
+                description: "Writes `data-inset`, which indents the row by the width of a leading icon.",
             },
             Prop {
                 name: "close_on_select",

@@ -177,12 +177,12 @@ pub fn ComboboxItem(
             close_on_select=close_on_select
             class=move || {
                 cn!(
-                    "group/combobox-item relative flex cursor-default items-center gap-2 rounded-sm py-1.5 pr-2 pl-8 text-sm outline-none select-none data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0",
+                    "group/combobox-item relative flex cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-none select-none data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0",
                     class.get()
                 )
             }
         >
-            <span class="absolute left-2 flex size-3.5 items-center justify-center">
+            <span class="absolute right-2 flex size-3.5 items-center justify-center">
                 <IconSlot
                     icon=icon.clone()
                     fallback=|| view! { <Check /> }

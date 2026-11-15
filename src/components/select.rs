@@ -147,12 +147,12 @@ pub fn SelectItem(
             disabled=disabled
             class=move || {
                 cn!(
-                    "group relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50",
+                    "group relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pr-8 pl-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50",
                     class.get()
                 )
             }
         >
-            <span class="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+            <span class="absolute right-2 flex h-3.5 w-3.5 items-center justify-center">
                 <IconSlot
                     icon=icon
                     fallback=|| view! { <Check /> }
