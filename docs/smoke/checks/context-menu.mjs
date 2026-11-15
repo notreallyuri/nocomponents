@@ -1,5 +1,5 @@
 import { demo, menuItem } from '../cdp.mjs';
-import { assertPageFrozen, lockState, touchTap, withTouch } from '../lib.mjs';
+import { assertPageFrozen, assertScrimTapInert, lockState, touchTap, withTouch } from '../lib.mjs';
 
 const trigger = `${demo('[data-slot=context-menu-trigger]')}[0]`;
 const content = `document.querySelector('[data-slot=context-menu-content]')`;
@@ -126,6 +126,12 @@ async function submenus(t) {
     await tap(menuItem('Backward'));
     await t.settle('choosing an inline item closes the whole sheet', `${menu} ? 'open' : 'gone'`, 'gone');
     t.expect('the page is unlocked again', await t.ev(lockState), [false, '', '']);
+
+    await assertScrimTapInert(t, {
+      label: 'context menu sheet',
+      isOpen: `!!document.querySelector('[data-slot=context-menu-content]')`,
+      reopen: open,
+    });
   });
   await t.viewport(1280, 900);
 }

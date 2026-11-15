@@ -172,6 +172,8 @@ pub struct FloatingContext {
     /// Where focus lands the next time the content opens, set by whatever opened it. Read once
     /// and cleared on close, so it describes the current opening only.
     pub open_focus: RwSignal<OpenFocus>,
+    /// Whether the content is currently presented as a sheet, written by the content root.
+    pub sheet: RwSignal<bool>,
 }
 
 impl Default for FloatingContext {
@@ -187,6 +189,7 @@ impl Default for FloatingContext {
             trigger_id: RwSignal::new(String::new()),
             content_id: RwSignal::new(String::new()),
             open_focus: RwSignal::new(OpenFocus::Auto),
+            sheet: RwSignal::new(false),
         }
     }
 }
@@ -207,6 +210,13 @@ impl FloatingContext {
     pub fn is_open(&self) -> bool {
         self.is_open.get()
     }
+}
+
+/// Keeps `ctx.sheet` in step with the content root's own `sheet` signal, and false once the root
+/// is gone. Call once from a content root that renders a `SheetScrim`.
+pub fn track_sheet(ctx: FloatingContext, sheet: Signal<bool>) {
+    Effect::new(move |_| ctx.sheet.set(sheet.get()));
+    on_cleanup(move || ctx.sheet.set(false));
 }
 
 /// Where focus goes when the content opens.
@@ -444,9 +454,12 @@ pub fn FloatingRoot(
         on_cleanup(move || arrow_listener.set_value(None));
     }
 
+    // In a sheet the scrim is the only way out from outside, and it closes on click so the whole
+    // tap ends on it.
     use_dismissable_layer(
         context.is_open,
-        LayerBounds::new(context.content_ref, context.trigger_ref),
+        LayerBounds::new(context.content_ref, context.trigger_ref)
+            .modal_while(context.sheet.into()),
         move || context.close(),
     );
 

@@ -87,12 +87,45 @@ export async function assertPageFrozen(t, scrimPoint, label) {
   });
 }
 
-// A finger dragged over the scrim must not scroll the page. A press there is an outside press, so
-// this closes the sheet as well.
+// A finger dragged over the scrim must not scroll the page. A drag ends in no click, so it is not a
+// tap, and the sheet stays open.
 export async function assertScrimDragFrozen(t, scrimPoint, label) {
   const y0 = await t.ev('scrollY');
   await withTouch(t, async () => {
     await touchDrag(t, scrimPoint[0], scrimPoint[1] + 60, -50);
   });
   t.expect(`${label}: a finger dragged over the scrim does not scroll the page`, await t.ev('scrollY'), y0);
+}
+
+// A tap on a sheet's scrim must only close the sheet. Under the scrim it puts a button and then a
+// link, both fixed and covering the tap point, and taps through `touchTap`: a scrim that stopped
+// catching on the press would let the click that follows land on them. `reopen` opens the sheet,
+// and `isOpen` is an expression that evaluates to true while it is open. Needs touch emulation on,
+// so call it inside `withTouch`. The injected elements are removed afterwards.
+export async function assertScrimTapInert(t, { reopen, isOpen, point = [195, 60], label }) {
+  const inject = (kind) => t.ev(`(() => {
+    window.__scrimHits = 0;
+    const e = document.createElement(${JSON.stringify(kind)});
+    e.id = '__scrim_probe';
+    e.textContent = 'probe';
+    e.style.cssText = 'position:fixed;top:0;left:0;width:390px;height:120px;z-index:40;display:block;';
+    if (${JSON.stringify(kind)} === 'a') e.href = '#scrim-leak';
+    else e.addEventListener('click', () => { window.__scrimHits++; });
+    document.body.appendChild(e);
+  })()`);
+  const remove = () => t.ev(`(() => { document.getElementById('__scrim_probe')?.remove(); delete window.__scrimHits; })()`);
+
+  for (const kind of ['button', 'a']) {
+    await reopen();
+    t.expect(`${label}: the sheet is open before the tap`, await t.ev(isOpen), true);
+    await inject(kind);
+    await touchTap(t, point[0], point[1], 500);
+    await t.settle(`${label}: a tap on the scrim closes the sheet over a ${kind}`, isOpen, false);
+    if (kind === 'button') {
+      t.expect(`${label}: and does not reach the button beneath`, await t.ev('window.__scrimHits'), 0);
+    } else {
+      t.ok(`${label}: and does not follow the link beneath`, !(await t.ev('location.hash')).includes('scrim-leak'));
+    }
+    await remove();
+  }
 }

@@ -3,7 +3,7 @@ use crate::{
         field::{field_control_for_trigger, field_disabled},
         floating::{
             ArrowOpen, FloatingContext, FloatingPortal, FloatingRoot, FloatingTrigger, TriggerAria,
-            TriggerRender, shell_class,
+            TriggerRender, shell_class, track_sheet,
         },
         roving_focus::use_roving_focus,
         sheet_drag::{SheetFrame, use_sheet_grab},
@@ -276,6 +276,7 @@ pub fn SelectContentRoot(
     let floating_ref = ctx.content_ref;
     let sheet = use_sheet_presentation(mobile_sheet);
     let close = Callback::new(move |_| ctx.close());
+    track_sheet(ctx, sheet);
     let as_sheet = sheet.get_untracked();
     let grab = use_sheet_grab(
         sheet,
@@ -376,7 +377,7 @@ pub fn SelectContentRoot(
     };
 
     view! {
-        <SheetScrim sheet=sheet open=ctx.is_open.into() />
+        <SheetScrim sheet=sheet open=ctx.is_open.into() close=close />
         <div
             node_ref=floating_ref
             style=move || {

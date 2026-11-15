@@ -1,5 +1,5 @@
 import { demoBtn, menuItem, q, qa, activeText } from '../cdp.mjs';
-import { assertPageFrozen, assertScrimDragFrozen, dragBy, lockState } from '../lib.mjs';
+import { assertPageFrozen, assertScrimDragFrozen, assertScrimTapInert, dragBy, lockState, withTouch } from '../lib.mjs';
 
 const openMenus = `[...document.querySelectorAll('[role=menu]')].filter((m) => m.closest('[data-state]')?.dataset.state !== 'closed' && getComputedStyle(m).visibility !== 'hidden').length`;
 const radios = `[...document.querySelectorAll('[role=menuitemradio]')].map((e) => e.textContent.trim() + '=' + e.getAttribute('aria-checked')).join(' ')`;
@@ -183,10 +183,37 @@ export default async (t) => {
 
   await t.click(demoBtn('Sort by'), 500);
   await assertScrimDragFrozen(t, [195, 60], 'dropdown sheet');
-  await t.settle('a drag that starts on the scrim closes the sheet', open, 'false');
+  t.expect('a drag that starts on the scrim is not a tap, and leaves the sheet open', await t.attr(demoBtn('Sort by'), 'aria-expanded'), 'true');
+  await t.key('Escape', 400);
+  await t.settle('Escape closes it after the drag', open, 'false');
+
+  await withTouch(t, () =>
+    assertScrimTapInert(t, {
+      label: 'dropdown sheet',
+      isOpen: `${open} === 'true'`,
+      reopen: async () => {
+        if ((await t.attr(demoBtn('Sort by'), 'aria-expanded')) !== 'true') await t.click(demoBtn('Sort by'), 500);
+      },
+    }),
+  );
 
   await t.viewport(1280, 900);
   await t.click(demoBtn('Sort by'), 400);
   t.expect('a floating menu does not lock the page', await t.ev(lockState), [false, '', '']);
   await t.key('Escape', 400);
+
+  // Desktop is unchanged: an outside click closes the floating menu and still reaches what it hit.
+  await t.click(demoBtn('Sort by'), 400);
+  await t.ev(`(() => {
+    window.__outsideHits = 0;
+    const b = document.createElement('button');
+    b.id = '__outside_probe';
+    b.style.cssText = 'position:fixed;right:0;bottom:0;width:100px;height:100px;z-index:40;';
+    b.addEventListener('click', () => { window.__outsideHits++; });
+    document.body.appendChild(b);
+  })()`);
+  await t.click(`document.getElementById('__outside_probe')`, 400);
+  await t.settle('desktop: an outside click closes the floating menu', open, 'false');
+  t.expect('desktop: and still reaches the element it landed on', await t.ev('window.__outsideHits'), 1);
+  await t.ev(`(() => { document.getElementById('__outside_probe')?.remove(); delete window.__outsideHits; })()`);
 };

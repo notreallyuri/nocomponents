@@ -3,7 +3,7 @@ use crate::{
         floating::{
             ArrowOpen, FloatingContext, FloatingPortal, FloatingRoot, FloatingTrigger, OpenFocus,
             TriggerAria, TriggerRender, floating_options, floating_options_unless_sheet,
-            shell_class, side_placement,
+            shell_class, side_placement, track_sheet,
         },
         roving_focus::{RovingFocus, use_roving_focus},
         sheet_drag::{SheetFrame, use_sheet_grab},
@@ -287,6 +287,7 @@ pub fn DropdownMenuContentRoot(
     let floating_ref = ctx.content_ref;
     let sheet = use_sheet_presentation(mobile_sheet);
     let close = Callback::new(move |_| ctx.close());
+    track_sheet(ctx, sheet);
     let as_sheet = sheet.get_untracked();
     provide_context(InlineSubmenus(as_sheet));
     let grab = use_sheet_grab(
@@ -372,7 +373,7 @@ pub fn DropdownMenuContentRoot(
     };
 
     view! {
-        <SheetScrim sheet=sheet open=ctx.is_open.into() />
+        <SheetScrim sheet=sheet open=ctx.is_open.into() close=close />
         <div
             node_ref=floating_ref
             style=move || {
