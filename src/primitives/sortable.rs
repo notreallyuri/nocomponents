@@ -21,8 +21,30 @@
 //!   cancels. Losing focus also cancels, so a half-finished move cannot be left behind. Focus is
 //!   returned to the moved item after a drop, since reordering the DOM would otherwise drop it.
 //! - **Block drag.** When the picked item is in `selected`, everything selected moves with it,
-//!   keeping its relative order, and lands as one block. The picked item carries the pointer; the
-//!   rest ride under it, and `data-count` on it says how many there are.
+//!   keeping its relative order, and lands as one block. See below.
+//!
+//! # A block is one pile while it is held
+//!
+//! Ten full rows riding a pointer are unreadable, and ten ring-marked slots through the list are
+//! worse, so a block of more than one is *collapsed*: the picked item is the pile (it wears
+//! `data-count`, and the styled layer draws the layers and the badge), and it rides the pointer, or
+//! for the keyboard sits in its slot. The other selected items are `data-hidden` (and inline
+//! `visibility: hidden`, so a primitive without the styled layer hides them too), and the items
+//! that stay slide to close the gaps those left, with exactly one slot, the size of the pile, open
+//! at the target. Nothing is moved in the DOM and no item changes its layout, so there is nothing
+//! to compensate for: the list's tail just shows the room the hidden items used to take.
+//!
+//! The arithmetic is [`collapsed_preview_offsets`], which is [`preview_offsets`] on the list as
+//! it will be *shown*: the items that stay, and one entry, the pile, where the block lands. A block
+//! of one gives exactly [`preview_offsets`]. Where the pile lands is [`collapsed_drop_index`],
+//! measured on that shown list, so carrying the pile past three items passes three items, whatever
+//! the selection had between them, and the number is the same `to` that [`SortableMove`] reports.
+//!
+//! Closing is toward the start of the list, so the room the hidden items took is empty space at
+//! the *end* of it, never at the start. The pile is held where the pointer is, and the slot opens
+//! wherever the pile currently is in the closed-up list — the one nearest it, from the first frame
+//! — so what is seen is where the block lands, and a block let go without moving gathers at the
+//! pile's visible position, as [`window`]'s stack does. Everything is still a transform.
 //!
 //! # What a screen reader hears
 //!
@@ -31,6 +53,11 @@
 //! cancel are announced — "Picked up Item 3, position 3 of 10." The wording is
 //! [`default_announcement`] unless the root is given `announce`, and the instructions are
 //! overridable the same way, so a translated app translates it all.
+//!
+//! A second, `aria-live="polite"` region says what the move *is* while it lasts — "Moving 4
+//! items. Destination position 12 of 5,000." — and is re-written whenever the destination changes
+//! and emptied on a drop or cancel. Its wording is [`default_progress`] unless the root is given
+//! `progress`, which is handed a [`SortableProgress`].
 //!
 //! # Scrolling
 //!
@@ -51,10 +78,11 @@
 //! # Data attributes
 //!
 //! - root: `data-dragging` (while a move is in progress), `data-orientation`, `data-disabled`;
-//! - item: `data-dragging` (it is in the block being moved), `data-following` (it is riding the
-//!   pointer, so it must not ease), `data-placeholder` (a keyboard move: it is sitting where it
-//!   would land), `data-anchor` (it is the one picked), `data-count` (on the anchor, when there
-//!   are several), `data-selected`, `data-disabled`;
+//! - item: `data-dragging` (it is in the block being moved), `data-following` (it is the picked
+//!   item and a pointer holds it, so it must not ease), `data-placeholder` (a keyboard move of one
+//!   item: it is sitting where it would land), `data-anchor` (it is the one picked), `data-count`
+//!   (on the anchor, when there are several: it is the pile), `data-hidden` (it is in a block but
+//!   not the pile, and is not drawn), `data-selected`, `data-disabled`;
 //! - handle: `data-dragging`, `data-disabled`.
 //!
 //! Every non-moving item carries an inline `transform` while a move is in progress. Easing it is
@@ -204,6 +232,77 @@ pub fn preview_offsets(starts: &[f64], sizes: &[f64], moved: &[usize], to: usize
     offsets
 }
 
+/// The shown list of a collapsed block: the items that stay, in order, with `anchor` (the pile) in
+/// as one entry at `to` — counted, like [`SortableMove::to`], in the list without the block.
+fn collapsed_order(count: usize, moved: &[usize], anchor: usize, to: usize) -> Vec<usize> {
+    let mut order: Vec<usize> = (0..count)
+        .filter(|index| *index != anchor && !moved.contains(index))
+        .collect();
+    let at = to.min(order.len());
+    if anchor < count {
+        order.insert(at, anchor);
+    }
+    order
+}
+
+/// [`preview_offsets`] for a block that is collapsed into one pile: how far each item has to slide
+/// along the axis to show the pile at `to` (the block's `moved` indices, ascending, containing
+/// `anchor`) and every item that stays closed up around it.
+///
+/// The shown list is the items that stay plus one entry for the pile. It is laid out as
+/// [`preview_offsets`] lays out a list — the first item's start, then each next one after the one
+/// before it plus the gap that sat in that place originally — so a block of one is exactly
+/// [`preview_offsets`], and variable sizes and gaps keep their spacing. The other members of the
+/// block are not shown and get `0.0`; the pile's own offset is where it sits when nothing carries
+/// it, which is what a keyboard move draws. Closing up is toward the start of the list, so the
+/// items after hidden ones slide back by the room those took.
+pub fn collapsed_preview_offsets(
+    starts: &[f64],
+    sizes: &[f64],
+    moved: &[usize],
+    anchor: usize,
+    to: usize,
+) -> Vec<f64> {
+    let count = starts.len().min(sizes.len());
+    let mut offsets = vec![0.0; count];
+    let order = collapsed_order(count, moved, anchor, to);
+
+    let gap_after_slot = |slot: usize| {
+        if slot + 1 < count {
+            starts[slot + 1] - starts[slot] - sizes[slot]
+        } else {
+            0.0
+        }
+    };
+
+    let mut cursor = starts.first().copied().unwrap_or(0.0);
+    for (slot, &index) in order.iter().enumerate() {
+        offsets[index] = cursor - starts[index];
+        cursor += sizes[index] + gap_after_slot(slot);
+    }
+
+    offsets
+}
+
+/// [`drop_index`] for a collapsed block: how many of the items that stay have their middle before
+/// `held_center`, on the shown list with the pile in the slot it was picked up in. That is what
+/// "how many items has the pile passed" means on screen, and it is the `to` a [`SortableMove`]
+/// reports. `held_center` is the pile's middle where it is carried, in the list's own coordinates.
+pub fn collapsed_drop_index(
+    starts: &[f64],
+    sizes: &[f64],
+    moved: &[usize],
+    anchor: usize,
+    held_center: f64,
+) -> usize {
+    let ahead = moved.iter().filter(|&&index| index < anchor).count();
+    let at = collapsed_preview_offsets(starts, sizes, moved, anchor, anchor - ahead.min(anchor));
+    let centers: Vec<f64> = (0..at.len())
+        .map(|index| starts[index] + at[index] + sizes[index] / 2.0)
+        .collect();
+    drop_index(&centers, moved, held_center)
+}
+
 /// What a list tells a screen reader about the item in hand.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct SortableStatus {
@@ -259,6 +358,49 @@ pub fn default_announcement(event: &SortableEvent) -> String {
     }
 }
 
+/// What a list tells a screen reader *while* a move is in progress, as opposed to at its
+/// four moments ([`SortableEvent`]). Written to a polite live region, and re-written when the
+/// destination changes.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct SortableProgress {
+    /// The picked item's name.
+    pub label: String,
+    /// How many items are in the block. One, unless a selection was picked up with it.
+    pub count: usize,
+    /// One-based: where the *first* item of the block would land if the move ended now. For one
+    /// item, its own position.
+    pub destination: usize,
+    pub total: usize,
+}
+
+/// The English sentence for [`SortableProgress`], which `progress` replaces wholesale:
+/// "Moving 4 items. Destination position 12 of 5,000."
+pub fn default_progress(progress: &SortableProgress) -> String {
+    let what = if progress.count > 1 {
+        format!("{} items", progress.count)
+    } else {
+        progress.label.clone()
+    };
+    format!(
+        "Moving {what}. Destination position {} of {}.",
+        group_digits(progress.destination),
+        group_digits(progress.total)
+    )
+}
+
+/// `5000` as `5,000`.
+fn group_digits(n: usize) -> String {
+    let digits = n.to_string();
+    let mut out = String::with_capacity(digits.len() + digits.len() / 3);
+    for (at, digit) in digits.chars().enumerate() {
+        if at > 0 && (digits.len() - at).is_multiple_of(3) {
+            out.push(',');
+        }
+        out.push(digit);
+    }
+    out
+}
+
 /// The gesture in progress.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct SortableDrag {
@@ -299,9 +441,12 @@ pub struct SortableContext {
     scroller: RwSignal<Option<Element>>,
     scroll_max: RwSignal<f64>,
     announcement: RwSignal<String>,
+    /// The polite region: what the move in progress is, re-said as its destination changes.
+    progress_text: RwSignal<String>,
     instructions_id: StoredValue<String>,
     root_ref: AnyNodeRef,
     announce: Callback<SortableEvent, String>,
+    progress: Callback<SortableProgress, String>,
     on_move: Callback<SortableMove>,
     /// The gesture a pointer move is running, so Escape can end it.
     aborter: StoredValue<Option<Drag>, LocalStorage>,
@@ -381,6 +526,16 @@ impl SortableContext {
 
     fn say(&self, event: SortableEvent) {
         self.announcement.set(self.announce.run(event));
+    }
+
+    fn say_progress(&self, drag: &SortableDrag) {
+        let progress = SortableProgress {
+            label: self.label_of(&drag.anchor),
+            count: drag.keys.len(),
+            destination: drag.to + 1,
+            total: self.boxes.with_untracked(|boxes| boxes.len()),
+        };
+        self.progress_text.set(self.progress.run(progress));
     }
 
     /// The one-based position the anchor would have if the move ended now.
@@ -464,6 +619,7 @@ impl SortableContext {
         self.scroller.set(scroller);
         self.scroll_max.set(scroll_max);
         self.boxes.set(boxes);
+        self.say_progress(&drag);
         self.dragging.set(Some(drag));
         self.say(SortableEvent::PickedUp(status));
         true
@@ -481,6 +637,7 @@ impl SortableContext {
 
         drag.to = to;
         let status = self.status(&drag, self.position_of_anchor(&drag), total);
+        self.say_progress(&drag);
         self.dragging.set(Some(drag));
         self.say(SortableEvent::Moved(status));
     }
@@ -536,15 +693,24 @@ impl SortableContext {
 
         let to = self.boxes.with_untracked(|boxes| {
             let moved = moved_indices(boxes, &drag.keys);
-            let held = boxes
-                .iter()
-                .find(|item| item.key == drag.anchor)
-                .map_or(0.0, |item| item.start + item.size / 2.0 + travelled);
-            let centers: Vec<f64> = boxes
-                .iter()
-                .map(|item| item.start + item.size / 2.0)
-                .collect();
-            drop_index(&centers, &moved, held)
+            let anchor = boxes.iter().position(|item| item.key == drag.anchor);
+            let held = anchor.map_or(0.0, |anchor| {
+                boxes[anchor].start + boxes[anchor].size / 2.0 + travelled
+            });
+            match anchor {
+                Some(anchor) if moved.len() > 1 => {
+                    let starts: Vec<f64> = boxes.iter().map(|item| item.start).collect();
+                    let sizes: Vec<f64> = boxes.iter().map(|item| item.size).collect();
+                    collapsed_drop_index(&starts, &sizes, &moved, anchor, held)
+                }
+                _ => {
+                    let centers: Vec<f64> = boxes
+                        .iter()
+                        .map(|item| item.start + item.size / 2.0)
+                        .collect();
+                    drop_index(&centers, &moved, held)
+                }
+            }
         });
 
         self.set_to(to);
@@ -643,6 +809,7 @@ impl SortableContext {
         let status = self.status(&drag, position, total);
 
         self.dragging.set(None);
+        self.progress_text.set(String::new());
         self.anchor.set(None);
         self.scroller.set(None);
         self.base.set((0.0, 0.0));
@@ -779,34 +946,36 @@ impl SortableContext {
         }
     }
 
+    /// Whether `key` is in a block of several but is not the pile: it is not drawn.
+    pub fn is_hidden(&self, key: &str) -> bool {
+        self.dragging.with(|drag| {
+            drag.as_ref().is_some_and(|drag| {
+                drag.keys.len() > 1 && drag.anchor != key && drag.keys.iter().any(|k| k == key)
+            })
+        })
+    }
+
     /// The inline style an item wears while a move is in progress.
     fn item_style(&self, key: &str) -> String {
         let Some(drag) = self.dragging.get() else {
             return String::new();
         };
+        if self.is_hidden(key) {
+            return "visibility: hidden; pointer-events: none;".to_string();
+        }
         let boxes = self.boxes.get();
         let Some(index) = boxes.iter().position(|item| item.key == key) else {
             return String::new();
         };
         let vertical = self.orientation.get() == Orientation::Vertical;
-        let moved = drag.keys.iter().any(|k| k == key);
 
-        if moved && drag.pointer {
+        if drag.pointer && drag.anchor == key {
             let (base_x, base_y) = self.base.get();
             let (shift_x, shift_y) = self.shift.get();
-            let (mut x, mut y) = (base_x + shift_x, base_y + shift_y);
-            let anchor_start = boxes
-                .iter()
-                .find(|item| item.key == drag.anchor)
-                .map_or(boxes[index].start, |item| item.start);
-            let stacked = anchor_start - boxes[index].start;
-            if vertical {
-                y += stacked;
-            } else {
-                x += stacked;
-            }
             return format!(
-                "transform: translate3d({x}px, {y}px, 0); pointer-events: none; will-change: transform;"
+                "transform: translate3d({}px, {}px, 0); pointer-events: none; will-change: transform;",
+                base_x + shift_x,
+                base_y + shift_y
             );
         }
 
@@ -851,6 +1020,10 @@ pub fn SortableRoot(
     /// Replaces [`default_announcement`]. Presence-sensitive: unset keeps the English wording.
     #[prop(default = None, into)]
     announce: Option<Callback<SortableEvent, String>>,
+    /// Replaces [`default_progress`], the polite live region that says what the move in progress
+    /// is while it lasts. Presence-sensitive: unset keeps the English wording.
+    #[prop(default = None, into)]
+    progress: Option<Callback<SortableProgress, String>>,
     /// Items or a block were let go somewhere new. The caller applies it, with [`apply_move`].
     #[prop(into)]
     on_move: Callback<SortableMove>,
@@ -867,7 +1040,14 @@ pub fn SortableRoot(
         boxes.with(|boxes| {
             let starts: Vec<f64> = boxes.iter().map(|item| item.start).collect();
             let sizes: Vec<f64> = boxes.iter().map(|item| item.size).collect();
-            preview_offsets(&starts, &sizes, &moved_indices(boxes, &drag.keys), drag.to)
+            let moved = moved_indices(boxes, &drag.keys);
+            let anchor = boxes.iter().position(|item| item.key == drag.anchor);
+            match anchor {
+                Some(anchor) if moved.len() > 1 => {
+                    collapsed_preview_offsets(&starts, &sizes, &moved, anchor, drag.to)
+                }
+                _ => preview_offsets(&starts, &sizes, &moved, drag.to),
+            }
         })
     });
 
@@ -885,9 +1065,11 @@ pub fn SortableRoot(
         scroller: RwSignal::new(None),
         scroll_max: RwSignal::new(0.0),
         announcement: RwSignal::new(String::new()),
+        progress_text: RwSignal::new(String::new()),
         instructions_id: StoredValue::new(next_id("sortable-instructions")),
         root_ref,
         announce: announce.unwrap_or_else(|| Callback::new(|e| default_announcement(&e))),
+        progress: progress.unwrap_or_else(|| Callback::new(|p| default_progress(&p))),
         on_move,
         aborter: StoredValue::new_local(None),
     };
@@ -926,6 +1108,9 @@ pub fn SortableRoot(
         <p id=context.instructions_id() class="sr-only">
             {text}
         </p>
+        <div aria-live="polite" aria-atomic="true" class="sr-only">
+            {move || context.progress_text.get()}
+        </div>
         <div aria-live="assertive" aria-atomic="true" class="sr-only">
             {move || context.announcement.get()}
         </div>
@@ -1016,7 +1201,13 @@ pub fn SortableItemRoot(
 
     let moved = move || key.with_value(|key| ctx.is_moved(key));
     let anchor = move || key.with_value(|key| ctx.is_anchor(key));
-    let following = move || moved() && ctx.dragging.with(|d| d.as_ref().is_some_and(|d| d.pointer));
+    let following =
+        move || anchor() && ctx.dragging.with(|d| d.as_ref().is_some_and(|d| d.pointer));
+    let hidden = move || key.with_value(|key| ctx.is_hidden(key));
+    let block = move || {
+        ctx.dragging
+            .with(|d| d.as_ref().is_some_and(|d| d.keys.len() > 1))
+    };
     let attribute = value.clone();
     let described = ctx.instructions_id();
 
@@ -1028,7 +1219,8 @@ pub fn SortableItemRoot(
             data-sortable-label=move || Some(label.get()).filter(|label| !label.is_empty())
             data-dragging=move || moved().then_some("true")
             data-following=move || following().then_some("true")
-            data-placeholder=move || (moved() && !following()).then_some("true")
+            data-placeholder=move || (moved() && !following() && !block()).then_some("true")
+            data-hidden=move || hidden().then_some("true")
             data-anchor=move || anchor().then_some("true")
             data-count=move || {
                 if !anchor() {
@@ -1270,6 +1462,28 @@ mod tests {
     }
 
     #[test]
+    fn the_progress_sentence_names_the_block_and_the_destination() {
+        let progress = |count, destination| SortableProgress {
+            label: "Track 0001".into(),
+            count,
+            destination,
+            total: 5000,
+        };
+        assert_eq!(
+            default_progress(&progress(4, 12)),
+            "Moving 4 items. Destination position 12 of 5,000."
+        );
+        assert_eq!(
+            default_progress(&progress(1, 3)),
+            "Moving Track 0001. Destination position 3 of 5,000."
+        );
+        assert_eq!(group_digits(0), "0");
+        assert_eq!(group_digits(999), "999");
+        assert_eq!(group_digits(1000), "1,000");
+        assert_eq!(group_digits(1234567), "1,234,567");
+    }
+
+    #[test]
     fn a_block_leaves_a_hole_as_tall_as_itself() {
         let starts = [0.0, 10.0, 20.0, 30.0, 40.0];
         let sizes = [10.0; 5];
@@ -1287,6 +1501,176 @@ mod tests {
         assert_eq!(offsets[1], -24.0);
         assert_eq!(offsets[0], 44.0);
         assert_eq!(offsets[2], 0.0);
+    }
+
+    /// Items of mixed sizes with a gap of `gap` between each, as `(starts, sizes)`.
+    fn laid_out(sizes: &[f64], gap: f64) -> (Vec<f64>, Vec<f64>) {
+        let mut at = 0.0;
+        let starts = sizes
+            .iter()
+            .map(|size| {
+                let start = at;
+                at += size + gap;
+                start
+            })
+            .collect();
+        (starts, sizes.to_vec())
+    }
+
+    fn blocks(count: usize) -> Vec<(Vec<usize>, usize)> {
+        let mut found = Vec::new();
+        for moved in [
+            vec![0usize],
+            vec![count - 1],
+            vec![1, 2],
+            vec![1, 4, 6],
+            vec![0, 3, 7],
+            vec![2, 3, 4, 5],
+            vec![0, 1, 2, 3, 4, 5, 6, 7],
+            vec![0, 7],
+        ] {
+            for &anchor in &moved {
+                found.push((moved.clone(), anchor));
+            }
+        }
+        found
+    }
+
+    /// The items as shown, in order along the axis, once the members of the block other than the
+    /// pile are taken away: sorted by where `offsets` puts them.
+    fn shown(starts: &[f64], offsets: &[f64], moved: &[usize], anchor: usize) -> Vec<usize> {
+        let mut shown: Vec<usize> = (0..starts.len())
+            .filter(|index| *index == anchor || !moved.contains(index))
+            .collect();
+        shown.sort_by(|a, b| {
+            (starts[*a] + offsets[*a])
+                .partial_cmp(&(starts[*b] + offsets[*b]))
+                .unwrap()
+        });
+        shown
+    }
+
+    #[test]
+    fn a_collapsed_block_of_one_is_the_plain_preview() {
+        for gap in [0.0, 4.0] {
+            let (starts, sizes) = laid_out(&[20.0, 40.0, 20.0, 30.0, 10.0], gap);
+            for held in 0..5 {
+                for to in 0..5 {
+                    assert_eq!(
+                        collapsed_preview_offsets(&starts, &sizes, &[held], held, to),
+                        preview_offsets(&starts, &sizes, &[held], to),
+                        "{held} to {to}, gap {gap}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn what_a_collapsed_block_shows_is_what_the_move_applies() {
+        for gap in [0.0, 4.0] {
+            let (starts, sizes) = laid_out(&[20.0, 40.0, 20.0, 30.0, 10.0, 25.0, 15.0, 35.0], gap);
+            for (moved, anchor) in blocks(8) {
+                for to in 0..=(8 - moved.len()) {
+                    let offsets = collapsed_preview_offsets(&starts, &sizes, &moved, anchor, to);
+                    let mut applied: Vec<usize> = (0..8).collect();
+                    move_block(&mut applied, &moved, to);
+                    applied.retain(|index| *index == anchor || !moved.contains(index));
+                    assert_eq!(
+                        shown(&starts, &offsets, &moved, anchor),
+                        applied,
+                        "{moved:?} ({anchor}) to {to}, gap {gap}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn a_collapsed_block_leaves_one_slot_and_no_other_gap() {
+        let (starts, sizes) = laid_out(&[12.0; 8], 4.0);
+        for (moved, anchor) in blocks(8) {
+            for to in 0..=(8 - moved.len()) {
+                let offsets = collapsed_preview_offsets(&starts, &sizes, &moved, anchor, to);
+                let order = shown(&starts, &offsets, &moved, anchor);
+                assert_eq!(starts[order[0]] + offsets[order[0]], starts[0]);
+                for pair in order.windows(2) {
+                    let end = starts[pair[0]] + offsets[pair[0]] + sizes[pair[0]];
+                    assert_eq!(starts[pair[1]] + offsets[pair[1]] - end, 4.0, "{moved:?}");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn items_slide_back_by_the_room_the_hidden_ones_took() {
+        let starts = [0.0, 10.0, 20.0, 30.0, 40.0, 50.0];
+        let sizes = [10.0; 6];
+        assert_eq!(
+            collapsed_preview_offsets(&starts, &sizes, &[1, 3], 3, 2),
+            [0.0, 0.0, -10.0, -10.0, -10.0, -10.0]
+        );
+    }
+
+    #[test]
+    fn the_slot_opens_at_the_pile_or_as_near_as_the_list_reaches() {
+        let (starts, sizes) = laid_out(&[10.0; 12], 2.0);
+        for (moved, anchor) in blocks(8) {
+            let held = starts[anchor] + sizes[anchor] / 2.0;
+            let to = collapsed_drop_index(&starts, &sizes, &moved, anchor, held);
+            let at = collapsed_preview_offsets(&starts, &sizes, &moved, anchor, to);
+            let slot = starts[anchor] + at[anchor] + sizes[anchor] / 2.0;
+            let end = 12 - moved.len();
+            assert!(
+                (slot - held).abs() <= 12.0 || (to == end && slot < held),
+                "{moved:?} ({anchor}): slot {slot}, pile {held}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_collapsed_drop_is_counted_in_the_items_passed() {
+        let (starts, sizes) = laid_out(&[10.0; 8], 2.0);
+        let (moved, anchor) = (vec![1, 3, 5], 3);
+        let stack = collapsed_preview_offsets(&starts, &sizes, &moved, anchor, 2);
+        let rest = [0usize, 2, 4, 6, 7];
+        let middle = |index: usize| starts[index] + stack[index] + 5.0;
+        for to in 0..=rest.len() {
+            let held = match to {
+                0 => middle(rest[0]) - 1.0,
+                n if n == rest.len() => middle(rest[n - 1]) + 1.0,
+                n => (middle(rest[n - 1]) + middle(rest[n])) / 2.0,
+            };
+            assert_eq!(
+                collapsed_drop_index(&starts, &sizes, &moved, anchor, held),
+                to
+            );
+        }
+    }
+
+    #[test]
+    fn a_collapsed_drop_agrees_with_the_plain_one_for_a_block_of_one() {
+        let (starts, sizes) = laid_out(&[20.0, 40.0, 20.0, 30.0, 10.0], 4.0);
+        let centers: Vec<f64> = (0..5).map(|i| starts[i] + sizes[i] / 2.0).collect();
+        for held in 0..5 {
+            for at in (-10..200).step_by(7) {
+                assert_eq!(
+                    collapsed_drop_index(&starts, &sizes, &[held], held, at as f64),
+                    drop_index(&centers, &[held], at as f64)
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn a_horizontal_list_is_the_same_arithmetic() {
+        let (starts, sizes) = laid_out(&[60.0, 90.0, 60.0, 120.0, 60.0], 8.0);
+        let moved = [0, 2];
+        let offsets = collapsed_preview_offsets(&starts, &sizes, &moved, 2, 1);
+        let mut applied: Vec<usize> = (0..5).collect();
+        move_block(&mut applied, &moved, 1);
+        applied.retain(|index| *index == 2 || !moved.contains(index));
+        assert_eq!(shown(&starts, &offsets, &moved, 2), applied);
     }
 
     fn status(count: usize) -> SortableStatus {

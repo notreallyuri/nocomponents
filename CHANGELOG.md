@@ -9,6 +9,88 @@ touched; `cargo nocli components status` and a diff are how you deal with those.
 installed before the lock existed reads `not in lock`: the tool cannot tell whether it was edited,
 so diff it too and `components add <name> --force` to record it.
 
+## 0.6.5
+
+The windowed sortable, after noaweb put it next to its own hand-written list: it scrolls
+nearly as lightly, a block drag is one stack (in `Sortable` too), a screen reader hears the move
+while it lasts, and every drag handle is a tab stop again. The primitive changes arrive with the crate;
+the row classes, the handle and the new `progress` prop live in the styled files, so run `cargo
+nocli components update --apply` as well.
+
+- **Scrolling `SortableWindow` mounted a row at a cost it did not need.** Every row merged its
+  ~1,100 characters of classes through `tw_merge` as it mounted, and the handle did the same for its
+  own; the row's class is now merged once, in a `Memo`, and the handle's default is merged once per
+  thread. Past that, a row was about fifteen effects (one per `data-*` and `aria-*` attribute), a
+  `Drag` and four listeners, and its handle seven more effects: a row is now one effect that writes
+  only the attributes that changed, one for its content and one for its classes, and the handle two.
+  The press, the keys and the focus are the scroller's own four listeners, which find the row by
+  `data-index` and the handle by `data-sortable-handle`, and the list owns one `Drag` rather than one
+  per row. Static attributes are plain values, `data-sortable-item` is gone from the rows (nothing
+  read it), and the window's row list is built without a sort when nothing is held. Against a
+  hand-written windowed list in the style of noaweb's (same 5,000 rows of 44 px, a text span and a
+  button each, a keyed `For` over a `visible_range` memo), scrolling top to bottom one row per step
+  went from 1.57x its time to 1.13x in a debug build (5.96 s against 3.81 s, now 4.22 s against
+  3.74 s) and from 1.26x to 1.05x in a release one (2.60 s against 2.07 s, now 2.16 s against
+  2.05 s); 1.2 s of each is the browser's own scroll. The docs demo, whose rows also carry a
+  checkbox slot, an icon and two labels, went from 12.0 s to 7.1 s in debug and from 5.7 s to 4.2 s
+  in release.
+- **A windowed block drag was a pile of rows under the pointer, and then a scatter of ghosts.**
+  Ten selected rows meant ten faded copies strewn through the list, and worse when the selection
+  was scattered or out of view. A block of more than one is now one stack while it is held: the
+  other selected rows leave the page and the list closes up around them (`count - k + 1` rows long),
+  the held row is the stack (`data-count`, drawn by the styled layer as a pile with a badge inside
+  the row, so the scroller's `overflow` has nothing to clip) and follows the pointer, and exactly one
+  row-sized slot, an empty `data-slot="sortable-window-drop"` marker, shows where the block lands.
+  A keyboard move is the same with the stack in its slot and no marker. On the drop the stack opens
+  into the `k` rows, contiguous at that slot; a cancel puts everything back. What `on_move` reports
+  and `SortableWindowMove::apply` do are unchanged, and a block of one looks as it did.
+  Closing the list up would have slid the whole page by the number of selected rows above the held
+  one, so the scroller's `scrollTop` is lowered by that many rows at the pick-up (the held row stays
+  under the pointer, and nothing near it moves when the selection is out of view), the stack starts
+  the remainder lower where the top of the list stops it going further, a drop needs nothing since
+  the stack opens downward from its own slot, and a cancel keeps the first whole row in view where it
+  is. The scroller sets `overflow-anchor: none` so the browser does not scroll a second time.
+  One intentional difference in the result: where the block lands is decided by the rows the stack
+  has visibly passed on the collapsed list (`collapsed_drop_index`, which is `drop_index` over
+  `collapsed_len` rows), not by the uncollapsed positions the block's own rows used to occupy, so
+  carrying the stack across three rows passes three rows. Picked up and released without moving, a
+  scattered block gathers where the held row is, as a block that is already one run stays put.
+  `data-placeholder` is gone from windowed rows (the rest of a block is not in the page); the row's
+  `data-count` hook is the pile, and `SortableWindowRoot` takes `drop_class` for the marker. New,
+  unit-tested arithmetic, `O(log k)` per row and off the DOM: `collapsed_len`, `stack_slot`,
+  `collapsed_slot_of`, `collapsed_row_at`, `collapsed_drop_index`, `collapsed_top` and
+  `expanded_top_shift`. The keyboard reveals the stack with a row of room either side
+  (`reveal_top_within`), so its layers and shadow are not clipped when it reaches the scroller's
+  top or bottom edge, and the list has 12 px of margin under its last row while a stack is held so
+  the same is true at the very end. The drop marker is opaque: a translucent one showed the border
+  of a row still sliding past it as a stray line across the slot.
+- **A block drag in the measured `Sortable` was ten full rows on the pointer, and ring-marked
+  slots for the keyboard.** It is the same pile now, without changing layout: the picked item is
+  the pile (`data-count`, drawn with the same layers and badge as the windowed row; the classes are
+  shared in the styled file), the other selected items are `data-hidden` and `visibility: hidden`,
+  and the items that stay slide to close the gaps those left, with one slot the size of the pile
+  open where it will land. Everything is still a transform on the layout it had at the pick-up, so
+  nothing reflows and nothing is compensated for. The keyboard draws the pile in its slot, and no
+  ring placeholder; `data-placeholder` is now only a keyboard move of one item. The room the
+  hidden items took closes toward the start of the list, so the empty space is only at its end, and
+  the slot opens wherever the pile currently is in the closed-up list, nearest it from the first
+  frame: what is seen is where the block lands, and a block let go without moving gathers at the
+  pile's visible position, as `SortableWindow`'s stack does. New, pure and unit-tested against `move_block` for variable sizes and
+  gaps, and against `preview_offsets`/`drop_index` for a block of one: `collapsed_preview_offsets`
+  and `collapsed_drop_index`. Where the block lands is counted in the items the
+  pile has visibly passed, and is the same `to` `on_move` reports; `data-following` is now only the
+  picked item. Horizontal lists do the same along their own axis. The docs gain a sideways block
+  demo and the scrolling demo can be ticked.
+- **The progress sentence is back.** `SortableWindowRoot` and `SortableRoot` write a second,
+  `aria-live="polite"` region, "Moving 4 items. Destination position 12 of 5,000.", re-said when the
+  destination changes and emptied on a drop or cancel. `progress` replaces the wording and is handed
+  a new `SortableProgress { label, count, destination, total }`; `default_progress` is the English.
+  Say the list's own noun in `progress` and `announce`. `SortableStatus` is unchanged.
+- **Only one handle was a tab stop.** The windowed list used a roving tabindex, one stop for the
+  whole list. Every enabled handle (or row, without one) is `tabindex="0"` now, as in `Sortable`.
+  The arrows, Home and End still move focus when nothing is held, since they are the only way to a
+  row that is not in the page, and the row last given focus stays mounted.
+
 ## 0.6.4
 
 Two crashes that only show up once an owner is gone, sibling parts that read each other's
