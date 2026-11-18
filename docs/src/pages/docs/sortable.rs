@@ -78,14 +78,44 @@ const HORIZONTAL: &str = r#"let disabled = RwSignal::new(false);
 
 <Switch checked=disabled />"#;
 
-const SCROLLING: &str = r#"<Sortable
+const SIDEWAYS: &str = r#"let selected = RwSignal::new(HashSet::<String>::new());
+
+<Sortable
+    label="Crates"
+    orientation=Orientation::Horizontal
+    selected=selected
+    on_move=on_move
+>
+    <For each=move || items.get() key=|item| item.clone() let:item>
+        <SortableItem value=item.clone() label=item.clone()>
+            <Checkbox on_checked_change={
+                let item = item.clone();
+                move |on| selected.update(|set| {
+                    if on { set.insert(item.clone()); } else { set.remove(&item); }
+                })
+            } />
+            <span>{item.clone()}</span>
+        </SortableItem>
+    </For>
+</Sortable>"#;
+
+const SCROLLING: &str = r#"let selected = RwSignal::new(HashSet::<String>::new());
+
+<Sortable
     label="Queue"
-    class="max-h-56 overflow-y-auto pr-1"
+    class="max-h-56 overflow-y-auto pr-2"
+    selected=selected
     on_move=on_move
 >
     <For each=move || items.get() key=|item| item.clone() let:item>
         <SortableItem value=item.clone() label=item.clone()>
             <SortableHandle />
+            <Checkbox on_checked_change={
+                let item = item.clone();
+                move |on| selected.update(|set| {
+                    if on { set.insert(item.clone()); } else { set.remove(&item); }
+                })
+            } />
             <span>{item.clone()}</span>
         </SortableItem>
     </For>
@@ -178,7 +208,7 @@ const API: &[ApiEntry] = &[
                 name: "selected",
                 ty: "Signal<HashSet<String>>",
                 default: "{}",
-                description: "The selected keys. Picking up one of them takes all of them, by pointer or keyboard, and they land as one block in their current relative order. The picked item carries a data-count of how many.",
+                description: "The selected keys. Picking up one of them takes all of them, by pointer or keyboard, and they land as one block in their current relative order. The picked item becomes the pile and carries a data-count of how many; the others in the block are data-hidden, not drawn, and the items that stay close up around the one gap the block lands in.",
             },
             Prop {
                 name: "instructions",
@@ -191,6 +221,12 @@ const API: &[ApiEntry] = &[
                 ty: "Option<Callback<SortableEvent, String>>",
                 default: "None",
                 description: "Replaces the live-region wording wholesale. SortableEvent is PickedUp, Moved, Dropped or Cancelled, each with the item's label, its one-based position, the total and how many are in the block. None keeps default_announcement.",
+            },
+            Prop {
+                name: "progress",
+                ty: "Option<Callback<SortableProgress, String>>",
+                default: "None",
+                description: "Replaces the wording of the polite live region, which says what the move is while it lasts and is empty otherwise. SortableProgress is the item's label, how many are in the block, the one-based position the block's first item would land at, and the total. None keeps default_progress: Moving 4 items. Destination position 12 of 5,000.",
             },
             Prop {
                 name: "class",
@@ -238,7 +274,7 @@ const API: &[ApiEntry] = &[
                 name: "class",
                 ty: "Signal<String>",
                 default: "\"\"",
-                description: "Merged over the item's classes. It wears data-dragging, data-following, data-placeholder, data-anchor, data-count, data-selected and data-disabled.",
+                description: "Merged over the item's classes. It wears data-dragging (in the block), data-following (the picked item, while a pointer holds it), data-placeholder (a keyboard move of one item), data-anchor, data-count (the pile, when the block is more than one), data-hidden (in the block but not the pile: not drawn), data-selected and data-disabled.",
             },
             Prop {
                 name: "children",
@@ -322,7 +358,7 @@ const API: &[ApiEntry] = &[
                 name: "row_class",
                 ty: "Signal<String>",
                 default: "\"\"",
-                description: "Merged over every row's classes. The rows wear data-index, data-dragging (in the block being moved), data-following, data-placeholder, data-anchor (the one picked up), data-count (on the anchor, when it holds a block), data-selected and data-disabled, and carry aria-setsize and aria-posinset since most of the list is not in the page.",
+                description: "Merged over every row's classes. The rows wear data-index, data-dragging (the picked row), data-following (riding the pointer), data-anchor (the one picked up), data-count (on the anchor, when it holds a block: the row is a stack, so style it as a pile with a badge), data-selected and data-disabled, and carry aria-setsize and aria-posinset since most of the list is not in the page.",
             },
             Prop {
                 name: "selected",
@@ -353,6 +389,12 @@ const API: &[ApiEntry] = &[
                 ty: "Option<Callback<SortableEvent, String>>",
                 default: "default_announcement",
                 description: "Replaces the English wording of the live region.",
+            },
+            Prop {
+                name: "progress",
+                ty: "Option<Callback<SortableProgress, String>>",
+                default: "default_progress",
+                description: "Replaces the English sentence of the polite live region, which is re-said as the destination changes and cleared on a drop. Say the list's own noun here and in announce.",
             },
             Prop {
                 name: "disabled",
@@ -475,6 +517,15 @@ pub fn Page() -> impl IntoView {
         queue.update(|queue| apply_move(queue, &moved, |item| item.clone()));
     };
 
+    let crates = steps(&[
+        "rust", "leptos", "wasm", "tailwind", "trunk", "serde", "tokio", "axum",
+    ]);
+    let crates_selected = RwSignal::new(HashSet::<String>::new());
+    let crates_move = move |moved: SortableMove| {
+        crates.update(|crates| apply_move(crates, &moved, |item| item.clone()));
+    };
+    let queue_selected = RwSignal::new(HashSet::<String>::new());
+
     let pinned = steps(&["Inbox", "Drafts", "Sent", "Archive"]);
     let pinned_move = move |moved: SortableMove| {
         pinned.update(|pinned| apply_move(pinned, &moved, |item| item.clone()));
@@ -525,7 +576,7 @@ pub fn Page() -> impl IntoView {
 
                 <DemoSection
                     title="Block drag"
-                    description="Tick some items, then pick up any ticked one: they all go together, keeping their order, and land as one block. The held item shows how many are riding under it. The keyboard does the same — the block moves a slot at a time."
+                    description="Tick some items, then pick up any ticked one: they all go together, keeping their order, and land as one block. The held item becomes a pile with a count on it, the other ticked items leave their places, and the rest slide to close up around the single gap the block would land in — nothing in the page reflows, it is all transforms. The keyboard does the same: the pile moves a slot at a time."
                     code=BLOCK
                 >
                     <div class="flex w-full max-w-sm flex-col gap-3">
@@ -578,6 +629,40 @@ pub fn Page() -> impl IntoView {
                 </DemoSection>
 
                 <DemoSection
+                    title="Sideways block drag"
+                    description="The same block on a horizontal list: tick some chips, then pick any ticked one up. It is the pile that follows the pointer, the other ticked chips leave their places and the rest close up around the one gap it would land in. Everything is a transform, so nothing in the page reflows while it is held."
+                    code=SIDEWAYS
+                >
+                    <div class="w-full overflow-x-auto pt-3 pr-3 pb-3">
+                        <Sortable
+                            label="Crates"
+                            orientation=Orientation::Horizontal
+                            selected=crates_selected
+                            on_move=crates_move
+                        >
+                            <For each=move || crates.get() key=|item| item.clone() let:item>
+                                <SortableItem value=item.clone() label=item.clone()>
+                                    <Checkbox on_checked_change={
+                                        let item = item.clone();
+                                        move |on| {
+                                            crates_selected
+                                                .update(|set| {
+                                                    if on {
+                                                        set.insert(item.clone());
+                                                    } else {
+                                                        set.remove(&item);
+                                                    }
+                                                })
+                                        }
+                                    } />
+                                    <span>{item.clone()}</span>
+                                </SortableItem>
+                            </For>
+                        </Sortable>
+                    </div>
+                </DemoSection>
+
+                <DemoSection
                     title="Plain"
                     description="variant=SortableItemVariant::Plain drops the card: no border, shadow or background until the row is hovered, selected or held. It is for a list that lives among menu entries, like pinned items in a sidebar, where the card look has to be switched off by hand otherwise."
                     code=PLAIN
@@ -601,18 +686,32 @@ pub fn Page() -> impl IntoView {
 
                 <DemoSection
                     title="Scrolling"
-                    description="Hold an item near the top or bottom of the list and it scrolls. It is the list's own scroller that moves, never the page behind it, so the same list works inside a dialog whose body is locked. Give the list a height and overflow-y-auto; the nearest ancestor that actually scrolls is the one used."
+                    description="Hold an item near the top or bottom of the list and it scrolls. It is the list's own scroller that moves, never the page behind it, so the same list works inside a dialog whose body is locked. Give the list a height and overflow-y-auto; the nearest ancestor that actually scrolls is the one used. The items here can be ticked too, which is the way to try a block over a longer list: pick up any ticked item and the rest fold into the pile under it."
                     code=SCROLLING
                 >
                     <div class="flex w-full max-w-sm flex-col gap-3">
                         <Sortable
                             label="Queue"
-                            class="max-h-56 overflow-y-auto pr-1"
+                            class="max-h-56 overflow-y-auto pr-2"
+                            selected=queue_selected
                             on_move=queue_move
                         >
                             <For each=move || queue.get() key=|item| item.clone() let:item>
                                 <SortableItem value=item.clone() label=item.clone()>
                                     <SortableHandle />
+                                    <Checkbox on_checked_change={
+                                        let item = item.clone();
+                                        move |on| {
+                                            queue_selected
+                                                .update(|set| {
+                                                    if on {
+                                                        set.insert(item.clone());
+                                                    } else {
+                                                        set.remove(&item);
+                                                    }
+                                                })
+                                        }
+                                    } />
                                     <span>{item.clone()}</span>
                                 </SortableItem>
                             </For>
@@ -622,7 +721,7 @@ pub fn Page() -> impl IntoView {
 
                 <DemoSection
                     title="Windowed"
-                    description="Five thousand rows, and about twenty of them in the page. SortableWindow keeps only the rows in view, because every row is the same height and a row's place is its index times that: the drop, the slide of every row it passes and the window itself are arithmetic, so a drag costs the rows on screen and not the list. It owns its scroller, so give it a height. The held row stays in the page wherever it is carried, the list scrolls at its edges while one is held, and the keyboard is the same as above — arrows, Home and End move focus through the list when nothing is held, scrolling rows in as they go. Turn on Select, tick rows (Shift-click, or Shift and Space, for a range) and drag any ticked row: the whole selection moves as one block, including the rows that are not in the page. Fixed row height, vertical."
+                    description="Five thousand rows, and about twenty of them in the page. SortableWindow keeps only the rows in view, because every row is the same height and a row's place is its index times that: the drop, the slide of every row it passes and the window itself are arithmetic, so a drag costs the rows on screen and not the list. It owns its scroller, so give it a height. The held row stays in the page wherever it is carried, the list scrolls at its edges while one is held, and the keyboard is the same as above — arrows, Home and End move focus through the list when nothing is held, scrolling rows in as they go. Turn on Select, tick rows (Shift-click, or Shift and Space, for a range) and drag any ticked row: the whole selection moves as one block, including the rows that are not in the page. On pick-up the block collapses into one stack: the row you hold wears a count and a pile, and follows the pointer; the other selected rows leave the list, which closes up around them, so the list is as many rows long as it has unselected ones plus one; a single marker shows the one slot the block will land in. On the drop the stack opens into the selected rows, contiguous, at that slot, and Escape puts everything back. The list is scrolled by as many rows as left it above the held one, so what you were looking at stays put. Where the stack lands is decided by the rows it has visibly passed. Every handle is a tab stop; the arrows are how you reach rows that are not in the page. Fixed row height, vertical."
                     code=WINDOW
                 >
                     <div class="flex w-full max-w-sm flex-col gap-3">
