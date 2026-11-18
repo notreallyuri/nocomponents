@@ -3,7 +3,7 @@ use crate::{
     primitives::field::FieldControl,
     utils::form::{non_empty, on_native_reset},
 };
-use leptos::{prelude::*, wasm_bindgen::JsCast};
+use leptos::{ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
 use web_sys::HtmlElement;
 
@@ -51,6 +51,10 @@ pub fn TextareaRoot(
     /// owning the value through `model`.
     #[prop(optional, into)]
     on_input: Option<Callback<String>>,
+    /// Every key press while the textarea has focus, before the browser acts on it — call
+    /// `prevent_default` to keep it from doing so.
+    #[prop(optional, into)]
+    on_keydown: Option<Callback<ev::KeyboardEvent>>,
 ) -> impl IntoView {
     let field = FieldControl::new(id, disabled);
     // One ref whether or not the caller wanted it: auto-resize measures through the same node.
@@ -112,6 +116,11 @@ pub fn TextareaRoot(
                 }
                 if auto_resize {
                     resize();
+                }
+            }
+            on:keydown=move |ev| {
+                if let Some(cb) = on_keydown {
+                    cb.run(ev);
                 }
             }
             class=move || {

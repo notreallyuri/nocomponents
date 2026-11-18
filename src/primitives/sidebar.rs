@@ -8,6 +8,7 @@
 
 use crate::utils::{
     controllable::controllable,
+    listen::listen_click,
     types::{Side, StyledRender},
     use_media_query,
 };
@@ -360,6 +361,86 @@ pub fn SidebarMenuButtonRoot(
                 data-active=move || active.get().then_some("true")
                 aria-current=move || active.get().then_some("page")
                 disabled=disabled
+                class=class
+            >
+                {children.map(|children| children())}
+            </button>
+        }),
+    }
+}
+
+/// The small button on the right of a menu row — a "more" menu, a count to clear. Renders a
+/// `<button>` unless `render` is given; with it, the node it returns is what `on_click` and the
+/// state attributes land on, so this can be what a dropdown trigger renders into.
+///
+/// `data-menu-action` is written alongside `data-slot` because the row's own padding keys off the
+/// presence of an action, and a trigger writes its own `data-slot` over this one.
+#[component]
+pub fn SidebarMenuActionRoot(
+    #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional, into)] on_click: Option<Callback<ev::MouseEvent>>,
+    /// Render as something else. Handed the class this would have rendered, the node ref the
+    /// attributes go on, and the resolved `disabled`.
+    #[prop(default = None, into)]
+    render: Option<Callback<StyledRender, AnyView>>,
+    /// Pass one in when something outside needs this element too — a dropdown anchoring its menu
+    /// to it, say.
+    #[prop(optional)]
+    node_ref: Option<AnyNodeRef>,
+    #[prop(optional)] children: Option<Children>,
+) -> impl IntoView {
+    let node_ref = node_ref.unwrap_or_default();
+
+    match render {
+        Some(render_fn) => {
+            Effect::new(move |_| {
+                let Some(el) = node_ref.get() else {
+                    return;
+                };
+                let _ = el.set_attribute("data-menu-action", "");
+                if el.get_attribute("data-slot").is_none() {
+                    let _ = el.set_attribute("data-slot", "sidebar-menu-action");
+                }
+                if disabled.get() {
+                    let _ = el.set_attribute("aria-disabled", "true");
+                    let _ = el.set_attribute("data-disabled", "true");
+                } else {
+                    let _ = el.remove_attribute("aria-disabled");
+                    let _ = el.remove_attribute("data-disabled");
+                }
+            });
+
+            listen_click(node_ref, move |e| {
+                if disabled.get_untracked() {
+                    e.prevent_default();
+                    e.stop_immediate_propagation();
+                    return;
+                }
+                if let Some(cb) = on_click {
+                    cb.run(e);
+                }
+            });
+
+            leptos::either::Either::Left(render_fn.run(StyledRender {
+                class,
+                node_ref,
+                disabled,
+            }))
+        }
+        None => leptos::either::Either::Right(view! {
+            <button
+                type="button"
+                node_ref=node_ref
+                data-slot="sidebar-menu-action"
+                data-menu-action=""
+                disabled=disabled
+                data-disabled=move || disabled.get().then_some("true")
+                on:click=move |e| {
+                    if let Some(cb) = on_click {
+                        cb.run(e);
+                    }
+                }
                 class=class
             >
                 {children.map(|children| children())}

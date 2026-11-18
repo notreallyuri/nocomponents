@@ -34,4 +34,17 @@ export default async (t) => {
   await t.click(reset, 300);
   await t.settle('a reset returns to the default as it is now, not as it was at mount', `${form}.querySelector('[data-reset-output]').textContent.trim().split(' / ')[0]`, 'Grace');
   t.expect('and the field shows it', await t.ev(`${form}.querySelector('input').value`), 'Grace');
+
+  const kb = section(/keyboard/i);
+  const kbInput = `${kb}.querySelector('input')`;
+  const kbList = () => t.text(`${kb}.querySelector('[data-keydown-list]')`);
+  await t.click(kbInput);
+  await t.type('first');
+  await t.key('Enter');
+  t.expect('on_keydown: Enter adds the text to the list', await kbList(), 'first');
+  t.expect('and the field is emptied', await t.ev(`${kbInput}.value`), '');
+  await t.type('second');
+  await t.key('Escape');
+  t.expect('Escape clears the field', await t.ev(`${kbInput}.value`), '');
+  t.expect('without adding it', await kbList(), 'first');
 };

@@ -5,7 +5,7 @@ use crate::{
     },
     layout::doc_layout::DocLayout,
 };
-use leptos::prelude::*;
+use leptos::{ev, prelude::*};
 use nocomponents::components::{
     button::{Button, ButtonSize, ButtonType, ButtonVariant},
     input::{Input, InputType},
@@ -102,6 +102,32 @@ const RESET: &str = r#"{
     }
 }"#;
 
+const KEYDOWN: &str = r#"{
+    let text = RwSignal::new(String::new());
+    let items = RwSignal::new(Vec::<String>::new());
+    view! {
+        <div class="flex max-w-sm flex-col gap-3">
+            <Input
+                model=text
+                attr:placeholder="Type, then Enter to add, Escape to clear"
+                on_keydown=move |e: ev::KeyboardEvent| match e.key().as_str() {
+                    "Enter" if !text.get().trim().is_empty() => {
+                        items.update(|list| list.push(text.get().trim().to_string()));
+                        text.set(String::new());
+                    }
+                    "Escape" => text.set(String::new()),
+                    _ => {}
+                }
+            />
+            <ul data-keydown-list class="text-sm text-muted-foreground">
+                {move || {
+                    items.get().into_iter().map(|item| view! { <li>{item}</li> }).collect_view()
+                }}
+            </ul>
+        </div>
+    }
+}"#;
+
 const DISABLED: &str = r#"<Input attr:disabled=true value="Cannot edit this" class="max-w-sm" />"#;
 
 const FILE: &str = r#"<Input input_type=InputType::File class="max-w-sm" />"#;
@@ -120,7 +146,7 @@ const API: &[ApiEntry] = &[ApiEntry {
             name: "input_type",
             ty: "Signal<InputType>",
             default: "Text",
-            description: "One of: Text, Email, Password, Number, File, Tel, Url, Search, Date.",
+            description: "One of: Text, Email, Password, Number, File, Tel, Url, Search, Date, Hidden. Hidden renders `type=\"hidden\"`: submitted with the form, never shown, which is also what a password manager wants beside a field it is filling.",
         },
         Prop {
             name: "model",
@@ -199,6 +225,18 @@ const API: &[ApiEntry] = &[ApiEntry {
             ty: "Option<Callback<String>>",
             default: "None",
             description: "The committed value, when the field loses focus or Enter is pressed.",
+        },
+        Prop {
+            name: "on_keydown",
+            ty: "Option<Callback<ev::KeyboardEvent>>",
+            default: "None",
+            description: "Every key press while the field has focus, before the browser acts on it; `prevent_default` on the event stops that. Runs alongside the field's own handling.",
+        },
+        Prop {
+            name: "node_ref",
+            ty: "Option<AnyNodeRef>",
+            default: "None",
+            description: "Pass one in to reach the `<input>` yourself — to focus it, say. Without one the field makes its own.",
         },
     ],
 }];
@@ -331,6 +369,43 @@ pub fn Page() -> impl IntoView {
                                 >
                                     {move || if shown.get() { "Hide" } else { "Show" }}
                                 </Button>
+                            </div>
+                        }
+                    }
+                </DemoSection>
+
+                <DemoSection
+                    title="Keyboard"
+                    description="on_keydown runs on every key press in the field. Here Enter adds the text to the list and Escape clears the field."
+                    code=KEYDOWN
+                >
+                    {
+                        let text = RwSignal::new(String::new());
+                        let items = RwSignal::new(Vec::<String>::new());
+                        view! {
+                            <div class="flex max-w-sm flex-col gap-3">
+                                <Input
+                                    model=text
+                                    attr:placeholder="Type, then Enter to add, Escape to clear"
+                                    on_keydown=move |e: ev::KeyboardEvent| match e.key().as_str() {
+                                        "Enter" if !text.get().trim().is_empty() => {
+                                            items
+                                                .update(|list| list.push(text.get().trim().to_string()));
+                                            text.set(String::new());
+                                        }
+                                        "Escape" => text.set(String::new()),
+                                        _ => {}
+                                    }
+                                />
+                                <ul data-keydown-list class="text-sm text-muted-foreground">
+                                    {move || {
+                                        items
+                                            .get()
+                                            .into_iter()
+                                            .map(|item| view! { <li>{item}</li> })
+                                            .collect_view()
+                                    }}
+                                </ul>
                             </div>
                         }
                     }

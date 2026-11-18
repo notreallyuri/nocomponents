@@ -9,7 +9,7 @@ use crate::{
         menubar::{MenubarMenuRoot, MenubarRoot, MenubarTriggerRoot, use_menubar},
     },
     utils::controllable::forward,
-    utils::icon::IconSlot,
+    utils::{icon::IconSlot, types::StyledRender},
 };
 use leptos::{ev, prelude::*};
 use leptos_node_ref::AnyNodeRef;
@@ -120,12 +120,14 @@ pub fn MenubarItem(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(optional, into)] disabled: Signal<bool>,
     #[prop(optional, into)] on_click: Option<Callback<ev::MouseEvent>>,
-    children: Children,
+    #[prop(default = None, into)] render: Option<Callback<StyledRender, AnyView>>,
+    #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
     view! {
         <DropdownMenuItemRoot
             disabled=disabled
             on_click=forward(on_click)
+            render=render
             class=move || {
                 cn!(
                     "relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm font-medium outline-none transition-colors focus:bg-accent focus:text-accent-foreground hover:bg-accent hover:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50",
@@ -133,7 +135,7 @@ pub fn MenubarItem(
                 )
             }
         >
-            {children()}
+            {children.map(|children| children())}
         </DropdownMenuItemRoot>
     }
 }

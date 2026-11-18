@@ -108,6 +108,12 @@ const API: &[ApiEntry] = &[ApiEntry {
             default: "None",
             description: "Every edit, with the text as it stands.",
         },
+        Prop {
+            name: "on_keydown",
+            ty: "Option<Callback<ev::KeyboardEvent>>",
+            default: "None",
+            description: "Every key press while the field has focus, before the browser acts on it; `prevent_default` on the event stops that.",
+        },
     ],
 }];
 

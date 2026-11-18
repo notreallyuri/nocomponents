@@ -9,6 +9,113 @@ touched; `cargo nocli components status` and a diff are how you deal with those.
 installed before the lock existed reads `not in lock`: the tool cannot tell whether it was edited,
 so diff it too and `components add <name> --force` to record it.
 
+## 0.6.4
+
+Two crashes that only show up once an owner is gone, sibling parts that read each other's
+context, a video player that works under a finger, and icons that obey the size the caller wrote.
+Bump the dependency **and** run `cargo nocli components update --apply`: the fixes to the
+primitives arrive with the crate, but the icon sizing, the new props and the windowed sortable live
+in the styled files, and many of those changed. `cargo-nocli` is 0.4.2: `add` and `components
+update` now say when they rewrote `Cargo.toml`.
+
+### Fixed
+
+- `DialogContentRoot` registered a window `keydown` listener for its focus trap and dropped the
+  handle, so it was never removed. Once the dialog's owner was disposed, the next key anywhere
+  (Escape first) read a disposed signal and panicked. The handle is now removed in `on_cleanup`,
+  and the listener reads with `try_get_untracked`.
+- `Field`'s `focusout` handler panicked when a focused control was removed together with its
+  dialog: the event arrives after the field's owner is gone. It now reads with `try_get` and writes
+  `touched` with `try_set`.
+- Sibling contexts reached each other because a bare `provide_context` puts the value on the
+  enclosing owner, where a later sibling's value is what a lazily rendered earlier one finds. They
+  are now scoped with `<Provider>`: `DropdownMenuRadioGroupRoot` (two radio groups in one menu no
+  longer share a context, so the second group's items keep their own dot), the submenu's hover
+  state, and the roots of tabs, collapsible, progress, avatar, toast and `FloatingProvider`. The
+  bare `provide_context` that remained in `CarouselRoot`, `ResizableRoot` and `VideoPlayerRoot` is
+  gone.
+- `VideoPlayer` on touch:
+  - Hover wake and hide are mouse-only (`pointer_type == "mouse"`). A finger lifting is a
+    `pointerleave`, which used to hide the bar under the tap.
+  - A tap on a playing video toggles the overlay instead of playback.
+  - A press on the controls restarts the idle countdown, so a tap that lands as the bar fades is
+    not handed to the surface's play/pause click.
+  - Playing starts the idle countdown, so the overlay auto-hides when playback begins without a
+    pointer.
+  - Fullscreen falls back on the `<video>`'s `webkitEnterFullscreen` / `webkitExitFullscreen`
+    where `requestFullscreen` is missing or refuses (iPhone), and `webkitbeginfullscreen` /
+    `webkitendfullscreen` keep the flag in step.
+  - Touch targets: the controls are `pointer-coarse:size-11`, and the rail has a taller
+    transparent hit area under a coarse pointer.
+- A caller's `size-*` on an icon now wins. Every icon already rendered at a size of its own, so the
+  `[&_svg:not([class*='size-'])]:size-3` guards in `ButtonSize` and its relatives never matched,
+  and an icon in an `Xs` button stayed 16px in a 24px button. See Changed.
+- `SidebarMenuButton`'s `[&>svg]:size-4` no longer beats a caller's own size on a direct child
+  `<svg>`; the button sets `--icon-size` instead.
+
+### Added
+
+- `Checkbox` and `CheckboxRoot` take `on_click: Option<Callback<ev::MouseEvent>>`, run on every
+  click before the box toggles, so `shift_key()` can be read for range selection.
+- `Input` takes `node_ref`, `InputType::Hidden` (`type="hidden"`) and `on_keydown:
+  Option<Callback<ev::KeyboardEvent>>`. `Textarea` and `TextareaRoot` take `on_keydown`, and so do
+  `InputGroupInput` and `InputGroupTextarea`, which forward it. `/docs/input` has a "Keyboard"
+  demo: Enter adds the text to a list, Escape clears it.
+- `DropdownMenuItem`, `MenubarItem` and `ContextMenuItem` (the dropdown's item under another name)
+  take `render: Option<Callback<StyledRender, AnyView>>`, so a menu row can be a router link. The
+  role, `data-*`, roving-focus marker and close-on-select are written onto the node it returns.
+  `children` is now optional on all three.
+- `SidebarMenuActionRoot` is the primitive behind `SidebarMenuAction`, which now takes `render`,
+  `node_ref`, `on_click` and `disabled`, so it can be a dropdown trigger; `children` is optional.
+  It writes `data-menu-action`, which the row's padding keys off
+  (`group-has-data-[menu-action]/menu-item:pr-8`) because a trigger writes its own `data-slot`
+  over `sidebar-menu-action`.
+- `SortableItem` takes `variant: SortableItemVariant`, `Card` (the default, as before) or `Plain`,
+  a borderless row with a hover and selected background for menus and plain lists.
+- `SortableWindow`, `SortableWindowHandle` and `primitives::sortable::window` (`SortableWindowRoot`,
+  `SortableWindowHandleRoot`, `SortableWindowMove`): a sortable for thousands of rows. Fixed
+  `row_height`, only the rows in view and `overscan` more are in the page, and drop and shift are
+  arithmetic on indices rather than DOM measurement. Held and focused rows stay mounted, focus and
+  reveal work for rows that are not, and `on_move` carries a `SortableWindowMove` of indices. Pass
+  `selected` and dragging a selected row drags the whole block, which moves together
+  (`SortableWindowMove::is_block`, `count`, `apply`). `/docs/sortable` has a "Windowed" demo.
+- `utils::selection::RangeSelection`: a `Copy` handle over a set of selected keys and the anchor
+  a Shift-click measures from. `checked=range.checked(i)` and `on_click=range.on_click(i)` are all
+  a checkbox needs; a plain click moves the anchor, a Shift-click sets everything from the anchor
+  to the clicked row, and Shift+Space on a focused checkbox extends a range the same way, because
+  the click Space produces reports the modifiers. The set is the `HashSet<String>` that the
+  sortables take as `selected`. Also `range_for`, `set_range` and `locate`.
+- `utils::listen::listen_click`: a captured click listener for a node somebody else rendered, which
+  is how a `render` part handles a click it cannot write as `on:click`.
+- `Icon` and the glyphs read `--icon-size` (`size-[var(--icon-size,1em)]`).
+
+### Changed
+
+- Containers size their icons with `--icon-size` (`[--icon-size:0.75rem]`) instead of a
+  `[&_svg:not([class*='size-'])]:size-*` or `[&>svg]:size-4` descendant rule. Visibly: icons in
+  `Xs` and `Sm` buttons (and `ToggleSize::Xs` / `Sm`) are now 12px and 14px where they were 16px;
+  the `InputGroupAddon` and the sidebar's group label, group action, menu action and menu buttons set 1rem the same way. A
+  `size-6` written on an icon now takes effect.
+- A bare `<svg>` with no size class that you put inside one of these containers is no longer sized
+  by it: the container's old rule reached any descendant, and the variable reaches only
+  `Icon`s and the glyphs. Give it `size-4` or `size-[var(--icon-size,1rem)]` yourself.
+- `tests/features.rs` reads submodule folders: a file under `src/primitives/sortable/` counts
+  toward `sortable`, so the feature table is checked against `window.rs` too.
+
+### cargo-nocli 0.4.2
+
+- `add` and `components update` end the summary line with `, Cargo.toml updated` when they
+  changed the dependency or its features, where they used to report `0 written` for a run that had
+  rewritten the manifest.
+
+### Upgrading from 0.6.3
+
+Bump the dependency, `cargo update -p nocomponents`, then `cargo nocli components update --apply`
+(a file you edited is still yours: diff it). After updating, look for a raw `<svg>` inside a
+button, toggle, input-group addon or sidebar entry; it needs a size of its own now. Code that
+calls `SortableItem`, `SidebarMenuAction`, `DropdownMenuItem` or `MenubarItem` with `children`
+is unchanged, since the prop is only optional now.
+
 ## 0.6.3
 
 A tap on a phone sheet's scrim closes the sheet and nothing else. It used to close it on the press

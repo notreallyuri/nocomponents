@@ -162,8 +162,6 @@ pub fn ResizableGroupRoot(
         limits: RwSignal::new(Vec::new()),
     };
 
-    provide_context(ctx);
-
     // After the panels have registered — an effect runs once they have all rendered — and only
     // if the caller did not hand us a layout to restore.
     Effect::new(move |_| {

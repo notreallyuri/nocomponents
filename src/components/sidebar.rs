@@ -10,8 +10,8 @@ use crate::{
     icons::{chevron::ChevronRight, panel::PanelLeft},
     primitives::{
         sidebar::{
-            SidebarMenuButtonRoot, SidebarProviderRoot, SidebarRailRoot, SidebarRoot,
-            SidebarTriggerRoot, use_sidebar,
+            SidebarMenuActionRoot, SidebarMenuButtonRoot, SidebarProviderRoot, SidebarRailRoot,
+            SidebarRoot, SidebarTriggerRoot, use_sidebar,
         },
         tree::{TreeGroupRoot, TreeItemRoot, TreeRoot, TreeRowRoot, use_tree_item},
     },
@@ -369,7 +369,7 @@ pub fn SidebarGroupLabel(
             data-slot="sidebar-group-label"
             class=move || {
                 cn!(
-                    "flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70 outline-none ring-sidebar-ring transition-[margin,opacity] duration-200 ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
+                    "flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70 outline-none ring-sidebar-ring transition-[margin,opacity] duration-200 ease-linear focus-visible:ring-2 [--icon-size:1rem] [&>svg]:shrink-0",
                     "group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0",
                     class.get(),
                 )
@@ -391,7 +391,7 @@ pub fn SidebarGroupAction(
             data-slot="sidebar-group-action"
             class=move || {
                 cn!(
-                    "absolute top-3.5 right-3 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-sidebar-foreground outline-none ring-sidebar-ring transition-transform hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
+                    "absolute top-3.5 right-3 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-sidebar-foreground outline-none ring-sidebar-ring transition-transform hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 [--icon-size:1rem] [&>svg]:shrink-0",
                     "after:absolute after:-inset-2 md:after:hidden",
                     "group-data-[collapsible=icon]:hidden",
                     class.get(),
@@ -474,9 +474,9 @@ pub fn SidebarMenuButton(
                         "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50",
                         "data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground",
                         "data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground",
-                        "group-has-data-[slot=sidebar-menu-action]/menu-item:pr-8",
+                        "group-has-data-[menu-action]/menu-item:pr-8",
                         "group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-2",
-                        "[&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0",
+                        "[&>span:last-child]:truncate [--icon-size:1rem] [&>svg]:shrink-0",
                         size.get().as_class(),
                         class.get(),
                     )
@@ -504,18 +504,27 @@ pub fn SidebarMenuButton(
 pub fn SidebarMenuAction(
     #[prop(optional, into)] class: Signal<String>,
     #[prop(default = false)] show_on_hover: bool,
-    children: Children,
+    #[prop(optional, into)] disabled: Signal<bool>,
+    #[prop(optional, into)] on_click: Option<Callback<ev::MouseEvent>>,
+    #[prop(default = None, into)] render: Option<Callback<StyledRender, AnyView>>,
+    #[prop(optional)] node_ref: Option<AnyNodeRef>,
+    #[prop(optional)] children: Option<Children>,
 ) -> impl IntoView {
+    let node_ref = node_ref.unwrap_or_default();
+
     view! {
-        <button
-            type="button"
-            data-slot="sidebar-menu-action"
+        <SidebarMenuActionRoot
+            disabled=disabled
+            on_click=forward(on_click)
+            render=render
+            node_ref=node_ref
             class=move || {
                 cn!(
-                    "absolute top-1.5 right-1 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-sidebar-foreground outline-none ring-sidebar-ring transition-transform hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 peer-hover/menu-button:text-sidebar-accent-foreground [&>svg]:size-4 [&>svg]:shrink-0",
+                    "absolute top-1.5 right-1 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-sidebar-foreground outline-none ring-sidebar-ring transition-transform hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 peer-hover/menu-button:text-sidebar-accent-foreground [--icon-size:1rem] [&>svg]:shrink-0",
                     "after:absolute after:-inset-2 md:after:hidden",
                     "peer-data-[size=sm]/menu-button:top-1 peer-data-[size=default]/menu-button:top-1.5 peer-data-[size=lg]/menu-button:top-2.5",
                     "group-data-[collapsible=icon]:hidden",
+                    "disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50",
                     if show_on_hover {
                         "opacity-0 focus-within:opacity-100 group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 peer-data-[active=true]/menu-button:opacity-100 md:opacity-0"
                     } else {
@@ -525,8 +534,8 @@ pub fn SidebarMenuAction(
                 )
             }
         >
-            {children()}
-        </button>
+            {children.map(|children| children())}
+        </SidebarMenuActionRoot>
     }
 }
 
@@ -629,7 +638,7 @@ pub fn SidebarTreeRow(
                     "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground active:bg-sidebar-accent active:text-sidebar-accent-foreground",
                     "data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground",
                     "[[data-slot=tree-item]:focus-visible>&]:ring-2",
-                    "[&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0",
+                    "[&>span:last-child]:truncate [--icon-size:1rem] [&>svg]:shrink-0",
                     class.get(),
                 )
             }
@@ -720,7 +729,7 @@ pub fn SidebarMenuSubButton(
                 cn!(
                     "flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 text-sidebar-foreground outline-none ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50",
                     "data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground",
-                    "[&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-sidebar-accent-foreground",
+                    "[&>span:last-child]:truncate [--icon-size:1rem] [&>svg]:shrink-0 [&>svg]:text-sidebar-accent-foreground",
                     match size.get() {
                         SidebarMenuSize::Sm => "text-xs",
                         _ => "text-sm",

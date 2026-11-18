@@ -4,7 +4,7 @@ use leptos::prelude::*;
 #[component]
 pub fn ChevronUp(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
     view! {
-        <Icon view_box="0 0 24 24" stroke_width=2.0 class=move || cn!("size-4", class.get())>
+        <Icon view_box="0 0 24 24" stroke_width=2.0 class=move || cn!("size-[var(--icon-size,1rem)]", class.get())>
             <path d="m18 15-6-6-6 6" />
         </Icon>
     }
@@ -13,7 +13,7 @@ pub fn ChevronUp(#[prop(optional, into)] class: Signal<String>) -> impl IntoView
 #[component]
 pub fn ChevronDown(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
     view! {
-        <Icon view_box="0 0 24 24" stroke_width=2.0 class=move || cn!("size-4", class.get())>
+        <Icon view_box="0 0 24 24" stroke_width=2.0 class=move || cn!("size-[var(--icon-size,1rem)]", class.get())>
             <path d="m6 9 6 6 6-6" />
         </Icon>
     }
@@ -21,7 +21,7 @@ pub fn ChevronDown(#[prop(optional, into)] class: Signal<String>) -> impl IntoVi
 #[component]
 pub fn ChevronRight(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
     view! {
-        <Icon view_box="0 0 24 24" stroke_width=2.0 class=move || cn!("size-4", class.get())>
+        <Icon view_box="0 0 24 24" stroke_width=2.0 class=move || cn!("size-[var(--icon-size,1rem)]", class.get())>
             <path d="m9 18 6-6-6-6" />
         </Icon>
     }
@@ -30,7 +30,7 @@ pub fn ChevronRight(#[prop(optional, into)] class: Signal<String>) -> impl IntoV
 #[component]
 pub fn ChevronLeft(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
     view! {
-        <Icon view_box="0 0 24 24" stroke_width=2.0 class=move || cn!("size-4", class.get())>
+        <Icon view_box="0 0 24 24" stroke_width=2.0 class=move || cn!("size-[var(--icon-size,1rem)]", class.get())>
             <path d="m15 18-6-6 6-6" />
         </Icon>
     }

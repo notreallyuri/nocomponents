@@ -31,7 +31,7 @@ pub fn Alert(
             data-slot="alert"
             class=move || {
                 cn!(
-                    "relative grid w-full grid-cols-[0_1fr] items-start gap-y-0.5 rounded-xl px-4 py-3 text-sm ring-1 ring-foreground/10 has-[>svg]:grid-cols-[calc(var(--spacing)*4)_1fr] has-[>svg]:gap-x-3 [&>svg]:size-4 [&>svg]:translate-y-0.5",
+                    "relative grid w-full grid-cols-[0_1fr] items-start gap-y-0.5 rounded-xl px-4 py-3 text-sm ring-1 ring-foreground/10 has-[>svg]:grid-cols-[calc(var(--spacing)*4)_1fr] has-[>svg]:gap-x-3 [--icon-size:1rem] [&>svg]:translate-y-0.5",
                     variant.get().as_class(),
                     class.get()
                 )

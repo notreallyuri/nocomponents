@@ -249,14 +249,14 @@ pub async fn add(source: &Source, names: &[String], force: bool) -> Result<()> {
     // Cargo.toml.
     features.extend(installed.iter().cloned());
 
-    manifest::add_dependency(&features, source.checkout())?;
+    let manifest_changed = manifest::add_dependency(&features, source.checkout())?;
 
     let dirs = if icon_hint_dir {
         format!("{} and {}", config.paths.components, config.paths.icons)
     } else {
         config.paths.components.clone()
     };
-    report(&outcome, &dirs, [root_hint, icon_hint]);
+    report(&outcome, &dirs, [root_hint, icon_hint], manifest_changed);
     Ok(())
 }
 
@@ -291,7 +291,7 @@ pub async fn add_icons(source: &Source, names: &[String], force: bool) -> Result
     )
     .await?;
     lock.save()?;
-    report(&outcome, &config.paths.icons, [hint, None]);
+    report(&outcome, &config.paths.icons, [hint, None], false);
     Ok(())
 }
 
@@ -336,10 +336,13 @@ async fn install_icons(
     crate::modules::declare_install_dir(&config.paths.icons)
 }
 
-fn report(outcome: &Outcome, dir: &str, hints: [Option<String>; 2]) {
+fn report(outcome: &Outcome, dir: &str, hints: [Option<String>; 2], manifest_changed: bool) {
     print!("\n{} written", outcome.written);
     if outcome.kept > 0 {
         print!(", {} left alone (--force overwrites)", outcome.kept);
+    }
+    if manifest_changed {
+        print!(", Cargo.toml updated");
     }
     println!(" in {dir}");
 
@@ -864,11 +867,12 @@ async fn update_release(source: &Source, apply: bool) -> Result<()> {
     }
     lock.save()?;
 
+    let mut manifest_changed = false;
     if !fresh.is_empty() {
         let mut features = BTreeSet::new();
         features.insert("primitives".to_string());
         features.extend(fresh);
-        manifest::add_dependency(&features, source.checkout())?;
+        manifest_changed = manifest::add_dependency(&features, source.checkout())?;
     }
 
     for hint in hints.into_iter().flatten() {
@@ -879,6 +883,9 @@ async fn update_release(source: &Source, apply: bool) -> Result<()> {
     print!("\n{updated} updated");
     if outcome.written > 0 {
         print!(", {} newly installed", outcome.written);
+    }
+    if manifest_changed {
+        print!(", Cargo.toml updated");
     }
     println!();
 

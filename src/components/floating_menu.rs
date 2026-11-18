@@ -126,7 +126,7 @@ pub fn FloatingMenuItem(
                         "inline-flex shrink-0 items-center gap-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors outline-none",
                         "hover:bg-accent hover:text-accent-foreground focus-visible:ring-3 focus-visible:ring-ring/50",
                         "disabled:pointer-events-none disabled:opacity-50",
-                        "[&>svg]:size-4 [&>svg]:shrink-0",
+                        "[--icon-size:1rem] [&>svg]:shrink-0",
                         "data-[compact=true]:size-8 data-[compact=true]:justify-center data-[compact=true]:p-0",
                         "not-data-[compact=true]:h-8 not-data-[compact=true]:justify-start not-data-[compact=true]:px-2.5",
                         class.get(),

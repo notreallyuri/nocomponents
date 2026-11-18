@@ -3,7 +3,7 @@ use crate::{
     primitives::field::FieldControl,
     utils::form::{non_empty, on_native_reset},
 };
-use leptos::prelude::*;
+use leptos::{ev, prelude::*};
 use leptos_node_ref::AnyNodeRef;
 
 #[derive(Default, Clone, Copy, PartialEq)]
@@ -18,6 +18,7 @@ pub enum InputType {
     Url,
     Search,
     Date,
+    Hidden,
 }
 
 impl InputType {
@@ -32,6 +33,7 @@ impl InputType {
             InputType::Url => "url",
             InputType::Search => "search",
             InputType::Date => "date",
+            InputType::Hidden => "hidden",
         }
     }
 }
@@ -53,9 +55,11 @@ pub fn Input(
     #[prop(optional, into)] form: Signal<String>,
     #[prop(optional, into)] on_input: Option<Callback<String>>,
     #[prop(optional, into)] on_change: Option<Callback<String>>,
+    #[prop(optional, into)] on_keydown: Option<Callback<ev::KeyboardEvent>>,
+    #[prop(optional)] node_ref: Option<AnyNodeRef>,
 ) -> impl IntoView {
     let field = FieldControl::new(id, disabled);
-    let node_ref = AnyNodeRef::new();
+    let node_ref = node_ref.unwrap_or_default();
     on_native_reset(node_ref, form, model, default_value, value);
 
     view! {
@@ -81,6 +85,11 @@ pub fn Input(
                 }
                 if let Some(cb) = on_input {
                     cb.run(text);
+                }
+            }
+            on:keydown=move |ev| {
+                if let Some(cb) = on_keydown {
+                    cb.run(ev);
                 }
             }
             on:change=move |ev| {

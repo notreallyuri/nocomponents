@@ -13,3 +13,33 @@ macro_rules! cn {
         }
     };
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn a_callers_size_replaces_the_icon_variable_default() {
+        assert_eq!(
+            crate::cn!("size-[var(--icon-size,1rem)]", "size-6"),
+            "size-6"
+        );
+        assert_eq!(
+            crate::cn!("size-[var(--icon-size,1rem)]", "size-6 text-red-500"),
+            "size-6 text-red-500"
+        );
+        assert_eq!(
+            crate::cn!(
+                "size-[var(--icon-size,1em)]",
+                "size-[var(--icon-size,1rem)]"
+            ),
+            "size-[var(--icon-size,1rem)]"
+        );
+    }
+
+    #[test]
+    fn a_size_variant_replaces_the_base_icon_variable() {
+        assert_eq!(
+            crate::cn!("[--icon-size:1rem] px-2", "[--icon-size:0.75rem]"),
+            "px-2 [--icon-size:0.75rem]"
+        );
+    }
+}

@@ -10,10 +10,13 @@ use crate::{
 use leptos::prelude::*;
 use nocomponents::components::{
     checkbox::Checkbox,
-    sortable::{Sortable, SortableHandle, SortableItem, SortableMove, apply_move},
+    sortable::{
+        Sortable, SortableHandle, SortableItem, SortableItemVariant, SortableMove, SortableWindow,
+        SortableWindowHandle, SortableWindowMove, apply_move,
+    },
     switch::Switch,
 };
-use nocomponents::utils::types::Orientation;
+use nocomponents::utils::{selection::RangeSelection, types::Orientation};
 use std::collections::HashSet;
 
 const DEFAULT: &str = r#"// The list never touches its data. It says what moved and where, and
@@ -87,6 +90,60 @@ const SCROLLING: &str = r#"<Sortable
         </SortableItem>
     </For>
 </Sortable>"#;
+
+const PLAIN: &str = r#"<Sortable label="Pinned" on_move=on_move class="gap-0.5">
+    <For each=move || items.get() key=|item| item.clone() let:item>
+        <SortableItem
+            value=item.clone()
+            label=item.clone()
+            variant=SortableItemVariant::Plain
+            class="group/row"
+        >
+            <SortableHandle class="size-5 opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100" />
+            <span>{item.clone()}</span>
+        </SortableItem>
+    </For>
+</Sortable>"#;
+
+const WINDOW: &str = r##"// The list holds no rows of its own: it asks for row `i` when `i` is in view.
+let items = RwSignal::new((1..=5_000).collect::<Vec<u32>>());
+let selecting = RwSignal::new(false);
+
+// The selection is by key, so it survives a reorder and reaches rows that are not in the page.
+let range = RangeSelection::new(
+    Signal::derive(move || items.with(Vec::len)),
+    move |i| items.with(|items| items[i].to_string()),
+);
+
+let on_move = move |moved: SortableWindowMove| {
+    items.update(|items| moved.apply(items));
+};
+
+<SortableWindow
+    label="Tracks"
+    class="h-96"
+    count=move || items.with(Vec::len)
+    row_height=44.0
+    key=move |i: usize| items.with(|items| items[i].to_string())
+    item_label=move |i: usize| items.with(|items| format!("Track {:04}", items[i]))
+    selected=range.selected
+    row=move |i: usize| {
+        let n = items.with(|items| items[i]);
+        view! {
+            {move || selecting.get().then(|| view! {
+                <Checkbox
+                    class="size-5 rounded-none"
+                    checked=range.checked(i)
+                    on_click=range.on_click(i)
+                />
+            })}
+            <SortableWindowHandle />
+            <span class="tabular-nums">{format!("Track {n:04}")}</span>
+        }
+        .into_any()
+    }
+    on_move=on_move
+/>"##;
 
 const API: &[ApiEntry] = &[
     ApiEntry {
@@ -166,6 +223,12 @@ const API: &[ApiEntry] = &[
                 description: "What the live region calls the item, and what the handle's name is built from. Without one, the item's text — which includes a handle's, so pass one when the handle has text.",
             },
             Prop {
+                name: "variant",
+                ty: "SortableItemVariant",
+                default: "Card",
+                description: "Card is a bordered, shadowed surface. Plain has no border, shadow or background at rest — a row that takes an accent background on hover, the look of a menu or sidebar entry.",
+            },
+            Prop {
                 name: "disabled",
                 ty: "Signal<bool>",
                 default: "false",
@@ -215,6 +278,168 @@ const API: &[ApiEntry] = &[
             },
         ],
     },
+    ApiEntry {
+        name: "SortableWindow",
+        description: "A sortable list for thousands of rows: only the rows in view (and a few more either side) are in the page, whatever the count. Every row is the same fixed height, which is what makes a row's place a multiplication — nothing is measured, so a drag costs the rows on screen and not the list. The list owns its scroller, so give it a height. Vertical only; a list of uneven rows wants Sortable. Give it `selected` and a selected row takes the whole selection with it as one block, rows that are not in the page included. It reports a SortableWindowMove and the order stays yours.",
+        props: &[
+            Prop {
+                name: "count",
+                ty: "Signal<usize>",
+                default: "",
+                description: "How many rows the list has.",
+            },
+            Prop {
+                name: "row_height",
+                ty: "f64",
+                default: "",
+                description: "The height of every row, in pixels. Fixed: row i sits at i times this.",
+            },
+            Prop {
+                name: "overscan",
+                ty: "usize",
+                default: "6",
+                description: "Rows kept in the page above and below the ones in view.",
+            },
+            Prop {
+                name: "key",
+                ty: "Callback<usize, String>",
+                default: "",
+                description: "Names the row at an index in the reported move. Reads your data, so it follows a reorder.",
+            },
+            Prop {
+                name: "item_label",
+                ty: "Option<Callback<usize, String>>",
+                default: "the key",
+                description: "What a screen reader is told the row at an index is called, and what its handle's name is built from. Taken from data, not from the page, since the row may not be rendered.",
+            },
+            Prop {
+                name: "row",
+                ty: "Callback<usize, AnyView>",
+                default: "",
+                description: "The content of the row at an index. Rows are positional: the node at index 41 stays the node at index 41, and this is re-run when a signal it reads changes, which is how a reorder reaches the rows in view.",
+            },
+            Prop {
+                name: "row_class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over every row's classes. The rows wear data-index, data-dragging (in the block being moved), data-following, data-placeholder, data-anchor (the one picked up), data-count (on the anchor, when it holds a block), data-selected and data-disabled, and carry aria-setsize and aria-posinset since most of the list is not in the page.",
+            },
+            Prop {
+                name: "selected",
+                ty: "Signal<HashSet<String>>",
+                default: "empty",
+                description: "The keys, as `key` names them, that are selected: the same prop Sortable takes. Picking up one of them takes all of them, in their current order, as one block; the rest of the rows collapse under the held one and the others close up around the gap. Found by key over the whole list once, at the pick-up, so a selected row that is not rendered moves too. Keyboard pick-up takes the block as well, and the announcements say how many. RangeSelection keeps this set, and the anchor of its Shift-clicks.",
+            },
+            Prop {
+                name: "on_move",
+                ty: "Callback<SortableWindowMove>",
+                default: "",
+                description: "A row, or a block, was let go somewhere new: a SortableWindowMove. moved.apply(&mut items) is the whole integration, for one row or a block; moved.as_move() is the same report as a SortableMove.",
+            },
+            Prop {
+                name: "label",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The list's accessible name.",
+            },
+            Prop {
+                name: "instructions",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "What a handle is described by. Empty means the English default.",
+            },
+            Prop {
+                name: "announce",
+                ty: "Option<Callback<SortableEvent, String>>",
+                default: "default_announcement",
+                description: "Replaces the English wording of the live region.",
+            },
+            Prop {
+                name: "disabled",
+                ty: "Signal<bool>",
+                default: "false",
+                description: "Takes every row out of the tab order and refuses a pick-up.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the scroller's classes. Give it a height (h-96, max-h-[60vh]): the window is as many rows as that holds. It wears data-dragging while a move is in progress.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SortableWindowMove",
+        description: "What on_move is handed. `to` counts the list without the moved rows, as SortableMove's does, so 0 is the front and the same call works for a row or a block. A block lands as one run at `to` in the order it had.",
+        props: &[
+            Prop {
+                name: "key",
+                ty: "String",
+                default: "",
+                description: "What `key` said of the row that was picked up.",
+            },
+            Prop {
+                name: "from",
+                ty: "usize",
+                default: "",
+                description: "The picked row's index at the pick-up.",
+            },
+            Prop {
+                name: "to",
+                ty: "usize",
+                default: "",
+                description: "The index the first moved row ends up at, in the list without the moved ones. For one row, the index it ends up at.",
+            },
+            Prop {
+                name: "keys",
+                ty: "Vec<String>",
+                default: "",
+                description: "Every moved row's key, in list order. Just `key` when there was no selection.",
+            },
+            Prop {
+                name: "indices",
+                ty: "Vec<usize>",
+                default: "",
+                description: "Every moved row's index at the pick-up, ascending. apply() hands them to move_block, which is why a row that was never rendered moves correctly.",
+            },
+            Prop {
+                name: "apply(&mut Vec<T>) / as_move() / count() / is_block()",
+                ty: "methods",
+                default: "",
+                description: "apply puts the block where it landed; as_move is the same report as a SortableMove; SortableWindowMove::single(key, from, to) builds the one-row case.",
+            },
+        ],
+    },
+    ApiEntry {
+        name: "SortableWindowHandle",
+        description: "The part of a row that starts a drag and takes focus, inside the content of row. With a handle only the handle starts a drag, so a touch on the rest of the row still scrolls the list; without one the whole row is picked up and touch scrolling on it is off. Keys as SortableHandle; when nothing is held, the arrows, Home and End move focus through the list, scrolling rows into the page as they go.",
+        props: &[
+            Prop {
+                name: "label",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "The handle's accessible name. Without one: Reorder, followed by the row's item_label.",
+            },
+            Prop {
+                name: "class",
+                ty: "Signal<String>",
+                default: "\"\"",
+                description: "Merged over the handle's classes.",
+            },
+            Prop {
+                name: "children",
+                ty: "Option<Children>",
+                default: "a grip icon",
+                description: "What the handle shows.",
+            },
+            Prop {
+                name: "icon",
+                ty: "Option<ViewFn>",
+                default: "Grip",
+                description: "The glyph, in place of the grip (unused when children are given).",
+            },
+        ],
+    },
 ];
 
 fn steps(names: &[&str]) -> RwSignal<Vec<String>> {
@@ -248,6 +473,22 @@ pub fn Page() -> impl IntoView {
     ]);
     let queue_move = move |moved: SortableMove| {
         queue.update(|queue| apply_move(queue, &moved, |item| item.clone()));
+    };
+
+    let pinned = steps(&["Inbox", "Drafts", "Sent", "Archive"]);
+    let pinned_move = move |moved: SortableMove| {
+        pinned.update(|pinned| apply_move(pinned, &moved, |item| item.clone()));
+    };
+
+    let tracks = RwSignal::new((1..=5_000).collect::<Vec<u32>>());
+    let selecting = RwSignal::new(false);
+    let range = RangeSelection::new(Signal::derive(move || tracks.with(Vec::len)), move |i| {
+        tracks.with(|tracks| tracks.get(i).map(|n| n.to_string()).unwrap_or_default())
+    });
+    let window_last = RwSignal::new(None::<SortableWindowMove>);
+    let window_move = move |moved: SortableWindowMove| {
+        tracks.update(|tracks| moved.apply(tracks));
+        window_last.set(Some(moved));
     };
 
     view! {
@@ -337,6 +578,28 @@ pub fn Page() -> impl IntoView {
                 </DemoSection>
 
                 <DemoSection
+                    title="Plain"
+                    description="variant=SortableItemVariant::Plain drops the card: no border, shadow or background until the row is hovered, selected or held. It is for a list that lives among menu entries, like pinned items in a sidebar, where the card look has to be switched off by hand otherwise."
+                    code=PLAIN
+                >
+                    <div class="w-56 rounded-lg border bg-sidebar p-2 text-sidebar-foreground">
+                        <Sortable label="Pinned" class="gap-0.5" on_move=pinned_move>
+                            <For each=move || pinned.get() key=|item| item.clone() let:item>
+                                <SortableItem
+                                    value=item.clone()
+                                    label=item.clone()
+                                    variant=SortableItemVariant::Plain
+                                    class="group/row"
+                                >
+                                    <SortableHandle class="size-5 opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100" />
+                                    <span>{item.clone()}</span>
+                                </SortableItem>
+                            </For>
+                        </Sortable>
+                    </div>
+                </DemoSection>
+
+                <DemoSection
                     title="Scrolling"
                     description="Hold an item near the top or bottom of the list and it scrolls. It is the list's own scroller that moves, never the page behind it, so the same list works inside a dialog whose body is locked. Give the list a height and overflow-y-auto; the nearest ancestor that actually scrolls is the one used."
                     code=SCROLLING
@@ -354,6 +617,90 @@ pub fn Page() -> impl IntoView {
                                 </SortableItem>
                             </For>
                         </Sortable>
+                    </div>
+                </DemoSection>
+
+                <DemoSection
+                    title="Windowed"
+                    description="Five thousand rows, and about twenty of them in the page. SortableWindow keeps only the rows in view, because every row is the same height and a row's place is its index times that: the drop, the slide of every row it passes and the window itself are arithmetic, so a drag costs the rows on screen and not the list. It owns its scroller, so give it a height. The held row stays in the page wherever it is carried, the list scrolls at its edges while one is held, and the keyboard is the same as above — arrows, Home and End move focus through the list when nothing is held, scrolling rows in as they go. Turn on Select, tick rows (Shift-click, or Shift and Space, for a range) and drag any ticked row: the whole selection moves as one block, including the rows that are not in the page. Fixed row height, vertical."
+                    code=WINDOW
+                >
+                    <div class="flex w-full max-w-sm flex-col gap-3">
+                        <div class="flex items-center gap-3 text-sm">
+                            <Switch checked=selecting attr:aria-label="Select" />
+                            <span>"Select"</span>
+                            <span
+                                class="ml-auto text-xs text-muted-foreground"
+                                data-testid="sortable-window-count"
+                            >
+                                {move || format!("{} selected", range.len())}
+                            </span>
+                        </div>
+                        <SortableWindow
+                            label="Tracks"
+                            class="h-96"
+                            count=move || tracks.with(Vec::len)
+                            row_height=44.0
+                            key=move |i: usize| {
+                                tracks
+                                    .with(|tracks| {
+                                        tracks.get(i).map(|n| n.to_string()).unwrap_or_default()
+                                    })
+                            }
+                            item_label=move |i: usize| {
+                                tracks
+                                    .with(|tracks| {
+                                        tracks
+                                            .get(i)
+                                            .map(|n| format!("Track {n:04}"))
+                                            .unwrap_or_default()
+                                    })
+                            }
+                            selected=range.selected
+                            row=move |i: usize| {
+                                let n = tracks.with(|tracks| tracks.get(i).copied().unwrap_or(0));
+                                view! {
+                                    {move || {
+                                        selecting
+                                            .get()
+                                            .then(|| {
+                                                view! {
+                                                    <Checkbox
+                                                        class="size-5 rounded-none"
+                                                        checked=range.checked(i)
+                                                        on_click=range.on_click(i)
+                                                        attr:aria-label=format!("Select row {}", i + 1)
+                                                    />
+                                                }
+                                            })
+                                    }}
+                                    <SortableWindowHandle />
+                                    <span class="tabular-nums">{format!("Track {n:04}")}</span>
+                                    <span class="ml-auto text-xs tabular-nums text-muted-foreground">
+                                        {format!("#{}", i + 1)}
+                                    </span>
+                                }
+                                    .into_any()
+                            }
+                            on_move=window_move
+                        />
+
+                        <p class="text-xs text-muted-foreground" data-testid="sortable-window-last">
+                            {move || match window_last.get() {
+                                None => "No move yet.".to_string(),
+                                Some(moved) if moved.is_block() => {
+                                    format!("Moved {} items to {}", moved.count(), moved.to)
+                                }
+                                Some(moved) => {
+                                    format!(
+                                        "Moved {} from {} to {}",
+                                        moved.key,
+                                        moved.from,
+                                        moved.to,
+                                    )
+                                }
+                            }}
+                        </p>
                     </div>
                 </DemoSection>
 

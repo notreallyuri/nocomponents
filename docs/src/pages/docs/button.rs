@@ -11,7 +11,7 @@ use nocomponents::{
         button::{Button, ButtonSize, ButtonVariant},
         field::Field,
     },
-    icons::x::X,
+    icons::{plus::Plus, x::X},
     utils::types::StyledRender,
 };
 
@@ -29,6 +29,12 @@ const SIZES: &str = r#"<Button size=ButtonSize::Xs>"Extra Small"</Button>
 <Button size=ButtonSize::Fit variant=ButtonVariant::Ghost>
     "Fit"
 </Button>"#;
+
+const ICONS: &str = r#"<Button size=ButtonSize::Xs><Plus />"Xs"</Button>
+<Button size=ButtonSize::Sm><Plus />"Sm"</Button>
+<Button><Plus />"Default"</Button>
+<Button size=ButtonSize::Lg><Plus />"Lg"</Button>
+<Button size=ButtonSize::Sm><Plus class="size-6" />"Own size"</Button>"#;
 
 const ICON_SIZES: &str = r#"<Button size=ButtonSize::IconXs>"×"</Button>
 <Button size=ButtonSize::IconSm>"×"</Button>
@@ -185,6 +191,35 @@ pub fn Page() -> impl IntoView {
                         <Button size=ButtonSize::Lg>"Large"</Button>
                         <Button size=ButtonSize::Fit variant=ButtonVariant::Ghost>
                             "Fit"
+                        </Button>
+                    </div>
+                </DemoSection>
+
+                <DemoSection
+                    title="Icons"
+                    description="The button sets the size of the icons inside it, one step per button size, and an icon that carries a size class of its own keeps it. The mechanism is the --icon-size variable: the button writes it, and every icon reads it."
+                    code=ICONS
+                >
+                    <div class="flex flex-wrap items-center gap-3">
+                        <Button size=ButtonSize::Xs>
+                            <Plus />
+                            "Xs"
+                        </Button>
+                        <Button size=ButtonSize::Sm>
+                            <Plus />
+                            "Sm"
+                        </Button>
+                        <Button>
+                            <Plus />
+                            "Default"
+                        </Button>
+                        <Button size=ButtonSize::Lg>
+                            <Plus />
+                            "Lg"
+                        </Button>
+                        <Button size=ButtonSize::Sm>
+                            <Plus class="size-6" />
+                            "Own size"
                         </Button>
                     </div>
                 </DemoSection>

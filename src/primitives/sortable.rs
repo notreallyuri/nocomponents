@@ -42,6 +42,12 @@
 //!
 //! One axis only: a list, vertical or horizontal, not a grid.
 //!
+//! # A long list
+//!
+//! Everything above measures the DOM, which is right for a list of dozens. For thousands of rows
+//! there is [`window`]: the same gestures on fixed-height arithmetic, with only the rows in view
+//! in the page.
+//!
 //! # Data attributes
 //!
 //! - root: `data-dragging` (while a move is in progress), `data-orientation`, `data-disabled`;
@@ -64,6 +70,8 @@ use leptos::{context::Provider, ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
 use std::{collections::HashSet, time::Duration};
 use web_sys::{Element, HtmlElement, ScrollIntoViewOptions, ScrollLogicalPosition};
+
+pub mod window;
 
 const ITEM_ATTR: &str = "data-sortable-item";
 const LABEL_ATTR: &str = "data-sortable-label";

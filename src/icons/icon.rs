@@ -6,12 +6,16 @@
 //! SVG at all — a duotone icon's two `<path>`s and the opacity on the second come through as
 //! they are written.
 //!
-//! **Size** is `1em` square, written as the `width` and `height` *attributes* rather than a
-//! class. A presentation attribute loses to any CSS that targets the element, so the size a
-//! component sets (`[&_svg]:size-4` on a button, a slot's `[&>svg]:size-full`) or a class the
-//! caller passes always wins, and an icon that nothing sizes is as tall as the text beside it.
-//! A non-square viewBox is centred in that square (`xMidYMid meet`, the SVG default), which is
-//! what Font Awesome calls a fixed-width icon; pass `class="w-auto"` for the narrow one.
+//! **Size** is `1em` square, written as the `width` and `height` *attributes*, and a class
+//! (`size-[var(--icon-size,1em)]`) that reads the variable a component sets. A presentation
+//! attribute loses to any CSS that targets the element, so a class the caller passes always wins,
+//! and an icon that nothing sizes is as tall as the text beside it. A component that holds icons
+//! (a button, a menu row, a sidebar entry) sizes them by setting `--icon-size` on itself
+//! (`[--icon-size:0.75rem]`), never by a `[&_svg]:size-*` rule, which would outrank the caller's
+//! own class on the icon; a slot's `[&>svg]:size-full` is the one deliberate exception, because
+//! there the slot is the size. A non-square viewBox is centred in that square (`xMidYMid meet`,
+//! the SVG default), which is what Font Awesome calls a fixed-width icon; pass `class="w-auto"`
+//! for the narrow one.
 //!
 //! **Colour** is `currentColor`, so an icon is whatever colour the text around it is.
 //!
@@ -19,6 +23,7 @@
 //! and out of the tab order; with one it is `role="img"` named by it — for an icon that is the
 //! only content of something, though a button is better named on the button (`aria_label`).
 
+use crate::cn;
 use leptos::prelude::*;
 
 #[component]
@@ -55,7 +60,7 @@ pub fn Icon(
             role=move || labelled().then_some("img")
             aria-label=move || labelled().then(|| label.get())
             aria-hidden=move || (!labelled()).then_some("true")
-            class=class
+            class=move || cn!("size-[var(--icon-size,1em)]", class.get())
         >
             {children()}
         </svg>

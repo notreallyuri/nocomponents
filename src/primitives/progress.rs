@@ -1,4 +1,4 @@
-use leptos::prelude::*;
+use leptos::{context::Provider, prelude::*};
 
 #[derive(Clone, Copy)]
 pub struct ProgressContext {
@@ -20,28 +20,30 @@ pub fn ProgressRoot(
     label: Signal<String>,
     children: Children,
 ) -> impl IntoView {
-    provide_context(ProgressContext { value, max });
-
     let data_state = move || match value.get() {
         None => "indeterminate",
         Some(v) if v >= max.get() => "complete",
         _ => "loading",
     };
 
+    let context = ProgressContext { value, max };
+
     view! {
-        <div
-            data-slot="progress"
-            role="progressbar"
-            aria-label=move || Some(label.get()).filter(|label| !label.is_empty())
-            aria-valuemin="0"
-            aria-valuemax=move || max.get().to_string()
-            aria-valuenow=move || value.get().map(|v| v.to_string())
-            data-state=data_state
-            data-max=move || max.get().to_string()
-            class=class
-        >
-            {children()}
-        </div>
+        <Provider value=context>
+            <div
+                data-slot="progress"
+                role="progressbar"
+                aria-label=move || Some(label.get()).filter(|label| !label.is_empty())
+                aria-valuemin="0"
+                aria-valuemax=move || max.get().to_string()
+                aria-valuenow=move || value.get().map(|v| v.to_string())
+                data-state=data_state
+                data-max=move || max.get().to_string()
+                class=class
+            >
+                {children()}
+            </div>
+        </Provider>
     }
 }
 

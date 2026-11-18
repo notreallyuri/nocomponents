@@ -50,9 +50,7 @@ impl AsClass for ItemMediaVariant {
     fn as_class(&self) -> &'static str {
         match self {
             ItemMediaVariant::Plain => "bg-transparent",
-            ItemMediaVariant::Icon => {
-                "size-8 rounded-sm border bg-muted [&_svg:not([class*='size-'])]:size-4"
-            }
+            ItemMediaVariant::Icon => "size-8 rounded-sm border bg-muted [--icon-size:1rem]",
         }
     }
 }

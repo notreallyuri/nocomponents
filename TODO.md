@@ -1,288 +1,50 @@
 # TODO
 
-Working list for `nocomponents`. Status reflects the tree as of 2026-11-13; check items off as they
-land and add new ones rather than keeping a parallel list elsewhere. Closed items from earlier work
-keep their reasoning where it was written; a new item should be short, with the reasoning in the
-commit that closes it, and anything still to do about a closed one is its own open item rather than
-a sentence buried in it.
+Working list for `nocomponents`. Unfinished tasks are preserved from the 2026-11-13 list.
+Completed entries were consolidated on 2026-11-14; detailed reasoning remains in git history.
+
+## Completed work summary
+
+The 154 completed tasks removed from this list covered:
+
+- **Components and shared utilities:** completed the component catalogue and added drag, colour,
+  image/GIF, date and locale utilities; shipped the colour picker, cropper, kanban, floating menu,
+  canvas, timeline, tree and video player, with further interaction and layout improvements.
+- **Bug fixes and accessibility:** corrected portal context, exit animations, dismissal, focus,
+  pointer handling, scroll compensation, field wiring and ARIA attributes. Shared dismissal,
+  roving-focus and typeahead primitives now support keyboard interaction across controls.
+- **Canvas editing:** added move/resize callbacks, committed gesture reporting, surface gestures,
+  marquee and group selection, group transforms, z-order, world-coordinate helpers and editable
+  multiline labels. Reserved rotation in the data model with `WorldBox::angle`.
+- **Component APIs, icons and themes:** reviewed the styled layer, standardised controlled and
+  uncontrolled state and render callbacks, improved native forms and reset handling, added consumer
+  icon slots and localisable labels, and expanded palette, accent and radius configuration.
+- **Phone sheets:** added sheet presentations, header close controls, drag-to-dismiss, snap points
+  and portal containers; fixed background scroll locking and touch submenu behaviour. Real iOS
+  Safari touch behaviour remains unverified by the Chromium smoke suite.
+- **Docs:** added component demos, snippets and API tables, composed blocks, utility and theme
+  pages, search and page navigation. Persistent docs shells preserve sidebar scroll within a
+  section; blocks and primitives have their own searchable sections, with five primitive pages
+  written. Consolidating the five-file component registration process was folded into the open
+  generator task below.
+- **CLI, releases and repository checks:** installed component/icon sources and CSS, resolved
+  sources from the consumer's library release, added lock hashes, safe removal, managed module
+  declarations and `components update`. Published both crates, improved README, package metadata,
+  licences and notices, configured docs.rs, and added CI checks and browser smoke coverage.
 
 ## Priority
 
-- [x] `cargo nocli components update [--apply]`: classifies installed files against the release in
-      `Cargo.lock` and rewrites only the unchanged outdated ones.
 - [ ] Three-way merge for files edited here and changed upstream (`update` lists them; today the
       project diffs by hand).
 - [ ] `--backup` for `components update --apply`: copy replaced files to
       `.nocli/backup/<timestamp>/` first (opt-in; not the default — a project under version
       control doesn't need it).
 
-## Bugs
-
-- [x] Dialog content resolved a *different* dialog's context: leptos' `Portal` mounts under an
-      owner of its own, which a bare `provide_context` does not reach. Scoped with `<Provider>`.
-- [x] `animate.css` fill-mode fallbacks were dead code — a registered `@property` resolves to its
-      initial value, not to the `var()` fallback.
-- [x] The dialog plays its exit animation: the portal's `Show` gates on `is_mounted`, not `is_open`.
-- [x] Closing floating content swallowed clicks for `unmount_delay`; the positioning shells are
-      permanently `pointer-events-none` and the styled content re-enables itself.
-- [x] Selecting a submenu item left the parent menu open — `MenuRoot` publishes the outermost
-      context alongside the one the submenu's own `FloatingRoot` shadows.
-- [x] A delayed unmount could fire into a disposed owner and panic; both roots clear the
-      `TimeoutHandle` in `on_cleanup`.
-- [x] Colour picker rails took the press and went dead for the rest of the drag: `set_rgba` read
-      the colour *tracked*, so a lossy round trip undid every move as a stale write. Reads
-      untracked now.
-- [x] One `crop_image` over bytes rather than two functions over two inputs — every caller was
-      sniffing the type and branching, and the avatar block silently flattened picked GIFs.
-- [x] Cropper drag modifiers: shift holds the grabbed shape from the far corner, alt holds it about
-      the centre, and shift on a move snaps to eight directions. `DragPoint` carries the modifiers,
-      so they can be taken up or let go mid-drag.
-- [x] `utils::use_media_query` — one `match_media`, re-read on `resize`, so what it says and what
-      CSS is doing cannot drift.
-- [x] `Select` wears the `Field` around it like every other control; the field is handed the
-      trigger's own id rather than minting a second one no element wears.
-- [x] `SidebarMenuButton` takes a `node_ref`, so a dropdown can anchor to a sidebar row.
-- [x] A toast raised from a view that disposes itself in the same handler was a panic:
-      `show()` minted `is_open` and `height` under the caller's owner. `ToastContext` carries the
-      provider's `Owner` and `show()` runs inside it.
-- [x] A `FieldLabel` beside a `Combobox` pointed `for` at an id nothing wore. The wiring the select
-      already had is now `field_control_for_trigger`, shared by both.
-
-- [x] The ⌘K palette navigated to `/base/base/docs/…` on the Pages build: `use_navigate` resolves
-      against the router's base and was handed a path `href()` had already prefixed. `A` is the
-      other way round, which is why only the palette broke — and why `trunk serve` never showed it.
-- [x] Switching pages reset the sidebar's scroll to the top. Every page rendered its own
-      `DocLayout`, so navigating rebuilt the whole sidebar; the chrome is now `DocShell` on a
-      `ParentRoute` at `/docs` and only the `Outlet` swaps.
-- [x] The sidebar is on `utils::use_media_query`, and `SidebarContext::is_mobile` is a `Signal`
-      rather than an `RwSignal` — derived from the viewport, so nothing but the window decides it.
-      Not the drop-in it looked: the old `resize` handler did two things, and closing the mobile
-      overlay when the breakpoint is crossed is now its own effect, keyed on the *change* rather
-      than the value so it cannot shut an overlay the reader just opened.
-- [x] A floating trigger overwrote a caller's own `id`. It now adopts an id already on the node as
-      `trigger_id` instead, so a `<label for>` still names the trigger and everything downstream —
-      the field's `control_id`, the content's `aria-labelledby` — follows the caller's id rather
-      than a minted one. A trigger with no id of its own still gets one.
-- [x] A menu item can be disabled. `DropdownMenuItemRoot` takes `disabled`, writes `data-disabled`
-      and `aria-disabled`, and refuses the click in the handler rather than trusting the styled
-      layer's `pointer-events-none` — so an item styled by someone else refuses it too. One root, so
-      the dropdown, the context menu and the menubar all got it; `DropdownMenuItem` and
-      `MenubarItem` pass it through.
-- [x] The `<select>` is `NativeSelect`'s own root, so `attr:id`, `attr:name` and any event land on
-      the control instead of on a wrapper. The chevron is a background image, since a pseudo-element
-      does not render on a `<select>` and there is no way to mask one to a token: two baked greys,
-      light and dark, which are the values `--muted-foreground` has in both default palettes. A
-      custom palette's own muted-foreground will not reach it — the price of the wrapper going.
-      `on_blur` stays as a convenience, but its reason for existing is gone and its doc says so.
-- [x] `DropdownMenuTrigger` and `PopoverTrigger` build their `Button` as the `render` the root
-      already takes, instead of around `ctx.trigger_ref` behind the root's back. They were doing
-      what `ComboboxTrigger` does — it was never the only one, and `SelectTrigger` was the only one
-      doing it right. Found by the `data-slot` work: a trigger that skips its root gets nothing the
-      root writes onto the node.
-- [x] `ComboboxTrigger` goes through its root too, and the duplicated `field_control_for_trigger`
-      is gone with it — the root does the field wiring once and hands the resolved `disabled` back.
-      What made that possible: the trigger callback is a **`TriggerRender` struct** now, not a
-      tuple. `(AnyNodeRef, Callback<MouseEvent>)` had to grow a third element, and a tuple has to
-      be re-broken every time it does; a struct takes a new field and leaves every caller alone.
-      Verified where it matters — a combobox inside a `<Field disabled=true>` still comes out
-      disabled, which is exactly what routing it through the root would otherwise have dropped.
-- [x] `FloatingTrigger` takes a `data_slot`, written onto the node rather than into the markup —
-      the trigger is its own `<button>` in one place and whatever `render` returned in another, and
-      the node ref is all the shapes have in common, so one path covers both. `dropdown_menu` and
-      `select`, which had no `data-slot` anywhere, now carry one on every part they own: the
-      trigger, the content, the item, and the submenu's trigger and panel.
-- [x] Every component carries a `data-slot` now. The audit found twelve with none at all — badge,
-      button, checkbox, data_table, date_picker, input, label, progress, spinner, switch, textarea,
-      toast — which was most of the ones people reach for first. The rule: the primitive writes it
-      where there is one, the styled layer writes it for the style-only components.
-- [x] The colour picker's alpha thumb is clipped top and bottom. The `overflow-hidden` was never
-      doing anything: a background is already clipped to its own element's border radius, so the
-      chequer rounds itself and the rail inside it is `rounded-full` too. Dropping it lets the 2px
-      of thumb that stands proud of the `h-3` rail render, and the alpha thumb is now the same full
-      circle as the hue thumb above it.
-
-- [x] The carousel's Next stayed enabled past the last reachable slide when more than one was on
-      screen: `can_scroll_next` was `index + 1 < count`, which counts *slides* rather than scroll
-      positions. `CarouselContext::last` is the bound now — the track's own scroll extent, and the
-      last slide whose offset still fits inside it — read in the same pass as the current index,
-      since both come from one walk of the slides and that walk happens on every scroll event.
-
-      Two things it needs beyond the arithmetic. The bound is a **measurement**, so it is `None`
-      until one has been taken and falls back to counting slides in the meantime: a bound of zero
-      means "nowhere to go", and a carousel measured before its track has a box would wear that as
-      one — disabling the Next that is the only thing that would have scrolled it and measured it
-      again. And a `ResizeObserver` on the track is what re-measures, because leaving a docs page
-      and coming back mounts one exactly that way; that was the reported symptom, a Sizes demo
-      stuck showing its first three slides with a dead Next.
-
-- [x] A dragged kanban card drifted from the cursor if anything scrolled that the board did not
-      scroll itself. `KanbanContext::scrolled` accumulated only the board's *own* auto-scroll
-      steps, so it was blind to the page scrolling, a wheel flick, or a column scrolling. Replaced
-      rather than added to: the card's own container is measured at the press, and every move takes
-      the difference — its rect answers for everything outside it, its scroll offsets for the one
-      thing that moves the card without moving it. Recomputed on the edge-scroll timer, which is
-      already the gesture's heartbeat, so a pointer held still is covered too. Verified in the
-      browser: an 80px page scroll used to cost 80px of drift and now costs about two.
-
-- [x] `Button` renders `ButtonRoot`, which was rendered by nothing. Filling it rather than
-      deleting it, because there turned out to be behaviour for it to hold and every one of these
-      was missing: `Button` had **no `disabled` prop at all**, so every caller wrote
-      `attr:disabled` and a button inside a disabled `<Field>` stayed live — the bypass again, one
-      layer down. The root resolves `disabled` through the new `field::field_disabled` (the field
-      *and* the fieldset, since a `<fieldset disabled>` does not reach a row that renders as an
-      `<a>`), refuses the click in the handler rather than trusting `disabled:pointer-events-none`,
-      and takes `type` as a prop defaulting to `ButtonType::Button` — HTML's default is `submit`,
-      which is why three demos were carrying `attr:r#type="button"` to undo it.
-
-      `render` moved onto the root too, so both shapes go through one place, and `StyledRender`
-      grew a third field: the resolved `disabled`. That is what the struct was for — every caller
-      written against the two it had kept compiling. It matters because `disabled` is a
-      `<button>`'s attribute and means nothing on an `<a>`: the root writes `aria-disabled` and
-      `data-disabled` onto the node for that shape, and the styled layer grew the matching
-      `aria-disabled:` classes, which `SidebarMenuButton`'s were already written against.
-- [x] All three render callbacks are named structs: `TriggerRender` for the floating triggers,
-      `StyledRender` (class + node ref) for `Button` and `SidebarMenuButton`, `AnchorRender` (node
-      ref alone) for the tooltip and hover card. Kept separate rather than merged into one: a
-      tooltip trigger has no click to run and no classes to wear, and handing it fields that mean
-      nothing where it stands is worse than three honest shapes. Each can now grow on its own.
-- [x] The canvas took the primary button and left the caller nothing. `pan_on_drag` is off by
-      default now: a press is a click, and panning is space and drag, the middle button or two
-      fingers — which is where every editor since Figma has put it. The cost of the old default was
-      invisible until you tried to build on the thing: a board that pans on press has no gesture
-      left to select a node with, none to drag one by, and nowhere to put a click on empty space
-      that means "deselect". `on_surface_click` is the other half — a click that landed on the
-      board rather than on anything placed on it, reported in *world* coordinates, which is the
-      part a caller cannot work out for itself since it takes the surface's own box and the current
-      transform. It stays quiet for a click on a node and for the click that ends a pan. The three
-      pan states are one `data-pan` attribute (`ready`/`active`/absent) rather than a flag each:
-      they overlap while space is held through a drag, and two attributes styled separately leave
-      which cursor wins to stylesheet order.
-- [x] Canvas nodes were something you could look at and nothing else. `CanvasNodeRoot` reports its
-      own gestures now — `on_move` for a drag on the body, `on_resize` for one of the eight grips,
-      and it still applies neither: the caller keeps the list, as with the kanban board. What the
-      node owns is the arithmetic nobody should write twice, since a pointer travels in screen
-      pixels and a node lives in world units, and the zoom to divide by is in the canvas' context
-      that only something inside the canvas can reach. The resize itself is `WorldBox::resized` in
-      `utils::viewport`, unit-tested off the DOM like the rest of that module, and measured from
-      the **press** rather than from the last move: clamped incrementally at the minimum the
-      remainder is thrown away, and the box then lags the pointer by however far it was dragged
-      past the limit. `aspect` keeps a ratio and draws only the corners, a side handle having no
-      opposite edge to hold still on the axis it does not move.
-- [x] The grips are sized in screen pixels and divided by the zoom before they are drawn — a 10px
-      square is 1px at 0.1× and covers its own node at 4×. Everything else on a board is meant to
-      scale and a control is not, which is the same argument the background dots already won. The
-      surface publishes `--canvas-zoom` for the CSS that has to make the same division: there is no
-      class for "one pixel however far in we are", but `calc(1px / var(--canvas-zoom))` is one.
-- [x] `CanvasNodeLabel` — a node's label that becomes an input on double-click. Two rules pointing
-      opposite ways: the text lets a press through, so a sticky is still dragged by its words; the
-      input stops one, that press being the caret's. The input takes the node's own font and colour
-      rather than a browser's defaults, and its background is a tint of `currentColor`, so it
-      blends on an amber sticky and on a bordered shape alike. Escape restores — which needed a
-      flag, because Chrome fires `blur` at an element it removes from the document and the blur
-      would otherwise commit the text Escape had just thrown away.
-- [x] `Textarea` takes a `node_ref`. The selection is the one piece of a textarea's state that
-      lives nowhere but the DOM, so a toolbar that formats what the reader has highlighted cannot
-      be written without reaching the element.
-- [x] The canvas node's label was an `<input>`, and the text it stands in for wraps. So a sticky's
-      words reflowed onto one line the moment you began editing them and jumped back when you
-      stopped — the one moment an editor should be still. A `<textarea>` now, `rows="1"` and sized
-      by its content, wearing the node's own font, colour and alignment through `[font:inherit]`
-      and `text-inherit`: a browser gives a form control none of that, which is why it looked like
-      somebody else's element sitting in the note. Measured at 126×77 idle and 126×77 editing.
-- [x] Editing wore a tinted background and a ring. Both gone — the caret is the only thing that
-      says an edit is happening, which is the only thing that needs to.
-- [x] Enter left the note instead of breaking the line. It now does what it does in every other
-      multi-line field, and everything else ends the edit **keeping** the text: Escape,
-      ⌘/Ctrl+Enter, and clicking away. No cancel, on purpose — the words under the caret are the
-      note, so a key that silently threw them away would be a key nobody presses twice. The two
-      keys stop propagation as well as preventing the default, or the key that ended a rename goes
-      on to close the dialog the board is sitting in.
-- [x] Escape committed the very text it was meant to discard. Chrome fires `blur` at an element it
-      takes out of the document, so the blur spoke after the key had. A `settled` flag, cleared
-      when an edit *begins* rather than by the blur, so a browser that does not send that blur
-      cannot leave it set for the next edit. Escape commits by design now, but the flag still
-      earns its place: without it a caller that **rejects** an edit sees the same one arrive twice.
-
-- [x] **A multi-line label read as one line when it was not being edited.** A span collapses `\n`
-      to a space, so a note typed over three lines came back as one — which Enter breaking the
-      line had just made easy to hit. `whitespace-pre-wrap` on the styled label fixes it, and this
-      is now **verified in a browser** rather than only compiled: the span computes `pre-wrap`,
-      and a three-line note committed with Escape comes back 60px tall at a 20px line-height —
-      three lines, with the newlines still in the text.
-- [x] `VideoPlayer`'s subtitles sat under the control bar, and the lift meant to clear them was
-      dead code twice over. `[&::-webkit-media-text-track-container]:-translate-y-20` generated
-      the rule it was supposed to, and Chrome ignored it: Tailwind v4 writes the independent
-      `translate` property, and that pseudo-element honours only `transform`. Firefox has no such
-      pseudo-element at all, so there was never a version of this that worked in both.
-
-      **So the player draws the cues itself.** The active track is set `Hidden` rather than
-      `Showing` — which keeps `activeCues` current and `cuechange` firing while stopping the
-      browser painting — and `VideoPlayerContext::cues` becomes ordinary elements that can be
-      positioned, themed and animated. They step above the bar on the same `data-active` the bar
-      reads and drop back when it goes.
-
-      Three things fell out of it. Cue text is the source as authored, so `cue_text` drops WebVTT
-      markup (`<i>`, `<v Roger>`, the karaoke timestamps) and decodes the six character references
-      the format defines — unit-tested, since it is string arithmetic. Sizes are a reader
-      preference (`VideoPlayerCaptionSize`, a submenu) written in `cqw` against a container on the
-      caption box, so one choice holds from a thumbnail to fullscreen. And both demo `.vtt` files
-      carried a bare `<track>`, which a browser reads as a tag and drops — the cue really did say
-      "passed in as a  child".
-
-      **The cost, written down because it is invisible until someone hits it**: the browser's VTT
-      layout goes with its rendering, so cue settings that place a line somewhere other than the
-      bottom (`line`, `position`, `align`, `size`, `vertical`) are not honoured, and the box is
-      positioned against the player rather than the video frame — so on a letterboxed video the
-      caption sits in the black bar rather than over the picture.
-- [x] The pointer now goes away with the bar: the player wears `cursor-none` and takes it back on
-      `data-[active=true]`, which is the same fact the bar fades on, so the two cannot disagree.
-      Gated on `mode.has_controls()` — a mode that draws no bar has no bar going down, and a
-      cursor vanishing over a video with no controls is a cursor the reader has lost. Child rules
-      still win over the inherited value, so the scrubber keeps its `cursor-pointer`.
-- [x] Menus were misplaced by a constant offset, and only after this session's own change: the
-      caption sizes needed a container to measure against, and `@container/player` on the root
-      compiles to `container-type: inline-size`, which applies layout containment — which makes
-      the element **a containing block for `position: fixed` descendants**. The floating shell is
-      fixed, so floating-ui's viewport coordinates were read against the player's origin: every
-      menu on the page was off by exactly the player's top-left, right in fullscreen (origin 0,0)
-      and wrong on the way out. The container belongs on the caption box, which contains no
-      floating layer.
-
-      **Anything that establishes a containing block — `transform`, `filter`, `contain`,
-      `container-type`, `will-change` — breaks a fixed-positioned floating layer under it.** The
-      symptom is a constant offset equal to that ancestor's origin, which reads like a
-      positioning bug in the menu rather than a property on something else entirely.
-- [x] A submenu vanished in fullscreen. `DropdownMenuSubContent` hard-wired a `<Portal>` to
-      `document.body` while the top-level content leaves portalling to the caller — and only the
-      fullscreen element's own subtree is rendered. Deleting the portal was not the fix: the
-      parent content is `overflow-hidden` and is between the submenu and its containing block, so
-      an un-portalled submenu is clipped instead. `FloatingPortal` (`primitives/floating.rs`)
-      mounts into `document.fullscreenElement` when there is one and the body otherwise,
-      re-reading it on `fullscreenchange` since that changes under a layer already open. Used by
-      `DropdownMenuPortalRoot` too, so every portalled menu gains it.
-
-      With submenus working, the player's own menu folds: `submenu=true` on the three provided
-      groups turns fourteen rows into three, which at 106px instead of 528px is the difference
-      between a menu and a wall.
-
 ## Accessibility & keyboard
 
-All closed bar the canvas, which arrived after this list was written and brought its own hole with
-it. This no longer blocks a "stable" tag. What exists, and where to reuse it:
+Shared keyboard and focus primitives are covered in the completed work summary; the canvas gap
+remains below.
 
-- [x] `primitives/dismiss.rs` — one layer stack ordered by opening time. Escape dismisses the
-      topmost; an outside `pointerdown` walks down until a layer contains the target or is modal.
-- [x] `primitives/roving_focus.rs` — a group is one tab stop and the arrows move inside it. Items
-      are found by `data-roving-item`, so it does not care how they are rendered. Used by the
-      dropdown menu, select, tabs, toggle group, radio group and accordion.
-- [x] `primitives/typeahead.rs` — keystrokes accumulate for a second, a repeated letter cycles. In
-      the select and, via `handle_menu_keys`, in all three menu surfaces.
-- [x] Arrow keys open a closed trigger; the intent reaches the content as
-      `FloatingContext.open_focus`.
-- [x] Dialog focus: the Tab trap, the focus-in, and focus returned to whatever had it on close.
-- [x] Floating triggers carry `aria-haspopup` / `aria-expanded` / `aria-controls`, written onto
-      `trigger_ref` from an effect — the trigger comes in three shapes and the node ref is all they
-      share.
 - [ ] Canvas nodes are not reachable by keyboard — see *Canvas: what a collaboration tool needs*.
 
 ## Canvas: what a collaboration tool needs
@@ -301,46 +63,10 @@ plain signal, which makes follow-the-presenter three lines. The arithmetic is in
 off the DOM and unit-tested. And a resize is measured from the press rather than accumulated,
 which matters more under network lag than it ever did locally.
 
-### 1. Blocking — a document cannot be edited by two people without it
-
-- [x] **`on_gesture_end` on `CanvasNodeRoot`**, carrying a `CanvasGesture { from, to, handle }`.
-      `on_move` and `on_resize` still fire on every pointer move; this fires once, when the
-      gesture is over, which is the distinction a shared document is built on — ephemeral presence
-      while the pointer is down, one committed operation when it comes up, and one undo entry per
-      drag rather than forty.
-
-      **One callback rather than the `on_move_end` / `on_resize_end` this asked for.** What a
-      caller does with either is the same job — write an operation somebody can replay — so two
-      hooks meant handing the same body to both, and `handle` (`None` for a move, `Some` for the
-      grip) is a field that says which it was and reads better than the callback's name. The same
-      argument the render callbacks settled: a struct grows a field and leaves callers alone.
-
-      Two things that only showed up in the building. `use_drag` ends a gesture on release whether
-      or not the pointer ever moved, so a plain click on a node was an operation on the wire; it
-      is silent now when nothing changed, because selecting is not editing. And *where it ended*
-      is read back out of the caller's own signals rather than recomputed from the pointer — so a
-      caller that snapped to a grid, clamped to a lane or refused the move outright reports what
-      it did rather than what it was asked to do.
-
 ### 2. Settle before there is data, because it is free now and expensive later
 
-- [x] **Rotation: the field is reserved, the gesture is deferred.** `WorldBox` carries an `angle`
-      in radians about its own centre; `CanvasNodeRoot` takes it, renders it as a `transform` and
-      folds it into every `CanvasGesture`. So a board's saved shape and its operations are already
-      the ones rotation needs, and the part that was actually expensive — migrating boards made in
-      the meantime — cannot arise.
-
-      `new` still takes four numbers and `rotated()` adds the angle, so nothing that built a box
-      before had to change. The transform is written **only when the angle is not zero**, so the
-      upright node that every board is made of is the same element it always was rather than one
-      the browser has to composite.
-
-      What is deferred, and where it says so in the source rather than only here: `resized` takes
-      its delta in world axes, which stop being the box's axes once it is turned, so it carries the
-      angle through untouched and is documented as correct only for an upright box — and a node
-      with an angle **draws no grips at all**, because eight grips that grow a box in the wrong
-      direction are worse than none. `WorldBox::around` has the matching gap: it takes each box as
-      upright, so it under-covers a turned one by however far its corners swing out.
+Already reserved: `WorldBox::angle` and the canvas node's angle prop carry rotation through
+rendering and gesture reports; rotated resize, bounds and the rotation grip remain deferred.
 
 - [ ] **The rotation gesture itself**, when novoice wants it. Three pieces, and the field above is
       not one of them: rotate the pointer delta into the box's own frame before `resized` and back
@@ -356,53 +82,9 @@ which matters more under network lag than it ever did locally.
       surface should scale about the midpoint between them and pan by its travel, which is one
       gesture rather than two. Belongs in `drag.rs` if a second primitive wants it, and in the
       canvas if none does.
-- [x] **A drag on the surface, not only a click.** `on_surface_drag` on `CanvasRoot`, carrying a
-      `CanvasDrag { from, to, rect, done }` on every move and once more on release. `done` is the
-      field that tells the two apart — the same call `CanvasGesture` made, one callback with a
-      field rather than two whose bodies would be nearly the same.
-
-      **It shares one press with `on_surface_click`, and the rule is that they never both fire.**
-      A gesture that stayed within `CLICK_SLOP` was a click and is reported as one; a gesture that
-      passed it is a drag and the click stays quiet, which it already did. So nothing is reported
-      until the pointer has travelled far enough to have meant it, and a press that never got
-      there ends *silently* rather than with an empty box — otherwise every click on the board
-      would hand a caller a selection to clear at the same instant it handed them a point to act
-      on.
-
-      **Both ends of the band are world coordinates, and the far one is re-derived from the live
-      pointer on every move** rather than from `DragPoint`'s delta ÷ zoom, which is what the
-      node's resize does. Not an inconsistency: a node's resize is measured against a box that is
-      moving with the board, and a band is not. Anchored in screen pixels it would slide off
-      whatever it was drawn around the moment the board panned under the gesture — a wheel, an
-      auto-scroll, a peer moving the viewport.
-
-      `WorldBox::between` sorts the two corners, so a drag up and to the left is as ordinary as
-      one down and to the right; `WorldBox::intersects` is the other half, since a marquee selects
-      what a band *touches* rather than what it swallows whole — one that had to contain a node
-      could never reach one bigger than the screen. Four tests between them.
-
-      Styled: `CanvasMarquee` over a new `CanvasMarqueeRoot`, which is a box and nothing else. A
-      part rather than something the canvas draws for itself, because the same rectangle is a
-      shape being pulled open or a region being cropped, and only the caller knows which. It goes
-      inside the transformed layer so it stays over the world it was drawn around, and it never
-      takes the pointer — a band under the cursor is what the release would land on, and the
-      gesture would end on itself rather than on the board.
-
-- [x] A press on the zoom controls was a press on the board. They sit inside the surface, so the
-      press bubbled up looking exactly like one on empty space and `on_surface_click` fired with
-      the world coordinate underneath — the docs demo dropped a note under the button that had
-      just zoomed it. The guard was "not on a node", which the controls are not; it is now the
-      *nearest* thing between the target and the surface (`on_the_board`), so the transformed
-      layer and the paper behind it are the board and anything else inside the surface is chrome.
-      Shared by the click and the drag, which divide one press and would otherwise disagree
-      about it.
 
 ### 4. Before it is big
 
-- [x] **Z-order as a prop.** `z: Signal<i32>` on `CanvasNodeRoot`, written into `z-index` only
-      when it is not zero — so the ordinary node stays out of a stacking order it has no opinion
-      about, the same rule `angle` follows. The board block's "To front" is one field now rather
-      than a move to the end of the list, and it applies to a whole selection at once.
 - [ ] **Cull what is off screen.** Every node is mounted, always. A board is the one component
       here where the count is the reader's to decide, and thousands of absolutely-positioned
       elements is where this stops being usable. The viewport already knows the visible world
@@ -421,54 +103,10 @@ which matters more under network lag than it ever did locally.
 
 ### 5. Before it is a product
 
-- [x] **Multi-select gestures.** All three, and none of them needed the canvas to start owning a
-      selection: `selected` was already a `Signal<bool>` per node, so the state was the right
-      shape from the start.
-
-      The **marquee** is `on_surface_drag` plus `WorldBox::intersects`. `CanvasDrag` carries the
-      modifiers now, the same rule `DragPoint` follows, so a shift-band extends a selection rather
-      than replacing it — which is the same key that adds and removes on a click.
-
-      A **group move** is arithmetic the caller does with what it already gets: a node reports
-      where *it* would go, which is the right thing for it to know, and the caller turns that into
-      a delta and applies it to the rest. The one thing it needs is where everything was at the
-      press — the same gap `CanvasGesture.from` fills at the other end — so the block snapshots
-      the set on `pointerdown`.
-
-      A **group resize** is `WorldBox::scaled_within(from, to)`: each member keeps its position
-      and size as fractions of the frame, so one in the middle stays in the middle and one against
-      the right edge stays against it. The two axes are independent, and a frame with no extent on
-      one has no fraction to keep, so that axis is left alone rather than divided by zero — a
-      selection holding a zero-width text node is the ordinary case. Five tests, plus `moved_by`.
-
-      What is *not* in the library is the frame itself. A `CanvasNode` around the selection with
-      `pointer-events: none` and its grips re-enabled is nine lines in the caller, and the
-      alternative was a canvas that had to be told what a selection is. The one change it did want
-      is that `CanvasNodeRoot`'s children are optional: a frame, a guide or an empty slot is a box
-      somebody wants placed and measured in world units and holding nothing.
-
-      Two things the block found that only show up on a real board. A member of a selection must
-      draw **no grips of its own** — the frame's grips land on the same corners, and two grips
-      over one point is a coin toss between scaling the set and scaling a node out of it. And the
-      frame must be **mounted on whether there is one** rather than rebuilt as it changes: the
-      grips being dragged live on that element, and replacing it mid-gesture takes the gesture
-      with it. A group resize is one `WorldBox` around the
-      selection and each member scaled inside it, which is arithmetic for `utils::viewport` and a
-      test rather than anything new in the DOM.
 - [ ] **Nodes are not reachable by keyboard.** The surface is a tab stop and the things on it are
       not: nothing on a board can be selected, moved or renamed without a pointer. Wants a roving
       tab stop over the nodes (`primitives/roving_focus.rs` already does the hard part), arrows to
       nudge, Enter to edit the label, and the same `data-selected` the pointer path writes.
-- [x] **World coordinates from outside the canvas.** Two free functions beside the context rather
-      than a second copy of it: `world_at(surface, viewport, x, y)` and `surface_holds(...)`, with
-      `CanvasContext::world_at` now delegating to the first so there is one conversion and not
-      two. The surface's node ref is a `node_ref` prop on `CanvasRoot`, which is the other half —
-      the block was measuring the *wrapper* it had put the canvas in, and the two are the same box
-      only until somebody puts a margin or a second child on it.
-
-      Split in two on purpose. A marquee dragged past the edge of the board is still a marquee and
-      wants the point outside; a *drop* out there is nothing at all. Whether being outside matters
-      is the caller's question, so it is the caller's call.
 
 ## Components — gap vs the shadcn/ui catalogue
 
@@ -494,41 +132,12 @@ The remaining count, for whoever comes to check it: 74 element features, 56 of t
 primitive and 67 with a component. `CLAUDE.md` says the same numbers — when one of these moves,
 both do.
 
-**P3 — substantial state machines.** All closed, and three of them are what the docs site itself
-runs on: the sidebar is the nav, the command palette is ⌘K, and the data table is the only honest
-way to find out what living with a generic row type is like.
-
-- [x] Command — unmatched items are not rendered, so document order *is* arrow order. The highlight
-      moves through `aria-activedescendant`, which is why it could not reuse `roving_focus`.
-- [x] Combobox — the command palette inside a floating layer. `ComboboxItemRoot` is the whole
-      bridge: it writes the value and closes the layer.
-- [x] Navigation Menu — links rather than commands, so leaving is decided at the menu, not per
-      trigger.
-- [x] Menubar — a row of dropdown menus with one bar over them, reusing the dropdown's surface,
-      items and submenus whole.
-- [x] Resizable — percentages, never pixels, with `flex-grow` *being* the percentage.
-- [x] Carousel — scroll snapping rather than a transform, so a trackpad and a touch drag come free.
-- [x] Calendar — over `utils::date`, so there is no `chrono` for consumers to agree with. Focus
-      follows a *date*, not a cell, which is what steps off the end of a month page.
-- [x] Date Picker — a popover holding a calendar, plus the one rule that makes it a picker: the
-      layer closes when the selection is finished.
-- [x] Table sort/selection handles, then Data Table — plain `Copy` handles rather than contexts, so
-      they work over a hand-laid-out table too.
-- [x] Chart — line, area and bar as one `<svg>`, geometry in viewBox units, so nothing is measured
-      and there is no resize listener.
-
 **P4 — skipped, and here is why.** Marker, Attachment, Bubble, Message, Message Scroller and
 Questionnaire are chat and AI surfaces: markup with no state machine, no ARIA question, no gesture
 and no keyboard contract. Six of them would add six docs pages and around ninety prop rows to a
 table of 985 already kept in step by hand, and would demonstrate nothing this library does not
 already show somewhere better. They are not a gap in the catalogue; they belong to whoever is
 building a chat product, on top of `item`, `avatar`, `scroll-area` and `field`, which are here.
-
-**Adding a component is not what this needs next.** The marginal one now costs a docs page, a nav
-entry, an index entry, a feature-table row, ~15 prop rows and a primitive page that would be one
-of 48 already owed — see *Docs site*. What stands between this and somebody else using it is under
-*Publishing*: the CLI is unpublished, so `cargo nocli` only works through `--from <checkout>`, and
-the install story the whole styled layer is designed around does not work outside this repo.
 
 - [ ] **Direction (RTL).** The one thing still open here, and it is not a component: it is a
       provider plus every component that lays out along an axis reading it — the floating layer's
@@ -539,356 +148,12 @@ the install story the whole styled layer is designed around does not work outsid
 
 **Beyond the shadcn catalogue.** Ours, and none of them took a dependency.
 
-- [x] `primitives/drag.rs` — `use_drag`, with `.against()`, `.on_start` and `.on_end`. `slider`,
-      `scroll_area`, `drawer` and `resizable` are folded onto it: 83 lines of listener bookkeeping
-      gone, and all four now end on `pointercancel`, which every hand-rolled copy missed.
-- [x] `utils::color` — `Rgba` / `Hsva` / `Hsla` / `Oklch`, a parser for every CSS form this library
-      writes, a formatter, 9 tests. HSV↔HSL is exact where anything through 8-bit RGB is not, which
-      is why a picker stores `Hsva`; and `--chart-1` does not fit in sRGB, so reading one of the
-      theme's own tokens back clips it a few degrees round the hue circle.
-- [x] `utils::image` — a normalised crop rectangle, `moved_by`, `resized` holding an aspect ratio,
-      and a canvas for the output. 12 tests.
-- [x] `utils::gif` — cropping an animated GIF at the LZW level, so palettes, delays, disposal,
-      transparency and the loop count survive by never being decoded. 10 tests plus a browser check.
-- [x] Color Picker — holds HSVA, so the hue survives the black corner. The square is two gradients
-      over a pure hue; the two rails are one component twice.
-- [x] Image Cropper — a still through the canvas, an animated GIF through `crop_gif` and still
-      animating afterwards: 16 frames in, 16 frames out, checked with Chrome's own decoder.
-- [x] `kanban` — a board of columns of cards, on `use_drag` like every other gesture here, so it
-      ends on `pointercancel` and no card is left stuck to the cursor when the browser takes the
-      pointer away.
-
-      **The board does not own the cards.** It reports `on_move` — the card, the column it left,
-      the column and index it landed at — and the caller applies that to their own list. Same
-      stance as `DataTable` sorting what it is handed: a board that reordered a list it did not own
-      would disagree with the caller's the moment anything else touched it.
-
-      Where a card would land is read out of the DOM (`data-kanban-column`, `data-kanban-card`)
-      rather than from a registry the parts keep in step, so columns and cards can come and go
-      without telling anybody. The card in hand is skipped while counting, or the index it came
-      from reads one too far down. A card let go where it started reports nothing.
-
-      A press is not a drag: the gesture only announces itself once the pointer has travelled four
-      pixels, and a press that never does is a click, reported as `on_select`. That has to be a
-      prop rather than the caller's own `on:click`, because a card following the pointer is
-      `pointer-events: none` and the release lands on the column underneath — a card could not
-      receive a click at all until this. Only the gesture knows whether the pointer moved.
-
-      The card lifts and follows the pointer, by `transform` rather than by leaving the list: the
-      gap it came from stays open, so no column reflows mid-gesture and the slot under the pointer
-      does not shift as the card moves. It goes `pointer-events: none` while it travels, so what
-      is under the cursor is whatever it is over rather than itself. The transform is never
-      transitioned — easing a thing that is following a cursor makes it lag by the duration. The
-      line showing where it will land is a `KanbanSlot` the caller renders between its own cards,
-      because only the caller knows where "between" is.
-- [x] The board scrolls itself while a card is held near an edge, ramped from nothing at the outer
-      edge of a 72px zone to 16px a tick at the board's own edge. On a timer rather than on pointer
-      moves: a pointer held still at the edge sends no more events, and that is exactly when the
-      reader is waiting for the board to come to them.
-
-      Two things it needs that are not obvious. The card rides inside the scroller, so the board
-      scrolling out from under it slides it away from the cursor — the distance scrolled is added
-      back into its offset. And a card translated to the right *grows* the board's scrollable
-      width, so scrolling to the live maximum runs past the real end and snaps back the moment the
-      card is let go; the range is measured once at the press, while nothing is translated, and
-      the scroll clamped to that.
-- [x] `floating_menu` — a panel the reader can pick up and put somewhere else. Fixed to the
-      viewport rather than placed in the flow, because that is what "move it out of the way" means:
-      it stays where it was put while the page scrolls under it. Everything else follows — the
-      position is client coordinates, and the clamp is against the window.
-
-      **Dragged by a handle, not by the whole panel.** A panel with buttons in it that also moves
-      when you press a button is a panel you cannot use; a caller who does want the whole thing to
-      move puts the handle around everything, which is their decision and not this one's.
-
-      The clamp keeps 32px reachable off either side and off the bottom, but never lets the panel
-      above the top: there is nothing above the top edge to grab it back by. It is a pure function
-      taking the viewport as an argument — `window()` *panics* off-wasm rather than returning zero,
-      so a clamp that read it directly could not be tested at all. Five tests on the rules, and the
-      window read in one place beside them.
-
-      The position is a plain `RwSignal` the caller may pass in, which is as useful for reading
-      where the reader left it as for driving it.
-
-      Two shapes and two densities. **Horizontal by default** — a strip of actions floating over
-      the thing they act on is what this kind of menu usually is; vertical is the variation and
-      turns it into a panel. The handle moves to the start of whichever it is, a grip along the top
-      of a strip being a grip nobody can hit, and the separator turns across the flow with it.
-      `compact` drops the labels for the icons and gives each item a tooltip and an `aria-label`
-      instead, which is what the sidebar does when it collapses to a rail — a label taken away
-      still has to be readable somehow.
-
-      `FloatingMenuItem` renders its own `<button>` rather than a `Button`: `ButtonSize` is a value
-      and not a signal, so a menu that changes density while it is on screen could not change the
-      size of its items with it.
-- [x] `canvas` — an infinite surface you can pan and zoom, with things placed on it in world
-      coordinates. The FigJam shape rather than the drawing-app shape.
-
-      **The canvas owns where you are looking, and nothing else.** Nodes take their world position
-      as props and the caller keeps the list — the same stance as the kanban board reporting a move
-      rather than applying it, and for the same reason: a canvas keeping its own copy would
-      disagree with the caller's the moment anything else edited a node.
-
-      The arithmetic is `utils::viewport`, which knows nothing about the DOM and has 10 tests.
-      That split is not tidiness: `window()` *panics* off-wasm, so a viewport that read its own
-      size could not be tested at all — the same argument as `floating_menu`'s clamp. One
-      convention holds it together, **screen = world x zoom + offset**, which makes panning
-      addition that never has to know the zoom.
-
-      The test that earns its keep is zooming about the pointer. Zooming toward the middle of the
-      surface is one line and wrong — whatever is under the cursor has to stay under it — and the
-      anchor is taken *before* the zoom changes with the offset re-derived after, so clamping
-      cannot break the promise: a zoom refused at the limit leaves the surface exactly where it
-      was rather than sliding it by the difference.
-
-      Two things about the gestures. A browser reports a **trackpad pinch as ctrl+wheel** — there
-      is no pinch event on the desktop — so that flag rather than a modifier anybody pressed is
-      what separates zooming from two-finger panning. And `DragPoint` reports distance from the
-      *press*, so panning by it on every move accelerates the canvas away from the pointer; the
-      previous delta is remembered and the difference applied. Verified in a browser: ten pointer
-      steps totalling 80x40 pan the canvas exactly 80x40.
-
-      The dotted background sits **outside** the transformed layer. Inside it the dots would scale
-      with the zoom and blur out at 4x; a repeating background whose spacing follows the zoom and
-      whose dots do not is what paper actually looks like.
-
-      Fit reads the nodes out of the DOM (`[data-slot=canvas-node]`) rather than from a registry,
-      so nodes can come and go without telling anybody, and an empty board is left alone rather
-      than fitted to nothing.
-
-      Styled: `Canvas`, `CanvasNode`, `CanvasSticky` (four colours), `CanvasShape`
-      (rectangle/ellipse), `CanvasText`, `CanvasControls`, `CanvasBackground`. Cost two icons,
-      `plus` and `minus`.
-
-- [x] Canvas, pass two: selection and moving things. Marquee, shift-click, a move that applies to
-      the set and a frame whose grips scale it. Filed in full under *Canvas: what a collaboration
-      tool needs* — `on_surface_drag` and `CanvasMarquee` in group 3, and **Multi-select
-      gestures** in group 5, which is the same work from the other end.
-
 - [ ] Canvas connectors: edges between nodes, with anchors, arrowheads and re-routing as nodes
       move. The largest of the three and the one that most wants its own primitive, since routing
       is arithmetic and belongs beside `utils::viewport` rather than in a component.
 
-- [x] `timeline` — a sequence of events along an axis, vertical for now.
-
-      **A list, not a scaled axis.** Events sit evenly spaced in document order and are never
-      positioned by their dates: that is what almost every "timeline" UI actually is — an activity
-      feed, a changelog, an order's progress. A timeline where March and December sit
-      proportionally apart is arithmetic over a domain and belongs beside `chart`, and conflating
-      the two would hand every caller a layout that lies about half its inputs. The module header
-      says so, the way `calendar` says it is not a date-time library.
-
-      An `<ol>` of `<li>`, because that is what a sequence of events is — a screen reader is told
-      how many there are before any styling matters, and `TimelineState::Current` is the one state
-      that writes `aria-current="step"`.
-
-      **Items count themselves**, like carousel slides, so each knows whether it is last. Not a
-      nicety: a connector drawn after the final event points at nothing, and `:last-child` stops
-      being true the moment a caller wraps an item in anything.
-
-      **The connector is a part the caller places**, so a pending stretch can be dashed where a
-      finished one is solid; the styled item includes one by default and hides it on `data-last`.
-      **Markers are content** — a dot, a tick, a number, an avatar. An empty marker is
-      `aria-hidden`, since the item already carries the state and a screen reader announcing
-      "bullet" before every event helps nobody.
-
-      That last rule caught a real bug on the way in: the styled `TimelineMarker` forwarded
-      `{children.map(…)}` into the root, and the view macro passes a children closure whether or
-      not there are any — so every marker looked non-empty and none was ever marked decorative.
-      The styled layer now branches on the `Option` instead. Verified both ways round in a
-      browser: bare dots hidden, icons and numbers not.
-
-      One component rather than a Timeline and a Stepper, since the state enum is the whole
-      difference and a stepper is a timeline you have not finished walking.
-
-- [x] Timeline, horizontal and alternating. The primitive already wrote `data-orientation` on
-      every part, so both are the styled layer plus one new fact: which side of the axis an event
-      sits on. `TimelineSide` is derived from the item's own index rather than set per item —
-      a zig-zag a caller keeps in step by hand stops zig-zagging the moment one event is inserted.
-
-      The item is a two-axis grid that transposes: `[auto_1fr]` columns vertically,
-      `[1fr_auto_1fr]` when alternating so the markers hold a centre column, and rows rather than
-      columns when horizontal. Alternating is deliberately vertical-only — horizontally it would
-      put half the events above the line and half below, which reads as two timelines.
-
-      **The bug worth remembering is how it failed.** Three of the four parts took their new
-      classes and the item did not, because `cargo fmt` had collapsed its `cn!` onto one line
-      between writing the edit and applying it, so the patch matched nothing — and the edit was
-      the one without an assertion on it. The item stayed a two-column grid while content was
-      being sent to `col-start-3`, which grid quietly honours by inventing an implicit third
-      column per row, of whatever width that row's content happens to be. Every marker landed
-      somewhere different and the axis was gone. Nothing errored, nothing warned, and the computed
-      `grid-column-start` values all read exactly as intended — only `grid-template-columns`
-      showed two tracks where there should have been three. **Patch against the class literal
-      rather than the surrounding block, and assert every replacement.**
-
-      Two things the browser makes you know: `dragover` must be prevented or the drop is refused
-      *silently*, and `dragleave` fires when the pointer crosses onto a child — so leaving is a
-      counter reaching zero rather than one event, or a zone with a label in it flickers.
-
-      It also turned up the only `use web_sys::` in the styled layer, which would have broken an
-      install: `src/components/` may name leptos and `deps`, nothing else. `leptos::web_sys::File`
-      instead.
-- [x] `tree` — its own element rather than a mode on the sidebar, because a tree is not a sidebar
-      feature: it is a thing a sidebar can contain, and a file picker or a settings pane wants the
-      same one. `role="tree"`, one tab stop, `aria-level` per depth, and `aria-expanded` only on
-      the items that have children — which is not knowable until the children have rendered, so
-      `TreeGroupRoot` is what tells its item it is a branch. A closed group renders nothing rather
-      than hiding, so "the next visible item" is just the next one in the DOM and the roving focus
-      needs no notion of visibility. Enter and Space are routed through the row's own click, so the
-      pointer and the keyboard take one path.
-
-      Four things it shipped wrong first, all invisible to the compiler: the keys were on the row,
-      which is a *child* of the focused item and so never saw them; `attr:aria-level` on a native
-      element renders nothing, so every item was depthless; nothing called `sync_tab_stop`, so the
-      tree could not be tabbed into at all; and — the one a reader spotted before I did — **a
-      named Tailwind group matches any ancestor that carries it**, so `group/tree-item` on an item
-      that nests inside another item lit up every descendant. The chevron of a closed folder inside
-      an open one was permanently rotated, and a focused branch ringed every row beneath it.
-      Both now key off the row, which does not nest, and the focus ring is a direct-child variant
-      (`[[data-slot=tree-item]:focus-visible>&]`) rather than a group at all.
-
-      **Nesting a component inside itself makes `group/name` unusable for its own state.** Worth
-      remembering for the kanban board and anything else recursive.
-- [x] The sidebar half: `SidebarTree` / `SidebarTreeItem` / `SidebarTreeRow` / `SidebarTreeGroup`,
-      the same primitives with the sidebar's classes rather than the tree's own — one behaviour,
-      two styled layers, which is the split the library is built on. The rows take
-      `SidebarMenuButton`'s look and the group takes `SidebarMenuSub`'s rule, and the whole thing
-      folds away with `group-data-[collapsible=icon]:hidden`, a tree of labels having nothing to
-      show at that width. `sidebar` gained `tree` as a feature edge.
-- [x] `video_player` — the `<video>` element and the controls that drive it, in five view modes.
-
-      **The element is the state, and the player mirrors it.** Nothing decides that the video is
-      playing: the element says so and one `sync` reads the whole lot back, behind every media
-      event rather than a handler per fact. That is not tidiness — pressing play calls `play()`,
-      whose promise a browser is entitled to reject, and a player that had set `playing` on the
-      press would sit showing a pause button over a still frame. Seeks read back where they
-      landed too, since the element clamps them.
-
-      **The modes are behaviour, not decoration**, which is why they live in the primitive. Full,
-      Reduced and Limited are bars of decreasing size and the styled layer draws them; the last
-      two draw nothing and differ in the one thing only this layer can express — `None` is a video
-      you can press, `Uncontrolled` is a video you cannot, so its surface is inert and it is not a
-      tab stop.
-
-      **The player does not own a playlist.** Previous and Next report a `VideoPlayerStep` and the
-      caller moves their own list on, the same stance as the board reporting a move. Nobody
-      listening means no playlist, so both controls disable rather than swallow the press.
-
-      The scrubber and the volume slider are one component twice, differing only in what a
-      fraction along means — and in their keys, since a keypress on a time bar means five seconds
-      rather than five percent of however long the video is. The seek rail disables itself until
-      the metadata arrives: a duration that is NaN or infinite is no length to scrub along, and
-      zero is how the rest of the file spells that. `format_timestamp` says `--:--` for those
-      rather than a confident `0:00`, and has four tests.
-
-      Two demo clips, because they show different things. The default one is generated with
-      ffmpeg — a timecode burned into the frame, which is the one thing a real video cannot show
-      you: that a press at the middle of the rail lands where the rail says. 243kB. The second is
-      a 40-second excerpt of *Tears of Steel* (CC BY 3.0, Blender Foundation, credited under the
-      demo), 3.4MB at 960x400, and it is what shows the buffered bar filling and the `waiting`
-      state — the generated clip arrives before you can press play, so it can never show either.
-      Both are served by trunk's `copy-file` rather than `include_bytes!`d into the wasm, which is
-      the mistake `docs/assets/avatar.jpg` is still an example of.
-
-      Self-hosted rather than put on a CDN: this is a plain `<video>`, so it cannot play HLS, and
-      HLS is most of what a video host sells. The docs page says so, since it is a real limit of
-      the component and somebody will look for it under "several formats".
-
-      Cost ten Lucide icons (`play`, `pause`, `skip-back`, `skip-forward`, `volume`,
-      `volume-off`, `maximize`, `minimize`, `settings`, `captions`) in a new `icons/media.rs`.
-
-- [x] The video player's second pass: a collapsing volume, menus, and subtitles.
-
-      **Volume collapses to its icon** until the group is hovered or something inside it takes
-      focus. Focus as well as hover, or it is a control the keyboard can reach and never see —
-      and a `[@media(hover:none)]` fallback leaves it open where there is no hover at all, since
-      Tailwind gates every `group-hover:` rule behind `@media (hover: hover)` and a phone would
-      otherwise get a volume slider it could never open. That one is invisible from a desktop:
-      headless Chrome reports `hover: none` by default, which is why the first probe of it
-      measured the harness rather than the component and needed
-      `--blink-settings=availableHoverTypes=2` to say anything at all.
-
-      **`VideoPlayerMenu` takes whatever you put in it.** Speed and subtitle groups ship because
-      every player has them, but quality levels or an audio-track picker are the same shape.
-      Deliberately **not portalled**: a menu portalled to `document.body` vanishes the moment the
-      player goes fullscreen, since only the fullscreen element's own subtree is drawn. And the
-      idle timer had to learn about it — `menu_open` joins `scrubbing` in `controls_visible`, or
-      the bar fades out from under an open menu and leaves it hanging over nothing.
-
-      **Subtitles already worked**, because a `<track>` is a child of the `<video>` and the
-      player's children are the video's children. What was missing was everything around them: the
-      track list is now read back off the element rather than taken as a prop — the browser is
-      what turns `<track>` elements into tracks, so a list passed in beside them would be a second
-      copy to keep in step. `set_text_track` disables every other track explicitly, since a
-      `<track default>` comes up showing and two showing at once paints one caption over another.
-      Cues are nudged up off the control bar with `::-webkit-media-text-track-container`, which is
-      Chromium and WebKit only; Firefox still overlaps, and drawing cues ourselves is the only
-      real fix.
-
-      **A caller can replace the control bar entirely** with the `controls` prop and keep the
-      shell — the video, the surface, the keys, fullscreen. That is what makes "add your own
-      settings" true rather than a claim: the context is public, so any control can be built from
-      `use_video_player()`.
-
 **Unfinished corners of what is shipped.**
 
-- [x] `ToastBuilder::action(label, on_press)` — "deleted · undo". The callback is a plain
-      `Arc<dyn Fn>` rather than a `Callback`, because what raises such a toast is on its way out.
-- [x] A `Field` knows when it has been left: `FieldContext.touched`, `data-touched` on the field,
-      `touched` on `FieldControl`, set from a `focusout` with the related target deciding — `blur`
-      does not bubble and a styled control may wrap itself in a box. `NativeSelect` also takes an
-      `on_blur` for a caller who is not using a field.
-- [x] `ComboboxItem` takes `selected` and `close_on_select`: a multi-select is a list the caller
-      keeps, not a mode the combobox has.
-- [x] `utils::theme` is three axes rather than one: light/dark stays a `dark` class, the palette
-      is a name on `data-theme`, so a theme has a light and a dark of its own, and an accent is a
-      name on `data-accent` — one hue picked *inside* whichever palette is in force, which is
-      fourteen names in a stylesheet rather than fourteen more palettes. `ThemeContext` gained
-      `color`, `accent` and a `resolved` that is never `System` — which had to become live, so the
-      media query is listened to rather than read: `use_media_query` re-reads on `resize`, the
-      one event a colour-scheme change never fires.
-- [x] A fourth axis, and the one that is not a name: a custom corner radius. There is nothing to
-      enumerate, so `ThemeContext::radius` is a CSS length written into `--radius` on `<html>`'s
-      own `style` — the one place a `[data-theme]` rule cannot outrank — and the switcher offers
-      it as a slider over the palette's own. Clearing it hands the radius back to the palette.
-- [x] An accent moves the *tinted surface* too — `--accent` / `--sidebar-accent`, which is hover,
-      a focused item and the active sidebar row, and is unfortunately not the accent hue. Derived
-      from the accent at a fixed lightness and a low chroma, which is what Grove and Ember were
-      writing out by hand. Without it a palette with a green hover kept it while the brand went
-      orange, which is the half-changed look the axis exists to avoid.
-- [x] The palette rows depend on the mode: Latte is the light half of all three Catppuccin
-      flavours, so light offers one row saying Latte and dark offers three. A row that stands for
-      several names keeps whichever is in force rather than silently choosing a dark half.
-- [x] Which way the text on an accent goes is the accent's own lightness, not the mode's — Latte's
-      yellow is lighter than Mocha's blue. `--primary-foreground` reads the L back out with
-      relative colour syntax and clamps it to a black or a white, so it is one line rather than
-      fourteen judgements per flavour.
-- [x] The docs' theme switcher is one popover with the four axes in it — three columns and a
-      slider — and the choice in force actually marked, rather than a menu you reopen twice. Writing it turned up that
-      `attr:data-theme` on a *native* `<span>` renders nothing — the palette dots had all been
-      showing the same colour.
-- [x] `FieldSet` / `FieldLegend`, and `FieldSetControl` beside `FieldControl`: a field labels one
-      control with `for`, a set is labelled the other way round with the group pointing
-      `aria-labelledby` at the legend. A real `<fieldset>` for the one thing a `role="group"`
-      could not borrow — `disabled` on it disables everything inside. `RadioGroup` reads it, and
-      a description or an error under a fieldset registers on the set rather than on a field.
-- [x] `RadioGroupItem` was the only control in its family that never built a `FieldControl`, so a
-      `FieldLabel` beside one pointed `for` at an id nothing wore. Found writing the fieldset.
-- [x] `highlight` reads the three shapes it was missing: a call is `TokenKind::Function`, a JS
-      regex is a literal rather than punctuation plus contents — decided by whether a value could
-      begin there, which is why the loop remembers its last token — and `${…}` is cut out of a
-      template literal and tokenized as the code it is. Capitalisation still makes a type, which
-      in both languages is the convention rather than a guess.
-- [x] `utils::date::DateNames` reads a locale's names out of `Intl.DateTimeFormat` — `js_sys`,
-      which `Date::today` was already reaching into. Resolved once per calendar, since a grid
-      reads a weekday name 42 times, and the captions are *formatted* rather than assembled,
-      because the order of the parts belongs to the locale too (`2026年8月`). No `Intl` and an
-      unreadable tag both fall back to English. `Calendar` and `DatePicker` take a `locale`.
-- [x] `utils::color` reads all 148 colour names, and `Rgba::name` reads one back for a swatch that
-      would rather say `rebeccapurple`. A sorted table of packed `u32`s, searched only once the
-      shapes with punctuation in them are ruled out; `transparent` is matched ahead of it, being
-      the one keyword with an alpha.
 - [ ] `ColorPicker` in more shapes than the square-and-rail. A **triangular** picker (saturation
       and value on the corners of a triangle, hue on the ring around it) and a **wheel** are the two
       people ask for; both are the same `Hsva` underneath, so what is new is the geometry — a point
@@ -905,7 +170,7 @@ the install story the whole styled layer is designed around does not work outsid
   - 4 for hsla
   - 4 for hsva
   - 4 for oklch
-- [ ] `ButtonSize` cannot size the icons inside the button, and the rules that were meant to are
+- [x] `ButtonSize` cannot size the icons inside the button, and the rules that were meant to are
       dead code. Every size writes `[&_svg:not([class*='size-'])]:size-3` or similar, and the base
       writes `size-4` — but **every icon in this library renders with `size-4` already**
       (`IconRoot` is `cn!("size-4", class.get())`), so `:not([class*='size-'])` never matches and
@@ -917,6 +182,7 @@ the install story the whole styled layer is designed around does not work outsid
       size at all. The shape that works is a variable — the button sets `--icon-size` per size,
       `IconRoot` defaults to `size-(--icon-size,1rem)` — so the button decides, and a caller who
       writes a size on the icon still wins on the icon's own class.
+      Done: containers set `--icon-size`; `Icon` and the glyphs read `size-[var(--icon-size,…)]` (bracket form, `tw_merge` keeps both of `size-(--x)`); guards removed.
 
 - [ ] `highlight` is still a lexer per language: a new one is a new scanner beside `tokenize_rust`,
       and the six that exist share only their helpers. Fine at six; worth a second look at ten.
@@ -953,41 +219,11 @@ the install story the whole styled layer is designed around does not work outsid
 - [ ] The colour picker's square announces itself as `role="application"` with a description of the
       keys. There is no honest ARIA role for a two-axis drag; the rails and the text field are the
       paths that announce themselves properly.
-- [x] **A full API review of the styled layer before noaweb (the Leptos port of immich-front)
-      leans on it.** The port's first header found a hole: `DropdownMenuLabel` (and
-      `DropdownMenuSeparator`) take no `class`, so `<DropdownMenuLabel class=…>` fails with E0599 on
-      the props builder. noaweb patched its installed copy, and that patch belongs here. Go over all
-      66 components, with their primitives, against one checklist:
-      A. every part that renders an element takes `class` and merges it with `cn!`;
-      B. parts and props the shadcn equivalent has and a real app would use (menu Group, Shortcut,
-         CheckboxItem, RadioItem and `inset`; controlled `open`/`on_open_change`, `value`/`on_value_change`);
-      C. props taken as plain values that a caller would change at runtime (should be `Signal`/`MaybeProp`),
-         and signals read in a component body outside a closure;
-      D. `Children` where the content can render more than once (`Show`, a portal that remounts) and needs
-         `ChildrenFn`;
-      E. plain bugs.
-      Record the findings as items here; fixing them comes after.
 
 ### Styled-layer API review (2026-11-05)
 
-All 66 components were read against the A–E checklist above, each with its primitive. What follows
-is the findings, cross-cutting ones first because the same defect recurs across components and one
-fix serves them all, then one item per component; fixing comes next. noaweb's patch for
-`DropdownMenuLabel` and `DropdownMenuSeparator` is the first to land.
-
-**Cross-cutting**
-
-- [x] **Controlled and uncontrolled** — every stateful root takes `x`, `default_x` and
-      `on_x_change`, resolved in the primitive by `utils::controllable`; the styled layer forwards.
-- [x] **A form reset reaches a `model`-bound native control** — landed in 0.6.0.
-      `Input`, `TextareaRoot` and `NativeSelectRoot` listen through `utils::form::on_native_reset`
-      and write what they held at mount back into `model` and the element.
-- [x] **A slider is named inside a `Field`** — landed in 0.6.0. `FieldLabelRoot` publishes
-      `label_id`, `FieldControl::labelled_by` reads it, and the thumb points `aria-labelledby` at
-      it unless given its own `aria_label`.
-- [x] **`src/components/` carried comments** (`floating_menu.rs` 19 lines, `kanban.rs` 5,
-      `dropzone.rs` 2, `tree.rs` 2). All removed; what explained behaviour moved to the matching
-      `ApiReference` descriptions in `docs/src/pages/docs/`.
+All 66 components were reviewed with their primitives for class forwarding, API completeness,
+reactive props, repeatable children and bugs. The remaining findings follow.
 
 **Per component**
 
@@ -998,13 +234,7 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
 - [ ] `alert_dialog`: no `AlertDialogOverlay`/`AlertDialogContent` split — the portal's `class`
       styles the panel, the overlay is fixed — and no `modal`, which `DialogRoot` has and the styled
       wrapper hides.
-- [x] `badge`: `render` (the `StyledRender` shape) since 0.4, so a badge can be an `<a>` or a
-      router `A` and the variants' `[a&]:hover:…` modifiers apply. It renders a `<span>` now.
-- [x] `breadcrumb`: `BreadcrumbLink` takes `render` since 0.4.
-- [x] `button`: `aria_label`, `id`, `name` and `value` since 0.4, on `ButtonRoot` too.
 - [ ] `calendar`: no `number_of_months` (`components/calendar.rs:13`).
-- [x] `checkbox`: `indeterminate` and `indeterminate_icon` (default `Minus`) — landed in
-      0.6.0; `DataTable`'s select-all uses it instead of the wrapper `span`.
 - [ ] `command`: `CommandInput` wraps the `<input>` in a fixed `div`
       (`components/command.rs:50`), so the caller's `class` reaches the input and nothing reaches
       the row with the icon — you cannot change its height or border.
@@ -1017,16 +247,11 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       `RadioGroup` and `RadioItem` are now re-exported under `ContextMenu*` names.
 - [ ] `data_table`: `empty` is a string, so "No results" cannot be a node. (The select-all is mixed
       now — landed in 0.6.0.)
-- [x] `date_picker`: `disabled: Signal<bool>` and `id` landed in 0.6.0; the per-date callback is
-      `disabled_dates` on `DatePicker` and `Calendar` (breaking, 0.6.0).
 - [ ] `dialog`: no `DialogOverlay`/`DialogContent` split — the portal's `class` styles the panel
       and the overlay is fixed. (`modal` and `DialogClose` are not missing; both landed
       by 0.4.)
 - [ ] `drawer`: no `DrawerPortal` or `DrawerOverlay` — the overlay is built inside `DrawerContent` and only when `modal`
       (:66-75), so a non-default overlay means rewriting the content.
-- [x] `dropdown_menu`: `class` on every part (noaweb's patch), sub-trigger click opens, `data-align`
-      and `disabled` on the submenu, the five missing shadcn parts, `inset` and `data-variant`;
-      checkbox and radio items stay open (`close_on_select`).
 - [ ] `dropzone`: no `max_size` or maximum count either (`components/dropzone.rs:10`).
 - [ ] `field`: no `FieldContent`, `FieldTitle` or `FieldSeparator` (`components/field.rs:12`).
 - [ ] `floating_menu`: the styled layer does not expose the primitive's `style`
@@ -1043,23 +268,18 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       on `ImageCropper` (`components/image_cropper.rs:12`). The resize handles are
       `aria-hidden="true"` (`primitives/image_cropper.rs:386`) with no keyboard path, so the crop
       can be moved and not resized without a pointer.
-- [x] `input`: `InputType` has `Tel`, `Url`, `Search` and `Date` — landed in 0.6.0.
-      (`on_input` and `on_change` landed in 0.4.)
 - [ ] `input_group`: `InputGroupButton` takes `disabled` and `type` now (landed in 0.6.0). Still
       open: `InputGroupInput` and `InputGroupTextarea` forward only
       the subset of `Input`'s and `Textarea`'s props they list (:49), so whatever `Input` gains
       does not reach them until someone remembers.
 - [ ] `item`: `ItemMediaVariant` lacks shadcn's `Image`. (`render`, so an `Item` can be a router
       link, landed in 0.4.)
-- [x] `label`: `html_for` since 0.4.
 - [ ] `menubar`: `MenubarSub` takes no `class` (`components/menubar.rs:157`) and
       `MenubarSubTrigger` no `disabled` (:162) — see `dropdown_menu`, which this is built on.
       None of `MenubarGroup`, `MenubarCheckboxItem`, `MenubarRadioGroup`, `MenubarRadioItem` or
       `inset`, though the dropdown primitive has all of them now and `menubar.rs` only has to wrap
       them. (`MenubarSubContent` used to mount into `document.body`; it
       goes through `FloatingPortal` now, like `DropdownMenuSubContent`.)
-- [x] `native_select`: `NativeSelectOption`, `NativeSelectOptGroup` and `on_change` — landed
-      in 0.6.0.
 - [ ] `navigation_menu`: `NavigationMenu` exposes `value` and not the primitive's
       `open_delay`/`close_delay` (`components/navigation_menu.rs:13`,
       `primitives/navigation_menu.rs:127-128`), so the hover timing is fixed.
@@ -1075,11 +295,7 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
       `orientation`, so a horizontal-only area has an inert vertical track.
 - [ ] `select`: `SelectTrigger` takes `disabled` now (landed in 0.6.0); still no `size`, no `SelectGroup`, `SelectLabel`,
       `SelectSeparator` or the scroll buttons, and `SelectValue` takes no `class`.
-- [x] `sheet`: `SheetContent` takes `show_close` and `close_icon` since 0.4, and the sidebar's
-      mobile branch uses `show_close=false` rather than `[&>button]:hidden`. `modal` was never
-      missing — it is on the `Sheet` root, where the dialog has it.
 - [ ] `slider`: no `inverted` (`components/slider.rs:8`).
-- [x] `textarea`: `on_input` since 0.4, on `TextareaRoot` too.
 - [ ] `toast`: `duration` is hardcoded `5000.0` in the provider's defaults
       (`primitives/toast.rs:223`) with no `default_duration`, and there are no
       `ToastTitle`/`ToastDescription`/`ToastAction`/`ToastClose` parts: a toast can only be built
@@ -1099,16 +315,6 @@ fix serves them all, then one item per component; fixing comes next. noaweb's pa
 The rest of what noaweb asked for landed (sortable, drawer snap points, long-press, mobile sheets,
 the small items and the CLI friction); what follows is what those left behind.
 
-- [x] **The phone sheet presentation is static.** Landed in 0.6.0: a close button in the header
-      (`sheet_show_close`, `sheet_close_label`, `sheet_close_icon`), drag-to-dismiss from the header
-      only (`primitives::sheet_drag`, deciding with the drawer's `settle` now in `utils::settle`),
-      `sheet_snap_points` on all five content parts, `container` on every portalled floating layer,
-      a heading-weight title, and `use_floating` no longer attaches its auto-update under a sheet.
-- [x] **Phone-sheet fixes from a real iPhone** — landed in 0.6.1: the page no longer scrolls behind a
-      sheet (`utils::scroll_lock`, counted, with the iOS `touchmove` guard), submenus work on touch
-      and open inline inside a sheet (`DropdownMenuSubPortalRoot`), iOS date inputs match `h-8`, and
-      the Select and Context Menu pages have a phone-sheet demo. Unverified on a device: the iOS
-      Safari touch behaviours (only Chromium touch emulation is driven by `docs/smoke`).
 - [ ] Still open on the sheets: `SheetScrim`'s and the grabber's classes live in `utils/sheet.rs`,
       which a Tailwind build in a consumer's project does not scan (the same trap `src/components`
       exists to avoid) — they should move to the styled layer. `use_floating` still computes one
@@ -1118,73 +324,107 @@ the small items and the CLI friction); what follows is what those left behind.
       (`DropdownMenuSubContent`) take no `container`. Sheet heights are `dvh` and the settle
       fraction uses `visualViewport.height`, which differs from `dvh` while a keyboard is up.
 
+### From noaweb, second batch (2026-11-18)
+
+What noaweb's reports in `~/projects/noatelier/noaweb/docs/` found after the first batch landed.
+
+Bugs (`nc-patch-dialog-escape.md`, except the third):
+
+- [x] `DialogContentRoot` registers a window `keydown` focus-trap listener and drops the handle
+      (`src/primitives/dialog.rs:370`, `let _ = window_event_listener(ev::keydown, focus_trap);`),
+      so it is never removed. The closure reads `ctx.is_open`, so once the dialog's owner is
+      disposed the next keydown anywhere panics on a disposed signal (Escape first, since it is
+      what closes it). Keep the handle and remove it in `on_cleanup`; `try_get` in the closure.
+      noaweb's `ui/detached.rs` workaround can go once this is fixed.
+- [x] `Field`'s `focusout` handler (`src/primitives/field.rs:221-233`) calls `field_ref.get()` and
+      `context.touched.set(true)`. A focused control removed along with its dialog fires `focusout`
+      after the field's owner is gone, and it panics. `try_get` / `try_set`. Same report.
+- [x] Two `DropdownMenuRadioGroup`s in one menu share a context owner: `DropdownMenuRadioGroupRoot`
+      (`src/primitives/dropdown_menu.rs:575`) uses a bare `provide_context(RadioGroupContext {..})`,
+      so the later group's context reaches the earlier group's lazily rendered items. noaweb's sort
+      menu swapped its second group for plain items and a `•` text bullet, which is the "radio dot
+      size differs between groups" it reported (`noaweb/src/ui/artist_toolbar.rs:215`). Use
+      `<Provider>`, as the dialog portal fix did, and audit the other parts that bare
+      `provide_context` and can sit beside themselves (`select.rs:227`, `tabs.rs:74`,
+      `collapsible.rs:121`, `carousel.rs:280`, `progress.rs:23`, `avatar.rs:23`).
+
+Video player on touch (`video-touch.md`):
+
+- [x] `VideoPlayerRoot` wakes on every `pointermove` / `pointerdown` and hides on any
+      `pointerleave` (`src/primitives/video_player.rs:836-845`). A finger lifting is a
+      `pointerleave`, so the bar vanishes under the tap. Gate hover wake/hide on
+      `pointer_type == "mouse"`; a touch tap should toggle the overlay. Done: hover wake/hide are mouse-only, and a touch
+      tap on a playing video toggles the overlay instead of playback.
+- [x] The controls go `pointer-events-none` the instant `data-active` drops
+      (`src/components/video_player.rs:215`), so a tap that lands as the bar fades falls through to
+      the surface's play/pause click (`primitives/video_player.rs:961`). Done: a press on the controls
+      restarts the idle countdown, so the bar is still up for the click.
+- [x] `active` starts `true` (`primitives/video_player.rs:695`) and the idle countdown starts only
+      from `wake()` (`:714`), so the overlay never auto-hides when playback starts without a
+      pointer. Done: `play`/`playing` start the countdown.
+- [x] `toggle_fullscreen` (`primitives/video_player.rs:437-447`) drops `request_fullscreen`'s error
+      and has no `webkitEnterFullscreen` fallback on the `<video>`, so fullscreen does nothing on
+      iPhone. Done: falls back to the video's `webkitEnterFullscreen`/`webkitExitFullscreen`, and
+      `webkitbegin/endfullscreen` keep the flag in step.
+- [x] Touch targets are small: `CONTROL` is `size-8` (`components/video_player.rs:37`), the rail
+      `h-1.5` (`:313`), and nothing is sized with `pointer-coarse:`. Done: controls `pointer-coarse:size-11`, the rail
+      gets a taller transparent hit area.
+
+APIs:
+
+- [x] `CheckboxRoot` discards the click event (`src/primitives/checkbox.rs:71`,
+      `move |_: ev::MouseEvent|`), so shift-click range selection cannot be built;
+      noaweb hand-rolled a `role="checkbox"` button. Wants
+      `on_click: Option<Callback<ev::MouseEvent>>` run before the toggle, as on `ButtonRoot`
+      (`primitives/button.rs:56`), and the styled `Checkbox` forwarding it. Report:
+      `release-order.md`. Done: `on_click` on `CheckboxRoot` and `Checkbox`, run before the toggle.
+- [x] `Input` has no `node_ref` (`src/components/input.rs:58`, an internal `AnyNodeRef::new()`);
+      `Textarea` already takes one. `on:keydown` already reaches the `<input>`, so no typed keydown
+      prop is needed. Done: `node_ref` prop, internal ref kept as the default.
+- [x] A windowed sortable (`release-order.md`). Done: `SortableWindow` (`primitives::sortable::window`), fixed row height, O(1) drop and shift, held and focused rows pinned, `/docs/sortable` "Windowed". `SortableRoot` finds its items in the DOM and
+      measures every one at pick-up, and every item's `item_style` reads the whole drag state, so
+      it is quadratic: noaweb needed 5,000 rows (route cap; 20,000 planned) and wrote its own on
+      `use_drag` + `edge_ramp` (`noaweb/src/ui/release_order/list.rs`,
+      `noaweb/src/model/order_window.rs`: fixed 64px rows, overscan 6, O(log n) `drop_index`).
+      Wants a root taking a count and a row height, rendering a visible range, with index-based
+      drop and preview, focus and reveal that work for unmounted rows, labels from data, and
+      `on_move` carrying indices. A larger design item.
+
+From `shell-report.md`:
+
+- [x] `DropdownMenuItem` has no `render` (`src/components/dropdown_menu.rs:139`), so a menu row
+      cannot be a router link. Done: `render` (`StyledRender`) through `DropdownMenuItemRoot`, on `MenubarItem` too.
+- [x] `SidebarMenuAction` (`src/components/sidebar.rs:504-531`) is a bare `<button>` with no
+      `render`, `node_ref` or `on_click`, so it cannot be a dropdown trigger. Done: new `SidebarMenuActionRoot` with `render`, `node_ref`, `on_click`, `disabled`.
+- [x] `SidebarMenuButton`'s `[&>svg]:size-4` (`src/components/sidebar.rs:479`) beats a caller's own
+      size on a direct child svg; noaweb wraps its brand mark in a span. Same shape as the
+      `ButtonSize` icon-size item above — fix them together. Done with it: the button sets `--icon-size`.
+- [x] `SortableItem`'s bordered-card classes are fixed (`src/components/sortable.rs:63`); there is
+      no plain or menu-row variant. Done: `SortableItemVariant::{Card, Plain}`, plus a docs demo.
+- [x] `InputType` has no `Hidden` (`src/components/input.rs:10-21`); noaweb's password-manager
+      username field uses `class="hidden"`. Done: `InputType::Hidden`.
+- [x] CLI: `manifest::add_dependency` returns whether it changed `Cargo.toml`
+      (`cli/src/manifest.rs:15`), and `install.rs:252` discards it, so "0 written" is reported
+      when `Cargo.toml` was rewritten. PORT-PLAN §5.4 item 2. Done: the summary line ends "Cargo.toml updated" when it changed.
+- [x] Block drag in the windowed sortable (noaweb's release-order list): dragging a selected row
+      moves every selected row together. Done: `selected` on `SortableWindow`, and
+      `SortableWindowMove` carries the block (`is_block`, `count`, `apply`).
+- [x] Native Shift-range selection, so noaweb's hand-made `role="checkbox"` button can go. Done:
+      `utils::selection::RangeSelection` with `checked(i)` / `on_click(i)` on the `Checkbox`, which
+      also extends a range from the keyboard with Shift+Space.
+- [x] `Input` had no typed `keydown` prop. Done: `on_keydown` on `Input`, `Textarea`,
+      `InputGroupInput` and `InputGroupTextarea`.
+
 ### Icons (0.4)
 
 Components take their glyphs through `icon` slots and fall back on Lucide glyphs installed as
 source (`/docs/icons`). What that left:
 
-- [x] Composites pass icon slots down — `CodeBlock` `copy_icon`/`copied_icon`, `DatePicker` `prev_icon`/`next_icon`, `VideoPlayer` `icons: VideoPlayerIcons`, `DataTable` `check_icon`, `ColorPicker` `select_icon`/`check_icon` — landed after 0.4.0.
-- [x] The sidebar tree parts are in the sidebar page's API table — landed after 0.4.0.
-- [x] Localisable labels: `close_label` on DialogPortal/SheetContent/DrawerContent, `label` on VideoPlayerBuffering — landed after 0.4.0.
 - [ ] `DataTable`'s "Select all rows" / "Select row" aria-labels are fixed English.
 - [ ] Composites repeat their inner part's fallback glyph through `utils::icon::icon_or` (an `optional, into` slot's setter takes `ViewFn`, not `Option<ViewFn>`, so an `Option` can't be forwarded as is); if a part's default glyph changes, its composites must change with it — a slot type that accepts both a closure and an `Option` would remove the duplication.
-- [x] `cargo nocli icons remove`, the counterpart of `components remove` — landed.
 
 ## Docs site
 
-- [x] Docs pages for alert-dialog, label and spinner; a `code` snippet under every demo (89 blocks
-      across 26 pages), extracted from the demo markup so the two cannot drift.
-- [x] Prop tables on all 47 component pages — 199 parts, one table each, under one API reference
-      heading.
-- [x] Blocks. `docs/src/pages/docs/blocks/` is a module per component behind one parameterised route
-      and a `REGISTRY` keyed by slug, so a block is a file and a line.
-- [x] Twelve blocks: a colour picker in a popover, a palette handing over to an alert dialog, a
-      table that sorts before it pages, an avatar cropper that keeps a GIF moving, an application
-      shell, a settings dialog with the sidebar inside it, a form that waits before it complains, a
-      dialog that becomes a drawer, a range over one set of numbers, a multi-select of people, a
-      delete you can take back, and right-click actions on a table row. Three of the last four
-      needed library work first, and two of those turned up bugs — which is the argument for
-      writing them.
-
-- [x] Two more blocks, both of them arguments for a change in the library rather than dressing on
-      one. **A board you drag things onto**: a palette down the side of a canvas, and you make a
-      thing by dragging it off and letting go over the board — which is the block `pan_on_drag`
-      was turned off for. The drop crosses a border no context reaches, since the palette sits
-      outside the canvas, so it is done with the viewport signal and the box the canvas was wrapped
-      in; `use_drag` listens on the window, so one gesture spans both panes. **A toolbar that reads
-      the selection**: a markdown editor whose toggle group tells the truth, because nothing in it
-      remembers what was pressed — the marks are read back out of the text under the caret every
-      time either the text or the selection moves. That is what `Textarea`'s `node_ref` is for, and
-      why every crossing between the two coordinate systems is converted: a browser counts the
-      selection in UTF-16 code units and Rust indexes bytes.
-
-      The board block is also the argument for `on_move` / `on_resize` / `CanvasNodeLabel`: it had
-      its own `use_drag` and its own division by the zoom, and every consumer would have written
-      the same twenty lines. It writes no pointer code for the things on the board now.
-
-- [x] `/docs/utility`, filling the second dead nav link: `cn!`, the common types, `next_id`,
-      `use_media_query`, `get_placement`, and the arithmetic modules — dates, colour, crops, GIFs,
-      the tokenizer — each with the reasoning the module's own `//!` header carries.
-- [x] An "On this page" rail (`docs/src/components/page_nav.rs`) on every page wide enough for it.
-      It reads headings marked `data-toc` out of its own `<main>`, so `DemoSection` and
-      `ApiReference` opt in once and no page has to list anything.
-- [x] A second kanban block, the Trello-shaped card: a priority bar with a tooltip, the counts as
-      icons rather than three more lines of text, and everything else behind a dialog the card
-      opens with `on_select`. All of it is the caller's markup — the component owes it `children`
-      and the guarantee that a control inside a card does not start a drag. The bar is a `Tooltip`
-      trigger rendered `as_child`, so the tooltip hangs off the bar and not off a wrapper.
-
-      Cost two icons (`paperclip`, `message`) and one lesson: deriving the dialog's `open` from
-      "is a ticket selected" and clearing the ticket when it closes **hangs the page**. `set`
-      notifies whether or not the value changed, so the two effects write to each other for ever.
-      Two plain signals — the dialog owns whether it shows, the block owns what it shows — and
-      nothing needs clearing, because nothing reads the ticket while the dialog is closed.
-- [x] A kanban block: columns you add, cards you add, and two ways to move one — drag it, or
-      right-click and pick a column. Both end in the same closure, `on_move` handing back a
-      `KanbanMove` and the menu building one by hand, so the two cannot come to disagree about what
-      moving means. The card is the context menu's trigger, which works only because the drag
-      guards on the primary button. Cards are keyed by an id rather than by their title: two cards
-      called the same thing would be one card that teleports.
 - [ ] Blocks for the rest, in rough order of what would teach the most: **select** — a dependent
       pair where the second is filtered by the first; **resizable** — a two-pane layout that
       remembers its split; **menubar** — an application menu with the keyboard doing the work;
@@ -1193,55 +433,11 @@ source (`/docs/icons`). What that left:
       asked for yet.
 - [ ] Snippets are extracted, not curated. A few still carry the demo's layout wrapper (`<div
       class="flex gap-3">`). Worth a pass to trim the ones where it adds nothing.
-- [x] Dead nav link: `/docs/introduction` had no route and fell through to "Not Found." The `NAV`
-      entry is removed (no introduction page exists; `/docs/installation` is the way in).
-- [x] The form-state page is back, on a **git** dependency. It came off main because `docs` named
-      `noform` by path (`../../noform`, a sibling clone that exists on one machine): cargo will not
-      load a workspace whose member has an unreadable manifest, so every CI job died inside
-      `cargo metadata` — `cargo fmt --all` first among them — before a compiler ran. Marking the
-      dependency optional does not help; the manifest is read either way. Nothing local catches it
-      either, since the path resolves where it was written; the check that does is a copy of the
-      tree somewhere without the sibling.
-
-      **A path dependency outside this repo must not land on main.** To work against a local
-      `noform`, override it in an untracked `.cargo/config.toml`, not by editing `docs/Cargo.toml`.
-- [x] `/docs/theme`: the three axes, what each lands on `<html>` read back live, the tokens and
-      the radius scale in a row of its own, and the CSS a consumer writes to define a palette or
-      an accent.
-      Catppuccin is three palettes rather than four — Latte is the light half of all three, which
-      is how the flavours ship everywhere else and what keeps the mode axis meaning one thing.
-      Values generated from `catppuccin/palette`, in oklch, rather than eyeballed.
-
 - [ ] The header link between a component and its blocks is a stopgap. A component page should open
       onto a *switch*: **Component**, **Blocks**, and later **Primitives** — one page, three views
       of it. The routes are already shaped for it, so it is a `Tabs` in `DocLayout` driven by the
       path rather than a restructure.
-- [x] Adding a component means editing five files, two of which (`NAV`, `COMPONENTS`) are
-      hand-maintained copies of the same list — which is how `/docs` came to be missing progress,
-      skeleton and textarea. Covered by the generator item (*The other 48 primitives*, item 1),
-      which drives `NAV` and `COMPONENTS` too; not a separate job.
-- [x] Blocks moved out of `/docs/<component>/blocks` and into their own `/blocks` section. Filing a
-      block under one component was always a fiction — each composes three to ten of them — so the
-      owner was whichever file it lived in and the rest could not reach it. Each block now carries
-      the components it uses, the index searches over those as well as the prose, and a component
-      page hands the reader `/blocks?uses=<slug>`: `dialog` surfaces eight where it used to show
-      one. The palette lists blocks by name, and the home page has a way in to each section.
 
-      One cost, taken deliberately: `/docs` and `/blocks` are two `ParentRoute`s sharing `DocShell`,
-      so crossing between the sections remounts the sidebar and loses its scroll. Within a section
-      it is preserved, which is the common case; one shell over both would mean a parent route at
-      the root, and the home page does not want a sidebar.
-
-- [x] `/primitives`, a section of its own with one line in the sidebar — fifty nav entries would
-      double a sidebar nobody would then read. The five with **no styled layer** are done first
-      because they had nowhere else they could ever have gone: a scheme that hung primitives off
-      their component's page could not house `use_drag`, which is what seven components are built
-      on. Each page carries what a prop table cannot — the context, the `data-*` it writes, the
-      keys it binds — and a demo built from plain classes rather than the styled layer, which is
-      the claim the layer exists to make.
-
-      The index searches over `used_by` as well as the prose, so "which primitive does the slider
-      use" is answerable from either end.
 ### The other 48 primitives
 
 The ones that do have a styled layer: **48 modules, 180 parts**, against the 5 written. Counted
@@ -1331,72 +527,6 @@ are the menus that both float and rove, and each belongs to whichever batch it g
       `Orientation` / `SideOffset` are on `/docs/utility` now, so this is the other half of that
       page rather than a `/docs/types` of its own.
 - [ ] Generate the prop-table rows at build time — see item 1 of *The other 48 primitives*.
-- [x] Consumers have no way to get the CSS. Answered by not shipping the styled layer as a crate at
-      all: a Tailwind build cannot see classes inside `~/.cargo/registry`, so `cargo nocli` installs
-      `src/components/<name>.rs` into the project's own `src/` and `init` installs the stylesheet
-      beside it. The crate keeps everything with no classes in it.
-- [x] One feature per element — 73 of them now — gating both layers under one name, each listing
-      what its own source imports so cargo works the closure out. `tests/features.rs` re-derives
-      the table from the imports and fails if `Cargo.toml` has drifted — the failure it prevents
-      is silent, since `--features full` builds either way.
-
-- [x] Both manifests carry `description`, `license`, `repository`, `homepage`, `keywords` and
-      `categories`; `cargo publish --dry-run` is clean for each.
-- [x] Apache-2.0, with the shadcn/ui and Radix MIT notices reproduced in `NOTICE` as their licence
-      requires. `LICENSE` is also copied into `cli/`, which is packaged separately.
-- [x] `leptos` no longer carries `features = ["csr"]`, so the consumer picks the mode. Checked
-      against `ssr`, `hydrate` and `csr` from a scratch crate — all three compile. Compiling is not
-      running: nothing here has been *exercised* under hydration, and the primitives call
-      `document()` directly, so an SSR consumer is unexplored rather than supported.
-- [x] **The CLI read `main`, not a release.** `remote.rs` fetched from
-      `raw.githubusercontent.com/…/nocomponents/main`, so a published CLI would have installed
-      whatever `main` looked like that day — a component naming a primitive the released crate
-      does not have yet, failing at the consumer's build with an error about our source rather
-      than theirs. It reads a tag now, the GitHub API call carries `?ref=`, and a 404 says which
-      release it looked for.
-
-      **The tag comes from the library, not from the CLI.** The first version of this derived it
-      from `CARGO_PKG_VERSION`, which was the simple fix and the wrong one: what has to match is
-      the installed source and the crate it compiles against — an installed `button.rs` names
-      `nocomponents::primitives::button::ButtonRoot` directly — while the CLI's own version is
-      about its flags, its lockfile format and its rewriting rules. Tying them would have forced
-      the two crates to release in lockstep *and* still got the case that matters wrong: somebody
-      pinned to an older `nocomponents` running a newer CLI would have been handed source for a
-      library they are not compiling.
-
-      So the release is resolved from the project being installed into, in three steps:
-      `Cargo.lock` if it has resolved one (the lock, not the manifest — a manifest holds a
-      *requirement*, `"0.1"`, and there is no tag by that name), the latest published version
-      otherwise, and a **refusal** when the project's `nocomponents` is a path dependency, since
-      that is a working tree and the release tagged with its version is not it. Resolved lazily
-      and once, so `components remove` and anything run with `--from` still touch no network.
-
-      Verified over all four: a path dep refuses and names `--from`; `--from` still installs; an
-      unpublished crate gives "not on crates.io yet, use `--from`"; and a lock naming `0.9.3`
-      fetches `v0.9.3` rather than the CLI's own `v0.1.0`.
-
-      The two crates can now version independently. What is left for later is a *floor* — the CLI
-      declaring the oldest library its rewriting rules still produce valid source for — which
-      wants a semver comparison and cannot fire until there are two releases to compare.
-
-- [x] Both crates are on crates.io — `nocomponents` 0.6.0 and `nocomponents-cli` 0.4.0 (tags `v0.6.0`
-      and `v0.4.0`) — and all 67 components install and compile as a foreign crate (`--from` a
-      checkout, wasm32).
-- [x] `DropdownMenuItemVariant` is re-exported by the installed `dropdown_menu.rs` (0.3.0).
-- [x] `nocomponents.lock` beside the config records a hash of each file as installed, so `add` now
-      says *which* kind of file it left alone — "edited here" against "unchanged, --force refreshes
-      it" — and `--force` names what of yours it overwrote. FNV-1a, not a cryptographic hash: the
-      question is only whether a file is byte-for-byte what we wrote, and `\r` is skipped so a
-      checkout on Windows does not read as edited.
-- [x] `components remove`, which refuses twice — once for a component another installed one is
-      built on (found by searching the installed files for the rewritten import, so there is no
-      list to keep in step), and once for a file the project has edited. `--force` overrides both,
-      and doing so is what broke the scratch project during testing, which is the argument for the
-      refusal.
-- [x] The installed `mod.rs` is written between `// nocli:begin` and `// nocli:end`; anything
-      outside them survives. A module the project declares itself out there is skipped inside the
-      block rather than declared twice — the block lists every `.rs` in the directory, their own
-      files included.
 - [ ] `init` installs the whole of `globals.css`, which is four palettes and fourteen accents —
       most of a consumer's stylesheet, for tokens they mostly will not use. Worth splitting the
       base tokens from the palettes so a project takes one and opts into the rest.
@@ -1404,40 +534,9 @@ are the menus that both float and rove, and each belongs to whichever batch it g
       prop tables now, and a description written in both places drifts, so `src/components` carries
       no `///` on purpose — docs.rs stays empty until it can be generated from the same source as
       the tables. `src/primitives` and `src/utils` keep theirs, being undocumented elsewhere.
-- [x] README is the crate's front page on crates.io and docs.rs, and was a disclaimer. Rewritten:
-      the two layers and why they install differently, the CLI flow, a styled example and the same
-      thing unstyled, both feature tables, what is ours rather than shadcn's, and the credit. Both
-      code samples were compiled in a scratch crate rather than written from memory, and every
-      link is absolute — a relative one resolves on crates.io and breaks on docs.rs.
-
-- [x] docs.rs would have rendered an empty crate: it builds with default features, and those
-      compile only `utils`, `middleware` and `deps`. `[package.metadata.docs.rs] features =
-      ["full"]`.
-
-- [x] The package shipped `CLAUDE.md` and `TODO.md` — ~1,900 lines of internal argument into
-      crates.io and every consumer's registry. `exclude`d, along with `.github`. 161 files down to
-      157.
-
-- [x] `rust-version = "1.88"` on both. Edition 2024 alone would only ask for 1.85; the let-chains
-      in `theme.rs` and the canvas are what set it, and without it a consumer below it gets a parse
-      error about our source instead of a version error.
-
-- [x] `NOTICE` had no Lucide entry, though `src/icons/mod.rs` says the path data is theirs. ISC
-      requires the notice be carried, and several of our icons are on Lucide's own Feather-derived
-      list, so the upstream `LICENSE` is reproduced whole — it covers both halves — rather than
-      reasoned about glyph by glyph. Fetched from upstream, not written from memory.
 
 ## Repo hygiene
 
-- [x] CI in `.github/workflows/ci.yml`: `fmt --check`, `clippy --features full -D warnings`,
-      `check -p docs`, `test --features full`. `pages.yml` deploys the docs site on every push to
-      main — needs Settings → Pages → Source: GitHub Actions once.
-
-- [x] The docs app installs `console_error_panic_hook` first thing in `main`, so a panic shows its
-      message and location instead of `RuntimeError: unreachable`.
-- [x] `docs/smoke/` (`node docs/smoke/run.mjs`: a console-error sweep of every page and an
-      interaction check per component page) runs in CI as the `smoke` job in `ci.yml`; the trunk
-      build timeout is `SMOKE_BUILD_TIMEOUT_MIN`, default 10 and 30 in CI.
 - [ ] There are no `wasm-bindgen-test` unit tests over the primitives' `data-state`
       transitions, which would catch regressions in the floating and toast state machines without a
       browser session — the toast one has now been wrong twice.

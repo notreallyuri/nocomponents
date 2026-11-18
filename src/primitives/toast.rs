@@ -1,4 +1,4 @@
-use leptos::{ev, prelude::*, wasm_bindgen::JsCast};
+use leptos::{context::Provider, ev, prelude::*, wasm_bindgen::JsCast};
 use std::{sync::Arc, time::Duration};
 use web_sys::Element;
 
@@ -223,14 +223,14 @@ pub fn ToastProviderRoot(
         duration: 5000.0,
     };
 
-    provide_context(ToastContext {
+    let context = ToastContext {
         toasts,
         next_id,
         defaults,
         owner: StoredValue::new(Owner::current()),
-    });
+    };
 
-    view! { {children()} }
+    view! { <Provider value=context>{children()}</Provider> }
 }
 
 #[component]

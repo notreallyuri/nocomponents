@@ -4,7 +4,7 @@ use leptos::prelude::*;
 #[component]
 pub fn Loader(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
     view! {
-        <Icon view_box="0 0 24 24" stroke_width=2.0 class=move || cn!("size-4", class.get())>
+        <Icon view_box="0 0 24 24" stroke_width=2.0 class=move || cn!("size-[var(--icon-size,1rem)]", class.get())>
             <path d="M12 2v4" />
             <path d="m16.2 7.8 2.9-2.9" />
             <path d="M18 12h4" />
@@ -20,7 +20,7 @@ pub fn Loader(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
 #[component]
 pub fn LoaderCircle(#[prop(optional, into)] class: Signal<String>) -> impl IntoView {
     view! {
-        <Icon view_box="0 0 24 24" stroke_width=2.0 class=move || cn!("size-4", class.get())>
+        <Icon view_box="0 0 24 24" stroke_width=2.0 class=move || cn!("size-[var(--icon-size,1rem)]", class.get())>
             <path d="M21 12a9 9 0 1 1-6.219-8.56" />
         </Icon>
     }
