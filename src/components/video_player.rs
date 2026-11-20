@@ -5,7 +5,7 @@ use crate::utils::{
 use crate::{
     cn,
     components::dropdown_menu::{
-        DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
+        DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuPortal,
         DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger,
     },
     icons::{
@@ -684,6 +684,7 @@ fn MenuOpenGuard() -> impl IntoView {
 pub fn VideoPlayerMenu(
     #[prop(default = "Settings".into(), into)] label: Signal<String>,
     #[prop(optional, into)] class: Signal<String>,
+    #[prop(optional, into)] content_class: Signal<String>,
     #[prop(optional, into)] icon: Option<ViewFn>,
     children: ChildrenFn,
 ) -> impl IntoView {
@@ -700,13 +701,20 @@ pub fn VideoPlayerMenu(
             >
                 <IconSlot icon=icon.get_value() fallback=|| view! { <Settings /> } class=ICON />
             </DropdownMenuTriggerRoot>
-            <DropdownMenuContent
-                side=Side::Top
-                align=Align::End
-                class="mb-1 min-w-44 border-white/15 bg-black/85 text-white backdrop-blur"
-            >
-                {children.with_value(|children| children())}
-            </DropdownMenuContent>
+            <DropdownMenuPortal>
+                <DropdownMenuContent
+                    side=Side::Top
+                    align=Align::End
+                    class=move || {
+                        cn!(
+                            "mb-1 min-w-44 border-white/15 bg-black/85 text-white backdrop-blur",
+                            content_class.get(),
+                        )
+                    }
+                >
+                    {children.with_value(|children| children())}
+                </DropdownMenuContent>
+            </DropdownMenuPortal>
         </DropdownMenu>
     }
 }

@@ -171,6 +171,7 @@ pub fn SortableWindow(
     #[prop(default = None, into)] progress: Option<Callback<SortableProgress, String>>,
     #[prop(optional, into)] selected: Signal<HashSet<String>>,
     #[prop(into)] on_move: Callback<SortableWindowMove>,
+    #[prop(optional, into)] on_dragging_change: Option<Callback<bool>>,
 ) -> impl IntoView {
     let row_classes = Memo::new(move |_| {
         cn!(
@@ -204,6 +205,7 @@ pub fn SortableWindow(
             announce=announce
             selected=selected
             on_move=on_move
+            on_dragging_change=forward(on_dragging_change)
             class=move || {
                 cn!("group/sortable-window rounded-md border bg-card text-sm", class.get())
             }

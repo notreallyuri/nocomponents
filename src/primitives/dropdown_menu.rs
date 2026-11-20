@@ -318,8 +318,12 @@ pub fn DropdownMenuContentRoot(
     let roving = use_roving_focus(menu_ref, Orientation::Vertical);
     let typeahead = Typeahead::new();
 
-    Effect::new(move |_| {
-        if ctx.is_open.get() && ready.get() {
+    Effect::new(move |focused: Option<bool>| {
+        let is_open = ctx.is_open.get();
+        if !is_open {
+            return false;
+        }
+        if ready.get() && focused != Some(true) {
             match ctx.open_focus.get_untracked() {
                 // Opened with a pointer or Enter: focus the menu itself, so nothing wears a
                 // ring until an arrow asks for it.
@@ -331,7 +335,9 @@ pub fn DropdownMenuContentRoot(
                 OpenFocus::First => roving.focus_first(),
                 OpenFocus::Last => roving.focus_last(),
             }
+            return true;
         }
+        focused.unwrap_or(false)
     });
 
     let role_element = view! {
