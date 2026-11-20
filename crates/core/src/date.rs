@@ -56,15 +56,28 @@ impl Date {
         Self { year, month, day }
     }
 
-    /// Today, as the browser's local clock has it. `1970-01-01` where there is no clock at all,
-    /// which only happens outside a browser.
+    /// Today, as the browser's local clock has it on `wasm32` (with the `wasm` feature), or UTC
+    /// today from [`std::time::SystemTime`] on native targets.
     pub fn today() -> Self {
-        let now = js_sys::Date::new_0();
-        Self {
-            year: now.get_full_year() as i32,
-            // `getMonth` is zero-based; nothing else here is.
-            month: now.get_month() + 1,
-            day: now.get_date(),
+        #[cfg(all(target_arch = "wasm32", feature = "wasm"))]
+        {
+            let now = js_sys::Date::new_0();
+            Self {
+                year: now.get_full_year() as i32,
+                // `getMonth` is zero-based; nothing else here is.
+                month: now.get_month() + 1,
+                day: now.get_date(),
+            }
+        }
+        #[cfg(not(all(target_arch = "wasm32", feature = "wasm")))]
+        {
+            match std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH) {
+                Ok(duration) => Self::from_days((duration.as_secs() / 86_400) as i64),
+                Err(err) => {
+                    let days = err.duration().as_secs().div_ceil(86_400) as i64;
+                    Self::from_days(-days)
+                }
+            }
         }
     }
 
@@ -221,6 +234,69 @@ pub fn month_grid(month: Date, week_starts_on: u32) -> Vec<Date> {
     (0..42).map(|day| start.add_days(day)).collect()
 }
 
+/// Headless calendar navigation and single-date selection state.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct CalendarState {
+    pub viewed_month: Date,
+    pub focused: Date,
+    pub selected: Option<Date>,
+}
+
+impl CalendarState {
+    pub fn new(initial: Date) -> Self {
+        Self {
+            viewed_month: initial.first_of_month(),
+            focused: initial,
+            selected: None,
+        }
+    }
+
+    pub fn with_selected(mut self, date: Option<Date>) -> Self {
+        self.selected = date;
+        if let Some(date) = date {
+            self.focused = date;
+            self.viewed_month = date.first_of_month();
+        }
+        self
+    }
+
+    /// Pages back one month and moves `focused` to the matching day in that month.
+    pub fn prev_month(&mut self) {
+        self.viewed_month = self.viewed_month.add_months(-1).first_of_month();
+        self.focused = self.focused.add_months(-1);
+    }
+
+    /// Pages forward one month and moves `focused` to the matching day in that month.
+    pub fn next_month(&mut self) {
+        self.viewed_month = self.viewed_month.add_months(1).first_of_month();
+        self.focused = self.focused.add_months(1);
+    }
+
+    /// Moves `focused` by `days`, paging `viewed_month` along if focus crosses a month boundary.
+    pub fn move_focus_days(&mut self, days: i64) {
+        let next = self.focused.add_days(days);
+        self.focused = next;
+        if !next.is_same_month(self.viewed_month) {
+            self.viewed_month = next.first_of_month();
+        }
+    }
+
+    /// Selects `date` and moves focus to it, paging `viewed_month` if `date` is in another month.
+    pub fn select(&mut self, date: Date) {
+        self.selected = Some(date);
+        self.focused = date;
+        if !date.is_same_month(self.viewed_month) {
+            self.viewed_month = date.first_of_month();
+        }
+    }
+
+    /// Returns the 42-day six-week grid for `viewed_month`, starting on `week_starts_on`
+    /// (`0` = Sunday).
+    pub fn grid(&self, week_starts_on: u32) -> Vec<Date> {
+        month_grid(self.viewed_month, week_starts_on)
+    }
+}
+
 /// The month and weekday names a calendar writes, in one locale.
 ///
 /// English is two consts and no work; anything else is `Intl.DateTimeFormat`, which the browser
@@ -348,7 +424,7 @@ fn is_language_tag(tag: &str) -> bool {
 }
 
 /// Collects `N` formatter answers, or `None` the moment one of them fails.
-#[cfg(target_arch = "wasm32")]
+#[cfg(all(target_arch = "wasm32", feature = "wasm"))]
 fn try_array<const N: usize>(mut of: impl FnMut(usize) -> Option<String>) -> Option<[String; N]> {
     let mut names = Vec::with_capacity(N);
     for index in 0..N {
@@ -358,7 +434,7 @@ fn try_array<const N: usize>(mut of: impl FnMut(usize) -> Option<String>) -> Opt
     names.try_into().ok()
 }
 
-#[cfg(target_arch = "wasm32")]
+#[cfg(all(target_arch = "wasm32", feature = "wasm"))]
 fn localized(locale: &str) -> Option<DateNames> {
     // Any ordinary year will do to read names off, and 31 January 2021 was a Sunday — so seven
     // days from there is one of each weekday, in the order [`Date::weekday`] numbers them.
@@ -390,16 +466,16 @@ fn localized(locale: &str) -> Option<DateNames> {
     })
 }
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(all(target_arch = "wasm32", feature = "wasm")))]
 fn localized(_locale: &str) -> Option<DateNames> {
     None
 }
 
 /// One `Intl.DateTimeFormat` call. The date goes in as local midnight and comes out formatted in
 /// the browser's own zone, so the two agree and 1 August is never read back as 31 July.
-#[cfg(target_arch = "wasm32")]
+#[cfg(all(target_arch = "wasm32", feature = "wasm"))]
 fn intl_format(locale: &str, options: &[(&str, &str)], date: Date) -> Option<String> {
-    use leptos::wasm_bindgen::JsValue;
+    use wasm_bindgen::JsValue;
 
     let settings = js_sys::Object::new();
     for (key, value) in options {
@@ -426,7 +502,7 @@ fn intl_format(locale: &str, options: &[(&str, &str)], date: Date) -> Option<Str
         .as_string()
 }
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(all(target_arch = "wasm32", feature = "wasm")))]
 fn intl_format(_locale: &str, _options: &[(&str, &str)], _date: Date) -> Option<String> {
     None
 }
@@ -541,5 +617,44 @@ mod tests {
         let grid = month_grid(Date::new(2026, 8, 1), 1);
         assert_eq!(grid[0], Date::new(2026, 7, 27));
         assert_eq!(grid[0].weekday(), 1);
+    }
+
+    #[test]
+    fn today_resolves_a_valid_date_off_the_web() {
+        let today = Date::today();
+        assert!(today.year >= 1970);
+        assert!((1..=12).contains(&today.month));
+        assert!((1..=Date::days_in_month(today.year, today.month)).contains(&today.day));
+    }
+
+    #[test]
+    fn calendar_state_navigates_months_focus_and_selection() {
+        let mut cal = CalendarState::new(Date::new(2026, 1, 31));
+        assert_eq!(cal.viewed_month, Date::new(2026, 1, 1));
+        assert_eq!(cal.focused, Date::new(2026, 1, 31));
+        assert_eq!(cal.selected, None);
+
+        cal.next_month();
+        assert_eq!(cal.viewed_month, Date::new(2026, 2, 1));
+        assert_eq!(cal.focused, Date::new(2026, 2, 28));
+
+        // Stepping +1 day crosses into March and updates viewed_month.
+        cal.move_focus_days(1);
+        assert_eq!(cal.focused, Date::new(2026, 3, 1));
+        assert_eq!(cal.viewed_month, Date::new(2026, 3, 1));
+
+        cal.prev_month();
+        assert_eq!(cal.viewed_month, Date::new(2026, 2, 1));
+        assert_eq!(cal.focused, Date::new(2026, 2, 1));
+
+        let pick = Date::new(2026, 4, 15);
+        cal.select(pick);
+        assert_eq!(cal.selected, Some(pick));
+        assert_eq!(cal.focused, pick);
+        assert_eq!(cal.viewed_month, Date::new(2026, 4, 1));
+
+        let grid = cal.grid(0);
+        assert_eq!(grid.len(), 42);
+        assert!(grid.contains(&pick));
     }
 }

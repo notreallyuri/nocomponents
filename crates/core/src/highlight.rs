@@ -4,7 +4,7 @@
 //! alone. Tokens cover the input exactly, so concatenating every `Token::text` reproduces the
 //! source byte for byte — the rendered block can never lose or reorder a character.
 
-use crate::utils::types::Language;
+use crate::types::Language;
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum TokenKind {

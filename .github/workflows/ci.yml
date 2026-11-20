@@ -24,6 +24,16 @@ jobs:
 
       - run: cargo fmt --all --check
 
+      # `nocomponents-core` must stay zero-dependency by default (for native/GPUI consumers) and
+      # also build cleanly with its optional `wasm` feature on wasm32.
+      - run: cargo check -p nocomponents-core --no-default-features
+
+      - run: cargo clippy -p nocomponents-core --all-features -- -D warnings
+
+      - run: cargo test -p nocomponents-core --all-features
+
+      - run: cargo check -p nocomponents-core --target wasm32-unknown-unknown --all-features
+
       # The library compiles almost nothing without features, so the flag is the point.
       - run: cargo clippy --features full -- -D warnings
 

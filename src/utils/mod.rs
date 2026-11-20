@@ -1,22 +1,19 @@
 pub mod cn;
-pub mod color;
 pub mod controllable;
-pub mod date;
 pub mod form;
-pub mod gif;
 pub mod icon;
 pub mod image;
 pub mod listen;
 pub mod modality;
 pub mod scroll_lock;
 pub mod selection;
-pub mod settle;
 pub mod sheet;
 pub mod types;
-pub mod viewport;
+
+pub use nocomponents_core::{color, date, gestures, gif, menu_stack, settle, viewport, zoom};
 
 #[cfg(feature = "highlight")]
-pub mod highlight;
+pub use nocomponents_core::highlight;
 
 #[cfg(feature = "theme")]
 pub mod theme;

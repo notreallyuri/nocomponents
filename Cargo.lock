@@ -1595,6 +1595,7 @@ dependencies = [
  "js-sys",
  "leptos",
  "leptos-node-ref",
+ "nocomponents-core",
  "send_wrapper",
  "serde",
  "serde_json",
@@ -1615,6 +1616,14 @@ dependencies = [
  "serde",
  "tokio",
  "toml",
+]
+
+[[package]]
+name = "nocomponents-core"
+version = "0.1.0"
+dependencies = [
+ "js-sys",
+ "wasm-bindgen",
 ]
 
 [[package]]

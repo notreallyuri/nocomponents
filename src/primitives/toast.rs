@@ -2,39 +2,7 @@ use leptos::{context::Provider, ev, prelude::*, wasm_bindgen::JsCast};
 use std::{sync::Arc, time::Duration};
 use web_sys::Element;
 
-#[derive(Copy, Clone, PartialEq, Default)]
-pub enum ToastVariant {
-    #[default]
-    Default,
-    Destructive,
-}
-
-#[derive(Copy, Clone, PartialEq, Default)]
-pub enum ToastSize {
-    #[default]
-    Default,
-    Lg,
-}
-
-impl ToastSize {
-    fn as_str(&self) -> &'static str {
-        match self {
-            ToastSize::Default => "default",
-            ToastSize::Lg => "lg",
-        }
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Default)]
-pub enum ToastPosition {
-    TopLeft,
-    TopCenter,
-    TopRight,
-    BottomLeft,
-    BottomCenter,
-    #[default]
-    BottomRight,
-}
+pub use nocomponents_core::toast::{ToastPosition, ToastSize, ToastVariant};
 
 #[derive(Copy, Clone)]
 pub struct ToastDefaults {

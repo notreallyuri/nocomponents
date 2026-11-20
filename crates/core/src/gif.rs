@@ -2,7 +2,7 @@
 //!
 //! A canvas cannot do this. `drawImage` takes whatever frame the `<img>` happens to be showing,
 //! and `toDataURL("image/gif")` is not a thing browsers implement — it quietly hands back a PNG.
-//! So an animated GIF put through [`crate::utils::image::crop_to_data_url`] comes out as one still
+//! So an animated GIF put through `crop_to_data_url` comes out as one still
 //! frame, which is almost never what someone cropping a GIF wanted.
 //!
 //! What makes doing it ourselves tractable is that **the frames never have to become pixels**. A
@@ -18,14 +18,14 @@
 //! rectangle after both have been clipped.
 //!
 //! Only GIF. Every other format a browser reads is a still, and a canvas both decodes and encodes
-//! those better than we could — that is [`crate::utils::image::crop_to_data_url`].
+//! those better than we could — that is `crop_to_data_url`.
 //!
 //! The LZW here is verified against a browser, not only against itself: an encoder and a decoder
 //! written together will happily agree on a stream that no one else can read, which is exactly
 //! what happened once during this file's life. `dump_for_a_real_decoder` writes the fixtures that
 //! check goes through.
 
-use crate::utils::image::Crop;
+use crate::image::Crop;
 use std::collections::HashMap;
 
 /// Why a GIF could not be cropped.

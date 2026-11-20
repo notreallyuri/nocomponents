@@ -6,7 +6,7 @@
 //!
 //! Deliberately free of the DOM. `window()` *panics* off-wasm rather than returning zero, so
 //! anything that reads the viewport's size directly cannot be tested at all — the same reason
-//! [`crate::primitives::floating_menu`]'s clamp is a pure function. What is here is arithmetic
+//! `floating_menu`'s clamp is a pure function. What is here is arithmetic
 //! with unit tests; the primitive reads the boxes and hands them in.
 //!
 //! The piece worth having tests for is [`Viewport::zoomed_to`]. Zooming toward the middle of the
@@ -36,7 +36,7 @@ impl ZoomLimits {
 
 /// One of the eight grips on a box: four corners that move two edges, four sides that move one.
 ///
-/// Its own enum rather than [`crate::utils::image::CropHandle`], which looks the same and is not:
+/// Its own enum rather than `image::CropHandle`, which looks the same and is not:
 /// a crop is normalised to its image and clamped to it, and a node on a canvas is neither. What
 /// they share is the eight names, which is not enough to share a type over.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]

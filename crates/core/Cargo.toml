@@ -1,0 +1,73 @@
+[package]
+name = "nocomponents-core"
+version = "0.1.0"
+edition = "2024"
+description = "Renderer-agnostic math, data structures and state machines for nocomponents"
+repository = "https://github.com/notreallyuri/nocomponents"
+homepage = "https://notreallyuri.github.io/nocomponents/"
+license = "Apache-2.0"
+keywords = ["ui", "components", "color", "date", "viewport"]
+categories = ["gui", "data-structures"]
+rust-version = "1.88"
+
+[features]
+default = []
+chart = []
+checkbox = []
+color = []
+date = []
+disclosure = []
+drag = []
+dropzone = []
+floating_menu = []
+gestures = []
+gif = ["image"]
+highlight = []
+image = []
+long_press = []
+menu_stack = []
+roving = []
+selection = []
+settle = []
+slider = []
+sortable = []
+table = []
+toast = []
+tree = []
+typeahead = []
+viewport = []
+zoom = []
+all = [
+    "chart",
+    "checkbox",
+    "color",
+    "date",
+    "disclosure",
+    "drag",
+    "dropzone",
+    "floating_menu",
+    "gestures",
+    "gif",
+    "highlight",
+    "image",
+    "long_press",
+    "menu_stack",
+    "roving",
+    "selection",
+    "settle",
+    "slider",
+    "sortable",
+    "table",
+    "toast",
+    "tree",
+    "typeahead",
+    "viewport",
+    "zoom",
+]
+# Enables browser clock (`Date::today`) and `Intl.DateTimeFormat` (`DateNames`) on wasm32.
+# Off by default so native/GPUI consumers compile with zero dependencies.
+wasm = ["dep:js-sys", "dep:wasm-bindgen"]
+
+[dependencies]
+js-sys = { version = "0.3.98", optional = true }
+wasm-bindgen = { version = "0.2.121", optional = true }

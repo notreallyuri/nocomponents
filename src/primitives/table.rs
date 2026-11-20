@@ -12,28 +12,9 @@
 
 use leptos::prelude::*;
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
-pub enum SortDirection {
-    #[default]
-    Ascending,
-    Descending,
-}
-
-impl SortDirection {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            SortDirection::Ascending => "ascending",
-            SortDirection::Descending => "descending",
-        }
-    }
-
-    pub fn flipped(&self) -> Self {
-        match self {
-            SortDirection::Ascending => SortDirection::Descending,
-            SortDirection::Descending => SortDirection::Ascending,
-        }
-    }
-}
+pub use nocomponents_core::table::{
+    SelectionState, SortDirection, TableSelectionState, TableSortState,
+};
 
 /// Which column a table is sorted by, and which way.
 #[derive(Copy, Clone)]
@@ -102,14 +83,6 @@ impl TableSort {
         self.column.set(None);
         self.direction.set(SortDirection::Ascending);
     }
-}
-
-/// How much of a page is selected, which is the whole of what a header checkbox needs to know.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum SelectionState {
-    None,
-    Some,
-    All,
 }
 
 /// Which rows are picked, by whatever id the caller uses for a row.

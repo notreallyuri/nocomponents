@@ -24,6 +24,9 @@ use crate::{
 };
 use leptos::{context::Provider, ev, prelude::*, wasm_bindgen::JsCast};
 use leptos_node_ref::AnyNodeRef;
+use nocomponents_core::slider::{
+    clamp_and_step, fraction_to_value, nearest_thumb, value_to_percent,
+};
 use web_sys::{Element, HtmlElement};
 
 #[derive(Copy, Clone)]
@@ -42,35 +45,14 @@ pub struct SliderContext {
     pub track_ref: AnyNodeRef,
 }
 
-/// How many decimals `step` is written to, so snapping does not turn 0.3 into 0.30000000000000004.
-fn decimals_of(step: f64) -> i32 {
-    match format!("{step}").split_once('.') {
-        Some((_, frac)) => frac.len() as i32,
-        None => 0,
-    }
-}
-
 impl SliderContext {
     /// Where a value sits along the track, 0.0 at `min` and 1.0 at `max`.
     pub fn percent(&self, value: f64) -> f64 {
-        let (min, max) = (self.min.get(), self.max.get());
-        if max <= min {
-            return 0.0;
-        }
-        ((value - min) / (max - min)).clamp(0.0, 1.0)
+        value_to_percent(value, self.min.get(), self.max.get())
     }
 
     fn snap(&self, value: f64) -> f64 {
-        let (min, max, step) = (self.min.get(), self.max.get(), self.step.get());
-        if step <= 0.0 {
-            return value.clamp(min, max);
-        }
-
-        let steps = ((value - min) / step).round();
-        let snapped = (min + steps * step).clamp(min, max);
-        let factor = 10f64.powi(decimals_of(step));
-
-        (snapped * factor).round() / factor
+        clamp_and_step(value, self.min.get(), self.max.get(), self.step.get())
     }
 
     /// The bounds a thumb may move between: the track ends, or its neighbours.
@@ -136,27 +118,13 @@ impl SliderContext {
             }
         };
 
-        let (min, max) = (self.min.get(), self.max.get());
-        Some(min + fraction.clamp(0.0, 1.0) * (max - min))
+        Some(fraction_to_value(fraction, self.min.get(), self.max.get()))
     }
 
     /// The thumb a press on the track picks up. Ties go to the lower thumb, except at the top of
     /// the range, where it has nowhere to go.
     pub fn closest_thumb(&self, value: f64) -> usize {
-        self.values.with(|values| {
-            let mut best = 0;
-            let mut best_distance = f64::MAX;
-
-            for (index, thumb) in values.iter().enumerate() {
-                let distance = (thumb - value).abs();
-                if distance < best_distance {
-                    best_distance = distance;
-                    best = index;
-                }
-            }
-
-            best
-        })
+        self.values.with(|values| nearest_thumb(values, value))
     }
 }
 

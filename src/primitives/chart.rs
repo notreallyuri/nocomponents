@@ -13,71 +13,10 @@
 use leptos::{context::Provider, ev, prelude::*};
 use leptos_node_ref::AnyNodeRef;
 
-/// The drawing area, in viewBox units. Uniform scaling means these are the only numbers in the
-/// file that are arbitrary.
-pub const VIEW_WIDTH: f64 = 600.0;
-pub const VIEW_HEIGHT: f64 = 300.0;
-const PAD_LEFT: f64 = 44.0;
-const PAD_RIGHT: f64 = 12.0;
-const PAD_TOP: f64 = 12.0;
-const PAD_BOTTOM: f64 = 28.0;
-
-/// How many grid lines the value axis is divided into.
-const TICKS: usize = 4;
-
-/// The five theme colours a series falls back to, in order.
-pub const SERIES_COLORS: [&str; 5] = [
-    "var(--chart-1)",
-    "var(--chart-2)",
-    "var(--chart-3)",
-    "var(--chart-4)",
-    "var(--chart-5)",
-];
-
-#[derive(Default, Clone, Copy, PartialEq, Eq)]
-pub enum ChartKind {
-    #[default]
-    Line,
-    /// A line with the space below it filled.
-    Area,
-    /// One bar per series per category, grouped.
-    Bar,
-}
-
-/// One line, area or set of bars. `values` lines up with the chart's labels by index.
-#[derive(Clone, PartialEq)]
-pub struct ChartSeries {
-    pub key: String,
-    pub label: String,
-    /// Any CSS colour. Empty takes the theme colour for this series' position.
-    pub color: String,
-    pub values: Vec<f64>,
-}
-
-impl ChartSeries {
-    pub fn new(key: impl Into<String>, label: impl Into<String>, values: Vec<f64>) -> Self {
-        Self {
-            key: key.into(),
-            label: label.into(),
-            color: String::new(),
-            values,
-        }
-    }
-
-    pub fn color(mut self, color: impl Into<String>) -> Self {
-        self.color = color.into();
-        self
-    }
-
-    /// The colour to draw with: the one given, or this position's theme colour.
-    pub fn resolved_color(&self, index: usize) -> String {
-        if self.color.is_empty() {
-            SERIES_COLORS[index % SERIES_COLORS.len()].to_string()
-        } else {
-            self.color.clone()
-        }
-    }
-}
+pub use nocomponents_core::chart::{
+    ChartKind, ChartLayout, ChartSeries, SERIES_COLORS, VIEW_HEIGHT, VIEW_WIDTH, format_tick,
+    nice_ceiling,
+};
 
 #[derive(Copy, Clone)]
 pub struct ChartContext {
@@ -90,36 +29,11 @@ pub struct ChartContext {
     pub plot_ref: AnyNodeRef,
 }
 
-/// Rounds a maximum up to something a person would choose for the top of an axis: 1, 2, 2.5 or 5
-/// times a power of ten. An axis topped at exactly the data's maximum has no headroom and its
-/// labels are unreadable numbers.
-pub fn nice_ceiling(max: f64) -> f64 {
-    if max <= 0.0 {
-        return 1.0;
-    }
-
-    let magnitude = 10f64.powf(max.log10().floor());
-    for step in [1.0, 2.0, 2.5, 5.0, 10.0] {
-        let candidate = step * magnitude;
-        if candidate >= max {
-            return candidate;
-        }
-    }
-
-    max
-}
-
 impl ChartContext {
     /// The largest value across every series, rounded up to a readable axis top.
     pub fn max(&self) -> f64 {
-        let max = self.series.with(|series| {
-            series
-                .iter()
-                .flat_map(|series| series.values.iter().copied())
-                .fold(0.0f64, f64::max)
-        });
-
-        nice_ceiling(max)
+        self.series
+            .with(|series| ChartLayout::default().max(series))
     }
 
     pub fn count(&self) -> usize {
@@ -127,94 +41,55 @@ impl ChartContext {
     }
 
     pub fn plot_width(&self) -> f64 {
-        VIEW_WIDTH - PAD_LEFT - PAD_RIGHT
+        ChartLayout::default().plot_width()
     }
 
     pub fn plot_height(&self) -> f64 {
-        VIEW_HEIGHT - PAD_TOP - PAD_BOTTOM
+        ChartLayout::default().plot_height()
     }
 
     pub fn bottom(&self) -> f64 {
-        VIEW_HEIGHT - PAD_BOTTOM
+        ChartLayout::default().bottom()
     }
 
     /// Where a category sits along the bottom. Points sit on the edges for a line and in the
     /// middle of a band for bars, which is the difference between "a value at this moment" and "a
     /// value for this period".
     pub fn x(&self, index: usize) -> f64 {
-        let count = self.count();
-        match self.kind.get() {
-            ChartKind::Bar => {
-                let band = self.plot_width() / count.max(1) as f64;
-                PAD_LEFT + band * index as f64 + band / 2.0
-            }
-            _ if count > 1 => PAD_LEFT + self.plot_width() * index as f64 / (count - 1) as f64,
-            _ => PAD_LEFT + self.plot_width() / 2.0,
-        }
+        ChartLayout::default().x(index, self.count(), self.kind.get())
     }
 
     pub fn y(&self, value: f64) -> f64 {
-        let max = self.max();
-        PAD_TOP + self.plot_height() * (1.0 - (value / max).clamp(0.0, 1.0))
+        ChartLayout::default().y(value, self.max())
     }
 
     /// The value each grid line stands for, from the top down.
     pub fn ticks(&self) -> Vec<f64> {
-        let max = self.max();
-        (0..=TICKS)
-            .map(|tick| max * (TICKS - tick) as f64 / TICKS as f64)
-            .collect()
+        self.series
+            .with(|series| ChartLayout::default().ticks_for(series))
     }
 
     /// `M … L …` through a series' points.
     pub fn line_path(&self, series: &ChartSeries) -> String {
-        series
-            .values
-            .iter()
-            .enumerate()
-            .map(|(index, value)| {
-                let command = if index == 0 { 'M' } else { 'L' };
-                format!("{command}{:.2} {:.2}", self.x(index), self.y(*value))
-            })
-            .collect::<Vec<_>>()
-            .join(" ")
+        ChartLayout::default().line_path(series, self.count(), self.max(), self.kind.get())
     }
 
     /// The same path, closed along the bottom.
     pub fn area_path(&self, series: &ChartSeries) -> String {
-        if series.values.is_empty() {
-            return String::new();
-        }
-
-        let last = series.values.len() - 1;
-        format!(
-            "{} L{:.2} {:.2} L{:.2} {:.2} Z",
-            self.line_path(series),
-            self.x(last),
-            self.bottom(),
-            self.x(0),
-            self.bottom()
-        )
+        ChartLayout::default().area_path(series, self.count(), self.max(), self.kind.get())
     }
 
     /// One bar: `(x, y, width, height)`. Bars are grouped inside their category's band, with a
     /// gap between bands so the grouping reads.
     pub fn bar(&self, index: usize, series_index: usize, value: f64) -> (f64, f64, f64, f64) {
-        let count = self.count().max(1);
-        let series_count = self.series.with(|series| series.len()).max(1);
-
-        let band = self.plot_width() / count as f64;
-        let group = band * 0.72;
-        let width = group / series_count as f64;
-        let left = PAD_LEFT + band * index as f64 + (band - group) / 2.0;
-
-        let y = self.y(value);
-
-        (
-            left + width * series_index as f64,
-            y,
-            width.max(1.0),
-            (self.bottom() - y).max(0.0),
+        let series_count = self.series.with(|series| series.len());
+        ChartLayout::default().bar(
+            index,
+            series_index,
+            value,
+            self.count(),
+            series_count,
+            self.max(),
         )
     }
 
@@ -227,34 +102,17 @@ impl ChartContext {
             return None;
         }
 
-        let count = self.count();
-        if count == 0 {
-            return None;
-        }
-
         // Back out of the browser's pixels into viewBox units, which is where every other number
         // in this file lives.
-        let x = (client_x - rect.left()) / rect.width() * VIEW_WIDTH;
-
-        let index = match self.kind.get_untracked() {
-            ChartKind::Bar => {
-                let band = self.plot_width() / count as f64;
-                ((x - PAD_LEFT) / band).floor()
-            }
-            _ if count > 1 => {
-                let step = self.plot_width() / (count - 1) as f64;
-                ((x - PAD_LEFT) / step).round()
-            }
-            _ => 0.0,
-        };
-
-        Some((index.max(0.0) as usize).min(count - 1))
+        let layout = ChartLayout::default();
+        let x = (client_x - rect.left()) / rect.width() * layout.width;
+        layout.index_at(x, self.count(), self.kind.get_untracked())
     }
 
     /// Where a category sits across the plot, as a percentage — what an HTML tooltip needs, since
     /// it is positioned in the container rather than in the SVG.
     pub fn x_percent(&self, index: usize) -> f64 {
-        self.x(index) / VIEW_WIDTH * 100.0
+        ChartLayout::default().x_percent(index, self.count(), self.kind.get())
     }
 }
 
@@ -307,6 +165,7 @@ pub fn ChartPlotRoot(
     label: Signal<String>,
 ) -> impl IntoView {
     let ctx = use_chart();
+    let layout = ChartLayout::default();
 
     view! {
         <svg
@@ -333,15 +192,15 @@ pub fn ChartPlotRoot(
                                             let y = ctx.y(value);
                                             view! {
                                                 <line
-                                                    x1=PAD_LEFT
-                                                    x2=VIEW_WIDTH - PAD_RIGHT
+                                                    x1=layout.pad_left
+                                                    x2=layout.width - layout.pad_right
                                                     y1=y
                                                     y2=y
                                                     class="stroke-border"
                                                     stroke-width="1"
                                                 />
                                                 <text
-                                                    x=PAD_LEFT - 8.0
+                                                    x=layout.pad_left - 8.0
                                                     y=y + 4.0
                                                     text-anchor="end"
                                                     class="fill-muted-foreground text-[10px]"
@@ -485,7 +344,7 @@ pub fn ChartPlotRoot(
                         <line
                             x1=ctx.x(hovered)
                             x2=ctx.x(hovered)
-                            y1=PAD_TOP
+                            y1=layout.pad_top
                             y2=ctx.bottom()
                             class="stroke-muted-foreground"
                             stroke-width="1"
@@ -495,16 +354,6 @@ pub fn ChartPlotRoot(
                 )
             }}
         </svg>
-    }
-}
-
-/// Trims a tick's decimals without turning 1500 into "2k" — an axis that rounds its own labels
-/// lies about the grid line beside it.
-fn format_tick(value: f64) -> String {
-    if value.fract().abs() < f64::EPSILON {
-        format!("{value:.0}")
-    } else {
-        format!("{value:.1}")
     }
 }
 

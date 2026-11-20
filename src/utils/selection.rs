@@ -23,59 +23,11 @@
 //! extends a range too.
 
 use leptos::{ev, prelude::*};
-use std::{collections::HashSet, ops::RangeInclusive};
+use std::collections::HashSet;
 
-/// The indices a click at `clicked` selects: `anchor..=clicked` (either way round) when `shift` is
-/// held and there is an anchor, and the one row otherwise. Clamped to a list of `count` rows;
-/// empty for an empty list or a click past its end.
-pub fn range_for(
-    anchor: Option<usize>,
-    clicked: usize,
-    shift: bool,
-    count: usize,
-) -> RangeInclusive<usize> {
-    if count == 0 || clicked >= count {
-        return RangeInclusive::new(1, 0);
-    }
-    match anchor.filter(|_| shift) {
-        Some(anchor) => {
-            let anchor = anchor.min(count - 1);
-            anchor.min(clicked)..=anchor.max(clicked)
-        }
-        None => clicked..=clicked,
-    }
-}
-
-/// Sets every row in `range` selected or not, by the key `key_at` gives it.
-pub fn set_range(
-    selected: &mut HashSet<String>,
-    range: RangeInclusive<usize>,
-    checked: bool,
-    key_at: impl Fn(usize) -> String,
-) {
-    for index in range {
-        let key = key_at(index);
-        if checked {
-            selected.insert(key);
-        } else {
-            selected.remove(&key);
-        }
-    }
-}
-
-/// Where the row named `target` is now: at `hint` if it still is, found by a pass over the list if
-/// it moved, `None` if it is gone.
-pub fn locate(
-    hint: usize,
-    count: usize,
-    key_at: impl Fn(usize) -> String,
-    target: &str,
-) -> Option<usize> {
-    if hint < count && key_at(hint) == target {
-        return Some(hint);
-    }
-    (0..count).find(|&index| key_at(index) == target)
-}
+pub use nocomponents_core::selection::{
+    AnchorMode, RangeSelectionState, locate, range_for, set_range,
+};
 
 /// What a Shift-click measures from, and the keys that are selected.
 #[derive(Copy, Clone)]
@@ -84,6 +36,7 @@ pub struct RangeSelection {
     /// "select all" is `selected.set(...)`): the anchor is looked up by key, so it stays valid.
     pub selected: RwSignal<HashSet<String>>,
     anchor: RwSignal<Option<(usize, String)>>,
+    anchor_mode: AnchorMode,
     count: Signal<usize>,
     key: Callback<usize, String>,
 }
@@ -107,9 +60,16 @@ impl RangeSelection {
         Self {
             selected,
             anchor: RwSignal::new(None),
+            anchor_mode: AnchorMode::default(),
             count: count.into(),
             key: Callback::new(key),
         }
+    }
+
+    /// Sets how Shift-clicks update the anchor (default [`AnchorMode::MoveOnShift`]).
+    pub fn with_anchor_mode(mut self, mode: AnchorMode) -> Self {
+        self.anchor_mode = mode;
+        self
     }
 
     fn key_of(&self, index: usize) -> String {
@@ -144,16 +104,19 @@ impl RangeSelection {
     }
 
     /// The row at `index` was set to `checked`; with `shift`, so was everything from the anchor to
-    /// it. Moves the anchor to `index`.
+    /// it. Updates the anchor according to `anchor_mode`.
     pub fn select(&self, index: usize, checked: bool, shift: bool) {
         let count = self.count.get_untracked();
-        let range = range_for(self.anchor(), index, shift, count);
+        let existing_anchor = self.anchor();
+        let range = range_for(existing_anchor, index, shift, count);
         if range.is_empty() {
             return;
         }
         self.selected
             .update(|selected| set_range(selected, range, checked, |at| self.key_of(at)));
-        self.anchor.set(Some((index, self.key_of(index))));
+        if !(shift && existing_anchor.is_some() && self.anchor_mode == AnchorMode::KeepOnShift) {
+            self.anchor.set(Some((index, self.key_of(index))));
+        }
     }
 
     /// As [`select`](Self::select), with the state the row does not have now: a click on a title
@@ -207,45 +170,6 @@ mod tests {
         let mut keys: Vec<usize> = selected.iter().map(|key| key.parse().unwrap()).collect();
         keys.sort_unstable();
         keys
-    }
-
-    #[test]
-    fn a_plain_click_is_the_one_row() {
-        assert_eq!(range_for(Some(2), 6, false, 10), 6..=6);
-        assert_eq!(range_for(None, 6, true, 10), 6..=6);
-    }
-
-    #[test]
-    fn a_shift_click_runs_from_the_anchor_either_way() {
-        assert_eq!(range_for(Some(2), 6, true, 10), 2..=6);
-        assert_eq!(range_for(Some(6), 2, true, 10), 2..=6);
-        assert_eq!(range_for(Some(4), 4, true, 10), 4..=4);
-    }
-
-    #[test]
-    fn a_range_stays_inside_the_list() {
-        assert!(range_for(Some(2), 6, true, 0).is_empty());
-        assert!(range_for(Some(2), 10, true, 10).is_empty());
-        assert_eq!(range_for(Some(50), 6, true, 10), 6..=9);
-    }
-
-    #[test]
-    fn setting_a_range_adds_or_removes_exactly_it() {
-        let mut selected: HashSet<String> = ["0", "8"].iter().map(|s| s.to_string()).collect();
-        set_range(&mut selected, 2..=5, true, |i| i.to_string());
-        assert_eq!(keys(&selected), [0, 2, 3, 4, 5, 8]);
-        set_range(&mut selected, 4..=8, false, |i| i.to_string());
-        assert_eq!(keys(&selected), [0, 2, 3]);
-    }
-
-    #[test]
-    fn the_anchor_is_found_again_where_it_went() {
-        let rows = ["a", "b", "c", "d"];
-        let at = |i: usize| rows[i].to_string();
-        assert_eq!(locate(2, 4, at, "c"), Some(2));
-        assert_eq!(locate(0, 4, at, "c"), Some(2));
-        assert_eq!(locate(9, 4, at, "d"), Some(3));
-        assert_eq!(locate(1, 4, at, "z"), None);
     }
 
     fn selection(count: usize) -> RangeSelection {
@@ -317,6 +241,31 @@ mod tests {
             // Row "2" now sits at index 7, so the run to index 9 is the rows there: 2, 8 and 9.
             range.select(9, true, true);
             assert_eq!(keys(&range.selected.get_untracked()), [2, 8, 9]);
+        });
+    }
+
+    #[test]
+    fn keep_on_shift_preserves_anchor_across_shift_clicks() {
+        let owner = Owner::new();
+        owner.with(|| {
+            let range = selection(10).with_anchor_mode(AnchorMode::KeepOnShift);
+            range.select(2, true, true);
+            assert_eq!(keys(&range.selected.get_untracked()), [2]);
+            assert_eq!(range.anchor(), Some(2));
+
+            range.select(6, true, true);
+            assert_eq!(keys(&range.selected.get_untracked()), [2, 3, 4, 5, 6]);
+            assert_eq!(range.anchor(), Some(2));
+
+            range.select(4, false, true);
+            assert_eq!(keys(&range.selected.get_untracked()), [5, 6]);
+            assert_eq!(range.anchor(), Some(2));
+
+            range.select(7, true, false);
+            assert_eq!(range.anchor(), Some(7));
+            range.select(9, true, true);
+            assert_eq!(keys(&range.selected.get_untracked()), [5, 6, 7, 8, 9]);
+            assert_eq!(range.anchor(), Some(7));
         });
     }
 }

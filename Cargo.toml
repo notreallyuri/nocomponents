@@ -24,7 +24,7 @@ exclude = ["CLAUDE.md", "TODO.md", ".github", "docs"]
 features = ["full"]
 
 [workspace]
-members = ["cli", "docs"]
+members = ["crates/core", "cli", "docs"]
 
 [features]
 default = []
@@ -36,7 +36,7 @@ primitives = []
 icons = []
 components = ["primitives", "icons"]
 theme = []
-highlight = []
+highlight = ["nocomponents-core/highlight"]
 
 full = ["components", "theme", "highlight", "all-elements"]
 
@@ -198,6 +198,29 @@ typeahead = []
 video_player = ["drag", "dropdown_menu"]
 
 [dependencies]
+nocomponents-core = { path = "crates/core", version = "0.1.0", features = [
+    "chart",
+    "checkbox",
+    "color",
+    "date",
+    "drag",
+    "dropzone",
+    "floating_menu",
+    "gestures",
+    "gif",
+    "image",
+    "long_press",
+    "menu_stack",
+    "selection",
+    "settle",
+    "slider",
+    "sortable",
+    "table",
+    "toast",
+    "viewport",
+    "wasm",
+    "zoom",
+] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 floating-ui-leptos = "0.6.0"
