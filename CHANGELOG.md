@@ -9,6 +9,43 @@ touched; `cargo nocli components status` and a diff are how you deal with those.
 installed before the lock existed reads `not in lock`: the tool cannot tell whether it was edited,
 so diff it too and `components add <name> --force` to record it.
 
+## 0.6.6
+
+Extracts the renderer-agnostic math, data structures and headless state machines into a new
+zero-dependency crate (`nocomponents-core` 0.1.0), re-exported at the same `nocomponents::utils::*`
+and `nocomponents::primitives::*` paths so existing Leptos callers need no changes, plus four
+targeted fixes from `noaweb`. Bump the dependency **and** run `cargo nocli components update --apply`
+to pick up the styled component updates (`video_player`, `dropdown_menu`, `context_menu`, `select`,
+`sortable`).
+
+### Added
+
+- **`nocomponents-core` (`0.1.0`):** zero-dependency core crate (`core/`) holding `color`, `date`
+  (plus `CalendarState` and native `SystemTime` fallback for `Date::today()`), `gif`, `highlight`,
+  `image`, `selection` (`RangeSelectionState`, `AnchorMode`), `settle`, `viewport`, `types`, `drag`,
+  `sortable` (and `sortable::window`), `chart` (`ChartLayout`), `table` (`TableSortState`,
+  `TableSelectionState`), `checkbox`, `dropzone`, `floating_menu`, `long_press`, `slider`
+  (`SliderState`), `toast` (`ToastQueue`), `roving` (`RovingIndex`), `typeahead`
+  (`TypeaheadBuffer`), `tree` (`TreeState`), `disclosure` (`TabsState`, `AccordionState`,
+  `ResizableState`), `zoom`, `gestures`, and `menu_stack`.
+- **`utils::zoom`**, **`utils::gestures`**, and **`utils::menu_stack`**: bounded image
+  zoom/pan/pinch (with `ZoomConfig` and `pinch_points`), touch/pointer gesture classification, and
+  `MenuStack<K>` for in-place swapping menu panels.
+- **`AnchorMode`** (`MoveOnShift` / `KeepOnShift`) on `RangeSelection` and `RangeSelectionState`
+  via `.with_anchor_mode(...)`.
+- **`SortableWindow` `on_dragging_change`**: optional `Callback<bool>` firing on drag/keyboard-move
+  start and end.
+- **`VideoPlayerMenu` `content_class`**: optional class prop forwarded to its `DropdownMenuContent`.
+
+### Fixed
+
+- `VideoPlayerMenu` now portals its content through `DropdownMenuPortal` so it is not clipped by
+  the controls container.
+- `DropdownMenuContentRoot` focuses once per open instead of re-focusing on every `is_positioned`
+  recomputation when content height changes.
+- `DropdownMenuContent`, `ContextMenuContent`, and `SelectContent` include `outline-none` so
+  opening a menu does not draw a browser focus ring around the whole container.
+
 ## 0.6.5
 
 The windowed sortable, after noaweb put it next to its own hand-written list: it scrolls

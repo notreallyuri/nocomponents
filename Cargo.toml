@@ -1,6 +1,6 @@
 [package]
 name = "nocomponents"
-version = "0.6.5"
+version = "0.6.6"
 edition = "2024"
 description = "Unstyled behaviour primitives for Leptos, and a shadcn/ui-styled layer you install as source you own"
 repository = "https://github.com/notreallyuri/nocomponents"
@@ -24,7 +24,7 @@ exclude = ["CLAUDE.md", "TODO.md", ".github", "docs"]
 features = ["full"]
 
 [workspace]
-members = ["crates/core", "cli", "docs"]
+members = ["core", "cli", "docs"]
 
 [features]
 default = []
@@ -198,7 +198,7 @@ typeahead = []
 video_player = ["drag", "dropdown_menu"]
 
 [dependencies]
-nocomponents-core = { path = "crates/core", version = "0.1.0", features = [
+nocomponents-core = { path = "core", version = "0.1.0", features = [
     "chart",
     "checkbox",
     "color",
